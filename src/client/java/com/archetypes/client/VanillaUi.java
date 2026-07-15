@@ -71,6 +71,22 @@ public final class VanillaUi {
 		graphics.fill(x + 1, top, x + 2, bottom, HIGHLIGHT);
 	}
 
+	/**
+	 * Sunken progress bar: an inset groove with a filled portion. {@code progress}
+	 * is clamped, so a caller cannot overdraw the track by passing >1.
+	 */
+	public static void progressBar(final GuiGraphicsExtractor graphics, final int x, final int y,
+			final int width, final int height, final float progress, final int fill) {
+		graphics.fill(x, y, x + width, y + height, 0xFF2A2A2A);
+		insetBorder(graphics, x, y, width, height);
+
+		int filled = Math.round(Math.max(0.0F, Math.min(1.0F, progress)) * (width - 2));
+
+		if (filled > 0) {
+			graphics.fill(x + 1, y + 1, x + 1 + filled, y + height - 1, fill);
+		}
+	}
+
 	/** Stepped 2px-thick line between two points, for tree connections. */
 	public static void line(final GuiGraphicsExtractor graphics, final int x1, final int y1,
 			final int x2, final int y2, final int color) {

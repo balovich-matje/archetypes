@@ -36,5 +36,8 @@
 	"item.archetypes.diamond_claymore": "Diamond Claymore",
 	"item.archetypes.netherite_claymore": "Netherite Claymore",
 	"item.archetypes.skill_token": "Skill Token",
-	"item.archetypes.skill_token.granted": "Skill point granted — %s/%s available"
+	"item.archetypes.skill_token.granted": "Archetype level %s/%s",
+	"screen.archetypes.tree.bar.archetype": "%s → %s",
+	"screen.archetypes.tree.bar.level": "Level %s",
+	"screen.archetypes.tree.points": "%s points unspent"
 }

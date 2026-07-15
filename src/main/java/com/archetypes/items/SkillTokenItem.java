@@ -32,7 +32,7 @@ public class SkillTokenItem extends Item {
 		// Action bar rather than chat: this fires on every click while testing.
 		// 26.2 renamed displayClientMessage(component, true) to sendOverlayMessage.
 		player.sendOverlayMessage(Component.translatable("item.archetypes.skill_token.granted",
-				SkillPoints.available(player), SkillPoints.MAX_POINTS));
+				SkillPoints.level(player), SkillPoints.MAX_LEVEL));
 		return InteractionResult.SUCCESS;
 	}
 }

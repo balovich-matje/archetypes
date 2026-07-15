@@ -419,16 +419,19 @@ off; Ground Slam gets a placeholder swing + existing sound until real animation 
 
 ### DECIDED: you cannot buy the whole tree
 
-There is a **point cap below the node count**, so a Protector is full damage, full
-utility, or a compromise — never all three. This is the actual balance lever (see the
-XP note below): the cost per point only paces *when* you spend, the cap decides *how
-much* you ever get.
+**15 points per sub-tree**, against ~23 real nodes — so a Protector is full damage,
+full utility, or a compromise, never all three. This is the actual balance lever (see
+the XP note below): the cost per point only paces *when* you spend, the cap decides
+*how much* you ever get.
 
-**Unreconciled**: the Protector constellation has **38 nodes**, but the skill list
-above is ~23 even counting every rank separately (Slam 3, Cooldown 3, Spikes 3, Rush
-4, Knockback 3, Wide 2, +1 each for Bash/Unbreaking/Reflection, +2 capstones). The
-shape was authored to look like a shield; the skills were designed as gameplay. One
-has to give — either pad the ranks or redraw the constellation.
+The numbers line up on purpose: **45 archetype levels, one point each, 15 per
+sub-tree** — a fully-levelled Brawler has exactly enough points to fill all three
+budgets, and no budget covers its own tree.
+
+**The node-count gap stays, deliberately.** The Protector constellation has 38 nodes;
+the skill list is ~23 even counting every rank. The surplus stays as inert "+1% damage"
+placeholders for now — the shape was authored to read as a shield and that is worth
+keeping while the real node list settles.
 
 ### The cooldown formula — the honest problem
 
@@ -456,7 +459,8 @@ bash is never the better damage button; its value is that **it is damage you dea
 your shield is still up**, which no sword swing can claim. That is a real advantage
 that needs no DPS lead, and it keeps the whole tree inside the horizontal rule.
 
-Suggested: reduction −20/35/50%, base bash ~0.55x sword DPS → ~1.1x at full investment.
+**DECIDED**: reduction −20/35/50%, base bash ~0.55x sword DPS → ~1.1x at full
+investment. The bash never leads on damage; it leads on being usable behind a shield.
 
 ### Reflection: keep the fantasy, tax the damage
 

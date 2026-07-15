@@ -6,6 +6,7 @@ import java.util.Optional;
 import com.archetypes.Archetype;
 import com.archetypes.Constellation;
 import com.archetypes.ResetArchetypePayload;
+import com.archetypes.SkillPoints;
 import com.archetypes.SubTree;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -18,6 +19,7 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
+import net.minecraft.world.entity.player.Player;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -39,6 +41,13 @@ public class ArchetypeScreen extends Screen {
 	private static final int HEADER = 22;
 	/** Strip below the canvas holding the Back / Reset buttons. */
 	private static final int FOOTER = 28;
+	/**
+	 * Strip under the buttons for the two progress bars: a label row and a bar for
+	 * each (10 + 5, twice, plus 8 of breathing room) — the content is 33 tall, so
+	 * anything less pushes the second bar out through the panel's bottom edge.
+	 */
+	private static final int BAR_STRIP = 41;
+	private static final int BAR_HEIGHT = 5;
 	/** Room at the top of each section for its name, drawn at 1.5x. */
 	private static final int SECTION_HEADER = 22;
 
@@ -73,8 +82,8 @@ public class ArchetypeScreen extends Screen {
 	@Override
 	protected void init() {
 		// Anchored to the panel's bottom corners, so Back does not drift when the
-		// creative-only Reset is absent.
-		int buttonY = this.panelTop() + this.panelHeight() - PAD - BUTTON_HEIGHT;
+		// creative-only Reset is absent. Sits above the bar strip.
+		int buttonY = this.canvasBottom() + 4;
 
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, button -> this.onClose())
 				.bounds(this.panelLeft() + PAD, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -130,7 +139,7 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	private int canvasBottom() {
-		return this.panelTop() + this.panelHeight() - FOOTER;
+		return this.panelTop() + this.panelHeight() - FOOTER - BAR_STRIP;
 	}
 
 	private int sectionWidth() {
@@ -271,6 +280,8 @@ public class ArchetypeScreen extends Screen {
 			}
 		}
 
+		this.progressBars(graphics);
+
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
 		// anything drawn after it covers the buttons.
 		super.extractRenderState(graphics, mouseX, mouseY, a);
@@ -280,6 +291,53 @@ public class ArchetypeScreen extends Screen {
 					List.of(Component.translatable("node.archetypes.placeholder")),
 					Optional.empty(), mouseX, mouseY);
 		}
+	}
+
+	/**
+	 * Two bars under the buttons: the long road from start tier to peak, and the
+	 * short one to the next point.
+	 *
+	 * <p>Read straight off the attachment, which syncs to its owning client, so
+	 * there is no separate packet to keep in step.
+	 */
+	private void progressBars(final GuiGraphicsExtractor graphics) {
+		if (this.minecraft.player == null) {
+			return;
+		}
+
+		Player player = this.minecraft.player;
+		int left = this.panelLeft() + PAD;
+		int width = this.panelWidth() - PAD * 2;
+		int top = this.canvasBottom() + FOOTER;
+
+		int level = SkillPoints.level(player);
+		int unspent = SkillPoints.available(player);
+
+		// Long bar: start tier -> peak tier.
+		Component road = Component.translatable("screen.archetypes.tree.bar.archetype",
+				this.archetype.tierName(0), this.archetype.tierName(1));
+		Component levelText = Component.translatable("screen.archetypes.tree.bar.level", level
+				+ "/" + SkillPoints.MAX_LEVEL);
+		graphics.text(this.font, road, left, top, VanillaUi.LABEL, false);
+		graphics.text(this.font, levelText, left + width - this.font.width(levelText), top,
+				VanillaUi.LABEL, false);
+		VanillaUi.progressBar(graphics, left, top + 10, width, BAR_HEIGHT,
+				SkillPoints.archetypeProgress(player), this.archetype.color());
+
+		// Short bar: XP into the current level. Points you have not committed are
+		// worth surfacing here — it is the only place they are visible.
+		Component next = Component.literal(SkillPoints.xpIntoLevel(player)
+				+ "/" + SkillPoints.XP_PER_LEVEL + " XP");
+		graphics.text(this.font, next, left, top + 18, VanillaUi.LABEL_FAINT, false);
+
+		if (unspent > 0) {
+			Component spare = Component.translatable("screen.archetypes.tree.points", unspent);
+			graphics.text(this.font, spare, left + width - this.font.width(spare), top + 18,
+					this.archetype.color(), false);
+		}
+
+		VanillaUi.progressBar(graphics, left, top + 28, width, BAR_HEIGHT,
+				SkillPoints.levelProgress(player), 0xFF7FCF5F);
 	}
 
 	/**
