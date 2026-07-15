@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * tip, the utility path up the left rim, the damage path up the right, Shield
  * Rush up the centre with the two mutually-exclusive capstones flanking its
  * top. Every node is a real skill — the placeholder minors were scrapped and
- * the constellation redrawn to exactly 23 nodes.
+ * the constellation redrawn so every node is real.
  *
  * <p>Multi-rank skills are chains of nodes; a family's rank is simply how many
  * of its nodes are owned, and the chain's adjacency enforces buy order.
@@ -34,6 +34,7 @@ public final class ProtectorNodes {
 		RUSH(() -> Items.WIND_CHARGE),
 		BRACED(() -> Items.AMETHYST_SHARD),
 		REFLECT(() -> Items.SPECTRAL_ARROW),
+		TAUNT(() -> Items.GOAT_HORN),
 		OMNI_BLOCK(() -> Items.SHULKER_SHELL),
 		GROUND_SLAM(() -> Items.ANVIL),
 		MINOR(null);
@@ -105,6 +106,8 @@ public final class ProtectorNodes {
 		byCell.put(cell(4, 5), new Def(Family.BRACED, 1));
 		byCell.put(cell(3, 5), new Def(Family.OMNI_BLOCK, 1));
 		byCell.put(cell(5, 5), new Def(Family.GROUND_SLAM, 1));
+		// Above the crown, and gated on owning a capstone (see NodePurchases).
+		byCell.put(cell(4, 6), new Def(Family.TAUNT, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.PROTECTOR_SHIELD.nodes();

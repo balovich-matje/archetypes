@@ -377,7 +377,7 @@ public class ArchetypeScreen extends Screen {
 			ProtectorNodes.Family.BASH, ProtectorNodes.Family.SLAM, ProtectorNodes.Family.COOLDOWN,
 			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE,
 			ProtectorNodes.Family.SPIKES, ProtectorNodes.Family.UNBREAKING,
-			ProtectorNodes.Family.BRACED);
+			ProtectorNodes.Family.BRACED, ProtectorNodes.Family.TAUNT);
 
 	private static final int TOOLTIP_WIDTH = 180;
 

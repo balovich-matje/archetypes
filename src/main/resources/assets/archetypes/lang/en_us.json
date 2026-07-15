@@ -66,12 +66,15 @@
 	"node.archetypes.protector.knockback.desc": "The bash trades 12% damage per rank for a much stronger shove.",
 	"node.archetypes.protector.wide.desc": "The bash hits everyone in front of you — extra targets take half damage, then full damage at rank 2.",
 	"node.archetypes.protector.unbreaking.desc": "Shields you block with take half durability damage, like built-in Unbreaking.",
-	"node.archetypes.protector.spikes.desc": "Melee attackers hitting your raised shield are spiked — Thorns V, X, then XV by rank. Costs the shield a little durability.",
+	"node.archetypes.protector.spikes.desc": "Melee attackers hitting your raised shield are spiked — Thorns V, X, then XV by rank.",
 	"node.archetypes.protector.rush.desc": "Hold block and press sprint to lunge forward — 2 blocks, +2 per rank, 6 at max.",
 	"node.archetypes.protector.reflect.desc": "Projectiles you block fly back at their shooter for half their damage.",
 	"node.archetypes.protector.omni_block.desc": "Capstone: your raised shield blocks attacks from every direction. Locks out Ground Slam.",
 	"node.archetypes.protector.ground_slam.desc": "Capstone: the bash becomes a ground slam, damaging everything around you. Locks out Bulwark.",
 	"node.archetypes.protector.minor.desc": "Placeholder.",
 	"node.archetypes.protector.braced": "Braced",
-	"node.archetypes.protector.braced.desc": "Every hit your shield blocks shaves a second off the bash's cooldown."
+	"node.archetypes.protector.braced.desc": "Every hit your shield blocks shaves a second off the bash's cooldown.",
+	"node.archetypes.protector.taunt": "Taunt",
+	"node.archetypes.protector.taunt.desc": "The bash is also a challenge: every monster within 8 blocks turns to attack you.",
+	"node.archetypes.verdict.needs_capstone": "Locked — choose a capstone first"
 }

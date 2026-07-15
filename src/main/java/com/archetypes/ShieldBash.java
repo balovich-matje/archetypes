@@ -11,6 +11,8 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -52,6 +54,7 @@ public final class ShieldBash {
 		int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.COOLDOWN);
 		int knockback = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.KNOCKBACK);
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
+		int taunt = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.TAUNT);
 
 		float damage = Tuning.BASH_DAMAGE
 				* Tuning.slamMultiplier(slam)
@@ -92,6 +95,17 @@ public final class ShieldBash {
 		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(
 				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(recovery));
 		player.resetAttackStrengthTicker();
+
+		// Taunt: the bash is also a challenge — every monster in earshot drops
+		// what it is doing and comes for you. Vanilla target AI does the rest;
+		// no custom goals involved.
+		if (taunt > 0) {
+			for (Mob mob : level.getEntitiesOfClass(Mob.class,
+					player.getBoundingBox().inflate(Tuning.TAUNT_RADIUS),
+					mob -> mob instanceof Enemy && mob.isAlive())) {
+				mob.setTarget(player);
+			}
+		}
 
 		if (primary == null) {
 			return;

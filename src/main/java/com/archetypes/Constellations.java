@@ -13,8 +13,9 @@ public final class Constellations {
 	}
 
 	/**
-	 * Exactly 24 nodes — one per real Protector skill, no placeholders, and a
-	 * full build (root + one rim + centre) spends exactly the 15-point cap.
+	 * Exactly 25 nodes — one per real Protector skill, no placeholders. A full
+	 * lane (root + one rim + the whole centre incl. Taunt) is 16 against the
+	 * 15-point cap, so even the focused build gives up one node somewhere.
 	 * Bash at the tip, utility up the left rim, damage up the right, Quick
 	 * Recovery then Braced up the centre with the two capstones flanking the
 	 * crown. The top edge closes with a decorative line.
@@ -22,7 +23,7 @@ public final class Constellations {
 	public static final Constellation PROTECTOR_SHIELD = Constellation.of(
 			"#.......#",
 			"#.......#",
-			"#.......#",
+			"#...#...#",
 			"#..###..#",
 			".#..#..#.",
 			".#..#..#.",

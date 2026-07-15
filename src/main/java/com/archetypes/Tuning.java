@@ -52,6 +52,9 @@ public final class Tuning {
 	/** Braced: each blocked hit shaves this off the bash's remaining cooldown. */
 	public static final int BRACED_REFUND_TICKS = 20;
 
+	/** Taunt: bashing enrages every monster within this radius. */
+	public static final double TAUNT_RADIUS = 8.0;
+
 	/** Shield Rush lunge distance in blocks: 2, 4, 6 by rank. */
 	public static int rushBlocks(final int rank) {
 		return 2 * rank;
@@ -78,9 +81,6 @@ public final class Tuning {
 	public static int spikesThornsLevel(final int rank) {
 		return rank * 5;
 	}
-
-	/** Vanilla thorns costs the item 2 durability per proc; spikes match it. */
-	public static final int SPIKES_DURABILITY_COST = 2;
 
 	/** Reinforced Straps = Unbreaking I: half of durability hits are ignored. */
 	public static final float STRAPS_SKIP_CHANCE = 0.5F;
