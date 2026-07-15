@@ -23,6 +23,27 @@ public final class ModAttachments {
 					.syncWith(ByteBufCodecs.STRING_UTF8, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
 
+	/**
+	 * Total experience the archetype has banked, in vanilla XP points. Mirrors the
+	 * player's own XP gain rather than spending it — see "archetype XP is vanilla
+	 * XP" in notes/design.md — so archetype progress never competes with
+	 * enchanting.
+	 */
+	public static final AttachmentType<Integer> ARCHETYPE_XP = AttachmentRegistry.create(
+			Archetypes.id("archetype_xp"),
+			builder -> builder
+					.persistent(Codec.INT)
+					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
+	/** Points already committed to nodes. Earned minus this is what's spendable. */
+	public static final AttachmentType<Integer> SPENT_POINTS = AttachmentRegistry.create(
+			Archetypes.id("spent_points"),
+			builder -> builder
+					.persistent(Codec.INT)
+					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
 	private ModAttachments() {
 	}
 

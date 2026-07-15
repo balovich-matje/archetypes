@@ -1,5 +1,7 @@
 package com.archetypes;
 
+import com.archetypes.items.SkillTokenItem;
+
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -31,6 +33,9 @@ public final class ModItems {
 	/** Sword is -2.4 (1.6 swings/s off a 4.0 base); -3.2 gives 0.8/s, half. */
 	private static final float CLAYMORE_ATTACK_SPEED = -3.2F;
 
+	/** Creative-only: one skill point per use. See {@link SkillTokenItem}. */
+	public static final Item SKILL_TOKEN = registerSkillToken();
+
 	public static final Item WOODEN_CLAYMORE = claymore("wooden", ToolMaterial.WOOD);
 	public static final Item STONE_CLAYMORE = claymore("stone", ToolMaterial.STONE);
 	public static final Item COPPER_CLAYMORE = claymore("copper", ToolMaterial.COPPER);
@@ -48,6 +53,12 @@ public final class ModItems {
 		return DAMAGE_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + bonus) - 1.0F - bonus;
 	}
 
+	private static Item registerSkillToken() {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("skill_token"));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new SkillTokenItem(new Item.Properties().setId(key)));
+	}
+
 	private static Item claymore(final String prefix, final ToolMaterial material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_claymore"));
 		Item.Properties properties = material.applySwordProperties(
@@ -56,6 +67,9 @@ public final class ModItems {
 	}
 
 	public static void initialize() {
+		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
+				.register(output -> output.accept(SKILL_TOKEN));
+
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output -> {
 			output.accept(WOODEN_CLAYMORE);
 			output.accept(STONE_CLAYMORE);

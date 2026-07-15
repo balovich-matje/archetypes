@@ -409,6 +409,89 @@ Ranked by cost, having checked what each actually needs:
 numbers gives a whole playable path and proves the active-ability plumbing before any
 animation work.
 
+### Capstones
+
+**Omni-block** and **Ground Slam** are the tree's magnum opus — reachable only after
+enough points are spent, and mutually exclusive (the middle node picks one). Both want
+an effect that reads without a custom model: Omni-block gets a **glowing aura** around
+the player, which is also the honest signal to *other* players that backstabbing is
+off; Ground Slam gets a placeholder swing + existing sound until real animation work.
+
+### DECIDED: you cannot buy the whole tree
+
+There is a **point cap below the node count**, so a Protector is full damage, full
+utility, or a compromise — never all three. This is the actual balance lever (see the
+XP note below): the cost per point only paces *when* you spend, the cap decides *how
+much* you ever get.
+
+**Unreconciled**: the Protector constellation has **38 nodes**, but the skill list
+above is ~23 even counting every rank separately (Slam 3, Cooldown 3, Spikes 3, Rush
+4, Knockback 3, Wide 2, +1 each for Bash/Unbreaking/Reflection, +2 capstones). The
+shape was authored to look like a shield; the skills were designed as gameplay. One
+has to give — either pad the ranks or redraw the constellation.
+
+### The cooldown formula — the honest problem
+
+The intent: bash is spammable at sword cadence when undamaged-boosted, and Shield Slam
+trades speed for burst so DPS lands near a diamond sword either way. **Shield Slam is
+good design** — equal damage and cooldown multipliers make it exactly DPS-neutral. It
+converts sustained damage into burst, which is horizontal.
+
+**Pure cooldown reduction is the problem, and it is not a rounding error.** With
+cooldown `= base × (1 + slam) × (1 − reduction)`, the slam terms cancel and DPS scales
+as `1 / (1 − reduction)`:
+
+| Reduction | DPS multiplier |
+| --- | --- |
+| −33% | 1.49x |
+| −66% | 2.94x |
+| −100% | **infinite** |
+
+So it is vertical power at *any* value, and −100% is division by zero. Capping it only
+makes the creep smaller, not horizontal.
+
+**The fix is the baseline, not the cap.** Put base bash DPS *below* a sword — around
+0.5–0.6x — and let cooldown reduction climb toward **parity, never past it**. Then the
+bash is never the better damage button; its value is that **it is damage you deal while
+your shield is still up**, which no sword swing can claim. That is a real advantage
+that needs no DPS lead, and it keeps the whole tree inside the horizontal rule.
+
+Suggested: reduction −20/35/50%, base bash ~0.55x sword DPS → ~1.1x at full investment.
+
+### Reflection: keep the fantasy, tax the damage
+
+Auto-returning projectiles trivialises skeletons and ghasts. **Decided**: keep the
+mechanic — it is the best fantasy in the tree — and apply a **x0.5 damage modifier** to
+the reflected projectile. The mob still eats its own arrow; it just is not a free
+execute.
+
+## DECIDED: archetype XP is vanilla XP
+
+No separate XP bar. The archetype feeds off the player's own experience, and a skill
+point costs **160 XP — exactly levels 0→10** (verified against
+`Player.getXpNeededForNextLevel`: `7 + 2L` below 15, `37 + 5(L−15)` below 30,
+`112 + 9(L−30)` above).
+
+**XP is mirrored, not consumed** — earning XP feeds points in parallel, so archetype
+progress never competes with enchanting. Otherwise every point is an enchant you did
+not get, and the mod starts taxing vanilla instead of adding to it.
+
+**The cost is flat, so it means wildly different things over time:**
+
+| At level | One vanilla level | A point costs |
+| --- | --- | --- |
+| 0 | 7 XP | ~23 levels |
+| 10 | 27 XP | ~5.9 levels |
+| 30 | 112 XP | ~1.4 levels |
+| 50 | 292 XP | ~0.55 levels |
+
+That is a **40x swing**, and ~8.7 points by the time you first hit level 30. An XP farm
+buys the tree outright. This is fine *only because the cap exists* — farming changes
+how fast you reach the ceiling, not how high it is. **The cap is doing all the balance
+work here; the XP cost is only pacing.** If the cap ever goes, this breaks.
+
+Testing affordance: a creative-only **Skill Token** grants one point.
+
 Notes:
 
 - **Cooldown −100% is a bug in waiting.** Cap the reduction well under 100%.
