@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import net.minecraft.core.particles.BlockParticleOption;
+import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -101,7 +102,7 @@ public final class ShieldBash {
 				SoundSource.PLAYERS, 1.0F, groundSlam > 0 ? 1.0F : 0.65F - 0.05F * slam);
 
 		if (groundSlam > 0) {
-			slamDebris(level, player, slamRadius);
+			slamDebris(level, player, slamRadius, wide);
 		}
 
 		// One visible timer: swing floor + ability layer folded together (see
@@ -164,28 +165,62 @@ public final class ShieldBash {
 	}
 
 	/**
-	 * Debris of whatever the player stands on, thrown up in a ring and left to
-	 * fall — the slam reads as hitting the ground, not the air. Count 0 turns
-	 * sendParticles' offsets into a velocity, which is what gives the pieces
-	 * their upward pop.
+	 * The slam's visual, in three layers so the exact range is legible at a
+	 * glance. Count 0 turns sendParticles' offsets into a velocity.
+	 *
+	 * <ul>
+	 * <li><b>Edge ring</b> — evenly spaced dust in the ground block's own map
+	 * colour, sitting exactly on the radius. Dust takes a scale, so the ring's
+	 * particles literally grow with Wide Swings.</li>
+	 * <li><b>Shockwave</b> — clouds pushed outward from the player toward the
+	 * edge, sweeping the area the hit covers.</li>
+	 * <li><b>Debris</b> — pieces of the block underfoot popped upward and left
+	 * to fall; more and livelier per Wide rank.</li>
+	 * </ul>
 	 */
-	private static void slamDebris(final ServerLevel level, final ServerPlayer player, final double radius) {
+	private static void slamDebris(final ServerLevel level, final ServerPlayer player,
+			final double radius, final int wide) {
 		BlockState ground = player.getBlockStateOn();
 
 		if (ground.isAir()) {
 			return;
 		}
 
-		BlockParticleOption debris = new BlockParticleOption(ParticleTypes.BLOCK, ground);
+		double x = player.getX();
+		double y = player.getY();
+		double z = player.getZ();
 
-		for (int i = 0; i < 24; i++) {
+		// Edge ring: the range marker.
+		int dustColor = ground.getMapColor(level, player.getOnPos()).col;
+		DustParticleOptions dust = new DustParticleOptions(dustColor, 1.2F + 0.6F * wide);
+		int ringPoints = 20 + 10 * wide;
+
+		for (int i = 0; i < ringPoints; i++) {
+			double angle = i * (Math.PI * 2.0 / ringPoints);
+			level.sendParticles(dust,
+					x + Math.cos(angle) * radius, y + 0.15, z + Math.sin(angle) * radius,
+					0, 0.0, 0.05, 0.0, 1.0);
+		}
+
+		// Shockwave: clouds racing from the centre to the edge.
+		for (int i = 0; i < 12; i++) {
+			double angle = i * (Math.PI * 2.0 / 12);
+			double push = 0.12 * radius;
+			level.sendParticles(ParticleTypes.CLOUD,
+					x + Math.cos(angle) * 0.4, y + 0.1, z + Math.sin(angle) * 0.4,
+					0, Math.cos(angle) * push, 0.02, Math.sin(angle) * push, 1.0);
+		}
+
+		// Debris: the ground itself, thrown up and falling back.
+		BlockParticleOption debris = new BlockParticleOption(ParticleTypes.BLOCK, ground);
+		int pieces = 20 + 14 * wide;
+
+		for (int i = 0; i < pieces; i++) {
 			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
-			double distance = 0.6 + level.getRandom().nextDouble() * (radius - 0.4);
+			double distance = 0.6 + level.getRandom().nextDouble() * (radius - 0.5);
 			level.sendParticles(debris,
-					player.getX() + Math.cos(angle) * distance,
-					player.getY() + 0.1,
-					player.getZ() + Math.sin(angle) * distance,
-					0, 0.0, 0.25 + level.getRandom().nextDouble() * 0.25, 0.0, 1.0);
+					x + Math.cos(angle) * distance, y + 0.1, z + Math.sin(angle) * distance,
+					0, 0.0, 0.25 + level.getRandom().nextDouble() * (0.25 + 0.1 * wide), 0.0, 1.0);
 		}
 	}
 

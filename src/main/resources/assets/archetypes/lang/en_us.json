@@ -70,7 +70,7 @@
 	"node.archetypes.protector.rush.desc": "Hold block and press sprint to lunge forward — 2 blocks, +2 per rank, 6 at max. Short cooldown.",
 	"node.archetypes.protector.reflect.desc": "Projectiles you block fly back at their shooter for half their damage.",
 	"node.archetypes.protector.omni_block.desc": "Capstone: your raised shield blocks attacks from every direction, wreathed in a visible aura. Locks out Ground Slam.",
-	"node.archetypes.protector.ground_slam.desc": "Capstone: the bash becomes a ground slam, hitting everything around you at full damage. Wide Swings widens the ring. Locks out Bulwark.",
+	"node.archetypes.protector.ground_slam.desc": "Capstone: the bash becomes a ground slam, hitting everything within 2 blocks at full damage. Wide Swings adds a block per rank. Locks out Bulwark.",
 	"node.archetypes.protector.minor.desc": "Placeholder.",
 	"node.archetypes.protector.braced": "Braced",
 	"node.archetypes.protector.braced.desc": "Every hit your shield blocks shaves a second off the bash's cooldown.",

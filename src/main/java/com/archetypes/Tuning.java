@@ -60,12 +60,12 @@ public final class Tuning {
 	public static final double TAUNT_RADIUS = 8.0;
 
 	/**
-	 * Ground Slam: the bash hits everything within this ring — and each rank of
-	 * Wide Swings widens it by a block, so the cleave node feeds the capstone
-	 * instead of being made redundant by it.
+	 * Ground Slam: the bash hits everything within this ring — 2 blocks at
+	 * baseline, and each rank of Wide Swings adds one (4 at full rank), so the
+	 * cleave node feeds the capstone instead of being made redundant by it.
 	 */
 	public static double groundSlamRadius(final int wideRank) {
-		return 1.5 + wideRank;
+		return 2.0 + wideRank;
 	}
 
 	/** Reflection: a returned projectile keeps half its bite. */
