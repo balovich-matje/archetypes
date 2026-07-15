@@ -57,6 +57,15 @@ public final class ModAttachments {
 			Archetypes.id("bash_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
+	/**
+	 * True while a Bulwark holder is actively blocking. Synced to every client —
+	 * the aura is information for the mob circling behind you, not just for you.
+	 * Maintained by ProtectorTicker; absent means off.
+	 */
+	public static final AttachmentType<Boolean> BULWARK_ACTIVE = AttachmentRegistry.create(
+			Archetypes.id("bulwark_active"),
+			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
+
 	/** As BASH_READY_AT, for the rush's own short anti-exploit cooldown. */
 	public static final AttachmentType<Long> RUSH_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("rush_ready_at"),

@@ -3,7 +3,9 @@
 	"package": "com.archetypes.client.mixin",
 	"compatibilityLevel": "JAVA_25",
 	"client": [
-		"AbstractContainerScreenAccessor"
+		"AbstractContainerScreenAccessor",
+		"AvatarRendererMixin",
+		"LivingEntityRendererAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

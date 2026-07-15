@@ -212,8 +212,10 @@ public final class ShieldBash {
 		}
 
 		// Debris: the ground itself, thrown up and falling back.
+		// Interior sits at the edge count plus about half of it, so the area
+		// reads filled without drowning out the range ring.
 		BlockParticleOption debris = new BlockParticleOption(ParticleTypes.BLOCK, ground);
-		int pieces = 20 + 14 * wide;
+		int pieces = 30 + 18 * wide;
 
 		for (int i = 0; i < pieces; i++) {
 			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
