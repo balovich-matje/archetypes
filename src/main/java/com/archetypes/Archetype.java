@@ -10,6 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The three archetypes. Each has a start name (what you pick, minute one) and a
@@ -19,11 +20,11 @@ import net.minecraft.world.item.Items;
  */
 public enum Archetype {
 	/** Brawler -> Colossus. Melee, face to face. */
-	STRENGTH("strength", 0xFFE06C4A, () -> Items.IRON_SWORD),
+	STRENGTH("strength", 0xFFE06C4A, () -> Items.IRON_SWORD, true),
 	/** Cutpurse -> Nemesis. Stealth melee and ranged. */
-	AGILITY("agility", 0xFF7FCF9F, () -> Items.BOW),
+	AGILITY("agility", 0xFF7FCF9F, () -> Items.BOW, false),
 	/** Seeker -> Oracle. Casting. */
-	INTELLECT("intellect", 0xFF7A9CEE, () -> Items.ENCHANTED_BOOK);
+	INTELLECT("intellect", 0xFF7A9CEE, () -> Items.ENCHANTED_BOOK, false);
 
 	/** How many named tiers an archetype has: start and peak, for now. */
 	public static final int TIERS = 2;
@@ -36,11 +37,13 @@ public enum Archetype {
 	private final String id;
 	private final int color;
 	private final Supplier<Item> icon;
+	private final boolean hasPortraits;
 
-	Archetype(final String id, final int color, final Supplier<Item> icon) {
+	Archetype(final String id, final int color, final Supplier<Item> icon, final boolean hasPortraits) {
 		this.id = id;
 		this.color = color;
 		this.icon = icon;
+		this.hasPortraits = hasPortraits;
 	}
 
 	public String id() {
@@ -71,6 +74,18 @@ public enum Archetype {
 	 */
 	public Identifier treeBackground() {
 		return Archetypes.id("textures/gui/tree/" + this.id + ".png");
+	}
+
+	/**
+	 * Cut-out figure for a tier on the picker, or null where the art does not
+	 * exist yet and the caller should fall back to the item icon. Tracked as a
+	 * flag rather than probed at runtime: a missing texture would silently render
+	 * as the purple-and-black checkerboard.
+	 */
+	public @Nullable Identifier portrait(final int tier) {
+		return this.hasPortraits
+				? Archetypes.id("textures/gui/picker/" + this.id + "_" + tier + ".png")
+				: null;
 	}
 
 	public static Optional<Archetype> byId(final String id) {
