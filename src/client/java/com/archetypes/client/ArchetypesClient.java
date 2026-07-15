@@ -50,7 +50,8 @@ public class ArchetypesClient implements ClientModInitializer {
 			}
 		});
 
-		HudElementRegistry.attachElementAfter(VanillaHudElements.CROSSHAIR,
+		// After HOTBAR, so the countdown draws over the shield's slot.
+		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("bash_cooldown"), BashCooldownHud::render);
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {

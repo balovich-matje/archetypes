@@ -1,29 +1,58 @@
 package com.archetypes;
 
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
+
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
+import org.jspecify.annotations.Nullable;
 
 /**
  * What each node of the Protector constellation actually is.
  *
- * <p>Skills are laid onto the shield shape by grid coordinate: the bottom tip
- * is Shield Bash, the left rim is the utility path, the right rim the damage
- * path, the centre column is Shield Rush with the capstone cross above it. The
- * shape has more nodes than the design has skills — the surplus stays as
- * {@link Family#MINOR} placeholders, purchasable but inert, until the node
- * list settles.
+ * <p>Skills sit on the shield by grid coordinate: Shield Bash at the bottom
+ * tip, the utility path up the left rim, the damage path up the right, Shield
+ * Rush up the centre with the two mutually-exclusive capstones flanking its
+ * top. Every node is a real skill — the placeholder minors were scrapped and
+ * the constellation redrawn to exactly 23 nodes.
  *
  * <p>Multi-rank skills are chains of nodes; a family's rank is simply how many
  * of its nodes are owned, and the chain's adjacency enforces buy order.
  */
 public final class ProtectorNodes {
 	public enum Family {
-		BASH, SLAM, COOLDOWN, KNOCKBACK, WIDE, UNBREAKING, SPIKES, RUSH, REFLECT,
-		OMNI_BLOCK, GROUND_SLAM, MINOR;
+		BASH(() -> Items.SHIELD),
+		SLAM(() -> Items.MACE),
+		COOLDOWN(() -> Items.CLOCK),
+		KNOCKBACK(() -> Items.PISTON),
+		WIDE(() -> Items.IRON_AXE),
+		UNBREAKING(() -> Items.LEATHER),
+		SPIKES(() -> Items.POINTED_DRIPSTONE),
+		RUSH(() -> Items.WIND_CHARGE),
+		REFLECT(() -> Items.SPECTRAL_ARROW),
+		OMNI_BLOCK(() -> Items.SHULKER_SHELL),
+		GROUND_SLAM(() -> Items.ANVIL),
+		MINOR(null);
+
+		private final @Nullable Supplier<Item> icon;
+
+		Family(final @Nullable Supplier<Item> icon) {
+			this.icon = icon;
+		}
+
+		public @Nullable Item icon() {
+			return this.icon == null ? null : this.icon.get();
+		}
 
 		public String nameKey() {
-			return "node.archetypes.protector." + this.name().toLowerCase(java.util.Locale.ROOT);
+			return "node.archetypes.protector." + this.name().toLowerCase(Locale.ROOT);
+		}
+
+		public String descriptionKey() {
+			return this.nameKey() + ".desc";
 		}
 	}
 
@@ -43,33 +72,33 @@ public final class ProtectorNodes {
 		byCell.put(cell(4, 0), new Def(Family.BASH, 1));
 
 		// Left rim, bottom-up: the utility path.
-		byCell.put(cell(2, 2), new Def(Family.COOLDOWN, 1));
-		byCell.put(cell(1, 3), new Def(Family.COOLDOWN, 2));
-		byCell.put(cell(1, 4), new Def(Family.COOLDOWN, 3));
-		byCell.put(cell(0, 5), new Def(Family.KNOCKBACK, 1));
-		byCell.put(cell(0, 6), new Def(Family.KNOCKBACK, 2));
-		byCell.put(cell(0, 7), new Def(Family.KNOCKBACK, 3));
-		byCell.put(cell(0, 8), new Def(Family.UNBREAKING, 1));
-		byCell.put(cell(0, 9), new Def(Family.REFLECT, 1));
+		byCell.put(cell(3, 1), new Def(Family.COOLDOWN, 1));
+		byCell.put(cell(2, 2), new Def(Family.COOLDOWN, 2));
+		byCell.put(cell(1, 3), new Def(Family.COOLDOWN, 3));
+		byCell.put(cell(1, 4), new Def(Family.KNOCKBACK, 1));
+		byCell.put(cell(0, 5), new Def(Family.KNOCKBACK, 2));
+		byCell.put(cell(0, 6), new Def(Family.KNOCKBACK, 3));
+		byCell.put(cell(0, 7), new Def(Family.UNBREAKING, 1));
+		byCell.put(cell(0, 8), new Def(Family.REFLECT, 1));
 
 		// Right rim, bottom-up: the damage path.
-		byCell.put(cell(6, 2), new Def(Family.SLAM, 1));
-		byCell.put(cell(7, 3), new Def(Family.SLAM, 2));
-		byCell.put(cell(7, 4), new Def(Family.SLAM, 3));
-		byCell.put(cell(8, 5), new Def(Family.SPIKES, 1));
-		byCell.put(cell(8, 6), new Def(Family.SPIKES, 2));
-		byCell.put(cell(8, 7), new Def(Family.SPIKES, 3));
-		byCell.put(cell(8, 8), new Def(Family.WIDE, 1));
-		byCell.put(cell(8, 9), new Def(Family.WIDE, 2));
+		byCell.put(cell(5, 1), new Def(Family.SLAM, 1));
+		byCell.put(cell(6, 2), new Def(Family.SLAM, 2));
+		byCell.put(cell(7, 3), new Def(Family.SLAM, 3));
+		byCell.put(cell(7, 4), new Def(Family.SPIKES, 1));
+		byCell.put(cell(8, 5), new Def(Family.SPIKES, 2));
+		byCell.put(cell(8, 6), new Def(Family.SPIKES, 3));
+		byCell.put(cell(8, 7), new Def(Family.WIDE, 1));
+		byCell.put(cell(8, 8), new Def(Family.WIDE, 2));
 
-		// Centre column: Shield Rush, then the capstone cross — Omni-block left,
-		// Ground Slam right, mutually exclusive (enforced at purchase).
-		byCell.put(cell(4, 2), new Def(Family.RUSH, 1));
-		byCell.put(cell(4, 3), new Def(Family.RUSH, 2));
-		byCell.put(cell(4, 4), new Def(Family.RUSH, 3));
-		byCell.put(cell(4, 5), new Def(Family.RUSH, 4));
-		byCell.put(cell(3, 7), new Def(Family.OMNI_BLOCK, 1));
-		byCell.put(cell(5, 7), new Def(Family.GROUND_SLAM, 1));
+		// Centre column: Shield Rush, then the capstones flanking its top —
+		// Omni-block left, Ground Slam right, mutually exclusive at purchase.
+		byCell.put(cell(4, 1), new Def(Family.RUSH, 1));
+		byCell.put(cell(4, 2), new Def(Family.RUSH, 2));
+		byCell.put(cell(4, 3), new Def(Family.RUSH, 3));
+		byCell.put(cell(4, 4), new Def(Family.RUSH, 4));
+		byCell.put(cell(3, 5), new Def(Family.OMNI_BLOCK, 1));
+		byCell.put(cell(5, 5), new Def(Family.GROUND_SLAM, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.PROTECTOR_SHIELD.nodes();
@@ -80,6 +109,11 @@ public final class ProtectorNodes {
 			if (def != null) {
 				byIndex.put(i, def);
 			}
+		}
+
+		if (byIndex.size() != nodes.size()) {
+			throw new IllegalStateException("Protector shield has " + nodes.size()
+					+ " nodes but " + byIndex.size() + " skill mappings — the grid and the map drifted");
 		}
 
 		return byIndex;

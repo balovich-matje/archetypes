@@ -1,7 +1,6 @@
 package com.archetypes.client;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.archetypes.Archetype;
 import com.archetypes.BuyNodePayload;
@@ -22,8 +21,11 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -33,10 +35,9 @@ import org.jspecify.annotations.Nullable;
  * symbol drawn in nodes (shield, sword, mace, ...), rooted at the bottom and
  * growing upward.
  *
- * <p>Every node is a placeholder ("+1% damage", no effect); the shapes are what
- * is being judged. Class-fantasy background art comes later, per class, and is
- * deliberately unrelated to these layouts — the section headers are drawn faint
- * so they read as part of that art once it lands.
+ * <p>Nodes carry their skill's item icon and a wrapped description on hover;
+ * clicking a buyable one spends a point (server re-validates). The section
+ * headers are drawn faint so they sit into the backdrop art.
  */
 public class ArchetypeScreen extends Screen {
 	/** Fraction of the screen the window covers. */
@@ -289,7 +290,7 @@ public class ArchetypeScreen extends Screen {
 
 		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(), canvasWidth, canvasHeight);
 
-		List<Component> tooltip = null;
+		List<FormattedCharSequence> tooltip = null;
 
 		for (int section = 0; section < this.subTrees.size(); section++) {
 			SubTree tree = this.subTrees.get(section);
@@ -324,20 +325,28 @@ public class ArchetypeScreen extends Screen {
 				NodePurchases.Verdict verdict = this.minecraft.player == null
 						? NodePurchases.Verdict.NOT_CONNECTED
 						: NodePurchases.check(this.minecraft.player, tree, i);
+				boolean isOwned = owned.contains(i);
 
-				if (owned.contains(i)) {
-					// Yours: filled with the archetype's colour.
+				if (isOwned) {
+					// Yours: filled with the archetype's colour, icon on top.
 					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, this.archetype.color());
-				} else if (verdict != NodePurchases.Verdict.BUYABLE) {
-					// Out of reach: sunken and dark.
-					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x77000000);
+				} else if (hovered && verdict == NodePurchases.Verdict.BUYABLE) {
+					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
+				}
+
+				// The skill's icon, when the node is big enough to hold a sprite.
+				Item icon = ProtectorNodes.def(tree, i).family().icon();
+
+				if (icon != null && size >= 16) {
+					graphics.fakeItem(new ItemStack(icon), x + (size - 16) / 2, y + (size - 16) / 2);
+				}
+
+				// Unreachable nodes dim, icon included — drawn over it on purpose.
+				if (!isOwned && verdict != NodePurchases.Verdict.BUYABLE) {
+					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x99000000);
 				}
 
 				if (hovered) {
-					if (verdict == NodePurchases.Verdict.BUYABLE) {
-						graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
-					}
-
 					tooltip = this.nodeTooltip(tree, i, verdict);
 				}
 			}
@@ -356,7 +365,7 @@ public class ArchetypeScreen extends Screen {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 
 		if (tooltip != null) {
-			graphics.setTooltipForNextFrame(this.font, tooltip, Optional.empty(), mouseX, mouseY);
+			graphics.setTooltipForNextFrame(this.font, tooltip, mouseX, mouseY);
 		}
 	}
 
@@ -366,10 +375,12 @@ public class ArchetypeScreen extends Screen {
 			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE,
 			ProtectorNodes.Family.SPIKES, ProtectorNodes.Family.UNBREAKING);
 
-	private List<Component> nodeTooltip(final SubTree tree, final int index,
+	private static final int TOOLTIP_WIDTH = 180;
+
+	private List<FormattedCharSequence> nodeTooltip(final SubTree tree, final int index,
 			final NodePurchases.Verdict verdict) {
 		ProtectorNodes.Def def = ProtectorNodes.def(tree, index);
-		List<Component> lines = new java.util.ArrayList<>();
+		List<FormattedCharSequence> lines = new java.util.ArrayList<>();
 
 		Component name = Component.translatable(def.family().nameKey());
 
@@ -377,11 +388,23 @@ public class ArchetypeScreen extends Screen {
 			name = Component.translatable("node.archetypes.ranked", name, def.rank());
 		}
 
-		lines.add(name);
-		lines.add(Component.translatable(verdict.key()).withStyle(ChatFormatting.GRAY));
+		lines.add(name.copy().withStyle(ChatFormatting.WHITE).getVisualOrderText());
+
+		// The actual effect, wrapped — this is what the hover is for.
+		lines.addAll(this.font.split(
+				Component.translatable(def.family().descriptionKey()).withStyle(ChatFormatting.GRAY),
+				TOOLTIP_WIDTH));
+
+		ChatFormatting statusColor = switch (verdict) {
+			case OWNED -> ChatFormatting.GOLD;
+			case BUYABLE -> ChatFormatting.GREEN;
+			default -> ChatFormatting.RED;
+		};
+		lines.add(Component.translatable(verdict.key()).withStyle(statusColor).getVisualOrderText());
 
 		if (!LIVE_FAMILIES.contains(def.family())) {
-			lines.add(Component.translatable("node.archetypes.inert").withStyle(ChatFormatting.DARK_GRAY));
+			lines.add(Component.translatable("node.archetypes.inert")
+					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 		}
 
 		return lines;

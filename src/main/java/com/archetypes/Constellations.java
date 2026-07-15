@@ -12,13 +12,17 @@ public final class Constellations {
 	private Constellations() {
 	}
 
+	/**
+	 * Exactly 23 nodes — one per real Protector skill, no placeholders. Bash at
+	 * the tip, utility up the left rim, damage up the right, Shield Rush up the
+	 * centre with the two capstones flanking its top. The top edge is open; the
+	 * crown cross keeps the shield readable.
+	 */
 	public static final Constellation PROTECTOR_SHIELD = Constellation.of(
-			"#########",
 			"#.......#",
-			"#...#...#",
-			"#..###..#",
-			"#...#...#",
-			"#...#...#",
+			"#.......#",
+			"#.......#",
+			"#..#.#..#",
 			".#..#..#.",
 			".#..#..#.",
 			"..#.#.#..",

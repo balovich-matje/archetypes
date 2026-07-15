@@ -59,5 +59,17 @@
 	"node.archetypes.protector.reflect": "Reflection",
 	"node.archetypes.protector.omni_block": "Bulwark",
 	"node.archetypes.protector.ground_slam": "Ground Slam",
-	"node.archetypes.protector.minor": "+1% damage"
+	"node.archetypes.protector.minor": "+1% damage",
+	"node.archetypes.protector.bash.desc": "Active (default G): shove the nearest enemy in front of you for 5 damage. Needs a shield in either hand. 6s cooldown.",
+	"node.archetypes.protector.slam.desc": "The bash hits a third harder per rank — and its cooldown grows to match. Bigger hit, same damage over time.",
+	"node.archetypes.protector.cooldown.desc": "Each rank removes a third of the bash's 6-second cooldown. At full rank only the swing itself limits you.",
+	"node.archetypes.protector.knockback.desc": "The bash trades 12% damage per rank for a much stronger shove.",
+	"node.archetypes.protector.wide.desc": "The bash hits everyone in front of you — extra targets take half damage, then full damage at rank 2.",
+	"node.archetypes.protector.unbreaking.desc": "Shields you block with take half durability damage, like built-in Unbreaking.",
+	"node.archetypes.protector.spikes.desc": "Melee attackers hitting your raised shield are spiked — Thorns V, X, then XV by rank. Costs the shield a little durability.",
+	"node.archetypes.protector.rush.desc": "Hold block and press sprint to lunge forward — 2 blocks, up to 5 at max rank.",
+	"node.archetypes.protector.reflect.desc": "Projectiles you block fly back at their shooter for half their damage.",
+	"node.archetypes.protector.omni_block.desc": "Capstone: your raised shield blocks attacks from every direction. Locks out Ground Slam.",
+	"node.archetypes.protector.ground_slam.desc": "Capstone: the bash becomes a ground slam, damaging everything around you. Locks out Bulwark.",
+	"node.archetypes.protector.minor.desc": "Placeholder."
 }
