@@ -231,16 +231,38 @@ vignette + nodes, which is the only test that matters):
 - `strength` — best. Reads as genuine Minecraft: blocky torches, cobblestone, crossed
   swords, a shield. Detail left, empty right.
 - `agility` — good. Night rooftop, lantern, fog; detail at both edges, empty middle.
-- `intellect` — weakest. Reads as an isometric voxel diorama (MagicaVoxel-ish) rather
-  than Minecraft, and it is **center-bright** exactly where the middle constellation
-  sits. Regenerate: kill the isometric framing, push the light source off-center.
+- `intellect` — **v2, fixed.** The first pass read as an isometric voxel diorama and
+  was centre-bright exactly where the middle constellation sits. Two prompt changes
+  did it: *eye level perspective* instead of isometric framing, and the enchanting
+  table's glow pushed *far off to the left*. Now a dark library hall with shelves
+  receding on both sides and an empty floor through the middle.
 
 Confirmed by the composites: a vignette plus ~55% brightness leaves the nodes fully
 readable while the art still reads. Imperfect art is genuinely fine.
 
-**Open:** provenance. These are locally AI-generated. The mod is MIT and public, so
-decide before shipping whether generated art is acceptable for the project, or whether
-this is only concept work to hand to a pixel artist.
+**The generalisable lesson**: the failure was never "the model can't do Minecraft" —
+it does that well. It was *framing and light placement*. Name the camera and put the
+light where the nodes are not.
+
+## Licensing: no blocker, but a judgement call (checked 2026-07-15)
+
+The question "can we use AI art under MIT?" has the premise backwards. MIT is the
+licence *we grant*; it says nothing about inputs. What matters:
+
+- **Model licence**: Z-Image-Turbo is **Apache 2.0** — commercial use allowed, no
+  claim on outputs. This is the part that could have blocked us. It doesn't.
+- **Copyright in the output**: in the US, purely AI-generated work lacks human
+  authorship and is **not copyrightable**. So we may not own it — but that is *more*
+  permissive than MIT, not less: under MIT we were already letting anyone copy it.
+  Substantial hand-editing would create a copyrightable human contribution.
+- **Modrinth**: has **no AI policy**. The rules never mention AI; they only require
+  that we hold the rights to distribute, which Apache 2.0 gives us. There are open
+  community issues asking for disclosure tags, so this may change.
+
+**So the real risk is reception, not law.** Modding audiences skew toward hand-made
+pixel art, and Nexus already requires disclosure. Live option if that matters: use
+these as **concept art** for a pixel artist — sidesteps reception *and* yields
+ownable assets. Undecided; not to be settled by quietly shipping.
 
 ### Authoring: ASCII grids
 
