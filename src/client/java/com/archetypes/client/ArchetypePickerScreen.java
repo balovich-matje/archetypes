@@ -11,14 +11,13 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
-import net.minecraft.util.ARGB;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Pick your archetype. Each is a square frame split by a diagonal: the start
- * tier (what you are now) top-left, the peak tier (what you become) bottom-right.
- * Hovering a half highlights it.
+ * Pick your archetype. A vanilla-style window (see {@link VanillaUi}) holding
+ * three square frames, each split by a diagonal: the start tier top-left, the
+ * peak tier bottom-right. Hovering a frame highlights it.
  *
  * <p>Art is placeholder — the real thing is a rendered player figure per tier
  * (copper armor + iron sword for Brawler; netherite + trim + dual enchanted
@@ -27,7 +26,10 @@ import org.jspecify.annotations.Nullable;
 public class ArchetypePickerScreen extends Screen {
 	private static final int FRAME = 96;
 	private static final int GAP = 12;
-	private static final int TOTAL_WIDTH = FRAME * 3 + GAP * 2;
+	private static final int PAD = 10;
+	private static final int PANEL_WIDTH = FRAME * 3 + GAP * 2 + PAD * 2;
+	private static final int PANEL_HEIGHT = 180;
+	private static final int FRAMES_TOP = 36;
 
 	private final @Nullable Screen parent;
 
@@ -39,7 +41,7 @@ public class ArchetypePickerScreen extends Screen {
 	@Override
 	protected void init() {
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> this.onClose())
-				.bounds(this.width / 2 - 60, this.height - 32, 120, 20)
+				.bounds(this.panelLeft() + PANEL_WIDTH / 2 - 60, this.panelTop() + 152, 120, 20)
 				.build());
 	}
 
@@ -48,23 +50,23 @@ public class ArchetypePickerScreen extends Screen {
 		this.minecraft.gui.setScreen(this.parent);
 	}
 
-	private int framesLeft() {
-		return (this.width - TOTAL_WIDTH) / 2;
+	private int panelLeft() {
+		return (this.width - PANEL_WIDTH) / 2;
 	}
 
-	private int framesTop() {
-		return this.height / 2 - FRAME / 2 - 10;
+	private int panelTop() {
+		return (this.height - PANEL_HEIGHT) / 2;
 	}
 
 	private @Nullable Archetype frameAt(final double mouseX, final double mouseY) {
-		int top = this.framesTop();
+		int top = this.panelTop() + FRAMES_TOP;
 
 		if (mouseY < top || mouseY >= top + FRAME) {
 			return null;
 		}
 
 		for (int i = 0; i < Archetype.values().length; i++) {
-			int left = this.framesLeft() + i * (FRAME + GAP);
+			int left = this.panelLeft() + PAD + i * (FRAME + GAP);
 
 			if (mouseX >= left && mouseX < left + FRAME) {
 				return Archetype.values()[i];
@@ -107,29 +109,34 @@ public class ArchetypePickerScreen extends Screen {
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 
-		graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, 24, 0xFFFFFFFF, true);
+		int panelLeft = this.panelLeft();
+		int panelTop = this.panelTop();
+
+		VanillaUi.window(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT);
+
+		graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, panelTop + 8,
+				VanillaUi.LABEL, false);
 
 		Component prompt = Component.translatable("screen.archetypes.picker.prompt");
-		graphics.text(this.font, prompt, (this.width - this.font.width(prompt)) / 2, 38, 0xFFAAAAAA, false);
+		graphics.text(this.font, prompt, (this.width - this.font.width(prompt)) / 2, panelTop + 21,
+				VanillaUi.LABEL_FAINT, false);
 
-		int top = this.framesTop();
+		int top = panelTop + FRAMES_TOP;
 		Archetype hovered = this.frameAt(mouseX, mouseY);
 
 		for (int i = 0; i < Archetype.values().length; i++) {
 			Archetype archetype = Archetype.values()[i];
-			int left = this.framesLeft() + i * (FRAME + GAP);
+			int left = this.panelLeft() + PAD + i * (FRAME + GAP);
 			boolean isHovered = hovered == archetype;
 
-			// Frame.
-			graphics.fill(left, top, left + FRAME, top + FRAME, isHovered ? 0xDD1A1A1A : 0xAA000000);
-			int border = isHovered ? archetype.color() : ARGB.color(0x88, archetype.color());
-			graphics.fill(left, top, left + FRAME, top + 1, border);
-			graphics.fill(left, top + FRAME - 1, left + FRAME, top + FRAME, border);
-			graphics.fill(left, top, left + 1, top + FRAME, border);
-			graphics.fill(left + FRAME - 1, top, left + FRAME, top + FRAME, border);
+			VanillaUi.inset(graphics, left, top, FRAME, FRAME);
+
+			if (isHovered) {
+				graphics.fill(left + 1, top + 1, left + FRAME - 1, top + FRAME - 1, VanillaUi.INSET_BODY_HOVERED);
+			}
 
 			// The diagonal: start tier above it, peak tier below.
-			drawDiagonal(graphics, left, top, FRAME, ARGB.color(0x66, 0xFFFFFF));
+			drawDiagonal(graphics, left, top, FRAME, VanillaUi.LABEL_FAINT);
 
 			// Placeholder art: the archetype's icon in each half.
 			graphics.fakeItem(new ItemStack(archetype.icon()), left + 10, top + 26);
@@ -141,11 +148,11 @@ public class ArchetypePickerScreen extends Screen {
 					archetype.color(), true);
 		}
 
-		// Blurb for whatever is hovered, under the frames.
+		// Blurb for whatever is hovered, between the frames and the button.
 		if (hovered != null) {
 			Component blurb = hovered.blurb();
-			graphics.text(this.font, blurb, (this.width - this.font.width(blurb)) / 2, top + FRAME + 10,
-					0xFFEEEEEE, false);
+			graphics.text(this.font, blurb, (this.width - this.font.width(blurb)) / 2, top + FRAME + 8,
+					VanillaUi.LABEL, false);
 		}
 	}
 
@@ -155,7 +162,7 @@ public class ArchetypePickerScreen extends Screen {
 	 */
 	private static void drawDiagonal(final GuiGraphicsExtractor graphics, final int left, final int top,
 			final int size, final int color) {
-		for (int i = 0; i < size; i++) {
+		for (int i = 1; i < size - 1; i++) {
 			graphics.fill(left + i, top + size - 1 - i, left + i + 1, top + size - i, color);
 		}
 	}

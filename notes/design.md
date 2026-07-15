@@ -133,21 +133,66 @@ Names deliberately avoided (taken by the competition): Warrior, Rogue, Mage, Wiz
 Paladin, Priest, Druid, Archer, Death Knight, Berserker, Witcher, Forcemaster. Also
 Warden — that's a vanilla mob.
 
+## DECIDED: vanilla-look UI
+
+**Every screen should feel like it shipped with the game.** White borders + grey
+backgrounds — the classic container style, not the dark custom look of v0.1's picker.
+Proof this reads as native at scale: **Pufferfish's Skills** (3.3M downloads) draws its
+whole full-screen tree in exactly this style.
+
+Exact palette, sampled from 26.2's `inventory.png` (don't eyeball it, use these):
+
+| Element | Colors |
+| --- | --- |
+| Window | 1px `#000000` outline (corner pixel transparent = rounded), 2px `#FFFFFF` highlight top/left, body `#C6C6C6`, 2px `#555555` shadow bottom/right |
+| Inset / slot | 1px `#373737` top/left, body `#8B8B8B`, 1px `#FFFFFF` bottom/right (the window bevel inverted) |
+| Titles/labels | `0x404040` dark grey, **no shadow** (like "Crafting") |
+
+Colored text (archetype names) stays — vanilla uses colored text freely; it's the
+custom *chrome* that breaks the illusion.
+
 ## Picker screen (sketched)
 
 - Each archetype is a square frame split by a **diagonal**: start tier top-left, peak
-  tier bottom-right.
+  tier bottom-right. Frames are vanilla insets on a vanilla window (see palette).
 - Hovering a half **enlarges that art out of the frame** — e.g. Brawler is a player in
   copper armor with an iron sword; Colossus is the same player in netherite with a
   rare armor trim, dual-wielding enchanted netherite swords.
 - Needs 6 pieces of art (3 archetypes x 2 tiers). Placeholder for now.
 - Third-party/mod armor art would need permission from those authors first.
 
-## Archetype screen (later)
+## Skill trees
 
-WoW-style **active/passive skill tree** — an epic full-bleed background with the
-archetype's figure in it, nodes linked by arrows, ranks like `2/2`. This is the
-long-term target for the post-pick screen.
+**A mix of WoW talent trees + vanilla Minecraft UI + Skyrim's constellation design.**
+
+Each archetype gets one tree screen holding **three sub-trees**. Every sub-tree is a
+*constellation*: its connected nodes trace the outline of something representative of
+the class — like Skyrim's skill constellations. **Multiple starting points, all at the
+bottom, expanding upwards.**
+
+| Archetype | Sub-tree | Constellation shape |
+| --- | --- | --- |
+| Brawler | **Protector** | shield |
+| Brawler | **Slayer** | sword |
+| Brawler | **Crusher** | mace |
+| Cutpurse | **Marksman** | bow |
+| Cutpurse | **Assassin** | dagger |
+| Cutpurse | **Shadow** | cloak |
+| Seeker | **Fire Mage** | fire |
+| Seeker | **Wizard** | staff |
+| Seeker | **Healer** | heart / regeneration |
+
+- The constellation image is **background art, barely visible — outlines only**. Nodes
+  and connections draw over it. Image references can come from the Minecraft wiki /
+  Minecraft Dungeons wiki.
+- Node graph in the vanilla style: slot-inset squares joined by dark lines on the grey
+  inset canvas (the Pufferfish look), not glowing WoW arrows.
+- Ranks (`2/2`), actives vs passives, costs: all undecided — see open questions.
+- **Shipped placeholder first**: every node is "+1% damage" with no effect, so the
+  layout/feel can be judged in-game before any balance work.
+- **Next discussion: how to create the background art** (hand-pixelled? traced from
+  wiki renders? generated then cleaned up?). Whatever the method, output must be
+  faint grey outlines that don't fight the nodes.
 
 ## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its

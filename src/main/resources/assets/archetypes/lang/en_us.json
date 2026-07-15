@@ -19,5 +19,17 @@
 	"screen.archetypes.confirm.body": "You will start as a %s and can grow into a %s. This choice cannot be undone yet.",
 	"screen.archetypes.confirm.yes": "Choose",
 
-	"screen.archetypes.placeholder": "Your path to %s is being written. Skill tree coming soon."
+	"screen.archetypes.tree.title": "%s Skill Tree",
+	"screen.archetypes.tree.preview": "Preview — nodes do nothing yet",
+	"node.archetypes.placeholder": "+1% damage",
+
+	"subtree.archetypes.protector": "Protector",
+	"subtree.archetypes.slayer": "Slayer",
+	"subtree.archetypes.crusher": "Crusher",
+	"subtree.archetypes.marksman": "Marksman",
+	"subtree.archetypes.assassin": "Assassin",
+	"subtree.archetypes.shadow": "Shadow",
+	"subtree.archetypes.fire_mage": "Fire Mage",
+	"subtree.archetypes.wizard": "Wizard",
+	"subtree.archetypes.healer": "Healer"
 }
