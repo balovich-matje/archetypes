@@ -42,22 +42,22 @@ public final class ShieldBash {
 		}
 
 		ItemStack shield = player.getItemInHand(hand);
+		long now = player.level().getGameTime();
+		Long readyAt = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+				.getAttached(ModAttachments.BASH_READY_AT);
 
-		if (player.getCooldowns().isOnCooldown(shield)) {
+		if (player.getCooldowns().isOnCooldown(shield) || (readyAt != null && now < readyAt)) {
 			return;
 		}
 
 		int slam = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.SLAM);
-		int cooldown = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.COOLDOWN);
+		int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.COOLDOWN);
 		int knockback = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.KNOCKBACK);
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
 
 		float damage = Tuning.BASH_DAMAGE
 				* Tuning.slamMultiplier(slam)
 				* (1.0F - Tuning.KNOCKBACK_DAMAGE_PENALTY * knockback);
-		int cooldownTicks = Math.max(1, Math.round(Tuning.BASH_COOLDOWN_TICKS
-				* Tuning.slamMultiplier(slam)
-				* Tuning.cooldownMultiplier(cooldown)));
 		double shove = Tuning.BASH_KNOCKBACK + Tuning.KNOCKBACK_PER_RANK * knockback;
 
 		ServerLevel level = (ServerLevel) player.level();
@@ -87,7 +87,15 @@ public final class ShieldBash {
 		player.swing(hand, true);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 1.0F, 0.65F);
-		player.getCooldowns().addCooldown(shield, cooldownTicks);
+
+		// Two cooldown layers (see Tuning): the vanilla sweep for the swing, the
+		// synced timestamp for the ability countdown. Bashing also spends the
+		// melee attack timer, so it replaces a sword swing instead of stacking
+		// on top of one.
+		player.getCooldowns().addCooldown(shield, Tuning.BASH_SWING_TICKS);
+		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(
+				ModAttachments.BASH_READY_AT, now + Tuning.abilityCooldownTicks(slam, recovery));
+		player.resetAttackStrengthTicker();
 
 		if (primary == null) {
 			return;

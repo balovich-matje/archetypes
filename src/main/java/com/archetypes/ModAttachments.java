@@ -48,6 +48,15 @@ public final class ModAttachments {
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
 
+	/**
+	 * Game-time tick when the bash's ability layer comes off cooldown. Transient
+	 * on purpose — a relog clearing a few seconds of cooldown is harmless — but
+	 * synced, so the client can draw the countdown without a bespoke packet.
+	 */
+	public static final AttachmentType<Long> BASH_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("bash_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),

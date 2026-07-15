@@ -11,30 +11,35 @@ public final class Tuning {
 	/** Reach of the bash, blocks. */
 	public static final double BASH_RANGE = 3.0;
 	public static final float BASH_DAMAGE = 5.0F;
-	public static final int BASH_COOLDOWN_TICKS = 16;
 	/** Base horizontal shove. Placeholder push physics, see ShieldBash. */
 	public static final double BASH_KNOCKBACK = 0.5;
 
 	/**
-	 * Shield Slam: damage and cooldown climb together by a third per rank, so
-	 * DPS is unchanged — sustained damage traded for burst, not power.
+	 * The cooldown is two layers, deliberately separate:
+	 *
+	 * <p><b>Swing</b> — the vanilla item cooldown (grey sweep), a fixed cadence
+	 * floor the bash can never beat. Bashing also resets the melee attack timer,
+	 * so a bash always costs a sword swing — otherwise a fast bash weaves between
+	 * sword hits as free extra DPS.
+	 *
+	 * <p><b>Ability</b> — 6 seconds on top, shown as a numeric countdown. Quick
+	 * Recovery removes −33/66/100% of <em>this layer only</em>, so even at −100%
+	 * the swing cadence holds: spammable, never additive. Shield Slam adds its
+	 * +33/66/100% here too — full Slam against full Recovery lands back on 6s,
+	 * a bigger hit at the original rhythm.
 	 */
+	public static final int BASH_SWING_TICKS = 16;
+	public static final int BASH_ABILITY_TICKS = 120;
+
+	/** Shield Slam: damage climbs a third per rank; the ability layer matches. */
 	public static float slamMultiplier(final int rank) {
 		return 1.0F + rank / 3.0F;
 	}
 
-	/**
-	 * Cooldown reduction −20/35/50%. Deliberately short of 100%: DPS scales as
-	 * 1/(1−r), so full reduction is division by zero and anything close is a
-	 * spam button. At −50% over the 0.55x baseline the bash tops out ~1.1x.
-	 */
-	public static float cooldownMultiplier(final int rank) {
-		return switch (rank) {
-			case 1 -> 0.80F;
-			case 2 -> 0.65F;
-			case 3 -> 0.50F;
-			default -> 1.0F;
-		};
+	/** Ability-layer ticks after Slam and Quick Recovery, floored at zero. */
+	public static int abilityCooldownTicks(final int slamRank, final int recoveryRank) {
+		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 3.0F;
+		return Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
 	}
 
 	/** Knockback trade: each rank sheds 12% damage for ~KB-enchant-level shove. */

@@ -464,14 +464,21 @@ as `1 / (1 − reduction)`:
 So it is vertical power at *any* value, and −100% is division by zero. Capping it only
 makes the creep smaller, not horizontal.
 
-**The fix is the baseline, not the cap.** Put base bash DPS *below* a sword — around
-0.5–0.6x — and let cooldown reduction climb toward **parity, never past it**. Then the
-bash is never the better damage button; its value is that **it is damage you deal while
-your shield is still up**, which no sword swing can claim. That is a real advantage
-that needs no DPS lead, and it keeps the whole tree inside the horizontal rule.
+**DECIDED — the two-layer model (the original design, which was right).** The 1/(1−r)
+blow-up above only afflicts a single multiplicative cooldown — which is what the first
+implementation shipped. The intended shape never had the problem:
 
-**DECIDED**: reduction −20/35/50%, base bash ~0.55x sword DPS → ~1.1x at full
-investment. The bash never leads on damage; it leads on being usable behind a shield.
+- **Swing layer**: the vanilla item cooldown (grey sweep), 16 ticks, a cadence floor
+  the bash can never beat. Bashing also **resets the melee attack timer**, so a bash
+  always costs a sword swing — without that, a fast bash weaves between sword hits as
+  free additive DPS, which playtesting immediately found as "very spammable".
+- **Ability layer**: +6s on top, drawn as a numeric countdown under the crosshair
+  (synced timestamp attachment, no bespoke packet). Quick Recovery strips −33/66/100%
+  of *this layer only*, so −100% is safe by construction: spammable at sword cadence,
+  0.55x sword damage, shield still up. Shield Slam adds its +33/66/100% here too —
+  full Slam against full Recovery lands back on 6s: a bigger hit, original rhythm.
+- Baseline (no nodes): one 5.0-damage shove every ~6.8s — periodic crowd control,
+  not a damage rotation. Exactly the Protector fantasy.
 
 ### Reflection: keep the fantasy, tax the damage
 
