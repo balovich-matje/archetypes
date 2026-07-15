@@ -14,6 +14,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -48,13 +49,19 @@ public class ArchetypeScreen extends Screen {
 	private static final int BUTTON_WIDTH = 96;
 	private static final int BUTTON_HEIGHT = 20;
 
+	/** Native size of the backdrop textures; they are scaled to the canvas. */
+	private static final int ART_WIDTH = 1024;
+	private static final int ART_HEIGHT = 576;
+
 	private final @Nullable Screen parent;
+	private final Archetype archetype;
 	private final List<SubTree> subTrees;
 
 	public ArchetypeScreen(final @Nullable Screen parent, final Archetype archetype) {
 		super(Component.translatable("screen.archetypes.tree.title",
 				archetype.tierName(0).copy().withStyle(style -> style.withColor(archetype.color() & 0xFFFFFF))));
 		this.parent = parent;
+		this.archetype = archetype;
 		this.subTrees = SubTree.of(archetype);
 	}
 
@@ -167,8 +174,15 @@ public class ArchetypeScreen extends Screen {
 		graphics.text(this.font, preview, panelLeft + this.panelWidth() - PAD - this.font.width(preview),
 				panelTop + 8, VanillaUi.LABEL_FAINT, false);
 
-		VanillaUi.inset(graphics, this.canvasLeft(), this.canvasTop(),
-				this.canvasWidth(), this.canvasBottom() - this.canvasTop());
+		int canvasHeight = this.canvasBottom() - this.canvasTop();
+
+		// The backdrop fills the canvas; its dim and vignette are baked in, so the
+		// nodes go straight on top without any per-frame gradient work.
+		graphics.blit(RenderPipelines.GUI_TEXTURED, this.archetype.treeBackground(),
+				this.canvasLeft(), this.canvasTop(), 0.0F, 0.0F,
+				this.canvasWidth(), canvasHeight, ART_WIDTH, ART_HEIGHT, ART_WIDTH, ART_HEIGHT);
+		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(),
+				this.canvasWidth(), canvasHeight);
 
 		boolean tooltip = false;
 
@@ -188,7 +202,7 @@ public class ArchetypeScreen extends Screen {
 						this.nodeY(shape, from, spacing) + NODE / 2,
 						this.nodeX(section, shape, to, spacing) + NODE / 2,
 						this.nodeY(shape, to, spacing) + NODE / 2,
-						VanillaUi.INSET_DARK);
+						VanillaUi.INSET_BODY);
 			}
 
 			for (Constellation.Node node : shape.nodes()) {
@@ -224,8 +238,8 @@ public class ArchetypeScreen extends Screen {
 
 	/**
 	 * The sub-tree's name across the top of its section: bold and 1.5x, in a
-	 * washed-out tone so it sits back into the canvas rather than competing with
-	 * the nodes — and so it reads as part of the background art once that exists.
+	 * washed-out tone so it sits into the backdrop art rather than competing with
+	 * the nodes.
 	 */
 	private void sectionTitle(final GuiGraphicsExtractor graphics, final SubTree tree, final int section) {
 		Component label = tree.displayName().copy().withStyle(ChatFormatting.BOLD);

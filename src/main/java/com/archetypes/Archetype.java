@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 import com.mojang.serialization.Codec;
 
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
@@ -62,6 +63,14 @@ public enum Archetype {
 	/** One-line pitch shown on the picker. */
 	public Component blurb() {
 		return Component.translatable("archetype." + Archetypes.MOD_ID + "." + this.id + ".blurb");
+	}
+
+	/**
+	 * Class-fantasy backdrop for the skill tree. The dim and vignette are baked
+	 * into the texture, so it can be drawn flat with the nodes straight on top.
+	 */
+	public Identifier treeBackground() {
+		return Archetypes.id("textures/gui/tree/" + this.id + ".png");
 	}
 
 	public static Optional<Archetype> byId(final String id) {

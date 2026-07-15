@@ -44,6 +44,12 @@ public final class VanillaUi {
 	public static void inset(final GuiGraphicsExtractor graphics, final int x, final int y,
 			final int w, final int h) {
 		graphics.fill(x, y, x + w, y + h, INSET_BODY);
+		insetBorder(graphics, x, y, w, h);
+	}
+
+	/** The inset bevel alone — for sinking artwork into the page without hiding it. */
+	public static void insetBorder(final GuiGraphicsExtractor graphics, final int x, final int y,
+			final int w, final int h) {
 		graphics.fill(x, y, x + w - 1, y + 1, INSET_DARK);
 		graphics.fill(x, y + 1, x + 1, y + h - 1, INSET_DARK);
 		graphics.fill(x + 1, y + h - 1, x + w, y + h, HIGHLIGHT);
