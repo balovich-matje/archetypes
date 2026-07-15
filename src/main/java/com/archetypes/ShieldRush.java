@@ -41,7 +41,11 @@ public final class ShieldRush {
 		player.hurtMarked = true;
 		target.setAttached(ModAttachments.RUSH_READY_AT, now + Tuning.RUSH_COOLDOWN_TICKS);
 
-		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.8F, 1.4F);
+		ServerLevel level = (ServerLevel) player.level();
+		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.WIND_CHARGE_THROW, SoundSource.PLAYERS, 1.0F, 0.9F);
+		level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+				player.getX(), player.getY() + 0.1, player.getZ(),
+				8, 0.3, 0.05, 0.3, 0.02);
 	}
 }

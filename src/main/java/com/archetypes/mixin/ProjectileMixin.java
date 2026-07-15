@@ -5,7 +5,11 @@ import com.archetypes.ProtectorNodes;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityReference;
 import net.minecraft.world.entity.LivingEntity;
@@ -55,6 +59,12 @@ public abstract class ProjectileMixin {
 		double speed = Math.max(self.getDeltaMovement().length(), 0.75);
 		self.setDeltaMovement(aim.scale(speed));
 		self.setOwner(player);
+
+		ServerLevel level = (ServerLevel) self.level();
+		level.sendParticles(ParticleTypes.CRIT, self.getX(), self.getY(), self.getZ(),
+				6, 0.1, 0.1, 0.1, 0.05);
+		level.playSound(null, self.getX(), self.getY(), self.getZ(),
+				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.8F, 1.5F);
 
 		if (self instanceof AbstractArrow arrow) {
 			arrow.setBaseDamage(((AbstractArrowAccessor) arrow).archetypes$getBaseDamage()

@@ -53,6 +53,10 @@ public abstract class LivingEntityMixin {
 			if (readyAt != null && readyAt > now) {
 				target.setAttached(ModAttachments.BASH_READY_AT,
 						Math.max(now, readyAt - Tuning.BRACED_REFUND_TICKS));
+				((ServerLevel) player.level()).sendParticles(
+						net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
+						player.getX(), player.getY() + 1.1, player.getZ(),
+						2, 0.25, 0.25, 0.25, 0.0);
 			}
 		}
 
@@ -75,6 +79,10 @@ public abstract class LivingEntityMixin {
 		int damage = 1 + player.getRandom().nextInt(4) + Math.max(0, level - 10);
 		attacker.hurtServer((ServerLevel) player.level(),
 				player.damageSources().thorns(player), damage);
+		((ServerLevel) player.level()).playSound(null,
+				attacker.getX(), attacker.getY(), attacker.getZ(),
+				net.minecraft.sounds.SoundEvents.THORNS_HIT,
+				net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
 	}
 
 	/**

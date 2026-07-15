@@ -43,9 +43,13 @@ public final class Tuning {
 		return 1.0F + rank / 3.0F;
 	}
 
-	/** Total cooldown ticks: swing floor + the modified ability layer. */
+	/**
+	 * Total cooldown ticks: swing floor + the modified ability layer. Recovery
+	 * shaves a fifth per rank (nerfed from a quarter), so even at full rank
+	 * ~1.2s of the ability layer remains on top of the swing.
+	 */
 	public static int bashCooldownTicks(final int slamRank, final int recoveryRank) {
-		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 4.0F;
+		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 5.0F;
 		return BASH_SWING_TICKS + Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
 	}
 
@@ -55,8 +59,14 @@ public final class Tuning {
 	/** Taunt: bashing enrages every monster within this radius. */
 	public static final double TAUNT_RADIUS = 8.0;
 
-	/** Ground Slam: the bash hits everything within this radius instead. */
-	public static final double GROUND_SLAM_RADIUS = 1.5;
+	/**
+	 * Ground Slam: the bash hits everything within this ring — and each rank of
+	 * Wide Swings widens it by a block, so the cleave node feeds the capstone
+	 * instead of being made redundant by it.
+	 */
+	public static double groundSlamRadius(final int wideRank) {
+		return 1.5 + wideRank;
+	}
 
 	/** Reflection: a returned projectile keeps half its bite. */
 	public static final double REFLECT_DAMAGE_FACTOR = 0.5;

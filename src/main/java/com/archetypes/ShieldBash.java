@@ -3,6 +3,7 @@ package com.archetypes;
 import java.util.List;
 import java.util.Set;
 
+import net.minecraft.core.particles.BlockParticleOption;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -14,6 +15,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -70,9 +72,10 @@ public final class ShieldBash {
 
 		// Ground Slam turns the shove into a ring around the player; otherwise
 		// candidates are in front only — a bash is a shove, not a spin.
+		double slamRadius = Tuning.groundSlamRadius(wide);
 		List<LivingEntity> targets = groundSlam > 0
 				? level.getEntitiesOfClass(LivingEntity.class,
-						player.getBoundingBox().inflate(Tuning.GROUND_SLAM_RADIUS, 1.0, Tuning.GROUND_SLAM_RADIUS),
+						player.getBoundingBox().inflate(slamRadius, 1.0, slamRadius),
 						entity -> entity != player && entity.isAlive() && !entity.isSpectator())
 				: level.getEntitiesOfClass(LivingEntity.class, reach,
 						entity -> entity != player && entity.isAlive() && !entity.isSpectator()
@@ -92,9 +95,14 @@ public final class ShieldBash {
 
 		// The swing happens whether or not it lands — whiffing is feedback too.
 		player.swing(hand, true);
+		// Slam ranks deepen the thunk; Ground Slam gets the mace's crash.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				groundSlam > 0 ? SoundEvents.MACE_SMASH_GROUND : SoundEvents.SHIELD_BLOCK.value(),
-				SoundSource.PLAYERS, 1.0F, groundSlam > 0 ? 1.0F : 0.65F);
+				SoundSource.PLAYERS, 1.0F, groundSlam > 0 ? 1.0F : 0.65F - 0.05F * slam);
+
+		if (groundSlam > 0) {
+			slamDebris(level, player, slamRadius);
+		}
 
 		// One visible timer: swing floor + ability layer folded together (see
 		// Tuning) — no grey sweep. Bashing also spends the melee attack timer,
@@ -111,10 +119,20 @@ public final class ShieldBash {
 					player.getBoundingBox().inflate(Tuning.TAUNT_RADIUS),
 					mob -> mob instanceof Enemy && mob.isAlive())) {
 				mob.setTarget(player);
+				level.sendParticles(ParticleTypes.ANGRY_VILLAGER,
+						mob.getX(), mob.getY() + mob.getBbHeight() + 0.3, mob.getZ(),
+						1, 0.1, 0.1, 0.1, 0.0);
 			}
 		}
 
 		if (primary == null) {
+			// Whiffed: a sweep in front is the feedback that the swing happened.
+			if (groundSlam <= 0) {
+				Vec3 front = player.position().add(look.x * 1.5, player.getBbHeight() * 0.5, look.z * 1.5);
+				level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z,
+						1, 0.0, 0.0, 0.0, 0.0);
+			}
+
 			return;
 		}
 
@@ -142,6 +160,32 @@ public final class ShieldBash {
 			level.sendParticles(ParticleTypes.SWEEP_ATTACK,
 					target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(),
 					1, 0.0, 0.0, 0.0, 0.0);
+		}
+	}
+
+	/**
+	 * Debris of whatever the player stands on, thrown up in a ring and left to
+	 * fall — the slam reads as hitting the ground, not the air. Count 0 turns
+	 * sendParticles' offsets into a velocity, which is what gives the pieces
+	 * their upward pop.
+	 */
+	private static void slamDebris(final ServerLevel level, final ServerPlayer player, final double radius) {
+		BlockState ground = player.getBlockStateOn();
+
+		if (ground.isAir()) {
+			return;
+		}
+
+		BlockParticleOption debris = new BlockParticleOption(ParticleTypes.BLOCK, ground);
+
+		for (int i = 0; i < 24; i++) {
+			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
+			double distance = 0.6 + level.getRandom().nextDouble() * (radius - 0.4);
+			level.sendParticles(debris,
+					player.getX() + Math.cos(angle) * distance,
+					player.getY() + 0.1,
+					player.getZ() + Math.sin(angle) * distance,
+					0, 0.0, 0.25 + level.getRandom().nextDouble() * 0.25, 0.0, 1.0);
 		}
 	}
 
