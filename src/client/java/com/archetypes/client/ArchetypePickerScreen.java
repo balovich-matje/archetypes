@@ -21,25 +21,37 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Pick your archetype. A vanilla-style window (see {@link VanillaUi}) holding
- * three square frames, each split by a diagonal: the start tier top-left, the
- * peak tier bottom-right. Hovering a half grows that tier's figure out of its
- * frame.
+ * three frames, each split down the middle: the start tier left, the peak tier
+ * right. Hovering a half grows that tier's figure out of its frame and slides it
+ * away from the divider.
  *
  * <p>Figures are cut-out portraits where the art exists ({@link
  * Archetype#portrait}); the others still fall back to the archetype's item icon.
  */
 public class ArchetypePickerScreen extends Screen {
-	private static final int FRAME = 96;
+	/**
+	 * Frames are landscape, not square, and that is load-bearing. Two figures sit
+	 * side by side, so each only gets half the frame's width — with a square frame
+	 * the wider figure hits the divider at ~60% of the frame's height and cannot
+	 * grow further without spilling. Widening the frame is what buys the height.
+	 */
+	private static final int FRAME_W = 112;
+	private static final int FRAME_H = 96;
 	private static final int GAP = 12;
 	private static final int PAD = 10;
-	private static final int PANEL_WIDTH = FRAME * 3 + GAP * 2 + PAD * 2;
+	private static final int PANEL_WIDTH = FRAME_W * 3 + GAP * 2 + PAD * 2;
 	private static final int PANEL_HEIGHT = 184;
 	private static final int FRAMES_TOP = 36;
 	private static final int BUTTON_TOP = 156;
 
 	private static final int TIERS = 2;
-	/** Portrait box at rest, and how far a hovered one grows past its frame. */
-	private static final int PORTRAIT = 46;
+	/**
+	 * Height of a figure at rest, ~73% of the frame. The textures are cropped to
+	 * the character, so this is the figure's real height rather than a box it
+	 * floats inside. The widest figure (aspect 0.77) comes to 54px across, which
+	 * clears the divider inside a 56px half.
+	 */
+	private static final int PORTRAIT = 70;
 	private static final float HOVER_SCALE = 1.25F;
 	/** Quick to bloom, quicker to settle back. */
 	private static final float GROW_MILLIS = 400.0F;
@@ -79,7 +91,7 @@ public class ArchetypePickerScreen extends Screen {
 	}
 
 	private int frameLeft(final int index) {
-		return this.panelLeft() + PAD + index * (FRAME + GAP);
+		return this.panelLeft() + PAD + index * (FRAME_W + GAP);
 	}
 
 	private int framesTop() {
@@ -89,14 +101,14 @@ public class ArchetypePickerScreen extends Screen {
 	private @Nullable Archetype frameAt(final double mouseX, final double mouseY) {
 		int top = this.framesTop();
 
-		if (mouseY < top || mouseY >= top + FRAME) {
+		if (mouseY < top || mouseY >= top + FRAME_H) {
 			return null;
 		}
 
 		for (int i = 0; i < Archetype.values().length; i++) {
 			int left = this.frameLeft(i);
 
-			if (mouseX >= left && mouseX < left + FRAME) {
+			if (mouseX >= left && mouseX < left + FRAME_W) {
 				return Archetype.values()[i];
 			}
 		}
@@ -116,16 +128,16 @@ public class ArchetypePickerScreen extends Screen {
 			return -1;
 		}
 
-		return mouseX - this.frameLeft(frame.ordinal()) < FRAME / 2.0 ? 0 : 1;
+		return mouseX - this.frameLeft(frame.ordinal()) < FRAME_W / 2.0 ? 0 : 1;
 	}
 
 	/** Centre of a tier's half, before any hover push. */
 	private int halfCenterX(final int index, final int tier) {
-		return this.frameLeft(index) + (tier == 0 ? FRAME / 4 : FRAME * 3 / 4);
+		return this.frameLeft(index) + (tier == 0 ? FRAME_W / 4 : FRAME_W * 3 / 4);
 	}
 
 	private int halfCenterY() {
-		return this.framesTop() + FRAME / 2;
+		return this.framesTop() + FRAME_H / 2;
 	}
 
 	@Override
@@ -209,14 +221,14 @@ public class ArchetypePickerScreen extends Screen {
 			Archetype archetype = Archetype.values()[i];
 			int left = this.frameLeft(i);
 
-			VanillaUi.inset(graphics, left, top, FRAME, FRAME);
+			VanillaUi.inset(graphics, left, top, FRAME_W, FRAME_H);
 
 			if (hovered == archetype) {
-				graphics.fill(left + 1, top + 1, left + FRAME - 1, top + FRAME - 1, VanillaUi.INSET_BODY_HOVERED);
+				graphics.fill(left + 1, top + 1, left + FRAME_W - 1, top + FRAME_H - 1, VanillaUi.INSET_BODY_HOVERED);
 			}
 
 			// The split: start tier left of it, peak tier right.
-			graphics.fill(left + FRAME / 2, top + 1, left + FRAME / 2 + 1, top + FRAME - 1,
+			graphics.fill(left + FRAME_W / 2, top + 1, left + FRAME_W / 2 + 1, top + FRAME_H - 1,
 					VanillaUi.LABEL_FAINT);
 
 			for (int t = 0; t < TIERS; t++) {
@@ -227,7 +239,7 @@ public class ArchetypePickerScreen extends Screen {
 
 			graphics.text(this.font, archetype.tierName(0), left + 6, top + 6, archetype.color(), true);
 			Component peak = archetype.tierName(1);
-			graphics.text(this.font, peak, left + FRAME - 6 - this.font.width(peak), top + FRAME - 16,
+			graphics.text(this.font, peak, left + FRAME_W - 6 - this.font.width(peak), top + FRAME_H - 16,
 					archetype.color(), true);
 		}
 
@@ -243,7 +255,7 @@ public class ArchetypePickerScreen extends Screen {
 		// Blurb for whatever is hovered, between the frames and the button —
 		// word-wrapped to the panel, each line centered.
 		if (hovered != null) {
-			int y = top + FRAME + 5;
+			int y = top + FRAME_H + 5;
 
 			for (FormattedCharSequence line : this.font.split(hovered.blurb(), PANEL_WIDTH - PAD * 2)) {
 				graphics.text(this.font, line, (this.width - this.font.width(line)) / 2, y,
