@@ -1,8 +1,10 @@
 package com.archetypes.mixin;
 
 import com.archetypes.ModAttachments;
+import com.archetypes.ModItems;
 import com.archetypes.NodePurchases;
 import com.archetypes.ProtectorNodes;
+import com.archetypes.SlayerNodes;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
@@ -83,6 +85,87 @@ public abstract class LivingEntityMixin {
 				attacker.getX(), attacker.getY(), attacker.getZ(),
 				net.minecraft.sounds.SoundEvents.THORNS_HIT,
 				net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+	}
+
+	/**
+	 * Lunge: sword swings hop the player a short step along the look vector —
+	 * including upward. Hooked on the swing itself so whiffs lunge too (it is
+	 * a gap-closer, not a hit reward). Suppressed during a bladestorm, whose
+	 * volleys also swing.
+	 */
+	@Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Z)V", at = @At("HEAD"))
+	private void archetypes$lunge(final net.minecraft.world.InteractionHand hand,
+			final boolean broadcast, final CallbackInfo ci) {
+		if (!((Object) this instanceof ServerPlayer player)
+				|| hand != net.minecraft.world.InteractionHand.MAIN_HAND
+				|| !ModItems.isSword(player.getMainHandItem())) {
+			return;
+		}
+
+		var target = (AttachmentTarget) player;
+
+		if (target.getAttached(ModAttachments.BLADESTORM_END) != null) {
+			return;
+		}
+
+		int rank = SlayerNodes.rank(SubTree.SLAYER,
+				NodePurchases.owned(player, SubTree.SLAYER), SlayerNodes.Family.LUNGE);
+
+		if (rank <= 0) {
+			return;
+		}
+
+		long now = player.level().getGameTime();
+		Long readyAt = target.getAttached(ModAttachments.LUNGE_READY_AT);
+
+		if (readyAt != null && now < readyAt) {
+			return;
+		}
+
+		double impulse = rank * Tuning.LUNGE_BLOCKS_PER_RANK * Tuning.RUSH_IMPULSE_PER_BLOCK;
+		var look = player.getLookAngle();
+		player.setDeltaMovement(player.getDeltaMovement().add(look.scale(impulse)));
+		player.hurtMarked = true;
+		target.setAttached(ModAttachments.LUNGE_READY_AT, now + Tuning.LUNGE_COOLDOWN_TICKS);
+		((ServerLevel) player.level()).sendParticles(
+				net.minecraft.core.particles.ParticleTypes.CLOUD,
+				player.getX(), player.getY() + 0.1, player.getZ(), 3, 0.15, 0.02, 0.15, 0.01);
+	}
+
+	/**
+	 * The claymore's damage shaping, all in one place on the victim's intake:
+	 * Heavy Blows' flat bonus, First Blood's opener bonus against the unhurt,
+	 * and the Executioner's finisher on anything already below the threshold.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$claymoreDamage(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!(source.getEntity() instanceof ServerPlayer player)
+				|| source.getDirectEntity() != player
+				|| !ModItems.isClaymore(player.getMainHandItem())) {
+			return amount;
+		}
+
+		LivingEntity victim = (LivingEntity) (Object) this;
+		var owned = NodePurchases.owned(player, SubTree.SLAYER);
+		float result = amount;
+
+		int heavy = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.HEAVY);
+		result *= 1.0F + Tuning.HEAVY_PER_RANK * heavy;
+
+		int firstBlood = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.FIRSTBLOOD);
+
+		if (firstBlood > 0 && victim.getHealth() >= victim.getMaxHealth() - 0.01F) {
+			result *= 1.0F + Tuning.FIRSTBLOOD_PER_RANK * firstBlood;
+		}
+
+		if (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.EXECUTIONER) > 0
+				&& victim.getHealth() <= victim.getMaxHealth() * Tuning.EXECUTE_THRESHOLD) {
+			result = Math.max(result, victim.getHealth() + 100.0F);
+		}
+
+		return result;
 	}
 
 	/**

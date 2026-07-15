@@ -30,22 +30,22 @@ MATERIALS = ["wooden", "stone", "copper", "iron", "golden", "diamond", "netherit
 # The claymore differences: a blade one pixel thicker, and a crossguard notably
 # wider than the blade, which is what reads as "greatsword" at 16px.
 SHAPE = [
+    "............EBB.",
     "...........EBBB.",
-    "..........EBBBE.",
-    ".........EBBBE..",
-    "........EBBBE...",
-    ".......EBBBE....",
-    "......EBBBE.....",
-    ".....EBBBE......",
-    "....EBBBE.......",
-    "...EBBBE........",
-    "..EBBBE.........",
-    ".GGGGGGG........",
-    "GGGGGGGGG.......",
-    "..HHH...........",
+    "..........EBBB..",
+    ".........EBBB...",
+    "........EBBB....",
+    ".......EBBB.....",
+    "......EBBB......",
+    ".....EBBB.......",
+    "....EBBB........",
+    "...EBBB.........",
+    "..EBBB..........",
+    ".GGGGGG.........",
+    "GGGGGGGG........",
+    "..HH............",
     ".HHH............",
-    "GGGG............",
-    "GGG.............",
+    "GGH.............",
 ]
 
 

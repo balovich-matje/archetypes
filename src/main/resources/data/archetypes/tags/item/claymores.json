@@ -1,0 +1,11 @@
+{
+	"values": [
+		"archetypes:wooden_claymore",
+		"archetypes:stone_claymore",
+		"archetypes:copper_claymore",
+		"archetypes:iron_claymore",
+		"archetypes:golden_claymore",
+		"archetypes:diamond_claymore",
+		"archetypes:netherite_claymore"
+	]
+}

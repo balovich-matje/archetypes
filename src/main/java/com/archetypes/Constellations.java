@@ -36,19 +36,27 @@ public final class Constellations {
 			// shield: Reflection to Wide Swings II, cosmetic only.
 			.withDecorativeEdge(0, 8, 8, 8);
 
+	/**
+	 * The Slayer constellation IS a sword: pommel root, grip, a 7-node
+	 * crossguard where the paths split, the two blade edges as the sword and
+	 * claymore paths (fuller empty between them), capstones flanking the tip
+	 * with Bloodlust above — reachable only through a capstone by geometry.
+	 */
 	public static final Constellation SLAYER_SWORD = Constellation.of(
-			"...#...",
-			"..#.#..",
-			"..#.#..",
-			"..#.#..",
-			"..#.#..",
-			"..#.#..",
-			"..#.#..",
-			"#######",
-			"...#...",
-			"...#...",
-			"..###..",
-			"...#...");
+			"....#....",
+			"...#.#...",
+			"...#.#...",
+			"...#.#...",
+			"...#.#...",
+			"...#.#...",
+			"...#.#...",
+			"...#.#...",
+			".#######.",
+			"....#....",
+			"....#....")
+			// The capstone cross: each pre-capstone connects to both capstones.
+			.withEdge(3, 8, 5, 9)
+			.withEdge(5, 8, 3, 9);
 
 	public static final Constellation CRUSHER_MACE = Constellation.of(
 			"#..#..#",

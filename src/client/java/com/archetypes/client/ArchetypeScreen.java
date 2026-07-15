@@ -10,6 +10,7 @@ import com.archetypes.ProtectorNodes;
 import com.archetypes.ResetArchetypePayload;
 import com.archetypes.SkillPoints;
 import com.archetypes.SubTree;
+import com.archetypes.TreeNodes;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.ChatFormatting;
@@ -338,7 +339,7 @@ public class ArchetypeScreen extends Screen {
 				}
 
 				// The skill's icon, when the node is big enough to hold a sprite.
-				Item icon = ProtectorNodes.def(tree, i).family().icon();
+				Item icon = TreeNodes.icon(tree, i);
 
 				if (icon != null && size >= 16) {
 					graphics.fakeItem(new ItemStack(icon), x + (size - 16) / 2, y + (size - 16) / 2);
@@ -376,20 +377,19 @@ public class ArchetypeScreen extends Screen {
 
 	private List<FormattedCharSequence> nodeTooltip(final SubTree tree, final int index,
 			final NodePurchases.Verdict verdict) {
-		ProtectorNodes.Def def = ProtectorNodes.def(tree, index);
 		List<FormattedCharSequence> lines = new java.util.ArrayList<>();
 
-		Component name = Component.translatable(def.family().nameKey());
+		Component name = Component.translatable(TreeNodes.nameKey(tree, index));
 
-		if (def.rank() > 1 || totalRanks(tree, def.family()) > 1) {
-			name = Component.translatable("node.archetypes.ranked", name, def.rank());
+		if (TreeNodes.familySize(tree, index) > 1) {
+			name = Component.translatable("node.archetypes.ranked", name, TreeNodes.rankOf(tree, index));
 		}
 
 		lines.add(name.copy().withStyle(ChatFormatting.WHITE).getVisualOrderText());
 
 		// The actual effect, wrapped — this is what the hover is for.
 		lines.addAll(this.font.split(
-				Component.translatable(def.family().descriptionKey()).withStyle(ChatFormatting.GRAY),
+				Component.translatable(TreeNodes.descriptionKey(tree, index)).withStyle(ChatFormatting.GRAY),
 				TOOLTIP_WIDTH));
 
 		ChatFormatting statusColor = switch (verdict) {
@@ -399,24 +399,12 @@ public class ArchetypeScreen extends Screen {
 		};
 		lines.add(Component.translatable(verdict.key()).withStyle(statusColor).getVisualOrderText());
 
-		if (def.family() == ProtectorNodes.Family.MINOR) {
+		if (TreeNodes.isMinor(tree, index)) {
 			lines.add(Component.translatable("node.archetypes.inert")
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 		}
 
 		return lines;
-	}
-
-	private static int totalRanks(final SubTree tree, final ProtectorNodes.Family family) {
-		int count = 0;
-
-		for (int i = 0; i < tree.constellation().nodes().size(); i++) {
-			if (ProtectorNodes.def(tree, i).family() == family) {
-				count++;
-			}
-		}
-
-		return count;
 	}
 
 	/**

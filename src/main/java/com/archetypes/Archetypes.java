@@ -16,6 +16,8 @@ public class Archetypes implements ModInitializer {
 		ModAttachments.initialize();
 		ModItems.initialize();
 		ProtectorTicker.initialize();
+		SlayerCombat.initialize();
+		SlayerTicker.initialize();
 
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
@@ -35,8 +37,21 @@ public class Archetypes implements ModInitializer {
 					NodePurchases.buy(context.player(), tree, payload.node());
 				}));
 
+		// One ability key: the server dispatches on the mainhand. Claymore is
+		// Decimate, sword is Bladestorm, anything else falls through to the
+		// bash (which requires a shield and checks that itself).
 		ServerPlayNetworking.registerGlobalReceiver(ShieldBashPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> ShieldBash.execute(context.player())));
+				.server().execute(() -> {
+					var player = context.player();
+
+					if (ModItems.isClaymore(player.getMainHandItem())) {
+						SlayerActives.decimate(player);
+					} else if (ModItems.isSword(player.getMainHandItem())) {
+						SlayerActives.bladestorm(player);
+					} else {
+						ShieldBash.execute(player);
+					}
+				}));
 
 		ServerPlayNetworking.registerGlobalReceiver(RushPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> ShieldRush.execute(context.player())));

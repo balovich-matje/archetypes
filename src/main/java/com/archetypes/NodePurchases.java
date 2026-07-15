@@ -68,15 +68,7 @@ public final class NodePurchases {
 		}
 
 		// The capstones are a choice, not a pair: owning one locks the other.
-		ProtectorNodes.Family family = ProtectorNodes.def(tree, node).family();
-
-		if (family == ProtectorNodes.Family.OMNI_BLOCK
-				&& ProtectorNodes.rank(tree, owned, ProtectorNodes.Family.GROUND_SLAM) > 0) {
-			return Verdict.EXCLUSIVE_TAKEN;
-		}
-
-		if (family == ProtectorNodes.Family.GROUND_SLAM
-				&& ProtectorNodes.rank(tree, owned, ProtectorNodes.Family.OMNI_BLOCK) > 0) {
+		if (TreeNodes.exclusiveTaken(tree, owned, node)) {
 			return Verdict.EXCLUSIVE_TAKEN;
 		}
 

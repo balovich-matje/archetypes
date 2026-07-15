@@ -30,39 +30,54 @@ public final class BashCooldownHud {
 			return;
 		}
 
-		Long readyAt = ((AttachmentTarget) player).getAttached(ModAttachments.BASH_READY_AT);
-
-		if (readyAt == null) {
-			return;
-		}
-
-		long remaining = readyAt - client.level.getGameTime();
-
-		if (remaining <= 0) {
-			return;
-		}
-
+		long now = client.level.getGameTime();
 		int width = client.getWindow().getGuiScaledWidth();
 		int height = client.getWindow().getGuiScaledHeight();
 		int center = width / 2;
-		int slotX;
+		int mainhandX = center - 90 + player.getInventory().getSelectedSlot() * 20 + 2;
+		AttachmentTarget target = (AttachmentTarget) player;
 
-		// Vanilla hotbar geometry: items sit at centre-90 + slot*20 + 2, the
-		// offhand slot 26px outside the hotbar on the side opposite the main arm.
-		if (player.getOffhandItem().is(Items.SHIELD)) {
-			slotX = player.getMainArm() == HumanoidArm.RIGHT
-					? center - 91 - 26
-					: center + 91 + 10;
-		} else if (player.getMainHandItem().is(Items.SHIELD)) {
-			slotX = center - 90 + player.getInventory().getSelectedSlot() * 20 + 2;
-		} else {
-			// No shield in hand: the countdown has nothing to attach to.
-			return;
+		// Bash rides the shield, wherever the shield is. Vanilla hotbar
+		// geometry: items at centre-90 + slot*20 + 2, offhand 26px outside on
+		// the side opposite the main arm.
+		Long bash = target.getAttached(ModAttachments.BASH_READY_AT);
+
+		if (bash != null && bash > now) {
+			int slotX;
+
+			if (player.getOffhandItem().is(Items.SHIELD)) {
+				slotX = player.getMainArm() == HumanoidArm.RIGHT ? center - 91 - 26 : center + 91 + 10;
+			} else if (player.getMainHandItem().is(Items.SHIELD)) {
+				slotX = mainhandX;
+			} else {
+				slotX = Integer.MIN_VALUE;
+			}
+
+			if (slotX != Integer.MIN_VALUE) {
+				drawSeconds(graphics, client, bash - now, slotX, height);
+			}
 		}
 
-		int slotY = height - 16 - 3;
-		String seconds = Long.toString((remaining + 19) / 20);
+		// The Slayer actives ride the mainhand weapon.
+		if (com.archetypes.ModItems.isClaymore(player.getMainHandItem())) {
+			Long decimate = target.getAttached(ModAttachments.DECIMATE_READY_AT);
+
+			if (decimate != null && decimate > now) {
+				drawSeconds(graphics, client, decimate - now, mainhandX, height);
+			}
+		} else if (com.archetypes.ModItems.isSword(player.getMainHandItem())) {
+			Long storm = target.getAttached(ModAttachments.BLADESTORM_READY_AT);
+
+			if (storm != null && storm > now) {
+				drawSeconds(graphics, client, storm - now, mainhandX, height);
+			}
+		}
+	}
+
+	private static void drawSeconds(final GuiGraphicsExtractor graphics, final Minecraft client,
+			final long remainingTicks, final int slotX, final int screenHeight) {
+		String seconds = Long.toString((remainingTicks + 19) / 20);
 		graphics.text(client.font, seconds,
-				slotX + 8 - client.font.width(seconds) / 2, slotY + 4, 0xFFFFFFFF, true);
+				slotX + 8 - client.font.width(seconds) / 2, screenHeight - 16 - 3 + 4, 0xFFFFFFFF, true);
 	}
 }

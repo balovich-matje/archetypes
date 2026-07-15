@@ -66,6 +66,26 @@ public final class ModAttachments {
 			Archetypes.id("bulwark_active"),
 			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
 
+	/** Slayer active cooldowns, same shape as the bash's. */
+	public static final AttachmentType<Long> DECIMATE_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("decimate_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	public static final AttachmentType<Long> BLADESTORM_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("bladestorm_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/** Game-time tick when the current bladestorm channel ends; synced to every
+	 * client so the spinning-blade renderer works for onlookers too. */
+	public static final AttachmentType<Long> BLADESTORM_END = AttachmentRegistry.create(
+			Archetypes.id("bladestorm_end"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
+	/** Lunge's little hop cooldown. Server-only decision, synced for symmetry. */
+	public static final AttachmentType<Long> LUNGE_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("lunge_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
 	/** As BASH_READY_AT, for the rush's own short anti-exploit cooldown. */
 	public static final AttachmentType<Long> RUSH_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("rush_ready_at"),

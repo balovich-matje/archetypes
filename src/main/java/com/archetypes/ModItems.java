@@ -6,6 +6,8 @@ import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.tags.TagKey;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
@@ -32,6 +34,19 @@ public final class ModItems {
 	private static final float DAMAGE_MULTIPLIER = 1.5F;
 	/** Sword is -2.4 (1.6 swings/s off a 4.0 base); -3.2 gives 0.8/s, half. */
 	private static final float CLAYMORE_ATTACK_SPEED = -3.2F;
+
+	/** All seven claymores; kept out of minecraft:swords so sword-scoped
+	 * passives (bleed, lunge) never trigger from the two-hander. */
+	public static final TagKey<Item> CLAYMORES = TagKey.create(Registries.ITEM, Archetypes.id("claymores"));
+
+	public static boolean isClaymore(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(CLAYMORES);
+	}
+
+	/** A one-handed sword: the vanilla tag minus our claymores. */
+	public static boolean isSword(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(ItemTags.SWORDS) && !stack.is(CLAYMORES);
+	}
 
 	/** Creative-only: one skill point per use. See {@link SkillTokenItem}. */
 	public static final Item SKILL_TOKEN = registerSkillToken();

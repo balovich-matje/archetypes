@@ -26,6 +26,8 @@ public abstract class AvatarRendererMixin {
 			final boolean slim, final CallbackInfo ci) {
 		((LivingEntityRendererAccessor) this)
 				.archetypes$addLayer(new BulwarkShieldLayer((AvatarRenderer) (Object) this));
+		((LivingEntityRendererAccessor) this)
+				.archetypes$addLayer(new com.archetypes.client.BladestormLayer((AvatarRenderer) (Object) this));
 	}
 
 	/**
@@ -47,6 +49,18 @@ public abstract class AvatarRendererMixin {
 			Minecraft.getInstance().getItemModelResolver().updateForLiving(
 					ghost, entity.getItemBlockingWith(), ItemDisplayContext.FIXED, entity);
 			fabricState.setData(BulwarkRenderData.GHOST, ghost);
+		}
+
+		// Bladestorm: same handoff, keyed on the synced channel-end timestamp.
+		Long stormEnd = ((AttachmentTarget) entity).getAttached(ModAttachments.BLADESTORM_END);
+		boolean storming = stormEnd != null && stormEnd > entity.level().getGameTime();
+		fabricState.setData(com.archetypes.client.BladestormLayer.ACTIVE, storming);
+
+		if (storming) {
+			ItemStackRenderState blade = new ItemStackRenderState();
+			Minecraft.getInstance().getItemModelResolver().updateForLiving(
+					blade, entity.getMainHandItem(), ItemDisplayContext.FIXED, entity);
+			fabricState.setData(com.archetypes.client.BladestormLayer.GHOST, blade);
 		}
 	}
 }

@@ -527,6 +527,42 @@ Notes:
 - **Node icons**: vanilla item sprites, tinted/composited, exactly as Specialities does
   it (`SkillIcons`). No new art needed.
 
+## Slayer tree (built 2026-07-16)
+
+The constellation IS a sword: pommel root (Hamstring — CC both weapons share),
+grip, a 7-node crossguard where the paths split (Lunge out the left arm,
+Immovable out the right, Vampirism at the junction), the two blade edges as the
+paths — **sword left: gap-closing, crowd control, sustain; claymore right:
+oneshots, slow, immovable** — an empty fuller between them, and the capstone
+cross at the tip with Bloodlust above it, reachable only through a capstone by
+geometry alone. 24 nodes; full sword lane 14, claymore lane 13, cap 15.
+
+**One ability key.** G is now "Archetype Ability": the server dispatches on the
+mainhand — shield bashes, claymore Decimates, sword Bladestorms. No new binds.
+
+- **Decimate** (claymore capstone): one tilted cleave (sweep arc drawn falling
+  ~25° across the swing), double attribute damage in the front arc, shatters
+  blocks weaker than stone — plus logs and planks by tag, which are nominally
+  *harder* than stone (2.0 vs 1.5) but belong to the fantasy. Capped at 48
+  blocks. 30s cooldown.
+- **Bladestorm** (sword capstone): 3s channel, six half-damage volleys, ends
+  early if the sword leaves the hand. 45s cooldown. Four copies of the actual
+  sword spin near-flat around the player at two heights (the Bulwark ghost
+  pipeline), which half-hides them — the WoW read.
+- Passives: Hamstring (Slowness I/II on hit), Vampirism (half heart per rank on
+  melee kills), Lunge (sword swings hop you along the look vector — whiffs
+  too, it is a gap-closer; suppressed during bladestorm whose volleys swing),
+  Immovable + Heavy Blows (transient attribute modifiers while claymore held),
+  Rend (bleed, sword only), First Blood (+25%/rank vs unhurt targets),
+  Executioner (claymore finishes below 15%), Flurry (sword kills reset Lunge),
+  Bloodlust (kills grant Speed).
+- Claymores live in `#archetypes:claymores` and are deliberately NOT in
+  `#minecraft:swords`-scoped passives: `ModItems.isSword` subtracts the tag, so
+  bleed and lunge never trigger from the two-hander.
+- Cooldown numbers ride the weapon slots like the bash's, same HUD.
+- Claymore texture v2: full 16px-diagonal blade + display-transform scale
+  (1.35 third-person), so it reads player-length in hand.
+
 ## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its
   character. Classes may want active buttons — but "all passives" is a genuinely

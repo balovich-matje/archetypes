@@ -105,6 +105,52 @@ public final class Tuning {
 	/** Reinforced Straps = Unbreaking I: half of durability hits are ignored. */
 	public static final float STRAPS_SKIP_CHANCE = 0.5F;
 
+	// --- Slayer ---
+
+	/** Hamstring: Slowness (rank-1 amplifier) for this long on melee hits. */
+	public static final int SLOWNESS_TICKS = 60;
+
+	/** Vampirism: health restored per rank on a melee kill (1.0 = half a heart... 2 = 1 heart). */
+	public static final float VAMP_HEAL_PER_RANK = 1.0F;
+
+	/** Lunge: half a block per rank along the look vector, 2s between hops. */
+	public static final double LUNGE_BLOCKS_PER_RANK = 0.5;
+	public static final int LUNGE_COOLDOWN_TICKS = 40;
+
+	/** Immovable: knockback resistance per rank while a claymore is held. */
+	public static final double KBRES_PER_RANK = 0.2;
+
+	/** Rend: damage per second per rank, for three seconds. */
+	public static final int BLEED_DURATION_TICKS = 60;
+
+	/** Heavy Blows: damage up and swing speed down by this much per rank. */
+	public static final float HEAVY_PER_RANK = 0.10F;
+
+	/** First Blood: bonus vs full-health targets per rank. */
+	public static final float FIRSTBLOOD_PER_RANK = 0.25F;
+
+	/** Executioner: claymore hits finish targets below this health fraction. */
+	public static final float EXECUTE_THRESHOLD = 0.15F;
+
+	/** Bloodlust: Speed I for this long after any melee kill. */
+	public static final int BLOODLUST_TICKS = 60;
+
+	/** Decimate: double damage, 30s cooldown, a wide tilted arc in front. */
+	public static final float DECIMATE_DAMAGE_MULTIPLIER = 2.0F;
+	public static final int DECIMATE_COOLDOWN_TICKS = 600;
+	public static final double DECIMATE_RANGE = 3.5;
+	/** Blocks harder than this survive; logs and planks break by tag despite
+	 * being nominally harder than stone. */
+	public static final float DECIMATE_MAX_HARDNESS = 1.5F;
+	public static final int DECIMATE_MAX_BLOCKS = 48;
+
+	/** Bladestorm: six half-damage volleys over three seconds, 45s cooldown. */
+	public static final int BLADESTORM_COOLDOWN_TICKS = 900;
+	public static final int BLADESTORM_CHANNEL_TICKS = 60;
+	public static final int BLADESTORM_VOLLEY_PERIOD = 10;
+	public static final float BLADESTORM_DAMAGE_FACTOR = 0.5F;
+	public static final double BLADESTORM_RADIUS = 3.0;
+
 	private Tuning() {
 	}
 }
