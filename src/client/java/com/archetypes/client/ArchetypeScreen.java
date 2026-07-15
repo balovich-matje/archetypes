@@ -42,12 +42,17 @@ public class ArchetypeScreen extends Screen {
 	/** Room at the top of each section for its name, drawn at 1.5x. */
 	private static final int SECTION_HEADER = 22;
 
-	private static final int NODE = 18;
-	private static final int MIN_SPACING = NODE + 2;
+	/** Node size at full size, and the floor it may shrink to on cramped screens. */
+	private static final int MAX_NODE = 18;
+	private static final int MIN_NODE = 5;
+	/** Clear space between adjacent nodes; spacing is node + gap. */
+	private static final int NODE_GAP = 4;
 	private static final int MAX_SPACING = 30;
 	private static final float SECTION_TITLE_SCALE = 1.5F;
 	private static final int BUTTON_WIDTH = 96;
 	private static final int BUTTON_HEIGHT = 20;
+	/** Art is drawn at 85% of its fitted size, leaving a black frame. */
+	private static final float ART_ZOOM = 0.85F;
 
 	/** Native size of the backdrop textures; they are scaled to the canvas. */
 	private static final int ART_WIDTH = 1024;
@@ -132,33 +137,65 @@ public class ArchetypeScreen extends Screen {
 		return this.canvasWidth() / 3;
 	}
 
+	/** Where one constellation's nodes land: grid pitch, node size, and origin. */
+	private record Layout(int spacing, int node, int centerX, int rootTop) {
+	}
+
 	/**
-	 * Grid spacing for one constellation: the largest that fits its section in
-	 * both axes, so shapes of different grid sizes all fill their space.
+	 * Fit a constellation to its section and centre it there.
+	 *
+	 * <p>Both the pitch and the node size fall out of the space available, so a
+	 * cramped screen shrinks the whole constellation instead of overflowing —
+	 * there is deliberately no lower bound on spacing, only on how small a node
+	 * may get. The result is then centred vertically, so a tall canvas does not
+	 * leave the tree sitting on the floor.
 	 */
-	private int spacing(final Constellation shape) {
-		int usableWidth = this.sectionWidth() - PAD * 2 - NODE;
-		int usableHeight = this.canvasBottom() - this.canvasTop() - SECTION_HEADER - PAD * 2 - NODE;
-		int byWidth = shape.width() > 1 ? usableWidth / (shape.width() - 1) : MAX_SPACING;
-		int byHeight = shape.height() > 1 ? usableHeight / (shape.height() - 1) : MAX_SPACING;
-		return Mth.clamp(Math.min(byWidth, byHeight), MIN_SPACING, MAX_SPACING);
+	private Layout layout(final int section, final Constellation shape) {
+		int availableWidth = this.sectionWidth() - PAD * 2;
+		int top = this.canvasTop() + SECTION_HEADER;
+		int availableHeight = this.canvasBottom() - top - PAD;
+
+		// shapeSize ~= grid * spacing - NODE_GAP, so this is the pitch that fills
+		// the axis exactly; the tighter axis wins.
+		int byWidth = (availableWidth + NODE_GAP) / Math.max(shape.width(), 1);
+		int byHeight = (availableHeight + NODE_GAP) / Math.max(shape.height(), 1);
+		int spacing = Math.min(Math.min(byWidth, byHeight), MAX_SPACING);
+		int node = Mth.clamp(spacing - NODE_GAP, MIN_NODE, MAX_NODE);
+
+		// That pitch assumed node == spacing - NODE_GAP. Wherever the node clamps
+		// instead — at its ceiling on roomy screens, at its floor on cramped ones —
+		// the assumption breaks and the shape can run a few pixels wide, so re-fit
+		// the pitch against the node size we actually got.
+		if (shape.width() > 1) {
+			spacing = Math.min(spacing, (availableWidth - node) / (shape.width() - 1));
+		}
+
+		if (shape.height() > 1) {
+			spacing = Math.min(spacing, (availableHeight - node) / (shape.height() - 1));
+		}
+
+		spacing = Math.max(spacing, 1);
+		node = Math.min(node, spacing);
+
+		int shapeHeight = (shape.height() - 1) * spacing + node;
+		int rootTop = top + (availableHeight - shapeHeight) / 2 + shapeHeight - node;
+
+		return new Layout(spacing, node, this.sectionCenter(section), rootTop);
 	}
 
 	private int sectionCenter(final int section) {
 		return this.canvasLeft() + this.sectionWidth() * section + this.sectionWidth() / 2;
 	}
 
-	/** Top-left of a node, given its section and the spacing for that shape. */
-	private int nodeX(final int section, final Constellation shape, final Constellation.Node node,
-			final int spacing) {
-		int shapeWidth = (shape.width() - 1) * spacing;
-		return this.sectionCenter(section) - shapeWidth / 2 + node.col() * spacing - NODE / 2;
+	/** Top-left of a node within its section. */
+	private static int nodeX(final Constellation shape, final Constellation.Node node, final Layout layout) {
+		int shapeWidth = (shape.width() - 1) * layout.spacing();
+		return layout.centerX() - shapeWidth / 2 + node.col() * layout.spacing() - layout.node() / 2;
 	}
 
-	private int nodeY(final Constellation shape, final Constellation.Node node, final int spacing) {
-		// Roots sit just above the canvas floor; row grows upward from there.
-		int rootTop = this.canvasBottom() - PAD - NODE;
-		return rootTop - node.row() * spacing;
+	/** Rows grow upward from the root row. */
+	private static int nodeY(final Constellation.Node node, final Layout layout) {
+		return layout.rootTop() - node.row() * layout.spacing();
 	}
 
 	@Override
@@ -174,22 +211,33 @@ public class ArchetypeScreen extends Screen {
 		graphics.text(this.font, preview, panelLeft + this.panelWidth() - PAD - this.font.width(preview),
 				panelTop + 8, VanillaUi.LABEL_FAINT, false);
 
+		int canvasWidth = this.canvasWidth();
 		int canvasHeight = this.canvasBottom() - this.canvasTop();
 
-		// The backdrop fills the canvas; its dim and vignette are baked in, so the
-		// nodes go straight on top without any per-frame gradient work.
+		// Black behind, then the art fitted to its own aspect ratio and pulled in
+		// to ART_ZOOM. Fitting rather than stretching keeps it undistorted, and the
+		// smaller draw means less upscaling — both help how soft it looks. What is
+		// left over reads as a deliberate black frame.
+		graphics.fill(this.canvasLeft(), this.canvasTop(),
+				this.canvasLeft() + canvasWidth, this.canvasBottom(), 0xFF000000);
+
+		float scale = Math.min(canvasWidth / (float) ART_WIDTH, canvasHeight / (float) ART_HEIGHT) * ART_ZOOM;
+		int artWidth = Math.round(ART_WIDTH * scale);
+		int artHeight = Math.round(ART_HEIGHT * scale);
 		graphics.blit(RenderPipelines.GUI_TEXTURED, this.archetype.treeBackground(),
-				this.canvasLeft(), this.canvasTop(), 0.0F, 0.0F,
-				this.canvasWidth(), canvasHeight, ART_WIDTH, ART_HEIGHT, ART_WIDTH, ART_HEIGHT);
-		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(),
-				this.canvasWidth(), canvasHeight);
+				this.canvasLeft() + (canvasWidth - artWidth) / 2,
+				this.canvasTop() + (canvasHeight - artHeight) / 2,
+				0.0F, 0.0F, artWidth, artHeight, ART_WIDTH, ART_HEIGHT, ART_WIDTH, ART_HEIGHT);
+
+		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(), canvasWidth, canvasHeight);
 
 		boolean tooltip = false;
 
 		for (int section = 0; section < this.subTrees.size(); section++) {
 			SubTree tree = this.subTrees.get(section);
 			Constellation shape = tree.constellation();
-			int spacing = this.spacing(shape);
+			Layout layout = this.layout(section, shape);
+			int size = layout.node();
 
 			this.sectionTitle(graphics, tree, section);
 
@@ -198,22 +246,20 @@ public class ArchetypeScreen extends Screen {
 				Constellation.Node from = shape.nodes().get(edge[0]);
 				Constellation.Node to = shape.nodes().get(edge[1]);
 				VanillaUi.line(graphics,
-						this.nodeX(section, shape, from, spacing) + NODE / 2,
-						this.nodeY(shape, from, spacing) + NODE / 2,
-						this.nodeX(section, shape, to, spacing) + NODE / 2,
-						this.nodeY(shape, to, spacing) + NODE / 2,
+						nodeX(shape, from, layout) + size / 2, nodeY(from, layout) + size / 2,
+						nodeX(shape, to, layout) + size / 2, nodeY(to, layout) + size / 2,
 						VanillaUi.INSET_BODY);
 			}
 
 			for (Constellation.Node node : shape.nodes()) {
-				int x = this.nodeX(section, shape, node, spacing);
-				int y = this.nodeY(shape, node, spacing);
-				boolean hovered = mouseX >= x && mouseX < x + NODE && mouseY >= y && mouseY < y + NODE;
+				int x = nodeX(shape, node, layout);
+				int y = nodeY(node, layout);
+				boolean hovered = mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
 
-				VanillaUi.slot(graphics, x, y);
+				VanillaUi.inset(graphics, x, y, size, size);
 
 				if (hovered) {
-					graphics.fill(x + 1, y + 1, x + NODE - 1, y + NODE - 1, VanillaUi.INSET_BODY_HOVERED);
+					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
 					tooltip = true;
 				}
 			}
