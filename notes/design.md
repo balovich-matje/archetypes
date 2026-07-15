@@ -55,28 +55,60 @@ together, they should feel like one system.**
 
 - Unchanged from today. It must not know Archetypes exists.
 
-## The architectural question this raises
+## DECIDED: no library mod. Host election instead.
 
-If Archetypes needs a working skill screen + XP engine on its own, and Specialities
-already has one, who owns the engine?
+**Archetypes carries its own copy of the skill engine.** There is no shared library
+mod, and there never will be — users install either mod, or both, and are never asked
+to install a third thing.
 
-- **A. Duplicate a minimal engine in Archetypes.** Fully independent, no shared
-  artifact, but two copies of the XP curve / attachment / sync / HUD code to keep in
-  step. When both are installed, one has to defer to the other, and skills would live
-  in two separate attachments.
-- **B. Extract a shared library mod** (e.g. `skill-core`) that both depend on. Clean
-  and no duplication, but forces every user of either mod to install a third one —
-  real friction on the mod page, and it's a permanent public API to maintain.
-- **C. Specialities owns the engine and exposes an API; Archetypes soft-depends.**
-  Archetypes compiles against Specialities (`compileOnly`) and guards every call
-  behind `FabricLoader.getInstance().isModLoaded("specialities")`; classes touching
-  the API only load when the guard passes. Standalone Archetypes then needs its own
-  fallback screen anyway — so it's B's complexity plus A's duplication, unless the
-  fallback is deliberately minimal.
+Rejected: extracting a `skill-core` library. The install step is the smaller half of
+the cost; the real cost is version matching ("Archetypes 1.3 needs skill-core 1.2+"),
+which generates confused bug reports forever. Not worth it to save ~960 lines of the
+most stable code in the mod (the XP curve and attachment layer have not changed since
+day one; every bug so far has been in UI or mixins).
 
-Leaning **C with a deliberately thin fallback**, but this is the decision that shapes
-everything else and should be made before either mod grows further. Worth prototyping
-the standalone-Archetypes screen first to see how thin "thin" really is.
+### Host election
+
+Exactly one mod owns the HUD bar, the inventory button and the screen:
+
+| Installed | Host | Other mod |
+| --- | --- | --- |
+| Specialities only | Specialities | — |
+| Archetypes only | Archetypes (own engine, own skills, no tabs) | — |
+| Both | **Specialities** | Archetypes goes dormant and hands its skills over as a tab |
+
+### Mechanism (costs the user nothing)
+
+- Specialities defines a small public interface (`com.specialities.api.SkillTab` or
+  similar) and collects tabs with
+  `FabricLoader.getEntrypointContainers("specialities:skill_tabs", SkillTab.class)`.
+- Archetypes takes Specialities as **`modCompileOnly`** and declares that entrypoint
+  in its `fabric.mod.json`. If Specialities is absent nobody ever queries the key, so
+  the adapter class never loads — no crash, no dependency, no version pin.
+- Archetypes guards its own HUD/button/screen registration behind
+  `FabricLoader.getInstance().isModLoaded("specialities")`.
+- So Archetypes has two paths: its own internal skill type + screen (standalone), and
+  a thin adapter implementing Specialities' interface (only ever loaded when
+  Specialities is present).
+
+### Day-one collisions — must be handled before both mods ship together
+
+Not hypothetical; all three are guaranteed if Archetypes registers its UI blindly:
+
+1. **The HUD shifts twice.** Both mods raise the vanilla hearts/XP bar by
+   `HUD_SHIFT = 7` to make room. Both active = 14px. Visibly broken.
+2. **Two "S" buttons** in the inventory, at the same anchor.
+3. **Two skill XP bars** at identical coordinates.
+
+### Accepted long-term costs
+
+- **The tab interface is a public contract.** Once Archetypes ships against it,
+  renaming it breaks users. Keep it tiny.
+- **UI fixes land twice** (the XP-0 bar bug would have). Softened: each copy only
+  affects that mod's standalone users — two products, not one product broken twice.
+- **Curve drift.** If Specialities' XP curve changes and Archetypes' does not, a
+  player with both sees two progression feels in one screen. Keep the curve
+  consciously mirrored.
 
 ## Open questions
 
