@@ -45,6 +45,8 @@ public class ArchetypeScreen extends Screen {
 	private static final int MIN_SPACING = NODE + 2;
 	private static final int MAX_SPACING = 30;
 	private static final float SECTION_TITLE_SCALE = 1.5F;
+	private static final int BUTTON_WIDTH = 96;
+	private static final int BUTTON_HEIGHT = 20;
 
 	private final @Nullable Screen parent;
 	private final List<SubTree> subTrees;
@@ -58,10 +60,12 @@ public class ArchetypeScreen extends Screen {
 
 	@Override
 	protected void init() {
-		int buttonY = this.panelTop() + this.panelHeight() - PAD - 20;
+		// Anchored to the panel's bottom corners, so Back does not drift when the
+		// creative-only Reset is absent.
+		int buttonY = this.panelTop() + this.panelHeight() - PAD - BUTTON_HEIGHT;
 
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, button -> this.onClose())
-				.bounds(this.width / 2 - 100, buttonY, 96, 20)
+				.bounds(this.panelLeft() + PAD, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
 				.build());
 
 		// Creative-only testing affordance: undo the "permanent" choice. The
@@ -74,7 +78,8 @@ public class ArchetypeScreen extends Screen {
 					ClientPlayNetworking.send(new ResetArchetypePayload());
 					this.minecraft.gui.setScreen(new ArchetypePickerScreen(this.parent));
 				})
-				.bounds(this.width / 2 + 4, buttonY, 96, 20)
+				.bounds(this.panelLeft() + this.panelWidth() - PAD - BUTTON_WIDTH, buttonY,
+						BUTTON_WIDTH, BUTTON_HEIGHT)
 				.tooltip(Tooltip.create(Component.translatable("screen.archetypes.tree.reset.tooltip")))
 				.build());
 	}
