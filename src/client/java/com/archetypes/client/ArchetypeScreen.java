@@ -7,37 +7,46 @@ import com.archetypes.Archetype;
 import com.archetypes.SubTree;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.Mth;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The archetype's skill tree: a vanilla-style window whose canvas holds the
- * three constellation sub-trees, roots at the bottom, growing upward.
+ * The archetype's skill tree: a window filling the whole screen (the
+ * Pufferfish's Skills footprint), whose canvas holds the three constellation
+ * sub-trees, roots at the bottom, growing upward. Esc closes, back to the
+ * inventory — no button, same as the advancements screen.
  *
- * <p>All nodes are placeholders ("+1% damage", no effect) sharing one diamond
- * layout — the real shapes come with the constellation background art, where
- * each sub-tree's nodes trace its symbol (shield, sword, mace, ...).
+ * <p>All 60 nodes are placeholders ("+1% damage", no effect) sharing one
+ * 20-node lattice — the real shapes come with the constellation background
+ * art, where each sub-tree's nodes trace its symbol (shield, sword, mace, ...).
  */
 public class ArchetypeScreen extends Screen {
+	private static final int MARGIN = 8;
 	private static final int PAD = 8;
-	private static final int MAX_PANEL_WIDTH = 380;
-	private static final int MAX_PANEL_HEIGHT = 230;
-	private static final int CANVAS_TOP = 22;
-	private static final int BUTTON_STRIP = 36;
+	private static final int HEADER = 22;
 
 	private static final int NODE = 18;
-	private static final int NODE_DX = 24;
-	private static final int NODE_DY = 26;
-	/** Placeholder diamond, as {column, row} with row 0 at the bottom. */
+	private static final int ROWS = 7;
+	/** Placeholder lattice, as {column, row} with row 0 at the bottom. */
 	private static final int[][] TEMPLATE = {
-			{0, 0}, {0, 1}, {-1, 2}, {1, 2}, {-1, 3}, {1, 3}, {0, 4}
+			{0, 0},
+			{-1, 1}, {1, 1},
+			{-2, 2}, {0, 2}, {2, 2},
+			{-2, 3}, {-1, 3}, {1, 3}, {2, 3},
+			{-2, 4}, {-1, 4}, {1, 4}, {2, 4},
+			{-2, 5}, {0, 5}, {2, 5},
+			{-2, 6}, {0, 6}, {2, 6}
 	};
 	private static final int[][] EDGES = {
-			{0, 1}, {1, 2}, {1, 3}, {2, 4}, {3, 5}, {4, 6}, {5, 6}
+			{0, 1}, {0, 2},
+			{1, 3}, {1, 4}, {2, 4}, {2, 5},
+			{3, 6}, {4, 7}, {4, 8}, {5, 9},
+			{6, 10}, {7, 11}, {8, 12}, {9, 13},
+			{10, 14}, {11, 15}, {12, 15}, {13, 16},
+			{14, 17}, {15, 18}, {16, 19}
 	};
 
 	private final @Nullable Screen parent;
@@ -53,66 +62,62 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	@Override
-	protected void init() {
-		this.addRenderableWidget(Button.builder(CommonComponents.GUI_DONE, button -> this.onClose())
-				.bounds(this.panelLeft() + this.panelWidth() / 2 - 60,
-						this.panelTop() + this.panelHeight() - 28, 120, 20)
-				.build());
-	}
-
-	@Override
 	public void onClose() {
 		this.minecraft.gui.setScreen(this.parent);
 	}
 
-	private int panelWidth() {
-		return Math.min(this.width - 24, MAX_PANEL_WIDTH);
+	private int canvasLeft() {
+		return MARGIN + PAD;
 	}
 
-	private int panelHeight() {
-		return Math.min(this.height - 24, MAX_PANEL_HEIGHT);
+	private int canvasTop() {
+		return MARGIN + HEADER;
 	}
 
-	private int panelLeft() {
-		return (this.width - this.panelWidth()) / 2;
+	private int canvasWidth() {
+		return this.width - (MARGIN + PAD) * 2;
 	}
 
-	private int panelTop() {
-		return (this.height - this.panelHeight()) / 2;
+	private int canvasBottom() {
+		return this.height - MARGIN - PAD;
+	}
+
+	/** Horizontal node spacing: spread with the window, within vanilla-ish bounds. */
+	private int nodeDx() {
+		return Mth.clamp((this.canvasWidth() / 3 - NODE - 8) / 4, 18, 30);
+	}
+
+	/** Vertical node spacing: fill the space above the root row. */
+	private int nodeDy() {
+		int rootTop = this.canvasBottom() - 17 - NODE;
+		return Mth.clamp((rootTop - this.canvasTop() - 6) / (ROWS - 1), 18, 30);
 	}
 
 	/** Top-left corner of node {@code node} of sub-tree column {@code column}. */
 	private int nodeX(final int column, final int node) {
-		int canvasLeft = this.panelLeft() + PAD;
-		int columnWidth = (this.panelWidth() - PAD * 2) / 3;
-		int center = canvasLeft + columnWidth * column + columnWidth / 2;
-		return center + TEMPLATE[node][0] * NODE_DX - NODE / 2;
+		int columnWidth = this.canvasWidth() / 3;
+		int center = this.canvasLeft() + columnWidth * column + columnWidth / 2;
+		return center + TEMPLATE[node][0] * this.nodeDx() - NODE / 2;
 	}
 
 	private int nodeY(final int node) {
-		int canvasBottom = this.panelTop() + this.panelHeight() - BUTTON_STRIP;
-		return canvasBottom - 13 - 4 - NODE - TEMPLATE[node][1] * NODE_DY;
+		return this.canvasBottom() - 17 - NODE - TEMPLATE[node][1] * this.nodeDy();
 	}
 
 	@Override
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 
-		int panelLeft = this.panelLeft();
-		int panelTop = this.panelTop();
-		int panelWidth = this.panelWidth();
-		int panelHeight = this.panelHeight();
+		VanillaUi.window(graphics, MARGIN, MARGIN, this.width - MARGIN * 2, this.height - MARGIN * 2);
 
-		VanillaUi.window(graphics, panelLeft, panelTop, panelWidth, panelHeight);
-
-		graphics.text(this.font, this.title, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, false);
+		graphics.text(this.font, this.title, MARGIN + PAD, MARGIN + 8, VanillaUi.LABEL, false);
 
 		Component preview = Component.translatable("screen.archetypes.tree.preview");
-		graphics.text(this.font, preview, panelLeft + panelWidth - PAD - this.font.width(preview),
-				panelTop + 8, VanillaUi.LABEL_FAINT, false);
+		graphics.text(this.font, preview, this.width - MARGIN - PAD - this.font.width(preview),
+				MARGIN + 8, VanillaUi.LABEL_FAINT, false);
 
-		VanillaUi.inset(graphics, panelLeft + PAD, panelTop + CANVAS_TOP,
-				panelWidth - PAD * 2, panelHeight - CANVAS_TOP - BUTTON_STRIP);
+		VanillaUi.inset(graphics, this.canvasLeft(), this.canvasTop(),
+				this.canvasWidth(), this.canvasBottom() - this.canvasTop());
 
 		boolean tooltip = false;
 
@@ -149,7 +154,7 @@ public class ArchetypeScreen extends Screen {
 			Component label = tree.displayName();
 			int labelCenter = this.nodeX(column, 0) + NODE / 2;
 			graphics.text(this.font, label, labelCenter - this.font.width(label) / 2,
-					this.panelTop() + panelHeight - BUTTON_STRIP - 12, VanillaUi.LABEL, false);
+					this.canvasBottom() - 12, VanillaUi.LABEL, false);
 		}
 
 		if (tooltip) {

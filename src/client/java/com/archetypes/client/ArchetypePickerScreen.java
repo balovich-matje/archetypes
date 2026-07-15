@@ -11,6 +11,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
+import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
@@ -28,8 +29,9 @@ public class ArchetypePickerScreen extends Screen {
 	private static final int GAP = 12;
 	private static final int PAD = 10;
 	private static final int PANEL_WIDTH = FRAME * 3 + GAP * 2 + PAD * 2;
-	private static final int PANEL_HEIGHT = 180;
+	private static final int PANEL_HEIGHT = 184;
 	private static final int FRAMES_TOP = 36;
+	private static final int BUTTON_TOP = 156;
 
 	private final @Nullable Screen parent;
 
@@ -41,7 +43,7 @@ public class ArchetypePickerScreen extends Screen {
 	@Override
 	protected void init() {
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> this.onClose())
-				.bounds(this.panelLeft() + PANEL_WIDTH / 2 - 60, this.panelTop() + 152, 120, 20)
+				.bounds(this.panelLeft() + PANEL_WIDTH / 2 - 60, this.panelTop() + BUTTON_TOP, 120, 20)
 				.build());
 	}
 
@@ -148,11 +150,16 @@ public class ArchetypePickerScreen extends Screen {
 					archetype.color(), true);
 		}
 
-		// Blurb for whatever is hovered, between the frames and the button.
+		// Blurb for whatever is hovered, between the frames and the button —
+		// word-wrapped to the panel, each line centered.
 		if (hovered != null) {
-			Component blurb = hovered.blurb();
-			graphics.text(this.font, blurb, (this.width - this.font.width(blurb)) / 2, top + FRAME + 8,
-					VanillaUi.LABEL, false);
+			int y = top + FRAME + 5;
+
+			for (FormattedCharSequence line : this.font.split(hovered.blurb(), PANEL_WIDTH - PAD * 2)) {
+				graphics.text(this.font, line, (this.width - this.font.width(line)) / 2, y,
+						VanillaUi.LABEL, false);
+				y += 9;
+			}
 		}
 	}
 

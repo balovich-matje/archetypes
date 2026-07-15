@@ -187,6 +187,9 @@ bottom, expanding upwards.**
   Minecraft Dungeons wiki.
 - Node graph in the vanilla style: slot-inset squares joined by dark lines on the grey
   inset canvas (the Pufferfish look), not glowing WoW arrows.
+- **Size: ~20 nodes per sub-tree, so ~60 per class tree.**
+- The tree window is **full-screen** (small margin), like Pufferfish's — not a
+  dialog-sized panel.
 - Ranks (`2/2`), actives vs passives, costs: all undecided — see open questions.
 - **Shipped placeholder first**: every node is "+1% damage" with no effect, so the
   layout/feel can be judged in-game before any balance work.
