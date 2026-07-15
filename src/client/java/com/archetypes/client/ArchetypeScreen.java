@@ -363,7 +363,8 @@ public class ArchetypeScreen extends Screen {
 	/** Families whose effect is actually wired up; the rest say so honestly. */
 	private static final java.util.Set<ProtectorNodes.Family> LIVE_FAMILIES = java.util.Set.of(
 			ProtectorNodes.Family.BASH, ProtectorNodes.Family.SLAM, ProtectorNodes.Family.COOLDOWN,
-			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE);
+			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE,
+			ProtectorNodes.Family.SPIKES, ProtectorNodes.Family.UNBREAKING);
 
 	private List<Component> nodeTooltip(final SubTree tree, final int index,
 			final NodePurchases.Verdict verdict) {

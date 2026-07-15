@@ -50,6 +50,21 @@ public final class Tuning {
 		};
 	}
 
+	/**
+	 * Iron Spikes = Thorns V/X/XV by rank, vanilla's own numbers: proc chance
+	 * 15% per enchant level (certain from rank 2), damage 1-4 plus (level - 10)
+	 * once the level exceeds 10 — so rank 3 lands 6-9.
+	 */
+	public static int spikesThornsLevel(final int rank) {
+		return rank * 5;
+	}
+
+	/** Vanilla thorns costs the item 2 durability per proc; spikes match it. */
+	public static final int SPIKES_DURABILITY_COST = 2;
+
+	/** Reinforced Straps = Unbreaking I: half of durability hits are ignored. */
+	public static final float STRAPS_SKIP_CHANCE = 0.5F;
+
 	private Tuning() {
 	}
 }
