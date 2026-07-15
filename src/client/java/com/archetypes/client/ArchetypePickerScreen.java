@@ -109,8 +109,6 @@ public class ArchetypePickerScreen extends Screen {
 
 	@Override
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
-		super.extractRenderState(graphics, mouseX, mouseY, a);
-
 		int panelLeft = this.panelLeft();
 		int panelTop = this.panelTop();
 
@@ -161,6 +159,10 @@ public class ArchetypePickerScreen extends Screen {
 				y += 9;
 			}
 		}
+
+		// Widgets last: Screen.extractRenderState only walks the renderables, so
+		// anything drawn after it covers the buttons.
+		super.extractRenderState(graphics, mouseX, mouseY, a);
 	}
 
 	/**

@@ -9,40 +9,42 @@ import com.archetypes.ResetArchetypePayload;
 import com.archetypes.SubTree;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
-import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The archetype's skill tree: a full-screen vanilla window whose canvas is
- * split into three sections by thin dividers, one per sub-tree. Each section
- * holds a constellation — the sub-tree's symbol drawn in nodes (shield, sword,
- * mace, ...), rooted at the bottom and growing upward.
- *
- * <p>Esc closes back to the inventory, as on the advancements screen.
+ * The archetype's skill tree: a vanilla window covering ~90% of the screen,
+ * its canvas split into three sections by thin dividers, one per sub-tree.
+ * Each section is headed by its name and holds a constellation — the sub-tree's
+ * symbol drawn in nodes (shield, sword, mace, ...), rooted at the bottom and
+ * growing upward.
  *
  * <p>Every node is a placeholder ("+1% damage", no effect); the shapes are what
- * is being judged. Class-fantasy background art comes later and is deliberately
- * unrelated to these layouts.
+ * is being judged. Class-fantasy background art comes later, per class, and is
+ * deliberately unrelated to these layouts — the section headers are drawn faint
+ * so they read as part of that art once it lands.
  */
 public class ArchetypeScreen extends Screen {
-	private static final int MARGIN = 8;
+	/** Fraction of the screen the window covers. */
+	private static final int PANEL_PERCENT = 90;
 	private static final int PAD = 8;
 	private static final int HEADER = 22;
-	/** Strip below the canvas holding the creative reset button. Always reserved,
-	 * so the tree lays out identically in both game modes. */
-	private static final int FOOTER = 24;
-	/** Room under each constellation for its name. */
-	private static final int LABEL_STRIP = 14;
+	/** Strip below the canvas holding the Back / Reset buttons. */
+	private static final int FOOTER = 28;
+	/** Room at the top of each section for its name, drawn at 1.5x. */
+	private static final int SECTION_HEADER = 22;
 
 	private static final int NODE = 18;
 	private static final int MIN_SPACING = NODE + 2;
 	private static final int MAX_SPACING = 30;
+	private static final float SECTION_TITLE_SCALE = 1.5F;
 
 	private final @Nullable Screen parent;
 	private final List<SubTree> subTrees;
@@ -56,20 +58,23 @@ public class ArchetypeScreen extends Screen {
 
 	@Override
 	protected void init() {
+		int buttonY = this.panelTop() + this.panelHeight() - PAD - 20;
+
+		this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, button -> this.onClose())
+				.bounds(this.width / 2 - 100, buttonY, 96, 20)
+				.build());
+
 		// Creative-only testing affordance: undo the "permanent" choice. The
 		// server re-checks game mode; this button just hides the option.
 		if (this.minecraft.player == null || !this.minecraft.player.isCreative()) {
 			return;
 		}
 
-		Component label = Component.translatable("screen.archetypes.tree.reset");
-		int width = this.font.width(label) + 16;
-
-		this.addRenderableWidget(Button.builder(label, button -> {
+		this.addRenderableWidget(Button.builder(Component.translatable("screen.archetypes.tree.reset"), button -> {
 					ClientPlayNetworking.send(new ResetArchetypePayload());
 					this.minecraft.gui.setScreen(new ArchetypePickerScreen(this.parent));
 				})
-				.bounds(this.width - MARGIN - PAD - width, this.canvasBottom() + 4, width, 20)
+				.bounds(this.width / 2 + 4, buttonY, 96, 20)
 				.tooltip(Tooltip.create(Component.translatable("screen.archetypes.tree.reset.tooltip")))
 				.build());
 	}
@@ -79,20 +84,36 @@ public class ArchetypeScreen extends Screen {
 		this.minecraft.gui.setScreen(this.parent);
 	}
 
+	private int panelWidth() {
+		return this.width * PANEL_PERCENT / 100;
+	}
+
+	private int panelHeight() {
+		return this.height * PANEL_PERCENT / 100;
+	}
+
+	private int panelLeft() {
+		return (this.width - this.panelWidth()) / 2;
+	}
+
+	private int panelTop() {
+		return (this.height - this.panelHeight()) / 2;
+	}
+
 	private int canvasLeft() {
-		return MARGIN + PAD;
+		return this.panelLeft() + PAD;
 	}
 
 	private int canvasTop() {
-		return MARGIN + HEADER;
+		return this.panelTop() + HEADER;
 	}
 
 	private int canvasWidth() {
-		return this.width - (MARGIN + PAD) * 2;
+		return this.panelWidth() - PAD * 2;
 	}
 
 	private int canvasBottom() {
-		return this.height - MARGIN - PAD - FOOTER;
+		return this.panelTop() + this.panelHeight() - FOOTER;
 	}
 
 	private int sectionWidth() {
@@ -105,37 +126,41 @@ public class ArchetypeScreen extends Screen {
 	 */
 	private int spacing(final Constellation shape) {
 		int usableWidth = this.sectionWidth() - PAD * 2 - NODE;
-		int usableHeight = this.canvasBottom() - this.canvasTop() - LABEL_STRIP - PAD - NODE;
+		int usableHeight = this.canvasBottom() - this.canvasTop() - SECTION_HEADER - PAD * 2 - NODE;
 		int byWidth = shape.width() > 1 ? usableWidth / (shape.width() - 1) : MAX_SPACING;
 		int byHeight = shape.height() > 1 ? usableHeight / (shape.height() - 1) : MAX_SPACING;
 		return Mth.clamp(Math.min(byWidth, byHeight), MIN_SPACING, MAX_SPACING);
 	}
 
+	private int sectionCenter(final int section) {
+		return this.canvasLeft() + this.sectionWidth() * section + this.sectionWidth() / 2;
+	}
+
 	/** Top-left of a node, given its section and the spacing for that shape. */
 	private int nodeX(final int section, final Constellation shape, final Constellation.Node node,
 			final int spacing) {
-		int sectionCenter = this.canvasLeft() + this.sectionWidth() * section + this.sectionWidth() / 2;
 		int shapeWidth = (shape.width() - 1) * spacing;
-		return sectionCenter - shapeWidth / 2 + node.col() * spacing - NODE / 2;
+		return this.sectionCenter(section) - shapeWidth / 2 + node.col() * spacing - NODE / 2;
 	}
 
 	private int nodeY(final Constellation shape, final Constellation.Node node, final int spacing) {
-		// Roots sit just above the label strip; row grows upward from there.
-		int rootTop = this.canvasBottom() - LABEL_STRIP - NODE;
+		// Roots sit just above the canvas floor; row grows upward from there.
+		int rootTop = this.canvasBottom() - PAD - NODE;
 		return rootTop - node.row() * spacing;
 	}
 
 	@Override
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
-		super.extractRenderState(graphics, mouseX, mouseY, a);
+		int panelLeft = this.panelLeft();
+		int panelTop = this.panelTop();
 
-		VanillaUi.window(graphics, MARGIN, MARGIN, this.width - MARGIN * 2, this.height - MARGIN * 2);
+		VanillaUi.window(graphics, panelLeft, panelTop, this.panelWidth(), this.panelHeight());
 
-		graphics.text(this.font, this.title, MARGIN + PAD, MARGIN + 8, VanillaUi.LABEL, false);
+		graphics.text(this.font, this.title, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, false);
 
 		Component preview = Component.translatable("screen.archetypes.tree.preview");
-		graphics.text(this.font, preview, this.width - MARGIN - PAD - this.font.width(preview),
-				MARGIN + 8, VanillaUi.LABEL_FAINT, false);
+		graphics.text(this.font, preview, panelLeft + this.panelWidth() - PAD - this.font.width(preview),
+				panelTop + 8, VanillaUi.LABEL_FAINT, false);
 
 		VanillaUi.inset(graphics, this.canvasLeft(), this.canvasTop(),
 				this.canvasWidth(), this.canvasBottom() - this.canvasTop());
@@ -146,6 +171,8 @@ public class ArchetypeScreen extends Screen {
 			SubTree tree = this.subTrees.get(section);
 			Constellation shape = tree.constellation();
 			int spacing = this.spacing(shape);
+
+			this.sectionTitle(graphics, tree, section);
 
 			// Connections first, so nodes sit on top of the line ends.
 			for (int[] edge : shape.edges()) {
@@ -172,14 +199,6 @@ public class ArchetypeScreen extends Screen {
 				}
 			}
 
-			// Name plus its symbol, centered under the constellation.
-			Component label = tree.displayName();
-			int labelWidth = this.font.width(label);
-			int sectionCenter = this.canvasLeft() + this.sectionWidth() * section + this.sectionWidth() / 2;
-			int labelY = this.canvasBottom() - 11;
-			graphics.fakeItem(new ItemStack(tree.icon()), sectionCenter - labelWidth / 2 - 20, labelY - 4);
-			graphics.text(this.font, label, sectionCenter - labelWidth / 2, labelY, VanillaUi.LABEL, false);
-
 			if (section < this.subTrees.size() - 1) {
 				VanillaUi.verticalDivider(graphics,
 						this.canvasLeft() + this.sectionWidth() * (section + 1) - 1,
@@ -187,10 +206,31 @@ public class ArchetypeScreen extends Screen {
 			}
 		}
 
+		// Widgets last: Screen.extractRenderState only walks the renderables, so
+		// anything drawn after it covers the buttons.
+		super.extractRenderState(graphics, mouseX, mouseY, a);
+
 		if (tooltip) {
 			graphics.setTooltipForNextFrame(this.font,
 					List.of(Component.translatable("node.archetypes.placeholder")),
 					Optional.empty(), mouseX, mouseY);
 		}
+	}
+
+	/**
+	 * The sub-tree's name across the top of its section: bold and 1.5x, in a
+	 * washed-out tone so it sits back into the canvas rather than competing with
+	 * the nodes — and so it reads as part of the background art once that exists.
+	 */
+	private void sectionTitle(final GuiGraphicsExtractor graphics, final SubTree tree, final int section) {
+		Component label = tree.displayName().copy().withStyle(ChatFormatting.BOLD);
+		float x = this.sectionCenter(section) - this.font.width(label) * SECTION_TITLE_SCALE / 2.0F;
+		float y = this.canvasTop() + 6;
+
+		graphics.pose().pushMatrix();
+		graphics.pose().translate(x, y);
+		graphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE);
+		graphics.text(this.font, label, 0, 0, VanillaUi.SECTION_TITLE, false);
+		graphics.pose().popMatrix();
 	}
 }

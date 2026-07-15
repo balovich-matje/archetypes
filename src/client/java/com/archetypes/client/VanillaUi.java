@@ -11,6 +11,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 public final class VanillaUi {
 	public static final int LABEL = 0xFF404040;
 	public static final int LABEL_FAINT = 0xFF6B6B6B;
+	/** Section headers: washed out so they sit back into the canvas. */
+	public static final int SECTION_TITLE = 0xFF787878;
 	public static final int WINDOW_BODY = 0xFFC6C6C6;
 	public static final int INSET_BODY = 0xFF8B8B8B;
 	public static final int INSET_BODY_HOVERED = 0xFFA3A3A3;
