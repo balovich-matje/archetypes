@@ -2,29 +2,23 @@
 	"screen.archetypes.button": "Archetype",
 	"screen.archetypes.picker": "Choose your Archetype",
 	"screen.archetypes.picker.prompt": "This choice is permanent. Pick who you'll become.",
-
 	"archetype.archetypes.strength.tier.0": "Brawler",
 	"archetype.archetypes.strength.tier.1": "Colossus",
 	"archetype.archetypes.strength.blurb": "Melee, face to face. Start by punching zombies; end as something they run from.",
-
 	"archetype.archetypes.agility.tier.0": "Cutpurse",
 	"archetype.archetypes.agility.tier.1": "Nemesis",
 	"archetype.archetypes.agility.blurb": "Strike from the shadows, or from range. Start a thief; end inescapable.",
-
 	"archetype.archetypes.intellect.tier.0": "Seeker",
 	"archetype.archetypes.intellect.tier.1": "Oracle",
 	"archetype.archetypes.intellect.blurb": "Cast. Start with a spark that barely singes; end calling down meteors.",
-
 	"screen.archetypes.confirm.title": "Become a %s?",
 	"screen.archetypes.confirm.body": "You will start as a %s and can grow into a %s. This choice cannot be undone yet.",
 	"screen.archetypes.confirm.yes": "Choose",
-
 	"screen.archetypes.tree.title": "%s Skill Tree",
 	"screen.archetypes.tree.preview": "Preview — nodes do nothing yet",
 	"screen.archetypes.tree.reset": "Reset Archetype",
 	"screen.archetypes.tree.reset.tooltip": "Creative only. Clears your choice so you can pick again.",
 	"node.archetypes.placeholder": "+1% damage",
-
 	"subtree.archetypes.protector": "Protector",
 	"subtree.archetypes.slayer": "Slayer",
 	"subtree.archetypes.crusher": "Crusher",
@@ -33,5 +27,12 @@
 	"subtree.archetypes.shadow": "Shadow",
 	"subtree.archetypes.fire_mage": "Fire Mage",
 	"subtree.archetypes.wizard": "Wizard",
-	"subtree.archetypes.healer": "Healer"
+	"subtree.archetypes.healer": "Healer",
+	"item.archetypes.wooden_claymore": "Wooden Claymore",
+	"item.archetypes.stone_claymore": "Stone Claymore",
+	"item.archetypes.copper_claymore": "Copper Claymore",
+	"item.archetypes.iron_claymore": "Iron Claymore",
+	"item.archetypes.golden_claymore": "Golden Claymore",
+	"item.archetypes.diamond_claymore": "Diamond Claymore",
+	"item.archetypes.netherite_claymore": "Netherite Claymore"
 }

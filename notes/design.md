@@ -383,10 +383,49 @@ The honest weakness of (2): it bets on a mod that does not exist yet, and until 
 does, **Specialities standalone is the unbalanced thing** — and standalone is what
 everyone who downloaded it is playing. Not urgent, but not resolved.
 
+## Protector (shield) tree — build order
+
+**Shield Bash is the root and everything's dependency**: five of the nine nodes are
+modifiers on it, so it lands first and alone. It is the mod's first *active* ability —
+keybind, C2S packet, server-side cooldown and targeting.
+
+Ranked by cost, having checked what each actually needs:
+
+| Tier | Node | Why |
+| --- | --- | --- |
+| **Root** | Shield Bash | Keybind + payload + cooldown + targeting. Everything else waits on it. |
+| **Free** | Shield Slam (+33/66/100% dmg, +cooldown) | A number on the bash. |
+| **Free** | Bash cooldown −33/66/100% | A number. **But −100% = no cooldown at all** — should be −25/50/75, or the capstone is a spam button. |
+| **Free** | Knockback trade (less dmg, more knockback) | Two numbers. |
+| **Cheap** | Wide Swings (bash hits several) | Swap the single-target pick for an AABB query. |
+| **Cheap** | Shield Unbreaking I | Mixin on durability loss. Independent of bash. |
+| **Cheap** | Iron Spikes (Thorns V/X/XV, no knockback) | `hurtServer` mixin while blocking; reuse vanilla's Thorns durability formula. Independent of bash. |
+| **Medium** | Omni-block (block from all directions) | Mixin on the block-angle check. Independent of bash. |
+| **Medium** | Shield Rush (block + sprint → lunge 2→5) | Client input combo → payload → server velocity. Needs care: a lunge is a movement exploit vector. |
+| **Medium** | Reflection (projectiles return to sender) | Projectile mixin; re-aim and re-own so the shooter takes it. Vanilla already bounces arrows off shields — build on that. |
+| **Hardest** | Ground Slam (3x3 AOE) | AOE is easy; the *animation* is the work. Placeholder first. |
+
+**Suggested first slice**: Bash → Slam → Cooldown → Wide Swings. One active plus three
+numbers gives a whole playable path and proves the active-ability plumbing before any
+animation work.
+
+Notes:
+
+- **Cooldown −100% is a bug in waiting.** Cap the reduction well under 100%.
+- **Iron Spikes and Unbreaking are the best "easy wins"** — real, felt, no bash needed,
+  no new plumbing. Good candidates if Bash slips.
+- **Reflection may want a cap** (rate or arc), or it trivialises skeletons and ghasts
+  outright — that is vertical power wearing a utility hat.
+- **Animations**: Better Combat drives its own via its library; we are not taking that
+  dependency (see "what this mod is"). Placeholder = vanilla arm swing + an existing
+  sound event; revisit only when the tree is proven.
+- **Node icons**: vanilla item sprites, tinted/composited, exactly as Specialities does
+  it (`SkillIcons`). No new art needed.
+
 ## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its
   character. Classes may want active buttons — but "all passives" is a genuinely
-  unoccupied niche here.
+  unoccupied niche here. (Shield Bash commits us to actives for Archetypes.)
 - **Mana** (or any resource): only if an archetype needs it. Don't invent a resource
   for its own sake. (Leaning yes for Seeker — the cantrip already implies it.)
 - **Can you change archetype later?** Free / costly / one-shot item / never?

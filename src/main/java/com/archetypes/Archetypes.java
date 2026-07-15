@@ -14,6 +14,7 @@ public class Archetypes implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ModAttachments.initialize();
+		ModItems.initialize();
 
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);

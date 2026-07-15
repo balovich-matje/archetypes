@@ -1,0 +1,6 @@
+{
+  "model": {
+    "type": "minecraft:model",
+    "model": "archetypes:item/iron_claymore"
+  }
+}
