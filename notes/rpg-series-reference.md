@@ -1,4 +1,4 @@
-# RPG Series — reference notes
+# Existing class mods — reference notes
 
 Competitive reference only: what classes exist in the RPG Series, the general idea
 of each, and their skill names. Gathered 2026-07-15 from each mod's Modrinth page
@@ -6,6 +6,13 @@ and its public source repo (spells are data files, so these lists are exact rath
 than guessed).
 
 **Not a design target — see [design.md](design.md) for what we're doing differently.**
+
+> There is a **second, separate family**: **"More RPG Classes"** — Archers Expansion
+> (1.3M), Elemental Wizards (550k), Berserker (436k), Witcher (435k), Forcemaster
+> (414k), plus its own Skill Tree. ~3.2M downloads combined, different authors.
+> Notably **they, not the RPG Series, own the `class` search** on Modrinth, purely
+> because "Classes" is in their titles. Not yet examined in detail — worth a pass
+> before we finalise our archetype list.
 
 ## The series at a glance
 
