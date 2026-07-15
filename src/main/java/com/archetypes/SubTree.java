@@ -60,6 +60,17 @@ public enum SubTree {
 		return Component.translatable("subtree." + Archetypes.MOD_ID + "." + this.id);
 	}
 
+	/** Resolve a wire id back to a sub-tree; null for garbage from the client. */
+	public static SubTree byId(final String id) {
+		for (SubTree tree : values()) {
+			if (tree.id.equals(id)) {
+				return tree;
+			}
+		}
+
+		return null;
+	}
+
 	/** The three sub-trees of an archetype, in left-to-right screen order. */
 	public static List<SubTree> of(final Archetype archetype) {
 		return switch (archetype) {

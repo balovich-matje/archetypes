@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Optional;
 
 import com.archetypes.Archetype;
+import com.archetypes.BuyNodePayload;
 import com.archetypes.Constellation;
+import com.archetypes.NodePurchases;
+import com.archetypes.ProtectorNodes;
 import com.archetypes.ResetArchetypePayload;
 import com.archetypes.SkillPoints;
 import com.archetypes.SubTree;
@@ -15,6 +18,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
@@ -207,6 +211,51 @@ public class ArchetypeScreen extends Screen {
 		return layout.rootTop() - node.row() * layout.spacing();
 	}
 
+	/** A node under the cursor: which sub-tree column, which node index. */
+	private record Hit(int section, int index) {
+	}
+
+	private @Nullable Hit nodeAt(final double mouseX, final double mouseY) {
+		for (int section = 0; section < this.subTrees.size(); section++) {
+			Constellation shape = this.subTrees.get(section).constellation();
+			Layout layout = this.layout(section, shape);
+			int size = layout.node();
+
+			for (int i = 0; i < shape.nodes().size(); i++) {
+				int x = nodeX(shape, shape.nodes().get(i), layout);
+				int y = nodeY(shape.nodes().get(i), layout);
+
+				if (mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size) {
+					return new Hit(section, i);
+				}
+			}
+		}
+
+		return null;
+	}
+
+	@Override
+	public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
+		if (super.mouseClicked(event, doubleClick)) {
+			return true;
+		}
+
+		Hit hit = this.nodeAt(event.x(), event.y());
+
+		if (event.button() != 0 || hit == null || this.minecraft.player == null) {
+			return false;
+		}
+
+		SubTree tree = this.subTrees.get(hit.section());
+
+		// Client-side check is a courtesy; the server re-runs all of it.
+		if (NodePurchases.check(this.minecraft.player, tree, hit.index()) == NodePurchases.Verdict.BUYABLE) {
+			ClientPlayNetworking.send(new BuyNodePayload(tree.id(), hit.index()));
+		}
+
+		return true;
+	}
+
 	@Override
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
 		int panelLeft = this.panelLeft();
@@ -240,7 +289,7 @@ public class ArchetypeScreen extends Screen {
 
 		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(), canvasWidth, canvasHeight);
 
-		boolean tooltip = false;
+		List<Component> tooltip = null;
 
 		for (int section = 0; section < this.subTrees.size(); section++) {
 			SubTree tree = this.subTrees.get(section);
@@ -260,16 +309,36 @@ public class ArchetypeScreen extends Screen {
 						VanillaUi.INSET_BODY);
 			}
 
-			for (Constellation.Node node : shape.nodes()) {
+			var owned = this.minecraft.player == null
+					? java.util.Set.<Integer>of()
+					: NodePurchases.owned(this.minecraft.player, tree);
+
+			for (int i = 0; i < shape.nodes().size(); i++) {
+				Constellation.Node node = shape.nodes().get(i);
 				int x = nodeX(shape, node, layout);
 				int y = nodeY(node, layout);
 				boolean hovered = mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
 
 				VanillaUi.inset(graphics, x, y, size, size);
 
+				NodePurchases.Verdict verdict = this.minecraft.player == null
+						? NodePurchases.Verdict.NOT_CONNECTED
+						: NodePurchases.check(this.minecraft.player, tree, i);
+
+				if (owned.contains(i)) {
+					// Yours: filled with the archetype's colour.
+					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, this.archetype.color());
+				} else if (verdict != NodePurchases.Verdict.BUYABLE) {
+					// Out of reach: sunken and dark.
+					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, 0x77000000);
+				}
+
 				if (hovered) {
-					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
-					tooltip = true;
+					if (verdict == NodePurchases.Verdict.BUYABLE) {
+						graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
+					}
+
+					tooltip = this.nodeTooltip(tree, i, verdict);
 				}
 			}
 
@@ -286,11 +355,47 @@ public class ArchetypeScreen extends Screen {
 		// anything drawn after it covers the buttons.
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 
-		if (tooltip) {
-			graphics.setTooltipForNextFrame(this.font,
-					List.of(Component.translatable("node.archetypes.placeholder")),
-					Optional.empty(), mouseX, mouseY);
+		if (tooltip != null) {
+			graphics.setTooltipForNextFrame(this.font, tooltip, Optional.empty(), mouseX, mouseY);
 		}
+	}
+
+	/** Families whose effect is actually wired up; the rest say so honestly. */
+	private static final java.util.Set<ProtectorNodes.Family> LIVE_FAMILIES = java.util.Set.of(
+			ProtectorNodes.Family.BASH, ProtectorNodes.Family.SLAM, ProtectorNodes.Family.COOLDOWN,
+			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE);
+
+	private List<Component> nodeTooltip(final SubTree tree, final int index,
+			final NodePurchases.Verdict verdict) {
+		ProtectorNodes.Def def = ProtectorNodes.def(tree, index);
+		List<Component> lines = new java.util.ArrayList<>();
+
+		Component name = Component.translatable(def.family().nameKey());
+
+		if (def.rank() > 1 || totalRanks(tree, def.family()) > 1) {
+			name = Component.translatable("node.archetypes.ranked", name, def.rank());
+		}
+
+		lines.add(name);
+		lines.add(Component.translatable(verdict.key()).withStyle(ChatFormatting.GRAY));
+
+		if (!LIVE_FAMILIES.contains(def.family())) {
+			lines.add(Component.translatable("node.archetypes.inert").withStyle(ChatFormatting.DARK_GRAY));
+		}
+
+		return lines;
+	}
+
+	private static int totalRanks(final SubTree tree, final ProtectorNodes.Family family) {
+		int count = 0;
+
+		for (int i = 0; i < tree.constellation().nodes().size(); i++) {
+			if (ProtectorNodes.def(tree, i).family() == family) {
+				count++;
+			}
+		}
+
+		return count;
 	}
 
 	/**

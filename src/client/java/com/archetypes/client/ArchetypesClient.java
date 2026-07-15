@@ -2,13 +2,19 @@ package com.archetypes.client;
 
 import com.archetypes.Archetype;
 import com.archetypes.ModAttachments;
+import com.archetypes.ShieldBashPayload;
 import com.archetypes.client.mixin.AbstractContainerScreenAccessor;
+import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -16,6 +22,7 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
+import org.lwjgl.glfw.GLFW;
 
 public class ArchetypesClient implements ClientModInitializer {
 	private static final int BUTTON_SIZE = 20;
@@ -27,6 +34,20 @@ public class ArchetypesClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		// Default G; rebindable under Gameplay. The key only reports the press —
+		// the server decides whether a bash actually happens.
+		KeyMapping bashKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+				"key.archetypes.shield_bash", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G,
+				KeyMapping.Category.GAMEPLAY));
+
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			while (bashKey.consumeClick()) {
+				if (client.player != null) {
+					ClientPlayNetworking.send(new ShieldBashPayload());
+				}
+			}
+		});
+
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
 			if (!(screen instanceof InventoryScreen) && !(screen instanceof CreativeModeInventoryScreen)) {
 				return;

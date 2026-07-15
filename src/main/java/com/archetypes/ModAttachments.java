@@ -1,5 +1,9 @@
 package com.archetypes;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import com.mojang.serialization.Codec;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
@@ -44,6 +48,19 @@ public final class ModAttachments {
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
 
+	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
+	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
+			Archetypes.id("purchased"),
+			builder -> builder
+					.persistent(Codec.unboundedMap(Codec.STRING, Codec.INT.listOf()))
+					.syncWith(
+							ByteBufCodecs.<io.netty.buffer.ByteBuf, String, List<Integer>, Map<String, List<Integer>>>map(
+									HashMap::new,
+									ByteBufCodecs.STRING_UTF8,
+									ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list())),
+							AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
 	private ModAttachments() {
 	}
 
@@ -61,8 +78,15 @@ public final class ModAttachments {
 		((AttachmentTarget) player).setAttached(ARCHETYPE, archetype.id());
 	}
 
-	/** Back to unpicked, so the picker opens again. Creative-only, for testing. */
+	/**
+	 * Back to unpicked, so the picker opens again. Creative-only, for testing.
+	 * Progress goes with it: keeping banked levels or owned nodes across a
+	 * re-pick would make reset a respec exploit rather than a clean slate.
+	 */
 	public static void clear(final Player player) {
 		((AttachmentTarget) player).removeAttached(ARCHETYPE);
+		((AttachmentTarget) player).removeAttached(ARCHETYPE_XP);
+		((AttachmentTarget) player).removeAttached(SPENT_POINTS);
+		((AttachmentTarget) player).removeAttached(PURCHASED);
 	}
 }

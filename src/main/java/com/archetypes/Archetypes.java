@@ -18,6 +18,23 @@ public class Archetypes implements ModInitializer {
 
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(BuyNodePayload.TYPE, BuyNodePayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(ShieldBashPayload.TYPE, ShieldBashPayload.CODEC);
+
+		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
+				.server().execute(() -> {
+					SubTree tree = SubTree.byId(payload.subTreeId());
+
+					// Only spend into trees of the archetype you actually are.
+					if (tree == null || ModAttachments.get(context.player()) != tree.archetype()) {
+						return;
+					}
+
+					NodePurchases.buy(context.player(), tree, payload.node());
+				}));
+
+		ServerPlayNetworking.registerGlobalReceiver(ShieldBashPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> ShieldBash.execute(context.player())));
 
 		ServerPlayNetworking.registerGlobalReceiver(PickArchetypePayload.TYPE, (payload, context) -> {
 			Archetype picked = Archetype.byId(payload.archetypeId()).orElse(null);

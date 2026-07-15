@@ -357,13 +357,13 @@ Done right, a fully-enchanted Oracle is not *stronger* than a fully-enchanted va
 player — they are **differently capable**. The game gets textured, not easier, and the
 difficulty knob stays free for the pack to own.
 
-### Open: does an archetype *reshape* power rather than add it?
+### DECIDED: archetypes reshape power (starting with Seeker)
 
-The sharper version: Seeker casts well **and swings worse**. That is how every real
-class system holds balance, and it makes the choice cost something — which is what
-makes it mean something. It is also the version players complain about. Undecided.
+Seeker casts well **and a sword is not viable for them**. The choice costs something,
+which is what makes it mean something. How the sword penalty is expressed (damage
+malus, recovery malus, or both) is Seeker-tree design work, later.
 
-### Open: does Specialities' x2 damage survive?
+### DECIDED: Specialities' x2 damage stays
 
 The uncomfortable part. **Specialities already grants +100% melee damage at level 100**,
 plus passive Fortune and Looting. By our own diagnosis it layers power onto a player
@@ -432,6 +432,17 @@ budgets, and no budget covers its own tree.
 the skill list is ~23 even counting every rank. The surplus stays as inert "+1% damage"
 placeholders for now — the shape was authored to read as a shield and that is worth
 keeping while the real node list settles.
+
+Candidates to replace the placeholders (all horizontal or costed, dagger-shaped):
+
+- **Steadfast** — knockback resistance while blocking.
+- **Unburdened** — blocking slows your walk less.
+- **Bell Ringer** — bash briefly applies Slowness: crowd control, not damage.
+- **Taunt** — bash forces nearby mobs to target you. The tank verb; shines in co-op.
+- **Braced** — blocking a hit refunds a slice of bash cooldown (synergy, costed by
+  requiring you to actually get hit).
+- **Perfect Guard** — a block within ~0.5s of raising the shield negates the hit
+  entirely: a timing skill, the most horizontal thing a shield can do.
 
 ### The cooldown formula — the honest problem
 
