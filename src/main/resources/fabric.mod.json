@@ -1,0 +1,36 @@
+{
+	"schemaVersion": 1,
+	"id": "archetypes",
+	"version": "${version}",
+	"name": "Archetypes",
+	"description": "Pick your class in the first minute. Brawler, Cutpurse or Seeker — and what they become.",
+	"authors": [
+		"balovich-matje"
+	],
+	"contact": {
+		"homepage": "https://github.com/balovich-matje/archetypes",
+		"sources": "https://github.com/balovich-matje/archetypes"
+	},
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			"com.archetypes.Archetypes"
+		],
+		"client": [
+			"com.archetypes.client.ArchetypesClient"
+		]
+	},
+	"mixins": [
+		{
+			"config": "archetypes.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.3",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*"
+	}
+}

@@ -110,11 +110,46 @@ Not hypothetical; all three are guaranteed if Archetypes registers its UI blindl
   player with both sees two progression feels in one screen. Keep the curve
   consciously mirrored.
 
-## Open questions
+## DECIDED: the three archetypes
 
-- **Which archetypes?** Count and names. Their space is Wizard/Paladin/Priest/Archer/
-  Rogue/Warrior/Death Knight/Druid/Berserker/Witcher/Forcemaster — we need our own set
-  and our own vocabulary.
+Three archetypes, each with a **start name** (what you pick, minute one, holding a
+wooden pickaxe) and a **peak name** (the same archetype fully levelled).
+
+| Stat | Start | Peak | Fantasy |
+| --- | --- | --- | --- |
+| Strength | **Brawler** | **Colossus** | Melee, face to face. Starts punching zombies bare-fisted on night one. |
+| Agility | **Cutpurse** | **Nemesis** | Stealth melee *and* ranged (bows/crossbows). |
+| Intellect | **Seeker** | **Oracle** | Casting. Starts with a feeble cantrip that drains mana for less DPS than a wooden sword; ends casting meteors on long cooldowns. |
+
+The naming rule that makes the set cohere: **a humble medieval occupation becomes a
+figure of myth.** The peaks are classical antiquity — the Oracle of Delphi, the
+Colossus of Rhodes, Nemesis the goddess of inescapable retribution. The gap between
+"nobody with a wooden pickaxe" and "thing out of a legend" *is* the arc.
+
+Internal ids are the neutral stat (`strength`, `agility`, `intellect`) so renaming a
+tier never touches saved data.
+
+Names deliberately avoided (taken by the competition): Warrior, Rogue, Mage, Wizard,
+Paladin, Priest, Druid, Archer, Death Knight, Berserker, Witcher, Forcemaster. Also
+Warden — that's a vanilla mob.
+
+## Picker screen (sketched)
+
+- Each archetype is a square frame split by a **diagonal**: start tier top-left, peak
+  tier bottom-right.
+- Hovering a half **enlarges that art out of the frame** — e.g. Brawler is a player in
+  copper armor with an iron sword; Colossus is the same player in netherite with a
+  rare armor trim, dual-wielding enchanted netherite swords.
+- Needs 6 pieces of art (3 archetypes x 2 tiers). Placeholder for now.
+- Third-party/mod armor art would need permission from those authors first.
+
+## Archetype screen (later)
+
+WoW-style **active/passive skill tree** — an epic full-bleed background with the
+archetype's figure in it, nodes linked by arrows, ranks like `2/2`. This is the
+long-term target for the post-pick screen.
+
+## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its
   character. Classes may want active buttons — but "all passives" is a genuinely
   unoccupied niche here.
