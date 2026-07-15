@@ -376,7 +376,8 @@ public class ArchetypeScreen extends Screen {
 	private static final java.util.Set<ProtectorNodes.Family> LIVE_FAMILIES = java.util.Set.of(
 			ProtectorNodes.Family.BASH, ProtectorNodes.Family.SLAM, ProtectorNodes.Family.COOLDOWN,
 			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE,
-			ProtectorNodes.Family.SPIKES, ProtectorNodes.Family.UNBREAKING);
+			ProtectorNodes.Family.SPIKES, ProtectorNodes.Family.UNBREAKING,
+			ProtectorNodes.Family.BRACED);
 
 	private static final int TOOLTIP_WIDTH = 180;
 

@@ -90,7 +90,7 @@ public final class ShieldBash {
 		// Tuning) — no grey sweep. Bashing also spends the melee attack timer,
 		// so it replaces a sword swing instead of stacking on top of one.
 		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(
-				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(slam, recovery));
+				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(recovery));
 		player.resetAttackStrengthTicker();
 
 		if (primary == null) {

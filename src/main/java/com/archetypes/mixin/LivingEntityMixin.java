@@ -1,5 +1,6 @@
 package com.archetypes.mixin;
 
+import com.archetypes.ModAttachments;
 import com.archetypes.NodePurchases;
 import com.archetypes.ProtectorNodes;
 import com.archetypes.SubTree;
@@ -31,8 +32,22 @@ public abstract class LivingEntityMixin {
 			return;
 		}
 
-		int rank = ProtectorNodes.rank(SubTree.PROTECTOR,
-				NodePurchases.owned(player, SubTree.PROTECTOR), ProtectorNodes.Family.SPIKES);
+		var owned = NodePurchases.owned(player, SubTree.PROTECTOR);
+
+		// Braced: a blocked hit shaves a second off the bash's countdown — the
+		// tree's loop closing: blocking feeds bashing feeds blocking.
+		if (ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.BRACED) > 0) {
+			var target = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player;
+			Long readyAt = target.getAttached(ModAttachments.BASH_READY_AT);
+			long now = player.level().getGameTime();
+
+			if (readyAt != null && readyAt > now) {
+				target.setAttached(ModAttachments.BASH_READY_AT,
+						Math.max(now, readyAt - Tuning.BRACED_REFUND_TICKS));
+			}
+		}
+
+		int rank = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.SPIKES);
 
 		if (rank <= 0 || !attacker.isAlive()) {
 			return;

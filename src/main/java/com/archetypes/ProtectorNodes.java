@@ -32,6 +32,7 @@ public final class ProtectorNodes {
 		UNBREAKING(() -> Items.LEATHER),
 		SPIKES(() -> Items.POINTED_DRIPSTONE),
 		RUSH(() -> Items.WIND_CHARGE),
+		BRACED(() -> Items.AMETHYST_SHARD),
 		REFLECT(() -> Items.SPECTRAL_ARROW),
 		OMNI_BLOCK(() -> Items.SHULKER_SHELL),
 		GROUND_SLAM(() -> Items.ANVIL),
@@ -99,6 +100,9 @@ public final class ProtectorNodes {
 		byCell.put(cell(4, 2), new Def(Family.COOLDOWN, 2));
 		byCell.put(cell(4, 3), new Def(Family.COOLDOWN, 3));
 		byCell.put(cell(4, 4), new Def(Family.COOLDOWN, 4));
+		// Braced sits between Recovery and the crown, so the natural full build
+		// (root + one rim + the whole centre) spends exactly the 15-point cap.
+		byCell.put(cell(4, 5), new Def(Family.BRACED, 1));
 		byCell.put(cell(3, 5), new Def(Family.OMNI_BLOCK, 1));
 		byCell.put(cell(5, 5), new Def(Family.GROUND_SLAM, 1));
 

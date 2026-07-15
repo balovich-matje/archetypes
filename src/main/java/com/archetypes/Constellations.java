@@ -13,16 +13,17 @@ public final class Constellations {
 	}
 
 	/**
-	 * Exactly 23 nodes — one per real Protector skill, no placeholders. Bash at
-	 * the tip, utility up the left rim, damage up the right, Shield Rush up the
-	 * centre with the two capstones flanking its top. The top edge is open; the
-	 * crown cross keeps the shield readable.
+	 * Exactly 24 nodes — one per real Protector skill, no placeholders, and a
+	 * full build (root + one rim + centre) spends exactly the 15-point cap.
+	 * Bash at the tip, utility up the left rim, damage up the right, Quick
+	 * Recovery then Braced up the centre with the two capstones flanking the
+	 * crown. The top edge closes with a decorative line.
 	 */
 	public static final Constellation PROTECTOR_SHIELD = Constellation.of(
 			"#.......#",
 			"#.......#",
 			"#.......#",
-			"#..#.#..#",
+			"#..###..#",
 			".#..#..#.",
 			".#..#..#.",
 			"..#.#.#..",

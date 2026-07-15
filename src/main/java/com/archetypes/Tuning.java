@@ -23,8 +23,7 @@ public final class Tuning {
 	 *
 	 * <p><b>Ability</b> — 6 seconds on top. Quick Recovery removes a quarter of
 	 * <em>this layer only</em> per rank (4 ranks), so even at −100% the swing
-	 * cadence holds. Shield Slam adds +33% per rank here — full Slam against
-	 * full Recovery lands back on 6s: a bigger hit at the original rhythm.
+	 * cadence holds.
 	 *
 	 * <p>There is no grey sweep: both layers fold into the one countdown on the
 	 * shield's slot, so the display is a single number rather than two effects
@@ -33,16 +32,25 @@ public final class Tuning {
 	public static final int BASH_SWING_TICKS = 16;
 	public static final int BASH_ABILITY_TICKS = 120;
 
-	/** Shield Slam: damage climbs a third per rank; the ability layer matches. */
+	/**
+	 * Shield Slam: damage climbs a third per rank, flat — no cooldown penalty.
+	 * The bash is not a damage rotation at any setting (even doubled it is
+	 * ~1.5 DPS against a sword's 11), so a penalty was not preventing power
+	 * creep, only making a utility button feel bad at 13 seconds. Shields
+	 * cannot be enchanted for damage; this is where that power lives.
+	 */
 	public static float slamMultiplier(final int rank) {
 		return 1.0F + rank / 3.0F;
 	}
 
-	/** Total cooldown ticks: swing floor + the modified ability layer. */
-	public static int bashCooldownTicks(final int slamRank, final int recoveryRank) {
-		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 4.0F;
+	/** Total cooldown ticks: swing floor + the Recovery-modified ability layer. */
+	public static int bashCooldownTicks(final int recoveryRank) {
+		float factor = 1.0F - recoveryRank / 4.0F;
 		return BASH_SWING_TICKS + Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
 	}
+
+	/** Braced: each blocked hit shaves this off the bash's remaining cooldown. */
+	public static final int BRACED_REFUND_TICKS = 20;
 
 	/** Shield Rush lunge distance in blocks: 2, 4, 6 by rank. */
 	public static int rushBlocks(final int rank) {
