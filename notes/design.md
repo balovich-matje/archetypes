@@ -202,7 +202,45 @@ sub-tree's symbol. Two separate things:
 - **Constellations** = the node layout, one symbol per sub-tree, drawn in nodes.
 - **Background art** = *one image per class*, class-fantasy themed — the
   [WoW talent tree](https://www.wowhead.com/talent-calc/warrior/protection) model.
-  Not copying it; same idea. Deferred until the trees are done.
+  Not copying it; same idea.
+
+## Background art: local generation (first pass done)
+
+**Toolchain**, installed at `/Volumes/ADATA SE920 SSD/repos/stable-diffusion.cpp`:
+[stable-diffusion.cpp](https://github.com/leejet/stable-diffusion.cpp) built with
+`-DSD_METAL=ON`, running **Z-Image-Turbo Q6_K** (6B, GGUF) + Qwen3-4B text encoder +
+the FLUX VAE. Generator script: `gen-archetypes.sh`, first outputs in `notes/art/`.
+
+Why this route: Z-Image documents no Mac/MPS support, and its "fits in 16G VRAM" claim
+means *dedicated* VRAM — this box is an M4 with 16GB **unified**. sd.cpp's Metal
+backend plus a quantised model is what actually fits. **~4 min/image** at 1024x576,
+8 steps, cfg 1.0 (the Turbo recipe from the repo's own `docs/z_image.md`).
+
+Gotcha: the VAE the docs point at (`black-forest-labs/FLUX.1-schnell`) is **gated** —
+401 anonymously. Same file is ungated at `Comfy-Org/z_image_turbo/split_files/vae`.
+
+**Prompt shape that worked.** Three blocks: a Minecraft-style block (voxel geometry,
+cubic shapes, pixelated 16x16 textures), the scene, then a mood block. The mood block
+is the important one, because these are backdrops for a node graph, not pictures:
+*dark, muted, desaturated, deep shadows, uncluttered center, subject small and at the
+edges, no text, no characters facing camera.*
+
+**Verdict on the first pass** (composites in `notes/art/composite_*.png` — art +
+vignette + nodes, which is the only test that matters):
+
+- `strength` — best. Reads as genuine Minecraft: blocky torches, cobblestone, crossed
+  swords, a shield. Detail left, empty right.
+- `agility` — good. Night rooftop, lantern, fog; detail at both edges, empty middle.
+- `intellect` — weakest. Reads as an isometric voxel diorama (MagicaVoxel-ish) rather
+  than Minecraft, and it is **center-bright** exactly where the middle constellation
+  sits. Regenerate: kill the isometric framing, push the light source off-center.
+
+Confirmed by the composites: a vignette plus ~55% brightness leaves the nodes fully
+readable while the art still reads. Imperfect art is genuinely fine.
+
+**Open:** provenance. These are locally AI-generated. The mod is MIT and public, so
+decide before shipping whether generated art is acceptable for the project, or whether
+this is only concept work to hand to a pixel artist.
 
 ### Authoring: ASCII grids
 
