@@ -53,6 +53,16 @@ public final class VanillaUi {
 		inset(graphics, x, y, 18, 18);
 	}
 
+	/**
+	 * Thin engraved groove, the vanilla separator: 1px dark + 1px light, 2px
+	 * total — deliberately slimmer than the 2px-per-side bevel of a window.
+	 */
+	public static void verticalDivider(final GuiGraphicsExtractor graphics, final int x,
+			final int top, final int bottom) {
+		graphics.fill(x, top, x + 1, bottom, INSET_DARK);
+		graphics.fill(x + 1, top, x + 2, bottom, HIGHLIGHT);
+	}
+
 	/** Stepped 2px-thick line between two points, for tree connections. */
 	public static void line(final GuiGraphicsExtractor graphics, final int x1, final int y1,
 			final int x2, final int y2, final int color) {

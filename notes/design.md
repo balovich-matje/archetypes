@@ -182,20 +182,44 @@ bottom, expanding upwards.**
 | Seeker | **Wizard** | staff |
 | Seeker | **Healer** | heart / regeneration |
 
-- The constellation image is **background art, barely visible — outlines only**. Nodes
-  and connections draw over it. Image references can come from the Minecraft wiki /
-  Minecraft Dungeons wiki.
 - Node graph in the vanilla style: slot-inset squares joined by dark lines on the grey
   inset canvas (the Pufferfish look), not glowing WoW arrows.
-- **Size: ~20 nodes per sub-tree, so ~60 per class tree.**
+- **Size: 20–40 nodes per sub-tree** — whatever the shape needs to read.
 - The tree window is **full-screen** (small margin), like Pufferfish's — not a
   dialog-sized panel.
+- The three sections are split by **thin vanilla dividers** (1px dark + 1px light
+  engraved groove) — deliberately slimmer than the 2px-per-side window bevel, and
+  *not* blended background art, which is what would break the vanilla feel.
 - Ranks (`2/2`), actives vs passives, costs: all undecided — see open questions.
 - **Shipped placeholder first**: every node is "+1% damage" with no effect, so the
   layout/feel can be judged in-game before any balance work.
-- **Next discussion: how to create the background art** (hand-pixelled? traced from
-  wiki renders? generated then cleaned up?). Whatever the method, output must be
-  faint grey outlines that don't fight the nodes.
+
+### DECIDED: constellations and background art are independent
+
+The nodes are **not** traced over the background image, and the background is not the
+sub-tree's symbol. Two separate things:
+
+- **Constellations** = the node layout, one symbol per sub-tree, drawn in nodes.
+- **Background art** = *one image per class*, class-fantasy themed — the
+  [WoW talent tree](https://www.wowhead.com/talent-calc/warrior/protection) model.
+  Not copying it; same idea. Deferred until the trees are done.
+
+### Authoring: ASCII grids
+
+Shapes live in `Constellations.java` as ASCII grids (`'#'` = node), written top-down
+the way they appear on screen, so the shape is legible and editable in source.
+`Constellation.of(...)` parses them and derives edges by 8-connectivity, so a chain of
+touching cells becomes a chain of nodes and an outline becomes a ring. Row 0 of the
+parsed result is the bottom row: **each constellation roots at the bottom and grows
+up**, and the three roots per class satisfy "multiple starting points at the bottom".
+
+**Lesson from the first pass** (prototyped in Python and rendered before writing any
+Java — much faster than rebuilding the game): at this node density *only a
+distinctive silhouette survives*. A circle on a stick describes a mace **and** a
+staff; both first drafts read as lollipops. An X reads as a butterfly, not as crossed
+daggers. Fixes that worked: spikes on the mace, a diamond crystal on the staff,
+guards and pommels on the daggers, a pointed hood and wide hem for the cloak, and a
+single curled tongue for the flame (three tongues read as a cloud).
 
 ## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its

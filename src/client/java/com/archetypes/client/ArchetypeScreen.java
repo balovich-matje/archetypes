@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.archetypes.Archetype;
+import com.archetypes.Constellation;
 import com.archetypes.ResetArchetypePayload;
 import com.archetypes.SubTree;
 
@@ -18,14 +19,16 @@ import net.minecraft.world.item.ItemStack;
 import org.jspecify.annotations.Nullable;
 
 /**
- * The archetype's skill tree: a window filling the whole screen (the
- * Pufferfish's Skills footprint), whose canvas holds the three constellation
- * sub-trees, roots at the bottom, growing upward. Esc closes, back to the
- * inventory — no button, same as the advancements screen.
+ * The archetype's skill tree: a full-screen vanilla window whose canvas is
+ * split into three sections by thin dividers, one per sub-tree. Each section
+ * holds a constellation — the sub-tree's symbol drawn in nodes (shield, sword,
+ * mace, ...), rooted at the bottom and growing upward.
  *
- * <p>All 60 nodes are placeholders ("+1% damage", no effect) sharing one
- * 20-node lattice — the real shapes come with the constellation background
- * art, where each sub-tree's nodes trace its symbol (shield, sword, mace, ...).
+ * <p>Esc closes back to the inventory, as on the advancements screen.
+ *
+ * <p>Every node is a placeholder ("+1% damage", no effect); the shapes are what
+ * is being judged. Class-fantasy background art comes later and is deliberately
+ * unrelated to these layouts.
  */
 public class ArchetypeScreen extends Screen {
 	private static final int MARGIN = 8;
@@ -34,37 +37,20 @@ public class ArchetypeScreen extends Screen {
 	/** Strip below the canvas holding the creative reset button. Always reserved,
 	 * so the tree lays out identically in both game modes. */
 	private static final int FOOTER = 24;
+	/** Room under each constellation for its name. */
+	private static final int LABEL_STRIP = 14;
 
 	private static final int NODE = 18;
-	private static final int ROWS = 7;
-	/** Placeholder lattice, as {column, row} with row 0 at the bottom. */
-	private static final int[][] TEMPLATE = {
-			{0, 0},
-			{-1, 1}, {1, 1},
-			{-2, 2}, {0, 2}, {2, 2},
-			{-2, 3}, {-1, 3}, {1, 3}, {2, 3},
-			{-2, 4}, {-1, 4}, {1, 4}, {2, 4},
-			{-2, 5}, {0, 5}, {2, 5},
-			{-2, 6}, {0, 6}, {2, 6}
-	};
-	private static final int[][] EDGES = {
-			{0, 1}, {0, 2},
-			{1, 3}, {1, 4}, {2, 4}, {2, 5},
-			{3, 6}, {4, 7}, {4, 8}, {5, 9},
-			{6, 10}, {7, 11}, {8, 12}, {9, 13},
-			{10, 14}, {11, 15}, {12, 15}, {13, 16},
-			{14, 17}, {15, 18}, {16, 19}
-	};
+	private static final int MIN_SPACING = NODE + 2;
+	private static final int MAX_SPACING = 30;
 
 	private final @Nullable Screen parent;
-	private final Archetype archetype;
 	private final List<SubTree> subTrees;
 
 	public ArchetypeScreen(final @Nullable Screen parent, final Archetype archetype) {
 		super(Component.translatable("screen.archetypes.tree.title",
 				archetype.tierName(0).copy().withStyle(style -> style.withColor(archetype.color() & 0xFFFFFF))));
 		this.parent = parent;
-		this.archetype = archetype;
 		this.subTrees = SubTree.of(archetype);
 	}
 
@@ -109,26 +95,34 @@ public class ArchetypeScreen extends Screen {
 		return this.height - MARGIN - PAD - FOOTER;
 	}
 
-	/** Horizontal node spacing: spread with the window, within vanilla-ish bounds. */
-	private int nodeDx() {
-		return Mth.clamp((this.canvasWidth() / 3 - NODE - 8) / 4, 18, 30);
+	private int sectionWidth() {
+		return this.canvasWidth() / 3;
 	}
 
-	/** Vertical node spacing: fill the space above the root row. */
-	private int nodeDy() {
-		int rootTop = this.canvasBottom() - 17 - NODE;
-		return Mth.clamp((rootTop - this.canvasTop() - 6) / (ROWS - 1), 18, 30);
+	/**
+	 * Grid spacing for one constellation: the largest that fits its section in
+	 * both axes, so shapes of different grid sizes all fill their space.
+	 */
+	private int spacing(final Constellation shape) {
+		int usableWidth = this.sectionWidth() - PAD * 2 - NODE;
+		int usableHeight = this.canvasBottom() - this.canvasTop() - LABEL_STRIP - PAD - NODE;
+		int byWidth = shape.width() > 1 ? usableWidth / (shape.width() - 1) : MAX_SPACING;
+		int byHeight = shape.height() > 1 ? usableHeight / (shape.height() - 1) : MAX_SPACING;
+		return Mth.clamp(Math.min(byWidth, byHeight), MIN_SPACING, MAX_SPACING);
 	}
 
-	/** Top-left corner of node {@code node} of sub-tree column {@code column}. */
-	private int nodeX(final int column, final int node) {
-		int columnWidth = this.canvasWidth() / 3;
-		int center = this.canvasLeft() + columnWidth * column + columnWidth / 2;
-		return center + TEMPLATE[node][0] * this.nodeDx() - NODE / 2;
+	/** Top-left of a node, given its section and the spacing for that shape. */
+	private int nodeX(final int section, final Constellation shape, final Constellation.Node node,
+			final int spacing) {
+		int sectionCenter = this.canvasLeft() + this.sectionWidth() * section + this.sectionWidth() / 2;
+		int shapeWidth = (shape.width() - 1) * spacing;
+		return sectionCenter - shapeWidth / 2 + node.col() * spacing - NODE / 2;
 	}
 
-	private int nodeY(final int node) {
-		return this.canvasBottom() - 17 - NODE - TEMPLATE[node][1] * this.nodeDy();
+	private int nodeY(final Constellation shape, final Constellation.Node node, final int spacing) {
+		// Roots sit just above the label strip; row grows upward from there.
+		int rootTop = this.canvasBottom() - LABEL_STRIP - NODE;
+		return rootTop - node.row() * spacing;
 	}
 
 	@Override
@@ -148,20 +142,26 @@ public class ArchetypeScreen extends Screen {
 
 		boolean tooltip = false;
 
-		for (int column = 0; column < this.subTrees.size(); column++) {
-			SubTree tree = this.subTrees.get(column);
+		for (int section = 0; section < this.subTrees.size(); section++) {
+			SubTree tree = this.subTrees.get(section);
+			Constellation shape = tree.constellation();
+			int spacing = this.spacing(shape);
 
-			// Connections first, so the nodes sit on top of the line ends.
-			for (int[] edge : EDGES) {
+			// Connections first, so nodes sit on top of the line ends.
+			for (int[] edge : shape.edges()) {
+				Constellation.Node from = shape.nodes().get(edge[0]);
+				Constellation.Node to = shape.nodes().get(edge[1]);
 				VanillaUi.line(graphics,
-						this.nodeX(column, edge[0]) + NODE / 2, this.nodeY(edge[0]) + NODE / 2,
-						this.nodeX(column, edge[1]) + NODE / 2, this.nodeY(edge[1]) + NODE / 2,
+						this.nodeX(section, shape, from, spacing) + NODE / 2,
+						this.nodeY(shape, from, spacing) + NODE / 2,
+						this.nodeX(section, shape, to, spacing) + NODE / 2,
+						this.nodeY(shape, to, spacing) + NODE / 2,
 						VanillaUi.INSET_DARK);
 			}
 
-			for (int node = 0; node < TEMPLATE.length; node++) {
-				int x = this.nodeX(column, node);
-				int y = this.nodeY(node);
+			for (Constellation.Node node : shape.nodes()) {
+				int x = this.nodeX(section, shape, node, spacing);
+				int y = this.nodeY(shape, node, spacing);
 				boolean hovered = mouseX >= x && mouseX < x + NODE && mouseY >= y && mouseY < y + NODE;
 
 				VanillaUi.slot(graphics, x, y);
@@ -170,18 +170,21 @@ public class ArchetypeScreen extends Screen {
 					graphics.fill(x + 1, y + 1, x + NODE - 1, y + NODE - 1, VanillaUi.INSET_BODY_HOVERED);
 					tooltip = true;
 				}
-
-				// The root carries the sub-tree's symbol; the rest stay empty
-				// until real nodes exist.
-				if (node == 0) {
-					graphics.fakeItem(new ItemStack(tree.icon()), x + 1, y + 1);
-				}
 			}
 
+			// Name plus its symbol, centered under the constellation.
 			Component label = tree.displayName();
-			int labelCenter = this.nodeX(column, 0) + NODE / 2;
-			graphics.text(this.font, label, labelCenter - this.font.width(label) / 2,
-					this.canvasBottom() - 12, VanillaUi.LABEL, false);
+			int labelWidth = this.font.width(label);
+			int sectionCenter = this.canvasLeft() + this.sectionWidth() * section + this.sectionWidth() / 2;
+			int labelY = this.canvasBottom() - 11;
+			graphics.fakeItem(new ItemStack(tree.icon()), sectionCenter - labelWidth / 2 - 20, labelY - 4);
+			graphics.text(this.font, label, sectionCenter - labelWidth / 2, labelY, VanillaUi.LABEL, false);
+
+			if (section < this.subTrees.size() - 1) {
+				VanillaUi.verticalDivider(graphics,
+						this.canvasLeft() + this.sectionWidth() * (section + 1) - 1,
+						this.canvasTop() + 4, this.canvasBottom() - 4);
+			}
 		}
 
 		if (tooltip) {
