@@ -281,16 +281,118 @@ daggers. Fixes that worked: spikes on the mace, a diamond crystal on the staff,
 guards and pommels on the daggers, a pointed hood and wide hem for the cloak, and a
 single curled tongue for the flame (three tongues read as a cloud).
 
+## DECIDED: what this mod is
+
+**Groundwork for a large RPG modpack** — one that will bring its own structures,
+enemies and boss fights — **while still being worth installing on bare vanilla.**
+Those two goals pull in opposite directions, and most of the decisions below are
+about holding both.
+
+Consequences:
+
+- **Few recipes.** The job is to improve vanilla play, not to bolt a new crafting
+  economy onto it.
+- **No difficulty system** (see below). The pack owns that knob. So might a third
+  mod of ours.
+- Closer to vanilla than to Better Combat / RPG Series: no hard dependency on
+  Spell Engine, Better Combat, AzureLib or similar.
+
+## DECIDED: items amplify, they never gate
+
+The premise is that **an archetype is a property of the player**, not of what is in
+their hand — that is the whole difference from RPG Series (see the table under
+[Premise](#premise)). "The rogue isn't whole without daggers" quietly rebuilds the
+thing we rejected: a Cutpurse who has not found iron yet would not really be a
+Cutpurse.
+
+So the rule, and the test for every item we add:
+
+> **Delete the item from the game. Does the archetype still function?**
+> If no, it is a gate — redesign it.
+
+Every archetype works from minute one with nothing: the Seeker's opening cantrip is
+cast bare-handed, the Cutpurse backstabs with any sword, the Brawler punches. Items
+make the fantasy *fit better*; they never switch it on.
+
+### The three items
+
+| Archetype | Item | Recipe | Shape |
+| --- | --- | --- | --- |
+| Seeker | **Wand** | 2 sticks | Cast with it held in either hand. Deliberately first-minute cheap. |
+| Cutpurse | **Dagger** | stick + ingot/diamond/etc | Sword-like but shorter. Faster movement while sneaking; **less damage than a sword outside stealth**. |
+| Brawler | **Claymore** | stick + more material than a sword | Bigger and slower, more damage per swing. |
+
+Notes on each, honestly:
+
+- **Wand is still a soft gate** and we should keep our eyes open about it. Two sticks
+  in the first minute is about as ungated as an item gets, but a Seeker who drops
+  their wand down a ravine stops being able to cast. The cantrip staying bare-handed
+  is what keeps this honest — **if casting ever requires the wand, the rule is broken.**
+- **Dagger is the model.** It gives up damage to gain a situational advantage; it is
+  never strictly better than a sword. Copy this shape for anything later.
+- **Claymore needs care.** "Costs more, hits harder" is a straight vertical upgrade —
+  exactly what the next section says not to build. It only stays honest if the extra
+  damage is paid for in swing speed, i.e. **similar DPS, different rhythm**: big
+  commitment, big recovery. If it ends up simply better than a sword, it is power
+  creep wearing a trade-off costume. Watch the numbers.
+- **Wizard capes** deferred: pure cosmetic, and vanilla armour trims already carry it.
+
+## DECIDED: no difficulty system — grant power that does not need offsetting
+
+Vanilla is too easy once armour is enchanted, and layering more power onto a player
+who already wins makes the game worse, not better. The instinct is to add difficulty
+to compensate. **We are not doing that**, for three reasons: it fights every pack
+that brings its own difficulty mod (RPG packs always do), it is enormous scope, and
+it is a workaround for power we chose to hand out.
+
+Instead, archetype power must be **horizontal or costed**:
+
+- **Vertical** = `+100% damage`. The same fight, won faster. This is what makes an
+  easy game easier.
+- **Horizontal** = a new verb. *Hit at range. Vanish mid-fight. Hold a chokepoint.*
+- **Costed** = mana that runs dry, stealth that breaks when seen, a bash on cooldown.
+  Power that answers a situation instead of raising a baseline.
+
+Done right, a fully-enchanted Oracle is not *stronger* than a fully-enchanted vanilla
+player — they are **differently capable**. The game gets textured, not easier, and the
+difficulty knob stays free for the pack to own.
+
+### Open: does an archetype *reshape* power rather than add it?
+
+The sharper version: Seeker casts well **and swings worse**. That is how every real
+class system holds balance, and it makes the choice cost something — which is what
+makes it mean something. It is also the version players complain about. Undecided.
+
+### Open: does Specialities' x2 damage survive?
+
+The uncomfortable part. **Specialities already grants +100% melee damage at level 100**,
+plus passive Fortune and Looting. By our own diagnosis it layers power onto a player
+who already wins — and in the intended modpack that immortal becomes doubly immortal,
+hitting twice as hard, with better animations. So the power creep we are trying to
+avoid in Archetypes **is already shipped in the other mod**.
+
+Two live positions:
+
+1. **Cut or curve it down.** Archetypes staying horizontal cannot save a stack where
+   Specialities doubles damage underneath it.
+2. **Leave it; a third mod supplies the challenge.** We do not have to stop at two
+   mods — the missing danger is itself a gap worth filling, and packs may end up
+   treating these as survival essentials rather than power-ups.
+
+The honest weakness of (2): it bets on a mod that does not exist yet, and until it
+does, **Specialities standalone is the unbalanced thing** — and standalone is what
+everyone who downloaded it is playing. Not urgent, but not resolved.
+
 ## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its
   character. Classes may want active buttons — but "all passives" is a genuinely
   unoccupied niche here.
 - **Mana** (or any resource): only if an archetype needs it. Don't invent a resource
-  for its own sake.
+  for its own sake. (Leaning yes for Seeker — the cantrip already implies it.)
 - **Can you change archetype later?** Free / costly / one-shot item / never?
 - **Does an archetype level?** Or is it flat identity, with skills carrying progression?
-- **Balance guard.** If archetypes grant combat power on top of Specialities' combat
-  skills, the two multiply. Watch that.
+- **Warrior needs no new verbs from items** — the interesting work there is behaviour
+  on vanilla gear: shield bash, parry timing, a cleaving swing. Mixins, not recipes.
 
 ## UI seed
 
