@@ -69,6 +69,19 @@ public final class Constellation {
 	}
 
 	/**
+	 * The same constellation with one extra <em>real</em> edge between two cells
+	 * that are not grid-adjacent: it renders and counts for purchase adjacency.
+	 * For the capstone cross, where both pre-capstones connect to both capstones.
+	 */
+	public Constellation withEdge(final int col1, final int row1, final int col2, final int row2) {
+		int a = this.indexOf(col1, row1);
+		int b = this.indexOf(col2, row2);
+		List<int[]> extended = new ArrayList<>(this.edges);
+		extended.add(new int[] { a, b });
+		return new Constellation(this.width, this.height, this.nodes, List.copyOf(extended), this.decorativeEdges);
+	}
+
+	/**
 	 * The same constellation with a purely cosmetic line between two cells —
 	 * closing a shape's outline across a gap so the silhouette reads finished.
 	 * It renders like any connection but does <em>not</em> count for purchase

@@ -48,6 +48,14 @@ public class ArchetypesClient implements ClientModInitializer {
 					ClientPlayNetworking.send(new ShieldBashPayload());
 				}
 			}
+
+			// Shield Rush: sprint pressed while the shield is raised. Only
+			// consumed while blocking, so normal sprinting is untouched.
+			if (client.player != null && client.player.isBlocking()) {
+				while (client.options.keySprint.consumeClick()) {
+					ClientPlayNetworking.send(new com.archetypes.RushPayload());
+				}
+			}
 		});
 
 		// After HOTBAR, so the countdown draws over the shield's slot.

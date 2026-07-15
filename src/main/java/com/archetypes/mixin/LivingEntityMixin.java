@@ -5,6 +5,7 @@ import com.archetypes.NodePurchases;
 import com.archetypes.ProtectorNodes;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.server.level.ServerLevel;
@@ -74,5 +75,22 @@ public abstract class LivingEntityMixin {
 		int damage = 1 + player.getRandom().nextInt(4) + Math.max(0, level - 10);
 		attacker.hurtServer((ServerLevel) player.level(),
 				player.damageSources().thorns(player), damage);
+	}
+
+	/**
+	 * Bulwark: vanilla's block-angle check boils down to one Math.acos in
+	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
+	 * "in front" for a capstone holder. {@code this} is the blocker here.
+	 */
+	@ModifyExpressionValue(method = "applyItemBlocking",
+			at = @At(value = "INVOKE", target = "Ljava/lang/Math;acos(D)D"))
+	private double archetypes$bulwark(final double angle) {
+		if ((Object) this instanceof ServerPlayer player
+				&& ProtectorNodes.rank(SubTree.PROTECTOR, NodePurchases.owned(player, SubTree.PROTECTOR),
+						ProtectorNodes.Family.OMNI_BLOCK) > 0) {
+			return 0.0;
+		}
+
+		return angle;
 	}
 }

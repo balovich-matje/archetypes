@@ -13,23 +13,25 @@ public final class Constellations {
 	}
 
 	/**
-	 * Exactly 25 nodes — one per real Protector skill, no placeholders. A full
-	 * lane (root + one rim + the whole centre incl. Taunt) is 16 against the
-	 * 15-point cap, so even the focused build gives up one node somewhere.
-	 * Bash at the tip, utility up the left rim, damage up the right, Quick
-	 * Recovery then Braced up the centre with the two capstones flanking the
-	 * crown. The top edge closes with a decorative line.
+	 * Exactly 25 nodes — one per real Protector skill, no placeholders. Bash at
+	 * the tip, utility up the left rim, damage up the right, Quick Recovery up
+	 * the centre into the crown: Braced and Taunt side by side, cross-linked to
+	 * both capstones above, so a build takes both pre-capstones or trades one
+	 * for its capstone. The top edge closes with a decorative line.
 	 */
 	public static final Constellation PROTECTOR_SHIELD = Constellation.of(
 			"#.......#",
 			"#.......#",
-			"#...#...#",
-			"#..###..#",
+			"#..#.#..#",
+			"#..#.#..#",
 			".#..#..#.",
 			".#..#..#.",
 			"..#.#.#..",
 			"...###...",
 			"....#....")
+			// The capstone cross: Braced and Taunt each connect to both capstones.
+			.withEdge(3, 5, 5, 6)
+			.withEdge(5, 5, 3, 6)
 			// Close the rim across the crown so the silhouette reads as a finished
 			// shield: Reflection to Wide Swings II, cosmetic only.
 			.withDecorativeEdge(0, 8, 8, 8);

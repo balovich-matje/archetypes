@@ -372,13 +372,6 @@ public class ArchetypeScreen extends Screen {
 		}
 	}
 
-	/** Families whose effect is actually wired up; the rest say so honestly. */
-	private static final java.util.Set<ProtectorNodes.Family> LIVE_FAMILIES = java.util.Set.of(
-			ProtectorNodes.Family.BASH, ProtectorNodes.Family.SLAM, ProtectorNodes.Family.COOLDOWN,
-			ProtectorNodes.Family.KNOCKBACK, ProtectorNodes.Family.WIDE,
-			ProtectorNodes.Family.SPIKES, ProtectorNodes.Family.UNBREAKING,
-			ProtectorNodes.Family.BRACED, ProtectorNodes.Family.TAUNT);
-
 	private static final int TOOLTIP_WIDTH = 180;
 
 	private List<FormattedCharSequence> nodeTooltip(final SubTree tree, final int index,
@@ -406,7 +399,7 @@ public class ArchetypeScreen extends Screen {
 		};
 		lines.add(Component.translatable(verdict.key()).withStyle(statusColor).getVisualOrderText());
 
-		if (!LIVE_FAMILIES.contains(def.family())) {
+		if (def.family() == ProtectorNodes.Family.MINOR) {
 			lines.add(Component.translatable("node.archetypes.inert")
 					.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
 		}

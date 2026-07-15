@@ -57,6 +57,11 @@ public final class ModAttachments {
 			Archetypes.id("bash_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
+	/** As BASH_READY_AT, for the rush's own short anti-exploit cooldown. */
+	public static final AttachmentType<Long> RUSH_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("rush_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),

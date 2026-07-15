@@ -20,6 +20,7 @@ public class Archetypes implements ModInitializer {
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyNodePayload.TYPE, BuyNodePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ShieldBashPayload.TYPE, ShieldBashPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
@@ -35,6 +36,9 @@ public class Archetypes implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(ShieldBashPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> ShieldBash.execute(context.player())));
+
+		ServerPlayNetworking.registerGlobalReceiver(RushPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> ShieldRush.execute(context.player())));
 
 		ServerPlayNetworking.registerGlobalReceiver(PickArchetypePayload.TYPE, (payload, context) -> {
 			Archetype picked = Archetype.byId(payload.archetypeId()).orElse(null);

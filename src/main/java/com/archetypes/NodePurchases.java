@@ -37,7 +37,7 @@ public final class NodePurchases {
 	 * a bare boolean so the screen can say *why* not.
 	 */
 	public enum Verdict {
-		BUYABLE, OWNED, NOT_CONNECTED, NO_POINTS, TREE_FULL, EXCLUSIVE_TAKEN, NEEDS_CAPSTONE;
+		BUYABLE, OWNED, NOT_CONNECTED, NO_POINTS, TREE_FULL, EXCLUSIVE_TAKEN;
 
 		public String key() {
 			return "node.archetypes.verdict." + this.name().toLowerCase(java.util.Locale.ROOT);
@@ -78,14 +78,6 @@ public final class NodePurchases {
 		if (family == ProtectorNodes.Family.GROUND_SLAM
 				&& ProtectorNodes.rank(tree, owned, ProtectorNodes.Family.OMNI_BLOCK) > 0) {
 			return Verdict.EXCLUSIVE_TAKEN;
-		}
-
-		// Taunt sits past the crown: geometry makes it adjacent to Braced too,
-		// but by design it opens only after a capstone is chosen.
-		if (family == ProtectorNodes.Family.TAUNT
-				&& ProtectorNodes.rank(tree, owned, ProtectorNodes.Family.OMNI_BLOCK) == 0
-				&& ProtectorNodes.rank(tree, owned, ProtectorNodes.Family.GROUND_SLAM) == 0) {
-			return Verdict.NEEDS_CAPSTONE;
 		}
 
 		if (owned.size() >= SkillPoints.MAX_POINTS_PER_SUB_TREE) {

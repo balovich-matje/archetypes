@@ -55,6 +55,7 @@ public final class ShieldBash {
 		int knockback = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.KNOCKBACK);
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
 		int taunt = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.TAUNT);
+		int groundSlam = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.GROUND_SLAM);
 
 		float damage = Tuning.BASH_DAMAGE
 				* Tuning.slamMultiplier(slam)
@@ -67,10 +68,15 @@ public final class ShieldBash {
 				.expandTowards(look.scale(Tuning.BASH_RANGE))
 				.inflate(0.6);
 
-		// Candidates in front of the player only: a bash is a shove, not a spin.
-		List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class, reach,
-				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
-						&& facing(player, entity, look));
+		// Ground Slam turns the shove into a ring around the player; otherwise
+		// candidates are in front only — a bash is a shove, not a spin.
+		List<LivingEntity> targets = groundSlam > 0
+				? level.getEntitiesOfClass(LivingEntity.class,
+						player.getBoundingBox().inflate(Tuning.GROUND_SLAM_RADIUS, 1.0, Tuning.GROUND_SLAM_RADIUS),
+						entity -> entity != player && entity.isAlive() && !entity.isSpectator())
+				: level.getEntitiesOfClass(LivingEntity.class, reach,
+						entity -> entity != player && entity.isAlive() && !entity.isSpectator()
+								&& facing(player, entity, look));
 
 		LivingEntity primary = null;
 		double best = Double.MAX_VALUE;
@@ -87,13 +93,14 @@ public final class ShieldBash {
 		// The swing happens whether or not it lands — whiffing is feedback too.
 		player.swing(hand, true);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 1.0F, 0.65F);
+				groundSlam > 0 ? SoundEvents.MACE_SMASH_GROUND : SoundEvents.SHIELD_BLOCK.value(),
+				SoundSource.PLAYERS, 1.0F, groundSlam > 0 ? 1.0F : 0.65F);
 
 		// One visible timer: swing floor + ability layer folded together (see
 		// Tuning) — no grey sweep. Bashing also spends the melee attack timer,
 		// so it replaces a sword swing instead of stacking on top of one.
 		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(
-				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(recovery));
+				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(slam, recovery));
 		player.resetAttackStrengthTicker();
 
 		// Taunt: the bash is also a challenge — every monster in earshot drops
@@ -116,11 +123,13 @@ public final class ShieldBash {
 		for (LivingEntity target : targets) {
 			boolean isPrimary = target == primary;
 
-			if (!isPrimary && secondaryFraction <= 0.0F) {
+			// Ground Slam hits its whole ring at full strength; otherwise Wide
+			// Swings decides what the extra targets take.
+			if (groundSlam <= 0 && !isPrimary && secondaryFraction <= 0.0F) {
 				continue;
 			}
 
-			float dealt = isPrimary ? damage : damage * secondaryFraction;
+			float dealt = isPrimary || groundSlam > 0 ? damage : damage * secondaryFraction;
 			target.hurtServer(level, player.damageSources().playerAttack(player), dealt);
 
 			// Placeholder knockback: plain push away from the player. TODO: switch

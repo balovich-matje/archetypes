@@ -33,19 +33,19 @@ public final class Tuning {
 	public static final int BASH_ABILITY_TICKS = 120;
 
 	/**
-	 * Shield Slam: damage climbs a third per rank, flat — no cooldown penalty.
-	 * The bash is not a damage rotation at any setting (even doubled it is
-	 * ~1.5 DPS against a sword's 11), so a penalty was not preventing power
-	 * creep, only making a utility button feel bad at 13 seconds. Shields
-	 * cannot be enchanted for damage; this is where that power lives.
+	 * Shield Slam: damage climbs a third per rank, and the ability layer grows
+	 * to match. The penalty went away once and playtesting brought it back: on
+	 * paper the bash never rivals a sword, but in hand a hard-hitting bash is
+	 * damage dealt from safety, and safe damage that is also fast crowds the
+	 * sword out. 7s base, 13s at full Slam, back to 7 with full Recovery.
 	 */
 	public static float slamMultiplier(final int rank) {
 		return 1.0F + rank / 3.0F;
 	}
 
-	/** Total cooldown ticks: swing floor + the Recovery-modified ability layer. */
-	public static int bashCooldownTicks(final int recoveryRank) {
-		float factor = 1.0F - recoveryRank / 4.0F;
+	/** Total cooldown ticks: swing floor + the modified ability layer. */
+	public static int bashCooldownTicks(final int slamRank, final int recoveryRank) {
+		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 4.0F;
 		return BASH_SWING_TICKS + Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
 	}
 
@@ -54,6 +54,16 @@ public final class Tuning {
 
 	/** Taunt: bashing enrages every monster within this radius. */
 	public static final double TAUNT_RADIUS = 8.0;
+
+	/** Ground Slam: the bash hits everything within this radius instead. */
+	public static final double GROUND_SLAM_RADIUS = 1.5;
+
+	/** Reflection: a returned projectile keeps half its bite. */
+	public static final double REFLECT_DAMAGE_FACTOR = 0.5;
+
+	/** Rush: impulse per lunge block, and its own anti-exploit cooldown. */
+	public static final double RUSH_IMPULSE_PER_BLOCK = 0.45;
+	public static final int RUSH_COOLDOWN_TICKS = 60;
 
 	/** Shield Rush lunge distance in blocks: 2, 4, 6 by rank. */
 	public static int rushBlocks(final int rank) {

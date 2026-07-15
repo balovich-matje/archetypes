@@ -101,13 +101,12 @@ public final class ProtectorNodes {
 		byCell.put(cell(4, 2), new Def(Family.COOLDOWN, 2));
 		byCell.put(cell(4, 3), new Def(Family.COOLDOWN, 3));
 		byCell.put(cell(4, 4), new Def(Family.COOLDOWN, 4));
-		// Braced sits between Recovery and the crown, so the natural full build
-		// (root + one rim + the whole centre) spends exactly the 15-point cap.
-		byCell.put(cell(4, 5), new Def(Family.BRACED, 1));
-		byCell.put(cell(3, 5), new Def(Family.OMNI_BLOCK, 1));
-		byCell.put(cell(5, 5), new Def(Family.GROUND_SLAM, 1));
-		// Above the crown, and gated on owning a capstone (see NodePurchases).
-		byCell.put(cell(4, 6), new Def(Family.TAUNT, 1));
+		// The crown: Braced and Taunt side by side above Recovery, each
+		// cross-linked to both capstones (explicit edges in Constellations).
+		byCell.put(cell(3, 5), new Def(Family.BRACED, 1));
+		byCell.put(cell(5, 5), new Def(Family.TAUNT, 1));
+		byCell.put(cell(3, 6), new Def(Family.OMNI_BLOCK, 1));
+		byCell.put(cell(5, 6), new Def(Family.GROUND_SLAM, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.PROTECTOR_SHIELD.nodes();
