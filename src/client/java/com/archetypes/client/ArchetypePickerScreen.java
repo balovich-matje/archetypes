@@ -41,9 +41,12 @@ public class ArchetypePickerScreen extends Screen {
 	/** Portrait box at rest, and how far a hovered one grows past its frame. */
 	private static final int PORTRAIT = 46;
 	private static final float HOVER_SCALE = 1.25F;
-	/** Slow to bloom, quick to settle back. */
-	private static final float GROW_MILLIS = 1000.0F;
+	/** Quick to bloom, quicker to settle back. */
+	private static final float GROW_MILLIS = 400.0F;
 	private static final float SHRINK_MILLIS = 200.0F;
+	/** How far a growing figure slides away from the divider, so the two never
+	 * overlap once one of them is at full size. */
+	private static final int HOVER_PUSH = 10;
 
 	private final @Nullable Screen parent;
 	/** Per archetype, per tier: 0 = at rest, 1 = fully grown. */
@@ -103,10 +106,8 @@ public class ArchetypePickerScreen extends Screen {
 
 	/**
 	 * Which half of a frame the cursor is in, or -1 if outside every frame.
-	 *
-	 * <p>The split runs bottom-left to top-right, so in frame-local coordinates
-	 * it is the line {@code x + y == FRAME}: above it is the start tier, below is
-	 * the peak.
+	 * The split is a straight vertical line down the middle: start tier left,
+	 * peak tier right.
 	 */
 	private int tierAt(final double mouseX, final double mouseY) {
 		Archetype frame = this.frameAt(mouseX, mouseY);
@@ -115,18 +116,16 @@ public class ArchetypePickerScreen extends Screen {
 			return -1;
 		}
 
-		double localX = mouseX - this.frameLeft(frame.ordinal());
-		double localY = mouseY - this.framesTop();
-		return localX + localY < FRAME ? 0 : 1;
+		return mouseX - this.frameLeft(frame.ordinal()) < FRAME / 2.0 ? 0 : 1;
 	}
 
-	/** Centre of a tier's half: the centroid of that triangle. */
+	/** Centre of a tier's half, before any hover push. */
 	private int halfCenterX(final int index, final int tier) {
-		return this.frameLeft(index) + (tier == 0 ? FRAME / 3 : FRAME * 2 / 3);
+		return this.frameLeft(index) + (tier == 0 ? FRAME / 4 : FRAME * 3 / 4);
 	}
 
-	private int halfCenterY(final int tier) {
-		return this.framesTop() + (tier == 0 ? FRAME / 3 : FRAME * 2 / 3);
+	private int halfCenterY() {
+		return this.framesTop() + FRAME / 2;
 	}
 
 	@Override
@@ -216,8 +215,9 @@ public class ArchetypePickerScreen extends Screen {
 				graphics.fill(left + 1, top + 1, left + FRAME - 1, top + FRAME - 1, VanillaUi.INSET_BODY_HOVERED);
 			}
 
-			// The diagonal: start tier above it, peak tier below.
-			drawDiagonal(graphics, left, top, FRAME, VanillaUi.LABEL_FAINT);
+			// The split: start tier left of it, peak tier right.
+			graphics.fill(left + FRAME / 2, top + 1, left + FRAME / 2 + 1, top + FRAME - 1,
+					VanillaUi.LABEL_FAINT);
 
 			for (int t = 0; t < TIERS; t++) {
 				if (this.hover[i][t] <= 0.0F) {
@@ -259,39 +259,30 @@ public class ArchetypePickerScreen extends Screen {
 
 	/**
 	 * One tier's figure, grown by {@code progress} (0 at rest, 1 fully hovered).
-	 * Drawn from the centre of its half so it swells evenly past the frame edge.
+	 * As it grows it also slides away from the divider, so a figure at full size
+	 * never crowds the one beside it.
 	 */
 	private void figure(final GuiGraphicsExtractor graphics, final Archetype archetype,
 			final int index, final int tier, final float progress) {
 		float eased = progress * progress * (3.0F - 2.0F * progress);
 		int size = Math.round(PORTRAIT * Mth.lerp(eased, 1.0F, HOVER_SCALE));
-		int x = this.halfCenterX(index, tier) - size / 2;
-		int y = this.halfCenterY(tier) - size / 2;
+		int push = Math.round(HOVER_PUSH * eased) * (tier == 0 ? -1 : 1);
+		int centerX = this.halfCenterX(index, tier) + push;
+		int centerY = this.halfCenterY();
 
 		Identifier portrait = archetype.portrait(tier);
 
 		if (portrait == null) {
 			// No art for this tier yet: the item icon stands in, at its own size.
-			graphics.fakeItem(new ItemStack(archetype.icon()),
-					this.halfCenterX(index, tier) - 8, this.halfCenterY(tier) - 8);
+			graphics.fakeItem(new ItemStack(archetype.icon()), centerX - 8, centerY - 8);
 			return;
 		}
 
-		graphics.blit(RenderPipelines.GUI_TEXTURED, portrait, x, y, 0.0F, 0.0F,
+		graphics.blit(RenderPipelines.GUI_TEXTURED, portrait,
+				centerX - size / 2, centerY - size / 2, 0.0F, 0.0F,
 				size, size, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE);
 	}
 
 	/** Native size of the portrait textures. */
 	private static final int PORTRAIT_TEXTURE = 256;
-
-	/**
-	 * The "/" diagonal from the bottom-left corner to the top-right, splitting the
-	 * frame into a start half (above-left) and a peak half (below-right).
-	 */
-	private static void drawDiagonal(final GuiGraphicsExtractor graphics, final int left, final int top,
-			final int size, final int color) {
-		for (int i = 1; i < size - 1; i++) {
-			graphics.fill(left + i, top + size - 1 - i, left + i + 1, top + size - i, color);
-		}
-	}
 }
