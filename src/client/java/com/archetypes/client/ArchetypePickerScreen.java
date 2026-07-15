@@ -95,7 +95,11 @@ public class ArchetypePickerScreen extends Screen {
 				confirmed -> {
 					if (confirmed) {
 						ClientPlayNetworking.send(new PickArchetypePayload(picked.id()));
-						this.minecraft.gui.setScreen(this.parent);
+						// Straight into the new tree rather than back to the
+						// inventory. Passing `picked` rather than reading the
+						// attachment: the server owns it and the sync has not
+						// landed yet, but we already know what was chosen.
+						this.minecraft.gui.setScreen(new ArchetypeScreen(this.parent, picked));
 					} else {
 						this.minecraft.gui.setScreen(this);
 					}
