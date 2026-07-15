@@ -21,6 +21,8 @@
 
 	"screen.archetypes.tree.title": "%s Skill Tree",
 	"screen.archetypes.tree.preview": "Preview — nodes do nothing yet",
+	"screen.archetypes.tree.reset": "Reset Archetype",
+	"screen.archetypes.tree.reset.tooltip": "Creative only. Clears your choice so you can pick again.",
 	"node.archetypes.placeholder": "+1% damage",
 
 	"subtree.archetypes.protector": "Protector",

@@ -4,9 +4,13 @@ import java.util.List;
 import java.util.Optional;
 
 import com.archetypes.Archetype;
+import com.archetypes.ResetArchetypePayload;
 import com.archetypes.SubTree;
 
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -27,6 +31,9 @@ public class ArchetypeScreen extends Screen {
 	private static final int MARGIN = 8;
 	private static final int PAD = 8;
 	private static final int HEADER = 22;
+	/** Strip below the canvas holding the creative reset button. Always reserved,
+	 * so the tree lays out identically in both game modes. */
+	private static final int FOOTER = 24;
 
 	private static final int NODE = 18;
 	private static final int ROWS = 7;
@@ -62,6 +69,26 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	@Override
+	protected void init() {
+		// Creative-only testing affordance: undo the "permanent" choice. The
+		// server re-checks game mode; this button just hides the option.
+		if (this.minecraft.player == null || !this.minecraft.player.isCreative()) {
+			return;
+		}
+
+		Component label = Component.translatable("screen.archetypes.tree.reset");
+		int width = this.font.width(label) + 16;
+
+		this.addRenderableWidget(Button.builder(label, button -> {
+					ClientPlayNetworking.send(new ResetArchetypePayload());
+					this.minecraft.gui.setScreen(new ArchetypePickerScreen(this.parent));
+				})
+				.bounds(this.width - MARGIN - PAD - width, this.canvasBottom() + 4, width, 20)
+				.tooltip(Tooltip.create(Component.translatable("screen.archetypes.tree.reset.tooltip")))
+				.build());
+	}
+
+	@Override
 	public void onClose() {
 		this.minecraft.gui.setScreen(this.parent);
 	}
@@ -79,7 +106,7 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	private int canvasBottom() {
-		return this.height - MARGIN - PAD;
+		return this.height - MARGIN - PAD - FOOTER;
 	}
 
 	/** Horizontal node spacing: spread with the window, within vanilla-ish bounds. */

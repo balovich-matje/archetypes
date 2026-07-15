@@ -16,6 +16,7 @@ public class Archetypes implements ModInitializer {
 		ModAttachments.initialize();
 
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(PickArchetypePayload.TYPE, (payload, context) -> {
 			Archetype picked = Archetype.byId(payload.archetypeId()).orElse(null);
@@ -33,6 +34,18 @@ public class Archetypes implements ModInitializer {
 				}
 			});
 		});
+
+		ServerPlayNetworking.registerGlobalReceiver(ResetArchetypePayload.TYPE, (payload, context) -> context
+				.server().execute(() -> {
+					// The client only shows this button in creative, but the client
+					// is not to be trusted about game mode — check it here.
+					if (!context.player().isCreative()) {
+						return;
+					}
+
+					ModAttachments.clear(context.player());
+					LOGGER.info("{} reset their archetype", context.player().getName().getString());
+				}));
 
 		LOGGER.info("Archetypes initialized");
 	}

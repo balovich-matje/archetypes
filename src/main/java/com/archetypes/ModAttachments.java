@@ -39,4 +39,9 @@ public final class ModAttachments {
 	public static void set(final Player player, final Archetype archetype) {
 		((AttachmentTarget) player).setAttached(ARCHETYPE, archetype.id());
 	}
+
+	/** Back to unpicked, so the picker opens again. Creative-only, for testing. */
+	public static void clear(final Player player) {
+		((AttachmentTarget) player).removeAttached(ARCHETYPE);
+	}
 }
