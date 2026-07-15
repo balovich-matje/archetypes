@@ -65,6 +65,29 @@ public final class Constellation {
 		return new Constellation(width, height, List.copyOf(nodes), List.copyOf(edges));
 	}
 
+	/**
+	 * The same constellation with one extra edge between two cells that are not
+	 * grid-adjacent — e.g. closing a shape's outline across a gap. The edge is
+	 * real: it renders as a connection and counts for purchase adjacency.
+	 */
+	public Constellation withEdge(final int col1, final int row1, final int col2, final int row2) {
+		int a = this.indexOf(col1, row1);
+		int b = this.indexOf(col2, row2);
+		List<int[]> extended = new ArrayList<>(this.edges);
+		extended.add(new int[] { a, b });
+		return new Constellation(this.width, this.height, this.nodes, List.copyOf(extended));
+	}
+
+	private int indexOf(final int col, final int row) {
+		for (int i = 0; i < this.nodes.size(); i++) {
+			if (this.nodes.get(i).col() == col && this.nodes.get(i).row() == row) {
+				return i;
+			}
+		}
+
+		throw new IllegalArgumentException("No node at (" + col + ", " + row + ")");
+	}
+
 	/** Grid columns; the shape spans 0..width-1. */
 	public int width() {
 		return this.width;

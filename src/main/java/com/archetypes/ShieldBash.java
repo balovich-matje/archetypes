@@ -11,7 +11,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -41,12 +40,11 @@ public final class ShieldBash {
 			return;
 		}
 
-		ItemStack shield = player.getItemInHand(hand);
 		long now = player.level().getGameTime();
 		Long readyAt = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
 				.getAttached(ModAttachments.BASH_READY_AT);
 
-		if (player.getCooldowns().isOnCooldown(shield) || (readyAt != null && now < readyAt)) {
+		if (readyAt != null && now < readyAt) {
 			return;
 		}
 
@@ -88,13 +86,11 @@ public final class ShieldBash {
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 1.0F, 0.65F);
 
-		// Two cooldown layers (see Tuning): the vanilla sweep for the swing, the
-		// synced timestamp for the ability countdown. Bashing also spends the
-		// melee attack timer, so it replaces a sword swing instead of stacking
-		// on top of one.
-		player.getCooldowns().addCooldown(shield, Tuning.BASH_SWING_TICKS);
+		// One visible timer: swing floor + ability layer folded together (see
+		// Tuning) — no grey sweep. Bashing also spends the melee attack timer,
+		// so it replaces a sword swing instead of stacking on top of one.
 		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(
-				ModAttachments.BASH_READY_AT, now + Tuning.abilityCooldownTicks(slam, recovery));
+				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(slam, recovery));
 		player.resetAttackStrengthTicker();
 
 		if (primary == null) {

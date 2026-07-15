@@ -15,18 +15,20 @@ public final class Tuning {
 	public static final double BASH_KNOCKBACK = 0.5;
 
 	/**
-	 * The cooldown is two layers, deliberately separate:
+	 * The cooldown is still two layers conceptually, but shown as one number:
 	 *
-	 * <p><b>Swing</b> — the vanilla item cooldown (grey sweep), a fixed cadence
-	 * floor the bash can never beat. Bashing also resets the melee attack timer,
-	 * so a bash always costs a sword swing — otherwise a fast bash weaves between
-	 * sword hits as free extra DPS.
+	 * <p><b>Swing</b> — 16 ticks, a cadence floor the bash can never beat.
+	 * Bashing also resets the melee attack timer, so a bash always costs a sword
+	 * swing — otherwise a fast bash weaves between sword hits as free extra DPS.
 	 *
-	 * <p><b>Ability</b> — 6 seconds on top, shown as a numeric countdown. Quick
-	 * Recovery removes −33/66/100% of <em>this layer only</em>, so even at −100%
-	 * the swing cadence holds: spammable, never additive. Shield Slam adds its
-	 * +33/66/100% here too — full Slam against full Recovery lands back on 6s,
-	 * a bigger hit at the original rhythm.
+	 * <p><b>Ability</b> — 6 seconds on top. Quick Recovery removes a quarter of
+	 * <em>this layer only</em> per rank (4 ranks), so even at −100% the swing
+	 * cadence holds. Shield Slam adds +33% per rank here — full Slam against
+	 * full Recovery lands back on 6s: a bigger hit at the original rhythm.
+	 *
+	 * <p>There is no grey sweep: both layers fold into the one countdown on the
+	 * shield's slot, so the display is a single number rather than two effects
+	 * disagreeing about when the bash comes back.
 	 */
 	public static final int BASH_SWING_TICKS = 16;
 	public static final int BASH_ABILITY_TICKS = 120;
@@ -36,10 +38,15 @@ public final class Tuning {
 		return 1.0F + rank / 3.0F;
 	}
 
-	/** Ability-layer ticks after Slam and Quick Recovery, floored at zero. */
-	public static int abilityCooldownTicks(final int slamRank, final int recoveryRank) {
-		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 3.0F;
-		return Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
+	/** Total cooldown ticks: swing floor + the modified ability layer. */
+	public static int bashCooldownTicks(final int slamRank, final int recoveryRank) {
+		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 4.0F;
+		return BASH_SWING_TICKS + Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
+	}
+
+	/** Shield Rush lunge distance in blocks: 2, 4, 6 by rank. */
+	public static int rushBlocks(final int rank) {
+		return 2 * rank;
 	}
 
 	/** Knockback trade: each rank sheds 12% damage for ~KB-enchant-level shove. */

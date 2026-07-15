@@ -71,10 +71,11 @@ public final class ProtectorNodes {
 		Map<Long, Def> byCell = new HashMap<>();
 		byCell.put(cell(4, 0), new Def(Family.BASH, 1));
 
-		// Left rim, bottom-up: the utility path.
-		byCell.put(cell(3, 1), new Def(Family.COOLDOWN, 1));
-		byCell.put(cell(2, 2), new Def(Family.COOLDOWN, 2));
-		byCell.put(cell(1, 3), new Def(Family.COOLDOWN, 3));
+		// Left rim, bottom-up: the utility path. Shield Rush lives here — Quick
+		// Recovery moved to the centre column, since everyone wants it anyway.
+		byCell.put(cell(3, 1), new Def(Family.RUSH, 1));
+		byCell.put(cell(2, 2), new Def(Family.RUSH, 2));
+		byCell.put(cell(1, 3), new Def(Family.RUSH, 3));
 		byCell.put(cell(1, 4), new Def(Family.KNOCKBACK, 1));
 		byCell.put(cell(0, 5), new Def(Family.KNOCKBACK, 2));
 		byCell.put(cell(0, 6), new Def(Family.KNOCKBACK, 3));
@@ -91,12 +92,13 @@ public final class ProtectorNodes {
 		byCell.put(cell(8, 7), new Def(Family.WIDE, 1));
 		byCell.put(cell(8, 8), new Def(Family.WIDE, 2));
 
-		// Centre column: Shield Rush, then the capstones flanking its top —
-		// Omni-block left, Ground Slam right, mutually exclusive at purchase.
-		byCell.put(cell(4, 1), new Def(Family.RUSH, 1));
-		byCell.put(cell(4, 2), new Def(Family.RUSH, 2));
-		byCell.put(cell(4, 3), new Def(Family.RUSH, 3));
-		byCell.put(cell(4, 4), new Def(Family.RUSH, 4));
+		// Centre column: Quick Recovery — the every-build pick — then the
+		// capstones flanking its top, Omni-block left, Ground Slam right,
+		// mutually exclusive at purchase.
+		byCell.put(cell(4, 1), new Def(Family.COOLDOWN, 1));
+		byCell.put(cell(4, 2), new Def(Family.COOLDOWN, 2));
+		byCell.put(cell(4, 3), new Def(Family.COOLDOWN, 3));
+		byCell.put(cell(4, 4), new Def(Family.COOLDOWN, 4));
 		byCell.put(cell(3, 5), new Def(Family.OMNI_BLOCK, 1));
 		byCell.put(cell(5, 5), new Def(Family.GROUND_SLAM, 1));
 
