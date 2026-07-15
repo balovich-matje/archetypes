@@ -28,8 +28,9 @@ public final class Constellations {
 			"..#.#.#..",
 			"...###...",
 			"....#....")
-			// Close the rim across the crown: Reflection to Wide Swings II.
-			.withEdge(0, 8, 8, 8);
+			// Close the rim across the crown so the silhouette reads as a finished
+			// shield: Reflection to Wide Swings II, cosmetic only.
+			.withDecorativeEdge(0, 8, 8, 8);
 
 	public static final Constellation SLAYER_SWORD = Constellation.of(
 			"...#...",

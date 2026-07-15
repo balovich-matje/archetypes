@@ -23,12 +23,15 @@ public final class Constellation {
 	private final int height;
 	private final List<Node> nodes;
 	private final List<int[]> edges;
+	private final List<int[]> decorativeEdges;
 
-	private Constellation(final int width, final int height, final List<Node> nodes, final List<int[]> edges) {
+	private Constellation(final int width, final int height, final List<Node> nodes,
+			final List<int[]> edges, final List<int[]> decorativeEdges) {
 		this.width = width;
 		this.height = height;
 		this.nodes = nodes;
 		this.edges = edges;
+		this.decorativeEdges = decorativeEdges;
 	}
 
 	public static Constellation of(final String... grid) {
@@ -62,20 +65,21 @@ public final class Constellation {
 			}
 		}
 
-		return new Constellation(width, height, List.copyOf(nodes), List.copyOf(edges));
+		return new Constellation(width, height, List.copyOf(nodes), List.copyOf(edges), List.of());
 	}
 
 	/**
-	 * The same constellation with one extra edge between two cells that are not
-	 * grid-adjacent — e.g. closing a shape's outline across a gap. The edge is
-	 * real: it renders as a connection and counts for purchase adjacency.
+	 * The same constellation with a purely cosmetic line between two cells —
+	 * closing a shape's outline across a gap so the silhouette reads finished.
+	 * It renders like any connection but does <em>not</em> count for purchase
+	 * adjacency: the outline is decoration, the paths are the gameplay.
 	 */
-	public Constellation withEdge(final int col1, final int row1, final int col2, final int row2) {
+	public Constellation withDecorativeEdge(final int col1, final int row1, final int col2, final int row2) {
 		int a = this.indexOf(col1, row1);
 		int b = this.indexOf(col2, row2);
-		List<int[]> extended = new ArrayList<>(this.edges);
+		List<int[]> extended = new ArrayList<>(this.decorativeEdges);
 		extended.add(new int[] { a, b });
-		return new Constellation(this.width, this.height, this.nodes, List.copyOf(extended));
+		return new Constellation(this.width, this.height, this.nodes, this.edges, List.copyOf(extended));
 	}
 
 	private int indexOf(final int col, final int row) {
@@ -105,5 +109,10 @@ public final class Constellation {
 	/** Each entry is a {@code {from, to}} pair of indices into {@link #nodes()}. */
 	public List<int[]> edges() {
 		return this.edges;
+	}
+
+	/** Cosmetic lines only — drawn like edges, ignored for adjacency. */
+	public List<int[]> decorativeEdges() {
+		return this.decorativeEdges;
 	}
 }

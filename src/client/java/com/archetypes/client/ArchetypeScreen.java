@@ -300,14 +300,17 @@ public class ArchetypeScreen extends Screen {
 
 			this.sectionTitle(graphics, tree, section);
 
-			// Connections first, so nodes sit on top of the line ends.
-			for (int[] edge : shape.edges()) {
-				Constellation.Node from = shape.nodes().get(edge[0]);
-				Constellation.Node to = shape.nodes().get(edge[1]);
-				VanillaUi.line(graphics,
-						nodeX(shape, from, layout) + size / 2, nodeY(from, layout) + size / 2,
-						nodeX(shape, to, layout) + size / 2, nodeY(to, layout) + size / 2,
-						VanillaUi.INSET_BODY);
+			// Connections first, so nodes sit on top of the line ends. Decorative
+			// edges draw identically — they exist to finish the silhouette.
+			for (List<int[]> edgeSet : List.of(shape.edges(), shape.decorativeEdges())) {
+				for (int[] edge : edgeSet) {
+					Constellation.Node from = shape.nodes().get(edge[0]);
+					Constellation.Node to = shape.nodes().get(edge[1]);
+					VanillaUi.line(graphics,
+							nodeX(shape, from, layout) + size / 2, nodeY(from, layout) + size / 2,
+							nodeX(shape, to, layout) + size / 2, nodeY(to, layout) + size / 2,
+							VanillaUi.INSET_BODY);
+				}
 			}
 
 			var owned = this.minecraft.player == null
