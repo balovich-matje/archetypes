@@ -47,11 +47,11 @@ public class BulwarkShieldLayer extends RenderLayer<AvatarRenderState, PlayerMod
 
 			pose.pushPose();
 			// Living renderers set the pose up y-flipped; 0.75 here is chest
-			// height. Spin the frame, step out to the orbit, then face the
-			// shield away from the player.
+			// height. Spin the frame, step out to the orbit; the FIXED shield
+			// model already faces outward from there (a 180 turned it inward —
+			// confirmed by screenshot).
 			pose.mulPose(Axis.YP.rotationDegrees(-angle));
 			pose.translate(0.0F, 0.75F, RADIUS);
-			pose.mulPose(Axis.YP.rotationDegrees(180.0F));
 			pose.scale(SCALE, SCALE, SCALE);
 			ghost.submit(pose, collector, light, OverlayTexture.NO_OVERLAY, 0);
 			pose.popPose();
