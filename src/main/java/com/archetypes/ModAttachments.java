@@ -127,6 +127,69 @@ public final class ModAttachments {
 			Archetypes.id("rush_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
+	/**
+	 * The Seeker's mana pool. Persistent and synced to the owner so the bottle
+	 * bar reads it directly; absent means full (a fresh Seeker starts topped
+	 * up). Maximum and regen live in {@link Mana}, driven by the Spellcasting
+	 * skill when Specialities is installed.
+	 */
+	public static final AttachmentType<Float> MANA = AttachmentRegistry.create(
+			Archetypes.id("mana"),
+			builder -> builder
+					.persistent(Codec.FLOAT)
+					.syncWith(ByteBufCodecs.FLOAT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
+	/** Fractional Spellcasting XP not yet big enough to award as a whole point. */
+	public static final AttachmentType<Float> MANA_XP_REMAINDER =
+			AttachmentRegistry.<Float>create(Archetypes.id("mana_xp_remainder"));
+
+	/** Agility active cooldowns, same shape as the bash's. */
+	public static final AttachmentType<Long> TRUE_SHOT_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("true_shot_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	public static final AttachmentType<Long> INVIS_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("invis_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	public static final AttachmentType<Long> SHADOW_STEP_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("shadow_step_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/** The Last Shadow capstone's own long clock, separate from the invis one. */
+	public static final AttachmentType<Long> CHEAT_DEATH_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("cheat_death_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/** True Shot armed: the next bow shot leaving this player gets empowered. */
+	public static final AttachmentType<Boolean> TRUE_SHOT_ARMED = AttachmentRegistry.create(
+			Archetypes.id("true_shot_armed"),
+			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.targetOnly()));
+
+	/** Cheat-death's two-second grace: hurtServer returns false until this tick. */
+	public static final AttachmentType<Long> IMMUNE_UNTIL =
+			AttachmentRegistry.<Long>create(Archetypes.id("immune_until"));
+
+	/** Shadow Flurry bookkeeping: strikes still owed, and to whom. */
+	public static final AttachmentType<Integer> STEP_STRIKES_LEFT =
+			AttachmentRegistry.<Integer>create(Archetypes.id("step_strikes_left"));
+
+	public static final AttachmentType<Integer> STEP_TARGET =
+			AttachmentRegistry.<Integer>create(Archetypes.id("step_target"));
+
+	/** Flamethrower channel: the last tick a channel payload arrived. */
+	public static final AttachmentType<Long> FLAME_LAST_TICK =
+			AttachmentRegistry.<Long>create(Archetypes.id("flame_last_tick"));
+
+	/** On arrows: where a True Shot left the bow (it despawns 64 blocks out),
+	 * and whether it steers itself. Transient — a saved arrow forgets. */
+	public static final AttachmentType<net.minecraft.world.phys.Vec3> TRUE_SHOT_ORIGIN =
+			AttachmentRegistry.<net.minecraft.world.phys.Vec3>create(Archetypes.id("true_shot_origin"));
+
+	public static final AttachmentType<Boolean> TRUE_SHOT_HOMING =
+			AttachmentRegistry.<Boolean>create(Archetypes.id("true_shot_homing"));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),

@@ -227,4 +227,76 @@ public final class Tuning {
 
 	private Tuning() {
 	}
+	// --- Agility: True Shot ---
+	/** Cooldown starts on arming, not on the shot. */
+	public static final int TRUE_SHOT_COOLDOWN_TICKS = 400;
+	public static final float TRUE_SHOT_MULTIPLIER = 2.0F;
+	/** The Seeker Arrow capstone trades the bonus damage away for homing. */
+	public static final float TRUE_SHOT_HOMING_MULTIPLIER = 1.0F;
+	public static final float TRUE_SHOT_SNAP_MULTIPLIER = 4.0F;
+	public static final float TRUE_SHOT_SNAP_SPEED = 3.0F;
+	/** Gravity-free arrows fly forever; these quietly stop existing here. */
+	public static final double TRUE_SHOT_RANGE_BLOCKS = 64.0;
+	public static final double TRUE_SHOT_HOMING_RADIUS = 8.0;
+
+	// --- Agility: Invisibility ---
+	public static final int INVIS_TICKS = 160;
+	public static final int INVIS_COOLDOWN_TICKS = 600;
+	public static final int CHEAT_DEATH_IMMUNE_TICKS = 40;
+	/** Shared by the invis active and the cheat-death passive after it fires. */
+	public static final int CHEAT_DEATH_COOLDOWN_TICKS = 3600;
+
+	// --- Agility: Shadow Step ---
+	public static final double SHADOW_STEP_RANGE = 16.0;
+	public static final int SHADOW_STEP_COOLDOWN_TICKS = 300;
+	public static final int SHADOW_STEP_FLURRY_COOLDOWN_TICKS = 600;
+	/** The flurry capstone: the step's strike plus these, one every period. */
+	public static final int FLURRY_EXTRA_STRIKES = 3;
+	public static final int FLURRY_STRIKE_PERIOD_TICKS = 3;
+	public static final double FLURRY_REACH = 5.0;
+
+	// --- Mana (the Seeker's resource; Spellcasting skill in Specialities) ---
+	public static final float MANA_BASE = 100.0F;
+	public static final float MANA_REGEN_BASE_PER_SECOND = 1.0F;
+	public static final float MANA_PER_SPELLCASTING_LEVEL = 1.0F;
+	public static final int MANA_REGEN_LEVELS_PER_POINT = 20;
+	public static final float XP_PER_MANA = 1.0F;
+
+	// --- Seeker: Fireball / Meteorite / Flamethrower ---
+	public static final float FIREBALL_COST = 50.0F;
+	public static final float FIREBALL_DAMAGE = 5.0F;
+	public static final int FIREBALL_FIRE_SECONDS = 5;
+	public static final float FIREBALL_SPEED = 1.2F;
+	public static final float METEOR_MIN_MANA = 100.0F;
+	public static final int METEOR_HEIGHT = 16;
+	public static final float METEOR_SPEED = 1.4F;
+	/** Impact numbers scale with every point of mana poured in. */
+	public static final float METEOR_DAMAGE_PER_MANA = 0.1F;
+	public static final float METEOR_RADIUS_BASE = 3.0F;
+	public static final float METEOR_RADIUS_PER_EXTRA_MANA = 0.02F;
+	public static final double METEOR_TARGET_RANGE = 32.0;
+	public static final float FLAME_START_COST = 50.0F;
+	/** 25 mana/second, paid per channel tick. */
+	public static final float FLAME_COST_PER_TICK = 1.25F;
+	public static final float FLAME_BOLT_DAMAGE = 2.0F;
+	public static final int FLAME_BOLT_FIRE_SECONDS = 3;
+	public static final float FLAME_BOLT_SPEED = 1.2F;
+	public static final int FLAME_BOLT_PERIOD_TICKS = 2;
+
+	// --- Seeker: Magic Missile ---
+	public static final float MISSILE_COST = 25.0F;
+	public static final float MISSILE_DAMAGE = 6.0F;
+	public static final double MISSILE_RANGE = 16.0;
+	public static final float MISSILE_SPEED = 1.5F;
+	public static final float MISSILE_HOMING_SPEED_FACTOR = 0.67F;
+	public static final double MISSILE_HOMING_RADIUS = 8.0;
+	public static final double MISSILE_PIERCE_INFLATE = 0.75;
+
+	// --- Seeker: Holy Light ---
+	public static final float HOLY_COST = 50.0F;
+	public static final float HOLY_AMOUNT = 5.0F;
+	public static final double HOLY_RADIUS = 4.0;
+	public static final float HOLY_SPEED = 0.8F;
+	public static final int HOLY_EFFECT_TICKS = 200;
+
 }

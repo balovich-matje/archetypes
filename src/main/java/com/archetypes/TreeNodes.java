@@ -18,7 +18,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().nameKey();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().nameKey();
-			default -> ProtectorNodes.def(tree, index).family().nameKey();
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().nameKey();
+			default -> PlaceholderNodes.nameKey(tree, index);
 		};
 	}
 
@@ -26,7 +27,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().descriptionKey();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().descriptionKey();
-			default -> ProtectorNodes.def(tree, index).family().descriptionKey();
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().descriptionKey();
+			default -> PlaceholderNodes.descriptionKey(tree, index);
 		};
 	}
 
@@ -34,7 +36,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().icon();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().icon();
-			default -> ProtectorNodes.def(tree, index).family().icon();
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().icon();
+			default -> PlaceholderNodes.icon(tree, index);
 		};
 	}
 
@@ -44,7 +47,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().sprite();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
-			default -> ProtectorNodes.def(tree, index).family().sprite();
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().sprite();
+			default -> null;
 		};
 	}
 
@@ -53,7 +57,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().spriteSize();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
-			default -> ProtectorNodes.def(tree, index).family().spriteSize();
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().spriteSize();
+			default -> 0;
 		};
 	}
 
@@ -88,7 +93,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family() == SlayerNodes.Family.MINOR;
 			case CRUSHER -> CrusherNodes.def(tree, index).family() == CrusherNodes.Family.MINOR;
-			default -> ProtectorNodes.def(tree, index).family() == ProtectorNodes.Family.MINOR;
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family() == ProtectorNodes.Family.MINOR;
+			default -> PlaceholderNodes.kind(tree, index) == PlaceholderNodes.Kind.MINOR;
 		};
 	}
 
@@ -96,7 +102,8 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).rank();
 			case CRUSHER -> CrusherNodes.def(tree, index).rank();
-			default -> ProtectorNodes.def(tree, index).rank();
+			case PROTECTOR -> ProtectorNodes.def(tree, index).rank();
+			default -> 1;
 		};
 	}
 
@@ -135,6 +142,10 @@ public final class TreeNodes {
 
 		if (tree == SubTree.CRUSHER) {
 			return false;
+		}
+
+		if (tree != SubTree.PROTECTOR) {
+			return PlaceholderNodes.exclusiveTaken(tree, owned, index);
 		}
 
 		ProtectorNodes.Family family = ProtectorNodes.def(tree, index).family();

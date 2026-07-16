@@ -15,20 +15,23 @@ public class Archetypes implements ModInitializer {
 	public void onInitialize() {
 		ModAttachments.initialize();
 		ModItems.initialize();
+		ModEntities.initialize();
 		ModParticles.initialize();
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();
 		SlayerTicker.initialize();
 		CrusherTicker.initialize();
+		AgilityCombat.initialize();
+		AgilityTicker.initialize();
+		SeekerTicker.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyNodePayload.TYPE, BuyNodePayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(ShieldBashPayload.TYPE, ShieldBashPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(SlayerAbilityPayload.TYPE, SlayerAbilityPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(ActiveAbilityPayload.TYPE, ActiveAbilityPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(SpellChannelPayload.TYPE, SpellChannelPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(MeleeSwingPayload.TYPE, MeleeSwingPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(CrusherAbilityPayload.TYPE, CrusherAbilityPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
@@ -43,31 +46,45 @@ public class Archetypes implements ModInitializer {
 					NodePurchases.buy(context.player(), tree, payload.node());
 				}));
 
-		// One key per active now that the cooldown bar shows them separately.
-		// The bash key is bash alone; the Slayer key still dispatches on the
-		// mainhand, since the two capstones are mutually exclusive anyway.
-		ServerPlayNetworking.registerGlobalReceiver(ShieldBashPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> ShieldBash.execute(context.player())));
-
-		ServerPlayNetworking.registerGlobalReceiver(CrusherAbilityPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> {
-					if (context.player().getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
-						CrusherActives.quake(context.player());
-					} else {
-						CrusherActives.haymaker(context.player());
-					}
-				}));
-
-		ServerPlayNetworking.registerGlobalReceiver(SlayerAbilityPayload.TYPE, (payload, context) -> context
+		// The three ability keys are slots, one per sub-tree in screen order;
+		// what a slot casts depends on the archetype. Strength trees keep
+		// their internal weapon dispatch (the capstone pairs are exclusive).
+		ServerPlayNetworking.registerGlobalReceiver(ActiveAbilityPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
 					var player = context.player();
+					Archetype archetype = ModAttachments.get(player);
 
-					if (ModItems.isGreatsword(player.getMainHandItem())) {
-						SlayerActives.decimate(player);
-					} else if (ModItems.isSword(player.getMainHandItem())) {
-						SlayerActives.bladestorm(player);
+					if (archetype == null || payload.slot() < 0 || payload.slot() >= 3) {
+						return;
+					}
+
+					switch (SubTree.of(archetype).get(payload.slot())) {
+						case PROTECTOR -> ShieldBash.execute(player);
+						case SLAYER -> {
+							if (ModItems.isGreatsword(player.getMainHandItem())) {
+								SlayerActives.decimate(player);
+							} else if (ModItems.isSword(player.getMainHandItem())) {
+								SlayerActives.bladestorm(player);
+							}
+						}
+						case CRUSHER -> {
+							if (player.getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
+								CrusherActives.quake(player);
+							} else {
+								CrusherActives.haymaker(player);
+							}
+						}
+						case MARKSMAN -> AgilityActives.trueShot(player);
+						case ASSASSIN -> AgilityActives.shadowStep(player);
+						case SHADOW -> AgilityActives.invisibility(player);
+						case ELEMENTALIST -> SeekerSpells.castElementalist(player);
+						case WIZARD -> SeekerSpells.castMissile(player);
+						case PRIEST -> SeekerSpells.castHolyLight(player);
 					}
 				}));
+
+		ServerPlayNetworking.registerGlobalReceiver(SpellChannelPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> SeekerSpells.channelFlame(context.player())));
 
 		ServerPlayNetworking.registerGlobalReceiver(RushPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> ShieldRush.execute(context.player())));

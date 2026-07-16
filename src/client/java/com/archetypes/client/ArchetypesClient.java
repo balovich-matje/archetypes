@@ -1,8 +1,13 @@
 package com.archetypes.client;
 
+import com.archetypes.ActiveAbilityPayload;
 import com.archetypes.Archetype;
 import com.archetypes.ModAttachments;
-import com.archetypes.ShieldBashPayload;
+import com.archetypes.ModEntities;
+import com.archetypes.NodePurchases;
+import com.archetypes.PlaceholderNodes;
+import com.archetypes.SpellChannelPayload;
+import com.archetypes.SubTree;
 import com.archetypes.client.mixin.AbstractContainerScreenAccessor;
 import com.mojang.blaze3d.platform.InputConstants;
 
@@ -34,10 +39,9 @@ public class ArchetypesClient implements ClientModInitializer {
 	 */
 	private static final String SPECIALITIES = "specialities";
 
-	/** The ability binds, exposed so the cooldown bar can label its slots. */
-	static KeyMapping BASH_KEY;
-	static KeyMapping SLAYER_KEY;
-	static KeyMapping CRUSHER_KEY;
+	/** The ability binds, one per sub-tree slot (0 left, 1 middle, 2 right),
+	 * exposed so the cooldown bar can label its slots. */
+	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[3];
 
 	@Override
 	public void onInitializeClient() {
@@ -46,36 +50,36 @@ public class ArchetypesClient implements ClientModInitializer {
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
 
-		// One rebindable key per active, both under Gameplay; the cooldown bar
-		// shows each slot's current bind. The keys only report the press —
-		// the server decides whether anything actually happens.
-		BASH_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-				"key.archetypes.shield_bash", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G,
-				KeyMapping.Category.GAMEPLAY));
-		SLAYER_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-				"key.archetypes.slayer_ability", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H,
-				KeyMapping.Category.GAMEPLAY));
-		CRUSHER_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-				"key.archetypes.crusher_ability", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B,
-				KeyMapping.Category.GAMEPLAY));
+		// Three rebindable slot keys under Gameplay — what a slot casts depends
+		// on the archetype, and the server resolves that; the cooldown bar
+		// shows each slot's current bind. The keys only report the press.
+		int[] defaults = { GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H, GLFW.GLFW_KEY_B };
+
+		for (int slot = 0; slot < 3; slot++) {
+			ABILITY_KEYS[slot] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+					"key.archetypes.ability_" + (slot + 1), InputConstants.Type.KEYSYM, defaults[slot],
+					KeyMapping.Category.GAMEPLAY));
+		}
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (BASH_KEY.consumeClick()) {
-				if (client.player != null) {
-					ClientPlayNetworking.send(new ShieldBashPayload());
+			for (int slot = 0; slot < 3; slot++) {
+				while (ABILITY_KEYS[slot].consumeClick()) {
+					if (client.player != null) {
+						ClientPlayNetworking.send(new ActiveAbilityPayload(slot));
+					}
 				}
 			}
 
-			while (SLAYER_KEY.consumeClick()) {
-				if (client.player != null) {
-					ClientPlayNetworking.send(new com.archetypes.SlayerAbilityPayload());
-				}
-			}
-
-			while (CRUSHER_KEY.consumeClick()) {
-				if (client.player != null) {
-					ClientPlayNetworking.send(new com.archetypes.CrusherAbilityPayload());
-				}
+			// Flamethrower is a channel, not a press: while the elementalist
+			// key is held, one payload per tick keeps the stream alive. The
+			// press payload above still goes out; the server ignores it for
+			// flamethrower holders.
+			if (client.player != null && ABILITY_KEYS[0].isDown()
+					&& ModAttachments.get(client.player) == Archetype.INTELLECT
+					&& PlaceholderNodes.owns(SubTree.ELEMENTALIST,
+							NodePurchases.owned(client.player, SubTree.ELEMENTALIST),
+							PlaceholderNodes.Kind.CAPSTONE_B)) {
+				ClientPlayNetworking.send(new SpellChannelPayload());
 			}
 
 			// Shield Rush: sprint pressed while the shield is raised. Only
@@ -88,12 +92,20 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		});
 
-		// The centred bar of owned-active cooldowns, and the proc flashes that
-		// fall from the crosshair. Both after HOTBAR so they draw on top.
+		// Seeker spells render as thrown items — the projectile carries which.
+		net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
+				ModEntities.SPELL_PROJECTILE,
+				net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
+
+		// The centred bar of owned-active cooldowns, the proc flashes that
+		// fall from the crosshair, and the Seeker's mana bottles. All after
+		// HOTBAR so they draw on top.
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("cooldown_bar"), CooldownBarHud::render);
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("proc_indicators"), ProcIndicatorHud::render);
+		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
+				com.archetypes.Archetypes.id("mana_bar"), ManaHud::render);
 
 		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.PassiveProcPayload.TYPE,
 				(payload, context) -> context.client().execute(() -> ProcIndicatorHud.push(payload)));

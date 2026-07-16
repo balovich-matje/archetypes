@@ -267,10 +267,6 @@ public class ArchetypeScreen extends Screen {
 
 		graphics.text(this.font, this.title, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, false);
 
-		Component preview = Component.translatable("screen.archetypes.tree.preview");
-		graphics.text(this.font, preview, panelLeft + this.panelWidth() - PAD - this.font.width(preview),
-				panelTop + 8, VanillaUi.LABEL_FAINT, false);
-
 		int canvasWidth = this.canvasWidth();
 		int canvasHeight = this.canvasBottom() - this.canvasTop();
 

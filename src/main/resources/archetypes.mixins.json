@@ -4,7 +4,9 @@
 	"compatibilityLevel": "JAVA_25",
 	"mixins": [
 		"AbstractArrowAccessor",
+		"AbstractArrowMixin",
 		"BlocksAttacksMixin",
+		"LivingEntityAccessor",
 		"LivingEntityMixin",
 		"PlayerMixin",
 		"ProjectileMixin"

@@ -18,11 +18,9 @@ repositories {
 			includeGroup "maven.modrinth"
 		}
 	}
-	// Add repositories to retrieve artifacts from in here.
-	// You should only use this when depending on other mods because
-	// Loom adds the essential maven repositories to download Minecraft and libraries from automatically.
-	// See https://docs.gradle.org/current/userguide/declaring_repositories.html
-	// for more information about repositories.
+	// Specialities is consumed from mavenLocal: run `./gradlew publishToMavenLocal`
+	// in ../specialities after changing its API, then refresh here.
+	mavenLocal()
 }
 
 loom {
@@ -39,6 +37,12 @@ loom {
 dependencies {
 	// Experiment branch: player pose animations for Bladestorm/Decimate.
 	implementation "maven.modrinth:player-animation-library:g8XDqDTi"
+
+	// Soft dependency: the Spellcasting skill registers into Specialities'
+	// engine via its entrypoint when both mods are installed. Compile-only —
+	// at runtime every touch goes through compat/SpecialitiesBridge's guard.
+	// (This Loom remaps mod jars in the plain configurations, PAL-style.)
+	compileOnly "com.specialities:specialities:1.4.0-dev"
 
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"

@@ -824,3 +824,58 @@ half of the work belongs to the Specialities chat and needs coordinating.
 
 Open question, parked: only Magic Missile names a wand requirement — do
 Fireball and Holy Light require one too, or is the wand Wizard-flavoured?
+
+**Cutpurse & Seeker actives + the mana engine (2026-07-16, late).** All six
+new trees are live as active-plus-capstones skeletons: the active sits at
+the constellation's root (bottom row), the two capstones flank the crown as
+a mutually exclusive pair (user ruling: ALL capstone pairs exclusive,
+Slayer precedent), and every other node is a pickable, inert placeholder
+(PlaceholderNodes — one table serving all six until their passives arrive).
+
+The three ability keys became SLOTS (G/H/B = first/second/third tree of
+YOUR archetype), one ActiveAbilityPayload(slot) replacing the three bespoke
+payloads; the server resolves what a slot means. Strength keeps its exact
+old bindings by construction.
+
+Agility: True Shot (arm; next bow shot flies flat at x2, arrow silently
+despawns at 64 blocks; Seeker Arrow = homing at x1, Snap Shot = instant
+fire at x4 — arrow spawn caught via ServerEntityEvents.ENTITY_LOAD age-0,
+flight rules in an AbstractArrow tick mixin), Invisibility (8s/30s;
+Predator renews on kills while invisible via AFTER_DEATH; Last Shadow
+cheats death via ALLOW_DEATH — cleanse harmful, 2s hurtServer-cancel
+immunity, invis, 180s shared clock), Shadow Step (ray 16 blocks, teleport
+behind the TARGET's facing, one full-charge strike — attackStrengthTicker
+accessor set high, then Player.attack for authentic crits/enchants;
+Shadow Flurry = 4 strikes over ticks at 30s; Momentum resets on any kill).
+
+Seeker: zero cooldowns, mana only. Mana lives in Archetypes (attachment,
+regen tick, spend), the Spellcasting skill lives in SPECIALITIES' engine
+via its new external-skill API: Specialities 1.4.0-dev turned the Skill
+enum into SkillType (registry-backed, enum keeps its constants), pulls a
+"specialities:skills" entrypoint at init, and Archetypes registers
+Spellcasting through it — soft dependency both ways, compileOnly via
+mavenLocal (publishToMavenLocal after any Specialities API change), every
+runtime touch behind compat/SpecialitiesBridge's isModLoaded guard.
+1 XP per mana spent (fractional carry), +1 max mana/level, +1 regen/20.
+Mana bar: ten 9px hand-drawn bottles above hunger, percentage with floor
+rounding, shifted up 7 when Specialities' HUD_SHIFT is in play; air-bubble
+overlap accepted for now.
+
+All five spells are ONE entity (SpellProjectile extends
+ThrowableItemProjectile — the vanilla ThrownItemRenderer draws whatever
+item it wears, zero custom rendering): Fireball (fire charge, 50 mana, 2.5
+hearts + ignite, undeflectable by construction), Meteorite (magma block
+falling from 16 above the targeted block, all mana min 100, radius/damage
+scale with mana, wipes only hardness-0 blocks, needs clear sky),
+Flamethrower (channel: client streams SpellChannelPayload while the key is
+held, gap = channel over; 50 to start + 1.25/tick, blaze-powder bolts),
+Magic Missile (amethyst shard, wand-gated, straight 16 blocks; homing at
+-33% speed OR pierce-with-wider-sweep — pierce bypasses vanilla entity
+hits entirely and sweeps an inflated box, each victim once), Holy Light
+(glowstone lob, splash-shaped burst: heal living / hurt undead 2.5 hearts;
+Renewal adds Regeneration, Benediction a random buff, non-hostiles only).
+A chunk-reloaded spell wakes modeless and discards itself.
+
+Wand rule confirmed: Wizard requires the wand; Elementalist and Priest
+cast bare-handed. The tree screen's blanket "Preview" header died — every
+tree now does something; only the placeholder minors say so, per node.

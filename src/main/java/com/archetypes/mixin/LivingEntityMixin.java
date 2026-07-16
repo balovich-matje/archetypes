@@ -238,6 +238,25 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * Last Shadow's grace period: for two seconds after cheating death the
+	 * player takes nothing at all — the capstone's promise is "you got away",
+	 * and a skeleton double-tapping the escape would break it.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void archetypes$cheatDeathGrace(final ServerLevel level, final DamageSource source,
+			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (!((Object) this instanceof ServerPlayer player)) {
+			return;
+		}
+
+		Long immuneUntil = ((AttachmentTarget) player).getAttached(ModAttachments.IMMUNE_UNTIL);
+
+		if (immuneUntil != null && level.getGameTime() < immuneUntil) {
+			cir.setReturnValue(false);
+		}
+	}
+
+	/**
 	 * Bulwark: vanilla's block-angle check boils down to one Math.acos in
 	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
 	 * "in front" for a capstone holder. {@code this} is the blocker here.

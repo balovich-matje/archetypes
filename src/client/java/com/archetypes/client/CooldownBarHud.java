@@ -129,7 +129,7 @@ public final class CooldownBarHud {
 			int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.COOLDOWN);
 			var family = ProtectorNodes.Family.BASH;
 			abilities.add(new Ability(null, 0, new ItemStack(Items.SHIELD),
-					family.overlay(), family.overlaySize(), ArchetypesClient.BASH_KEY,
+					family.overlay(), family.overlaySize(), ArchetypesClient.ABILITY_KEYS[0],
 					ModAttachments.BASH_READY_AT, Tuning.bashCooldownTicks(slam, recovery)));
 		}
 
@@ -140,14 +140,14 @@ public final class CooldownBarHud {
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.DECIMATE) > 0) {
 			var family = SlayerNodes.Family.DECIMATE;
 			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
-					null, 0, ArchetypesClient.SLAYER_KEY,
+					null, 0, ArchetypesClient.ABILITY_KEYS[1],
 					ModAttachments.DECIMATE_READY_AT, Tuning.DECIMATE_COOLDOWN_TICKS - relentless));
 		}
 
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.BLADESTORM) > 0) {
 			var family = SlayerNodes.Family.BLADESTORM;
 			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
-					null, 0, ArchetypesClient.SLAYER_KEY,
+					null, 0, ArchetypesClient.ABILITY_KEYS[1],
 					ModAttachments.BLADESTORM_READY_AT, Tuning.BLADESTORM_COOLDOWN_TICKS - relentless));
 		}
 
@@ -157,15 +157,48 @@ public final class CooldownBarHud {
 				com.archetypes.CrusherNodes.Family.HAYMAKER) > 0) {
 			var icon = com.archetypes.CrusherNodes.Family.HAYMAKER.icon();
 			abilities.add(new Ability(null, 0, icon == null ? ItemStack.EMPTY : new ItemStack(icon),
-					null, 0, ArchetypesClient.CRUSHER_KEY,
+					null, 0, ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.HAYMAKER_READY_AT, Tuning.HAYMAKER_COOLDOWN_TICKS));
 		}
 
 		if (com.archetypes.CrusherNodes.rank(SubTree.CRUSHER, crusher,
 				com.archetypes.CrusherNodes.Family.QUAKE) > 0) {
 			abilities.add(new Ability(null, 0, new ItemStack(Items.MACE),
-					null, 0, ArchetypesClient.CRUSHER_KEY,
+					null, 0, ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.QUAKE_READY_AT, Tuning.QUAKE_COOLDOWN_TICKS));
+		}
+
+		// The Cutpurse actives: cooldown-driven like Strength's. Seeker spells
+		// don't appear here — mana is their gauge and the bottle bar shows it.
+		var marksman = NodePurchases.owned(player, SubTree.MARKSMAN);
+
+		if (com.archetypes.PlaceholderNodes.owns(SubTree.MARKSMAN, marksman,
+				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+			abilities.add(new Ability(null, 0, new ItemStack(Items.SPECTRAL_ARROW),
+					null, 0, ArchetypesClient.ABILITY_KEYS[0],
+					ModAttachments.TRUE_SHOT_READY_AT, Tuning.TRUE_SHOT_COOLDOWN_TICKS));
+		}
+
+		var assassin = NodePurchases.owned(player, SubTree.ASSASSIN);
+
+		if (com.archetypes.PlaceholderNodes.owns(SubTree.ASSASSIN, assassin,
+				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+			boolean flurry = com.archetypes.PlaceholderNodes.owns(SubTree.ASSASSIN, assassin,
+					com.archetypes.PlaceholderNodes.Kind.CAPSTONE_A);
+			abilities.add(new Ability(null, 0, new ItemStack(Items.ENDER_PEARL),
+					null, 0, ArchetypesClient.ABILITY_KEYS[1],
+					ModAttachments.SHADOW_STEP_READY_AT, flurry
+							? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS
+							: Tuning.SHADOW_STEP_COOLDOWN_TICKS));
+		}
+
+		var shadow = NodePurchases.owned(player, SubTree.SHADOW);
+
+		if (com.archetypes.PlaceholderNodes.owns(SubTree.SHADOW, shadow,
+				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+			abilities.add(new Ability(null, 0, new ItemStack(Items.FERMENTED_SPIDER_EYE),
+					null, 0, ArchetypesClient.ABILITY_KEYS[2],
+					ModAttachments.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
 		}
 
 		return abilities;
