@@ -161,6 +161,13 @@ public final class CooldownBarHud {
 					ModAttachments.HAYMAKER_READY_AT, Tuning.HAYMAKER_COOLDOWN_TICKS));
 		}
 
+		if (com.archetypes.CrusherNodes.rank(SubTree.CRUSHER, crusher,
+				com.archetypes.CrusherNodes.Family.QUAKE) > 0) {
+			abilities.add(new Ability(null, 0, new ItemStack(Items.MACE),
+					null, 0, ArchetypesClient.CRUSHER_KEY,
+					ModAttachments.QUAKE_READY_AT, Tuning.QUAKE_COOLDOWN_TICKS));
+		}
+
 		return abilities;
 	}
 }

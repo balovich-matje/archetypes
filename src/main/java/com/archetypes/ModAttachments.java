@@ -88,6 +88,16 @@ public final class ModAttachments {
 			Archetypes.id("bladestorm_end"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
 
+	/** Quake: cooldown, and the charge's end tick — synced to everyone so the
+	 * rising-mace pose plays for onlookers too. */
+	public static final AttachmentType<Long> QUAKE_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("quake_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	public static final AttachmentType<Long> QUAKE_CHARGE_END = AttachmentRegistry.create(
+			Archetypes.id("quake_charge_end"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
 	/** Haymaker's cooldown, same shape as the bash's. */
 	public static final AttachmentType<Long> HAYMAKER_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("haymaker_ready_at"),

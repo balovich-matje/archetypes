@@ -20,6 +20,7 @@ public final class CrusherTicker {
 	private static final Identifier IRON_SKIN_ARMOR_ID = Archetypes.id("iron_skin_armor");
 	private static final Identifier IRON_SKIN_TOUGHNESS_ID = Archetypes.id("iron_skin_toughness");
 	private static final Identifier ADRENALINE_ID = Archetypes.id("adrenaline");
+	private static final Identifier QUAKE_IMMUNITY_ID = Archetypes.id("quake_immunity");
 
 	private CrusherTicker() {
 	}
@@ -61,6 +62,17 @@ public final class CrusherTicker {
 		apply(player.getAttribute(Attributes.ATTACK_SPEED), ADRENALINE_ID,
 				rushing, adrenaline * Tuning.ADRENALINE_SPEED_PER_RANK * (hands ? 2.0F : 1.0F),
 				AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+
+		// Quake: knockback immunity while the charge holds; the slam lands the
+		// tick the charge ends.
+		Long chargeEnd = target.getAttached(ModAttachments.QUAKE_CHARGE_END);
+		boolean charging = chargeEnd != null && chargeEnd > now;
+		apply(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), QUAKE_IMMUNITY_ID,
+				charging, 1.0, AttributeModifier.Operation.ADD_VALUE);
+
+		if (chargeEnd != null && chargeEnd == now) {
+			CrusherActives.quakeSlam(player);
+		}
 
 		// Battle Trance decay: the banked hearts fade once the fight is over.
 		if (CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE) > 0

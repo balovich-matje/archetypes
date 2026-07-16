@@ -55,6 +55,12 @@ public final class ProcIndicatorHud {
 			var family = SlayerNodes.Family.valueOf(payload.family());
 			sprite = family.sprite();
 			size = family.spriteSize();
+		} else if ("crusher".equals(payload.subTreeId())) {
+			var family = com.archetypes.CrusherNodes.Family.valueOf(payload.family());
+			sprite = null;
+			size = 0;
+			Item base = family.icon();
+			item = base == null ? ItemStack.EMPTY : new ItemStack(base);
 		} else {
 			var family = ProtectorNodes.Family.valueOf(payload.family());
 			sprite = family.overlay();

@@ -198,11 +198,21 @@ public abstract class LivingEntityMixin {
 			return amount;
 		}
 
-		int rank = CrusherNodes.rank(SubTree.CRUSHER,
-				NodePurchases.owned(player, SubTree.CRUSHER), CrusherNodes.Family.SUNDER);
+		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
+		float result = amount;
+
+		// Meteor: Density by another name — smash bonus per fallen block.
+		int meteor = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.METEOR);
+
+		if (meteor > 0 && weapon == com.archetypes.WeaponClass.MACE
+				&& player.fallDistance > Tuning.SMASH_MIN_FALL) {
+			result += player.fallDistance * Tuning.METEOR_PER_BLOCK_PER_RANK * meteor;
+		}
+
+		int rank = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.SUNDER);
 
 		if (rank == 0) {
-			return amount;
+			return result;
 		}
 
 		int levels = rank * (weapon == com.archetypes.WeaponClass.HANDS ? 2 : 1);
@@ -211,7 +221,7 @@ public abstract class LivingEntityMixin {
 				(float) victim.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
 						* 0.04F);
 
-		return amount + amount * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
+		return result + result * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
 	}
 
 	/**

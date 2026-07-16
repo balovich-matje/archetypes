@@ -26,6 +26,9 @@ public final class CrusherNodes {
 		BARE_KNUCKLE(() -> Items.BRICK),
 		IRON_SKIN(() -> Items.IRON_CHESTPLATE),
 		HAYMAKER(() -> Items.BLAZE_POWDER),
+		METEOR(() -> Items.ANVIL),
+		SHOCKWAVE(() -> Items.WIND_CHARGE),
+		QUAKE(() -> Items.MACE),
 		BATTLE_TRANCE(() -> Items.GOLDEN_APPLE),
 		MINOR(null);
 
@@ -77,15 +80,16 @@ public final class CrusherNodes {
 		byCell.put(cell(2, 8), new Def(Family.IRON_SKIN, 3));
 		byCell.put(cell(3, 8), new Def(Family.HAYMAKER, 1));
 
-		// Right flange: the mace path — geometry locked in, perks next round.
-		byCell.put(cell(5, 4), new Def(Family.MINOR, 1));
-		byCell.put(cell(5, 5), new Def(Family.MINOR, 1));
-		byCell.put(cell(5, 6), new Def(Family.MINOR, 1));
-		byCell.put(cell(5, 7), new Def(Family.MINOR, 1));
+		// Right flange: the mace path — Shockwave up the column, Meteor on the
+		// side, two slots still open for the utility perk, Quake at the peak.
+		byCell.put(cell(5, 4), new Def(Family.SHOCKWAVE, 1));
+		byCell.put(cell(5, 5), new Def(Family.SHOCKWAVE, 2));
+		byCell.put(cell(5, 6), new Def(Family.SHOCKWAVE, 3));
+		byCell.put(cell(5, 7), new Def(Family.METEOR, 1));
+		byCell.put(cell(6, 7), new Def(Family.METEOR, 2));
 		byCell.put(cell(6, 6), new Def(Family.MINOR, 1));
-		byCell.put(cell(6, 7), new Def(Family.MINOR, 1));
 		byCell.put(cell(6, 8), new Def(Family.MINOR, 1));
-		byCell.put(cell(5, 8), new Def(Family.MINOR, 1));
+		byCell.put(cell(5, 8), new Def(Family.QUAKE, 1));
 
 		// The crown: Battle Trance, shared, reachable from either capstone.
 		byCell.put(cell(3, 9), new Def(Family.BATTLE_TRANCE, 1));

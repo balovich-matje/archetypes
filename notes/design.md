@@ -680,3 +680,16 @@ fight. Right flange: 8 placeholder minors, mace perks next. Economy mirrors
 Slayer exactly: 23 nodes, 15 per full path (the math forces crown = 3 nodes —
 went 3-rank Battle Trance rather than invent an unasked tip node). Item
 placeholder icons until the perks settle.
+
+**Crusher mace flange + fists tuning (2026-07-16).** Haymaker up to x4 damage
+with a Knockback-II send-off; Iron Skin now +1 armor/+1 toughness per rank
+(the earlier "2/10 armor" report was 4.5 armor = 2.25 icons — working as
+coded, rebalanced anyway). Fixed: proc indicators crashed on Crusher families
+(client resolver only knew Slayer/Protector) — likely why Battle Trance
+looked silent; absorption itself is server-side, so retest with a truly
+empty offhand. Mace flange: Shockwave 3 (falling mace hit splashes its full
+damage within rank blocks), Meteor 2 (Density-like: +0.5 dmg per fallen
+block per rank), Quake capstone (B with mace: 1.5s knockback-immune charge
+with a rising-mace PAL pose, then a slam — 1.5x attack damage in 3 blocks,
+monsters launched skyward, MACE_SMASH_GROUND_HEAVY + muffled explosion for
+the rock-crushing feel). Two flange slots stay open for the utility perk.

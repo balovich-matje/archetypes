@@ -10,6 +10,10 @@ import net.minecraft.server.level.ServerPlayer;
  * effect — the compensation for bringing knuckles to a sword fight.
  */
 public final class CrusherCombat {
+	/** True while a Shockwave splash is being dealt, so the splash's own
+	 * damage events can never cascade. */
+	private static boolean splashing;
+
 	private CrusherCombat() {
 	}
 
@@ -33,6 +37,29 @@ public final class CrusherCombat {
 			// ticker turns the window into an attack-speed modifier.
 			if (CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.ADRENALINE) > 0) {
 				target.setAttached(ModAttachments.ADRENALINE_UNTIL, now + Tuning.ADRENALINE_TICKS);
+			}
+
+			// Shockwave: a falling mace blow rings outward — the same damage
+			// to everything within rank blocks of the one you actually hit.
+			int shockwave = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.SHOCKWAVE);
+
+			if (shockwave > 0 && weapon == WeaponClass.MACE && !splashing
+					&& player.fallDistance > Tuning.SMASH_MIN_FALL) {
+				var level = (net.minecraft.server.level.ServerLevel) player.level();
+				splashing = true;
+				try {
+					for (var other : level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
+							entity.getBoundingBox().inflate(shockwave, 1.0, shockwave),
+							o -> o != player && o != entity && o.isAlive() && !o.isSpectator())) {
+						other.hurtServer(level, player.damageSources().playerAttack(player), taken);
+					}
+				} finally {
+					splashing = false;
+				}
+				level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
+						entity.getX(), entity.getY(0.3), entity.getZ(), 2, shockwave * 0.4, 0.1,
+						shockwave * 0.4, 0.0);
+				ProcIndicators.send(player, SubTree.CRUSHER, CrusherNodes.Family.SHOCKWAVE);
 			}
 
 			// Battle Trance: every landed hit banks absorption, capped by

@@ -168,15 +168,33 @@ public final class Tuning {
 	public static final float BARE_KNUCKLE_PER_RANK = 0.5F;
 
 	/** Iron Skin: armor and toughness per rank while the hands are bare. */
-	public static final float IRON_SKIN_ARMOR_PER_RANK = 1.5F;
-	public static final float IRON_SKIN_TOUGHNESS_PER_RANK = 0.5F;
+	public static final float IRON_SKIN_ARMOR_PER_RANK = 1.0F;
+	public static final float IRON_SKIN_TOUGHNESS_PER_RANK = 1.0F;
 
-	/** Haymaker: one enormous punch — multiplied attack damage and a stun. */
-	public static final float HAYMAKER_DAMAGE_MULTIPLIER = 2.5F;
+	/** Haymaker: one enormous punch — multiplied attack damage, a stun, and
+	 * Knockback II's worth of send-off. */
+	public static final float HAYMAKER_DAMAGE_MULTIPLIER = 4.0F;
+	public static final double HAYMAKER_KNOCKBACK = 1.3;
 	public static final int HAYMAKER_STUN_TICKS = 30;
 	public static final int HAYMAKER_STUN_AMPLIFIER = 5;
 	public static final int HAYMAKER_COOLDOWN_TICKS = 400;
 	public static final double HAYMAKER_RANGE = 3.0;
+
+	/** Meteor: Density by another name — bonus smash damage per fallen block
+	 * per rank, on mace hits landed while falling. */
+	public static final float METEOR_PER_BLOCK_PER_RANK = 0.5F;
+	public static final float SMASH_MIN_FALL = 1.5F;
+
+	/** Shockwave: a falling mace hit splashes its damage to everything within
+	 * rank blocks of the victim. */
+
+	/** Quake: charge for 1.5s (knockback-immune, mace rising), then slam —
+	 * multiplied attack damage in the radius, hostiles launched skyward. */
+	public static final int QUAKE_CHARGE_TICKS = 30;
+	public static final float QUAKE_DAMAGE_MULTIPLIER = 1.5F;
+	public static final double QUAKE_RADIUS = 3.0;
+	public static final double QUAKE_LAUNCH = 0.95;
+	public static final int QUAKE_COOLDOWN_TICKS = 600;
 
 	/** Battle Trance: absorption per landed hit (doubled for fists), capped
 	 * per rank, draining once the fight goes quiet. */

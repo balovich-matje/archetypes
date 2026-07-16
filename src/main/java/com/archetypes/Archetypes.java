@@ -51,7 +51,13 @@ public class Archetypes implements ModInitializer {
 				.server().execute(() -> ShieldBash.execute(context.player())));
 
 		ServerPlayNetworking.registerGlobalReceiver(CrusherAbilityPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> CrusherActives.haymaker(context.player())));
+				.server().execute(() -> {
+					if (context.player().getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
+						CrusherActives.quake(context.player());
+					} else {
+						CrusherActives.haymaker(context.player());
+					}
+				}));
 
 		ServerPlayNetworking.registerGlobalReceiver(SlayerAbilityPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {

@@ -31,6 +31,7 @@ public final class SlayerAnimations {
 	private static final Identifier LAYER_ID = Archetypes.id("slayer_pose");
 	private static final Identifier BLADESTORM_ANIM = Archetypes.id("bladestorm");
 	private static final Identifier DECIMATE_ANIM = Archetypes.id("decimate");
+	private static final Identifier QUAKE_ANIM = Archetypes.id("quake_charge");
 	/** Decimate's pose length in ticks; matches decimate.json's 0.6s. */
 	private static final int DECIMATE_SWING_TICKS = 12;
 
@@ -78,12 +79,15 @@ public final class SlayerAnimations {
 		boolean storming = end != null && end > now;
 		Long swingAt = target.getAttached(ModAttachments.DECIMATE_SWING_AT);
 		boolean cleaving = swingAt != null && now - swingAt < DECIMATE_SWING_TICKS;
+		Long chargeEnd = target.getAttached(ModAttachments.QUAKE_CHARGE_END);
+		boolean quaking = chargeEnd != null && chargeEnd > now;
 
-		if ((storming || cleaving) && !controller.isActive()) {
+		if ((storming || cleaving || quaking) && !controller.isActive()) {
 			// Loop flags come from the animation files: bladestorm loops until
-			// stopped below, decimate plays once and stops itself.
-			controller.triggerAnimation(storming ? BLADESTORM_ANIM : DECIMATE_ANIM);
-		} else if (!storming && !cleaving && controller.isActive()
+			// stopped below, the one-shots play once and stop themselves.
+			controller.triggerAnimation(storming ? BLADESTORM_ANIM
+					: quaking ? QUAKE_ANIM : DECIMATE_ANIM);
+		} else if (!storming && !cleaving && !quaking && controller.isActive()
 				&& controller.getTriggeredAnimation() != null) {
 			controller.stop();
 		}
