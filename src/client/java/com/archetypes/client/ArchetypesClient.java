@@ -34,6 +34,10 @@ public class ArchetypesClient implements ClientModInitializer {
 	 */
 	private static final String SPECIALITIES = "specialities";
 
+	/** The ability binds, exposed so the cooldown bar can label its slots. */
+	static KeyMapping BASH_KEY;
+	static KeyMapping SLAYER_KEY;
+
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
@@ -41,16 +45,26 @@ public class ArchetypesClient implements ClientModInitializer {
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
 
-		// Default G; rebindable under Gameplay. The key only reports the press —
-		// the server decides whether a bash actually happens.
-		KeyMapping bashKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+		// One rebindable key per active, both under Gameplay; the cooldown bar
+		// shows each slot's current bind. The keys only report the press —
+		// the server decides whether anything actually happens.
+		BASH_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.archetypes.shield_bash", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G,
+				KeyMapping.Category.GAMEPLAY));
+		SLAYER_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+				"key.archetypes.slayer_ability", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H,
 				KeyMapping.Category.GAMEPLAY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			while (bashKey.consumeClick()) {
+			while (BASH_KEY.consumeClick()) {
 				if (client.player != null) {
 					ClientPlayNetworking.send(new ShieldBashPayload());
+				}
+			}
+
+			while (SLAYER_KEY.consumeClick()) {
+				if (client.player != null) {
+					ClientPlayNetworking.send(new com.archetypes.SlayerAbilityPayload());
 				}
 			}
 

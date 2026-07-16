@@ -35,16 +35,22 @@ public final class TreeNodes {
 	/** Texture-based icon (effect sprites and the like), or null if the
 	 * family's icon is an item. */
 	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).family().sprite()
-				: ProtectorNodes.def(tree, index).family().sprite();
+		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().sprite() : null;
 	}
 
 	/** Pixel size of the square texture behind iconSprite. */
 	public static int iconSpriteSize(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).family().spriteSize()
-				: ProtectorNodes.def(tree, index).family().spriteSize();
+		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().spriteSize() : 0;
+	}
+
+	/** Effect layer drawn over the item icon, or null when the item stands alone. */
+	public static net.minecraft.resources.@Nullable Identifier iconOverlay(final SubTree tree, final int index) {
+		return tree == SubTree.SLAYER ? null : ProtectorNodes.def(tree, index).family().overlay();
+	}
+
+	/** Pixel size of the square texture behind iconOverlay. */
+	public static int iconOverlaySize(final SubTree tree, final int index) {
+		return tree == SubTree.SLAYER ? 0 : ProtectorNodes.def(tree, index).family().overlaySize();
 	}
 
 	public static boolean isMinor(final SubTree tree, final int index) {

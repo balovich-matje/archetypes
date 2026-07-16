@@ -37,7 +37,8 @@ public final class CooldownBarHud {
 	/** Gap between the bar's bottom and the top of the hearts/armor rows. */
 	private static final int BOTTOM = 56;
 
-	private record Ability(Identifier sprite, int texSize, ItemStack item,
+	private record Ability(Identifier sprite, int texSize, ItemStack item, Identifier overlay,
+			int overlaySize, net.minecraft.client.KeyMapping key,
 			AttachmentType<Long> readyAt, int totalTicks) {
 	}
 
@@ -84,6 +85,12 @@ public final class CooldownBarHud {
 				pose.popMatrix();
 			}
 
+			if (ability.overlay() != null) {
+				graphics.blit(RenderPipelines.GUI_TEXTURED, ability.overlay(), iconX, iconY,
+						0.0F, 0.0F, ICON, ICON, ability.overlaySize(), ability.overlaySize(),
+						ability.overlaySize(), ability.overlaySize());
+			}
+
 			Long readyAt = ((AttachmentTarget) player).getAttached(ability.readyAt());
 			long remaining = readyAt == null ? 0 : readyAt - now;
 
@@ -99,6 +106,14 @@ public final class CooldownBarHud {
 						y + FRAME / 2 - 4, 0xFFFFFFFF, true);
 			}
 
+			// The slot's current bind, bottom-right corner of the frame.
+			String bind = ability.key().getTranslatedKeyMessage().getString();
+
+			if (bind.length() <= 3) {
+				graphics.text(client.font, bind,
+						x + FRAME - 2 - client.font.width(bind), y + FRAME - 9, 0xFFFFFF55, true);
+			}
+
 			x += FRAME + GAP;
 		}
 	}
@@ -112,7 +127,9 @@ public final class CooldownBarHud {
 		if (ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.BASH) > 0) {
 			int slam = ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.SLAM);
 			int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.COOLDOWN);
+			var family = ProtectorNodes.Family.BASH;
 			abilities.add(new Ability(null, 0, new ItemStack(Items.SHIELD),
+					family.overlay(), family.overlaySize(), ArchetypesClient.BASH_KEY,
 					ModAttachments.BASH_READY_AT, Tuning.bashCooldownTicks(slam, recovery)));
 		}
 
@@ -123,12 +140,14 @@ public final class CooldownBarHud {
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.DECIMATE) > 0) {
 			var family = SlayerNodes.Family.DECIMATE;
 			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
+					null, 0, ArchetypesClient.SLAYER_KEY,
 					ModAttachments.DECIMATE_READY_AT, Tuning.DECIMATE_COOLDOWN_TICKS - relentless));
 		}
 
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.BLADESTORM) > 0) {
 			var family = SlayerNodes.Family.BLADESTORM;
 			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
+					null, 0, ArchetypesClient.SLAYER_KEY,
 					ModAttachments.BLADESTORM_READY_AT, Tuning.BLADESTORM_COOLDOWN_TICKS - relentless));
 		}
 

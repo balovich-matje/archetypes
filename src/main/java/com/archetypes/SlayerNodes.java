@@ -29,14 +29,14 @@ public final class SlayerNodes {
 		KBRES(() -> Items.OBSIDIAN),
 		BLEED(Archetypes.id("textures/node/rend.png"), 16),
 		BLADE_DANCE(Archetypes.id("textures/node/blade_dance.png"), 16),
-		HEAVY(() -> ModItems.IRON_GREATSWORD),
-		FIRSTBLOOD(Archetypes.id("textures/node/first_blood.png"), 16),
+		HEAVY(Archetypes.id("textures/node/heavy_blows.png"), 32),
+		FIRSTBLOOD(Archetypes.id("textures/node/first_blood.png"), 32),
 		FLURRY(() -> Items.SUGAR),
 		EXECUTIONER(Archetypes.id("textures/node/executioner.png"), 16),
 		BLOODLUST(() -> Items.FERMENTED_SPIDER_EYE),
 		RELENTLESS(() -> Items.CLOCK),
 		BLADESTORM(Archetypes.id("textures/node/bladestorm.png"), 16),
-		DECIMATE(Archetypes.id("textures/node/decimate.png"), 16),
+		DECIMATE(Archetypes.id("textures/node/decimate.png"), 32),
 		MINOR((Supplier<Item>) null);
 
 		private final @Nullable Supplier<Item> icon;

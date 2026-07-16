@@ -43,64 +43,27 @@ def faded(im, alpha):
     return out
 
 
-def canvas():
-    return Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+def canvas(size=16):
+    return Image.new("RGBA", (size, size), (0, 0, 0, 0))
 
 
-def mini_greatsword():
-    """The slab greatsword redrawn at 16px — a NEAREST downscale of the item
-    texture halves the blade back to slender, so the icon gets its own plot:
-    four pixels of blade, bevel tip, chunky guard, stub grip."""
-    from make_greatsword_textures import palette
-    c = palette("iron")
-    im = canvas()
+def greatsword_item():
+    """The actual 32px slab greatsword item texture — icons that feature the
+    weapon compose it at native resolution so they match the item in hand."""
+    return Image.open(os.path.join(
+        ASSETS, "archetypes/textures/item/iron_greatsword.png")).convert("RGBA")
 
-    def put(x, y, key):
-        if 0 <= x < 16 and 0 <= y < 16:
-            im.putpixel((x, y), c[key])
 
-    def blade_row(y, section):
-        x = 13 - y
-        for i, key in enumerate(section):
-            put(x + i, y, key)
-
-    blade_row(1, "EB")
-    for y in range(2, 9):
-        blade_row(y, "EBFD")
-
-    for x in range(1, 8):
-        put(x, 9, "G")
-    put(0, 9, "g")
-    put(8, 9, "E")
-
-    put(3, 10, "H")
-    put(2, 11, "G")
-    put(1, 12, "H")
-    put(0, 13, "G")
-    put(1, 13, "G")
-    put(0, 12, "E")
-    return im
+def shield_face():
+    """The vanilla shield's front plate, cut from the entity texture — the
+    only flat pixels of the real shield that exist (the item icon is a 3D
+    render). Used for Bulwark's ghost copies."""
+    return vanilla("entity/shield/shield_base_nopattern.png").convert("RGBA").crop((0, 0, 13, 23))
 
 
 IRON = (200, 200, 208, 255)
 IRON_DARK = (120, 120, 128, 255)
 IRON_LIGHT = (238, 238, 244, 255)
-WOOD = (140, 106, 62, 255)
-WOOD_DARK = (104, 76, 42, 255)
-
-
-def mini_shield():
-    """A heater shield: iron rim, wood face, reused across the Protector set."""
-    im = canvas()
-    for y, (x0, x1) in enumerate(((4, 11), (3, 12), (3, 12), (3, 12), (3, 12),
-                                  (3, 12), (4, 11), (5, 10), (6, 9), (7, 8)), start=2):
-        for x in range(x0, x1 + 1):
-            rim = x == x0 or x == x1 or y == 2 or y == 11
-            im.putpixel((x, y), IRON if rim else (WOOD if (x + y) % 5 else WOOD_DARK))
-    im.putpixel((4, 2), IRON_LIGHT)
-    im.putpixel((7, 7), IRON_DARK)
-    im.putpixel((8, 7), IRON_DARK)
-    return im
 
 
 def save(im, name):
@@ -156,15 +119,19 @@ def taste_of_blood():
 
 
 def first_blood():
-    """An unbloodied greatsword — except the very tip. This is the
-    greatsword path's opener, so it wears the greatsword, not a sword."""
-    im = canvas()
-    im.alpha_composite(mini_greatsword(), (0, 0))
-    im.putpixel((12, 1), BLOOD)
-    im.putpixel((13, 1), BLOOD)
-    im.putpixel((12, 2), BLOOD_LIGHT)
-    im.putpixel((13, 2), BLOOD_DARK)
-    drop(im, 14, 4)
+    """An unbloodied greatsword — except the very tip. Composed at the item
+    texture's own 32px so it matches the weapon in hand."""
+    im = canvas(32)
+    im.alpha_composite(greatsword_item(), (0, 0))
+    for x, y, c in ((28, 1, BLOOD), (29, 1, BLOOD), (27, 2, BLOOD), (28, 2, BLOOD_LIGHT),
+                    (29, 2, BLOOD), (27, 3, BLOOD_DARK), (28, 3, BLOOD)):
+        im.putpixel((x, y), c)
+    # The falling drop, at double scale to match the canvas.
+    for dx, dy, c in ((0, 0, BLOOD), (0, 1, BLOOD), (1, 1, BLOOD),
+                      (-1, 2, BLOOD_DARK), (0, 2, BLOOD_LIGHT), (1, 2, BLOOD), (2, 2, BLOOD),
+                      (-1, 3, BLOOD), (0, 3, BLOOD_LIGHT), (1, 3, BLOOD), (2, 3, BLOOD),
+                      (0, 4, BLOOD_DARK), (1, 4, BLOOD_DARK)):
+        im.putpixel((28 + dx, 7 + dy), c)
     save(im, "first_blood")
 
 
@@ -205,110 +172,130 @@ def executioner():
 
 
 def decimate():
-    """The cleave itself: vanilla's own sweep flash, greatsword through it."""
-    sweep = vanilla("particle/sweep_2.png")
-    im = canvas()
-    im.alpha_composite(faded(sweep.resize((16, 16), Image.NEAREST), 230), (0, 0))
-    im.alpha_composite(mini_greatsword(), (0, 0))
+    """The cleave itself: vanilla's own sweep flash, greatsword through it —
+    both at their native 32px."""
+    im = canvas(32)
+    im.alpha_composite(faded(vanilla("particle/sweep_2.png").resize((32, 32), Image.NEAREST), 230), (0, 0))
+    im.alpha_composite(greatsword_item(), (0, 0))
     save(im, "decimate")
 
 
-def bulwark():
-    """One shield ahead, its ghosts guarding the sides — block from anywhere."""
-    im = canvas()
-    for dx, alpha in ((-4, 120), (4, 120)):
-        im.alpha_composite(faded(mini_shield(), alpha), (dx, 1))
-    im.alpha_composite(mini_shield(), (0, 0))
-    save(im, "bulwark")
-
-
-def shield_slam():
-    """The shield mid-slam, impact burst off its face."""
-    im = canvas()
-    im.alpha_composite(mini_shield(), (-2, 2))
-    for x, y in ((12, 4), (14, 4), (13, 3), (13, 5)):
-        im.putpixel((x, y), ARC)
-    im.putpixel((13, 4), (255, 236, 160, 255))
-    im.putpixel((11, 6), ARC_DIM)
-    im.putpixel((14, 7), ARC_DIM)
-    save(im, "shield_slam")
-
-
-def iron_spikes():
-    """The shield grown teeth."""
-    im = canvas()
-    im.alpha_composite(mini_shield(), (0, 1))
-    for sx, sy, dx, dy in ((2, 4, -1, -1), (13, 4, 1, -1), (2, 9, -1, 1), (13, 9, 1, 1)):
-        im.putpixel((sx, sy), IRON_LIGHT)
-        im.putpixel((sx + dx, sy + dy), IRON)
-    im.putpixel((7, 1), IRON_LIGHT)
-    im.putpixel((7, 0), IRON)
-    save(im, "iron_spikes")
-
-
-def wide_swings():
-    """The bash's arc thrown wide, shield under it."""
-    im = canvas()
-    im.alpha_composite(mini_shield().resize((12, 12), Image.NEAREST), (2, 4))
-    for i, (x, y) in enumerate(((1, 5), (2, 3), (4, 2), (6, 1), (9, 1), (11, 2), (13, 3), (14, 5))):
-        im.putpixel((x, y), ARC if i % 2 else ARC_DIM)
-    save(im, "wide_swings")
-
-
-def braced():
-    """Held blocks feed the bash: the shield with the refund circling it."""
-    im = canvas()
-    im.alpha_composite(mini_shield(), (0, 2))
-    for x, y in ((13, 1), (14, 2), (15, 4), (15, 6), (14, 8), (13, 9)):
-        im.putpixel((x, y), ARC)
-    # Arrowhead at the loop's end, pointing back down-left into the shield.
-    im.putpixel((12, 10), ARC)
-    im.putpixel((12, 8), ARC_DIM)
-    im.putpixel((14, 10), ARC_DIM)
-    save(im, "braced")
-
-
-def ground_slam():
-    """The anvil arriving: classic silhouette, ground cracking under it."""
-    im = canvas()
+def heavy_blows():
+    """The slab brought down: greatsword tip-first into the ground, debris
+    flying off the impact."""
+    im = canvas(32)
     ground = ((110, 78, 46, 255), (78, 54, 30, 255))
-    for x in range(0, 16):
-        im.putpixel((x, 13), ground[0])
-        im.putpixel((x, 14), ground[1])
+    for x in range(0, 32):
+        im.putpixel((x, 29), ground[0])
+        im.putpixel((x, 30), ground[1])
+        im.putpixel((x, 31), ground[1])
 
-    for x in range(3, 13):
-        im.putpixel((x, 2), IRON_LIGHT)
-        im.putpixel((x, 3), IRON)
-        im.putpixel((x, 4), IRON_DARK)
-    for x in range(6, 10):
-        for y in range(5, 9):
-            im.putpixel((x, y), IRON if y < 7 else IRON_DARK)
-    for x in range(4, 12):
-        im.putpixel((x, 9), IRON)
-        im.putpixel((x, 10), IRON_DARK)
-        im.putpixel((x, 11), IRON_DARK)
+    # Flip the item vertically: handle up-left, tip buried bottom-right.
+    im.alpha_composite(greatsword_item().transpose(Image.FLIP_TOP_BOTTOM), (0, -2))
 
+    for i, (x, y) in enumerate(((20, 24), (17, 21), (15, 18), (30, 23), (31, 19))):
+        im.putpixel((x, y), ARC if i % 2 else ARC_DIM)
     crack = (48, 32, 16, 255)
-    for x, y in ((3, 12), (2, 13), (1, 14), (12, 12), (13, 13), (14, 14), (7, 12), (8, 13)):
+    for x, y in ((23, 29), (21, 30), (19, 31), (30, 29), (31, 30)):
         im.putpixel((x, y), crack)
-    im.putpixel((0, 11), ARC_DIM)
-    im.putpixel((15, 11), ARC_DIM)
-    save(im, "ground_slam")
+    save(im, "heavy_blows")
 
 
-def reflection():
-    """An arrow meeting the shield and leaving the way it came."""
-    arrow = vanilla("item/arrow.png")
-    im = canvas()
-    shield = mini_shield()
-    im.alpha_composite(shield, (6, 2))
-    # Incoming arrow, flipped to fly down-right into the shield's face…
-    im.alpha_composite(arrow.resize((10, 10), Image.NEAREST).transpose(Image.FLIP_LEFT_RIGHT), (0, 6))
-    # …and the ricochet leaving up-left, brightest at the impact.
-    im.putpixel((8, 7), IRON_LIGHT)
-    for i, (x, y) in enumerate(((6, 5), (4, 3), (2, 1), (1, 0))):
+# --- Protector: transparent overlays drawn ON TOP of the real item render ---
+# The tree draws the vanilla shield/anvil item first (the icon players know),
+# then one of these 32px effect layers over it.
+
+
+def bash_overlay():
+    """The thrust: speed lines trailing left, impact bursting front-right."""
+    im = canvas(32)
+    for y in (7, 15, 23):
+        for x in range(1, 7):
+            im.putpixel((x, y), ARC if x > 3 else ARC_DIM)
+    for dx, dy in ((0, -2), (0, -1), (0, 1), (0, 2), (-2, 0), (-1, 0), (1, 0), (2, 0)):
+        im.putpixel((27 + dx, 13 + dy), ARC)
+    im.putpixel((27, 13), (255, 236, 160, 255))
+    for dx, dy in ((-2, -2), (2, -2), (-2, 2), (2, 2)):
+        im.putpixel((27 + dx, 13 + dy), ARC_DIM)
+    save(im, "bash_overlay")
+
+
+def shield_slam_overlay():
+    """Impact burst off the shield's upper face."""
+    im = canvas(32)
+    for dx, dy in ((0, -2), (0, -1), (0, 1), (0, 2), (-2, 0), (-1, 0), (1, 0), (2, 0)):
+        im.putpixel((26 + dx, 6 + dy), ARC)
+    im.putpixel((26, 6), (255, 236, 160, 255))
+    for dx, dy in ((-3, -3), (3, -3), (-3, 3), (3, 3)):
+        im.putpixel((26 + dx, 6 + dy), ARC_DIM)
+    save(im, "shield_slam_overlay")
+
+
+def iron_spikes_overlay():
+    """Teeth at the compass points, poking past the shield's rim."""
+    im = canvas(32)
+    for x, y, dx, dy in ((15, 3, 0, -1), (28, 15, 1, 0), (15, 28, 0, 1), (3, 15, -1, 0)):
+        im.putpixel((x, y), IRON)
+        im.putpixel((x + dx, y + dy), IRON_LIGHT)
+        im.putpixel((x + dx * 2, y + dy * 2), IRON_LIGHT)
+    save(im, "iron_spikes_overlay")
+
+
+def wide_swings_overlay():
+    """The bash's arc thrown wide over the shield."""
+    im = canvas(32)
+    for i, (x, y) in enumerate(((1, 11), (2, 8), (4, 5), (7, 3), (11, 1), (15, 0),
+                                (19, 1), (23, 3), (26, 5), (28, 8), (29, 11))):
+        im.putpixel((x, y), ARC if i % 2 else ARC_DIM)
+    save(im, "wide_swings_overlay")
+
+
+def braced_overlay():
+    """The refund loop, circling back into the shield."""
+    im = canvas(32)
+    for x, y in ((25, 3), (28, 5), (30, 8), (31, 12), (30, 16), (28, 19), (25, 21)):
+        im.putpixel((x, y), ARC)
+    # Arrowhead pointing back down-left into the shield.
+    im.putpixel((23, 22), ARC)
+    im.putpixel((24, 19), ARC_DIM)
+    im.putpixel((26, 23), ARC_DIM)
+    save(im, "braced_overlay")
+
+
+def reflection_overlay():
+    """An arrow arriving, its ricochet already leaving."""
+    im = canvas(32)
+    arrow = vanilla("item/arrow.png").transpose(Image.FLIP_TOP_BOTTOM)
+    im.alpha_composite(arrow, (-3, 14))
+    im.putpixel((11, 27), IRON_LIGHT)
+    for i, (x, y) in enumerate(((8, 24), (5, 21), (3, 18), (2, 15))):
         im.putpixel((x, y), ARC if i < 2 else ARC_DIM)
-    save(im, "reflection")
+    save(im, "reflection_overlay")
+
+
+def bulwark_overlay():
+    """Ghost shields guarding the flanks of the real one."""
+    im = canvas(32)
+    face = shield_face()
+    im.alpha_composite(faded(face, 130), (0, 5))
+    im.alpha_composite(faded(face, 130), (19, 5))
+    save(im, "bulwark_overlay")
+
+
+def ground_slam_overlay():
+    """The ground giving way under the anvil."""
+    im = canvas(32)
+    ground = ((110, 78, 46, 255), (78, 54, 30, 255))
+    for x in range(0, 32):
+        im.putpixel((x, 28), ground[0])
+        im.putpixel((x, 29), ground[1])
+        im.putpixel((x, 30), ground[1])
+    crack = (48, 32, 16, 255)
+    for x, y in ((6, 28), (4, 29), (2, 30), (25, 28), (27, 29), (29, 30), (15, 28), (16, 29)):
+        im.putpixel((x, y), crack)
+    for x, y in ((1, 24), (30, 24), (4, 21), (27, 21)):
+        im.putpixel((x, y), ARC_DIM)
+    save(im, "ground_slam_overlay")
 
 
 def main():
@@ -320,13 +307,15 @@ def main():
     first_blood()
     executioner()
     decimate()
-    bulwark()
-    shield_slam()
-    iron_spikes()
-    wide_swings()
-    braced()
-    ground_slam()
-    reflection()
+    heavy_blows()
+    bash_overlay()
+    shield_slam_overlay()
+    iron_spikes_overlay()
+    wide_swings_overlay()
+    braced_overlay()
+    reflection_overlay()
+    bulwark_overlay()
+    ground_slam_overlay()
 
 
 if __name__ == "__main__":

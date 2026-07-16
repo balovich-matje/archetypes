@@ -24,49 +24,48 @@ import org.jspecify.annotations.Nullable;
  */
 public final class ProtectorNodes {
 	public enum Family {
-		BASH(() -> Items.SHIELD),
-		SLAM(Archetypes.id("textures/node/shield_slam.png"), 16),
+		BASH(() -> Items.SHIELD, Archetypes.id("textures/node/bash_overlay.png"), 32),
+		SLAM(() -> Items.SHIELD, Archetypes.id("textures/node/shield_slam_overlay.png"), 32),
 		COOLDOWN(() -> Items.CLOCK),
 		KNOCKBACK(() -> Items.PISTON),
-		WIDE(Archetypes.id("textures/node/wide_swings.png"), 16),
+		WIDE(() -> Items.SHIELD, Archetypes.id("textures/node/wide_swings_overlay.png"), 32),
 		UNBREAKING(() -> Items.LEATHER),
-		SPIKES(Archetypes.id("textures/node/iron_spikes.png"), 16),
+		SPIKES(() -> Items.SHIELD, Archetypes.id("textures/node/iron_spikes_overlay.png"), 32),
 		RUSH(() -> Items.WIND_CHARGE),
-		BRACED(Archetypes.id("textures/node/braced.png"), 16),
-		REFLECT(Archetypes.id("textures/node/reflection.png"), 16),
+		BRACED(() -> Items.SHIELD, Archetypes.id("textures/node/braced_overlay.png"), 32),
+		REFLECT(() -> Items.SHIELD, Archetypes.id("textures/node/reflection_overlay.png"), 32),
 		TAUNT(() -> Items.GOAT_HORN),
-		OMNI_BLOCK(Archetypes.id("textures/node/bulwark.png"), 16),
-		GROUND_SLAM(Archetypes.id("textures/node/ground_slam.png"), 16),
-		MINOR((Supplier<Item>) null);
+		OMNI_BLOCK(() -> Items.SHIELD, Archetypes.id("textures/node/bulwark_overlay.png"), 32),
+		GROUND_SLAM(() -> Items.ANVIL, Archetypes.id("textures/node/ground_slam_overlay.png"), 32),
+		MINOR(null);
 
 		private final @Nullable Supplier<Item> icon;
-		private final net.minecraft.resources.@Nullable Identifier sprite;
-		private final int spriteSize;
+		private final net.minecraft.resources.@Nullable Identifier overlay;
+		private final int overlaySize;
 
 		Family(final @Nullable Supplier<Item> icon) {
-			this.icon = icon;
-			this.sprite = null;
-			this.spriteSize = 0;
+			this(icon, null, 0);
 		}
 
-		/** For icons that exist as textures, not items — see
-		 * notes/art/make_node_icons.py. */
-		Family(final net.minecraft.resources.Identifier sprite, final int spriteSize) {
-			this.icon = null;
-			this.sprite = sprite;
-			this.spriteSize = spriteSize;
+		/** The real item render stays the base; the overlay draws the skill's
+		 * effect on top of it — see notes/art/make_node_icons.py. */
+		Family(final @Nullable Supplier<Item> icon,
+				final net.minecraft.resources.@Nullable Identifier overlay, final int overlaySize) {
+			this.icon = icon;
+			this.overlay = overlay;
+			this.overlaySize = overlaySize;
 		}
 
 		public @Nullable Item icon() {
 			return this.icon == null ? null : this.icon.get();
 		}
 
-		public net.minecraft.resources.@Nullable Identifier sprite() {
-			return this.sprite;
+		public net.minecraft.resources.@Nullable Identifier overlay() {
+			return this.overlay;
 		}
 
-		public int spriteSize() {
-			return this.spriteSize;
+		public int overlaySize() {
+			return this.overlaySize;
 		}
 
 		public String nameKey() {

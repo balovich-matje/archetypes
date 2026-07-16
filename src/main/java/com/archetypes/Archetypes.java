@@ -25,6 +25,7 @@ public class Archetypes implements ModInitializer {
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyNodePayload.TYPE, BuyNodePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ShieldBashPayload.TYPE, ShieldBashPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(SlayerAbilityPayload.TYPE, SlayerAbilityPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
@@ -39,10 +40,13 @@ public class Archetypes implements ModInitializer {
 					NodePurchases.buy(context.player(), tree, payload.node());
 				}));
 
-		// One ability key: the server dispatches on the mainhand. Greatsword is
-		// Decimate, sword is Bladestorm, anything else falls through to the
-		// bash (which requires a shield and checks that itself).
+		// One key per active now that the cooldown bar shows them separately.
+		// The bash key is bash alone; the Slayer key still dispatches on the
+		// mainhand, since the two capstones are mutually exclusive anyway.
 		ServerPlayNetworking.registerGlobalReceiver(ShieldBashPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> ShieldBash.execute(context.player())));
+
+		ServerPlayNetworking.registerGlobalReceiver(SlayerAbilityPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
 					var player = context.player();
 
@@ -50,8 +54,6 @@ public class Archetypes implements ModInitializer {
 						SlayerActives.decimate(player);
 					} else if (ModItems.isSword(player.getMainHandItem())) {
 						SlayerActives.bladestorm(player);
-					} else {
-						ShieldBash.execute(player);
 					}
 				}));
 

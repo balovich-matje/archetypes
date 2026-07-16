@@ -350,6 +350,16 @@ public class ArchetypeScreen extends Screen {
 							0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
 				} else if (icon != null && size >= 16) {
 					graphics.fakeItem(new ItemStack(icon), x + (size - 16) / 2, y + (size - 16) / 2);
+
+					// The skill's effect layer, over the real item render.
+					var overlay = TreeNodes.iconOverlay(tree, i);
+
+					if (overlay != null) {
+						int tex = TreeNodes.iconOverlaySize(tree, i);
+						graphics.blit(RenderPipelines.GUI_TEXTURED, overlay,
+								x + (size - 16) / 2, y + (size - 16) / 2,
+								0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+					}
 				}
 
 				// Unreachable nodes dim, icon included — drawn over it on purpose.
