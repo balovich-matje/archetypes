@@ -100,12 +100,16 @@ def taste_of_blood():
 
 
 def first_blood():
-    """An unbloodied sword — except the very tip."""
+    """An unbloodied greatsword — except the very tip. This is the
+    greatsword path's opener, so it wears the greatsword, not a sword."""
+    great = Image.open(os.path.join(ASSETS, "archetypes/textures/item/iron_greatsword.png"))
     im = canvas()
-    im.alpha_composite(vanilla("item/iron_sword.png"), (0, 0))
-    im.putpixel((13, 2), BLOOD)
-    im.putpixel((12, 3), BLOOD_LIGHT)
-    drop(im, 14, 5)
+    im.alpha_composite(great.convert("RGBA").resize((16, 16), Image.NEAREST), (0, 0))
+    im.putpixel((14, 0), BLOOD)
+    im.putpixel((13, 1), BLOOD)
+    im.putpixel((14, 1), BLOOD_LIGHT)
+    im.putpixel((13, 2), BLOOD_DARK)
+    drop(im, 14, 4)
     save(im, "first_blood")
 
 

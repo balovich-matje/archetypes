@@ -37,26 +37,26 @@ public final class Constellations {
 			.withDecorativeEdge(0, 8, 8, 8);
 
 	/**
-	 * The Slayer constellation IS a sword: a two-column hilt of adjacent,
-	 * weavable weapon-agnostic chains (both roots — Hamstring on the outside,
-	 * Taste of Blood on the centre axis, diagonal to BOTH branch entries), a
-	 * short quilloned guard where the weapon paths split, the two blade edges
-	 * as the sword and greatsword paths (fuller empty between them), capstones
-	 * flanking the tip with Bloodlust in the crossing.
+	 * The Slayer constellation IS a greatsword, mirror-symmetric on a 10-wide
+	 * grid: a centred two-column hilt of adjacent, weavable weapon-agnostic
+	 * chains (both roots), a contiguous four-node guard — each hilt top reaches
+	 * its own quillon plus BOTH inner branch entries — the two blade edges as
+	 * the sword and greatsword paths (fuller empty between them), and a 2x2
+	 * crown for the point: capstones below, Bloodlust and Relentless above,
+	 * reachable only through a capstone. Blunt on purpose — the slab's bevel,
+	 * same language as the item sprite.
 	 */
 	public static final Constellation SLAYER_SWORD = Constellation.of(
-			"....#....",
-			"...###...",
-			"...#.#...",
-			"...#.#...",
-			"...#.#...",
-			"...#.#...",
-			"..##.##..",
-			"...##....",
-			"...##....",
-			"...##....");
-			// No explicit cross needed: Bloodlust sits in the crossing itself,
-			// adjacent to both pre-capstones, both capstones, and the tip.
+			"....##....",
+			"....##....",
+			"...#..#...",
+			"...#..#...",
+			"...#..#...",
+			"...#..#...",
+			"...####...",
+			"....##....",
+			"....##....",
+			"....##....");
 
 	public static final Constellation CRUSHER_MACE = Constellation.of(
 			"#..#..#",
