@@ -35,12 +35,16 @@ public final class TreeNodes {
 	/** Texture-based icon (effect sprites and the like), or null if the
 	 * family's icon is an item. */
 	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().sprite() : null;
+		return tree == SubTree.SLAYER
+				? SlayerNodes.def(tree, index).family().sprite()
+				: ProtectorNodes.def(tree, index).family().sprite();
 	}
 
 	/** Pixel size of the square texture behind iconSprite. */
 	public static int iconSpriteSize(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().spriteSize() : 0;
+		return tree == SubTree.SLAYER
+				? SlayerNodes.def(tree, index).family().spriteSize()
+				: ProtectorNodes.def(tree, index).family().spriteSize();
 	}
 
 	public static boolean isMinor(final SubTree tree, final int index) {

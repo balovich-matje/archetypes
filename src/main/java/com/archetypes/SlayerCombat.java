@@ -95,6 +95,7 @@ public final class SlayerCombat {
 				player.heal(taste * Tuning.TASTE_OF_BLOOD_HEAL_PER_RANK);
 				((ServerLevel) player.level()).sendParticles(ParticleTypes.HEART,
 						player.getX(), player.getY() + 1.5, player.getZ(), taste, 0.3, 0.3, 0.3, 0.0);
+				ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.TASTE_OF_BLOOD);
 			}
 
 			// Flurry: sword kills reset the lunge.
@@ -135,5 +136,6 @@ public final class SlayerCombat {
 				target.getX(), target.getY(0.5), target.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
 		level.playSound(null, target.getX(), target.getY(), target.getZ(),
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.8F, 1.3F);
+		ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.BLADE_DANCE);
 	}
 }

@@ -3,6 +3,7 @@ package com.archetypes.mixin;
 import com.archetypes.ModAttachments;
 import com.archetypes.ModItems;
 import com.archetypes.NodePurchases;
+import com.archetypes.ProcIndicators;
 import com.archetypes.ProtectorNodes;
 import com.archetypes.SlayerNodes;
 import com.archetypes.SubTree;
@@ -59,6 +60,7 @@ public abstract class LivingEntityMixin {
 						net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
 						player.getX(), player.getY() + 1.1, player.getZ(),
 						2, 0.25, 0.25, 0.25, 0.0);
+				ProcIndicators.send(player, SubTree.PROTECTOR, ProtectorNodes.Family.BRACED);
 			}
 		}
 
@@ -85,6 +87,7 @@ public abstract class LivingEntityMixin {
 				attacker.getX(), attacker.getY(), attacker.getZ(),
 				net.minecraft.sounds.SoundEvents.THORNS_HIT,
 				net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 1.0F);
+		ProcIndicators.send(player, SubTree.PROTECTOR, ProtectorNodes.Family.SPIKES);
 	}
 
 	/**
@@ -160,11 +163,13 @@ public abstract class LivingEntityMixin {
 
 		if (firstBlood > 0 && victim.getHealth() >= victim.getMaxHealth() - 0.01F) {
 			result *= 1.0F + Tuning.FIRSTBLOOD_PER_RANK * firstBlood;
+			ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.FIRSTBLOOD);
 		}
 
 		if (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.EXECUTIONER) > 0
 				&& victim.getHealth() <= victim.getMaxHealth() * Tuning.EXECUTE_THRESHOLD) {
 			result = Math.max(result, victim.getHealth() + 100.0F);
+			ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.EXECUTIONER);
 		}
 
 		return result;

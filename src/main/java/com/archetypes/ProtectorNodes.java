@@ -25,28 +25,48 @@ import org.jspecify.annotations.Nullable;
 public final class ProtectorNodes {
 	public enum Family {
 		BASH(() -> Items.SHIELD),
-		SLAM(() -> Items.MACE),
+		SLAM(Archetypes.id("textures/node/shield_slam.png"), 16),
 		COOLDOWN(() -> Items.CLOCK),
 		KNOCKBACK(() -> Items.PISTON),
-		WIDE(() -> Items.IRON_AXE),
+		WIDE(Archetypes.id("textures/node/wide_swings.png"), 16),
 		UNBREAKING(() -> Items.LEATHER),
-		SPIKES(() -> Items.POINTED_DRIPSTONE),
+		SPIKES(Archetypes.id("textures/node/iron_spikes.png"), 16),
 		RUSH(() -> Items.WIND_CHARGE),
-		BRACED(() -> Items.AMETHYST_SHARD),
-		REFLECT(() -> Items.SPECTRAL_ARROW),
+		BRACED(Archetypes.id("textures/node/braced.png"), 16),
+		REFLECT(Archetypes.id("textures/node/reflection.png"), 16),
 		TAUNT(() -> Items.GOAT_HORN),
-		OMNI_BLOCK(() -> Items.SHULKER_SHELL),
-		GROUND_SLAM(() -> Items.ANVIL),
-		MINOR(null);
+		OMNI_BLOCK(Archetypes.id("textures/node/bulwark.png"), 16),
+		GROUND_SLAM(Archetypes.id("textures/node/ground_slam.png"), 16),
+		MINOR((Supplier<Item>) null);
 
 		private final @Nullable Supplier<Item> icon;
+		private final net.minecraft.resources.@Nullable Identifier sprite;
+		private final int spriteSize;
 
 		Family(final @Nullable Supplier<Item> icon) {
 			this.icon = icon;
+			this.sprite = null;
+			this.spriteSize = 0;
+		}
+
+		/** For icons that exist as textures, not items — see
+		 * notes/art/make_node_icons.py. */
+		Family(final net.minecraft.resources.Identifier sprite, final int spriteSize) {
+			this.icon = null;
+			this.sprite = sprite;
+			this.spriteSize = spriteSize;
 		}
 
 		public @Nullable Item icon() {
 			return this.icon == null ? null : this.icon.get();
+		}
+
+		public net.minecraft.resources.@Nullable Identifier sprite() {
+			return this.sprite;
+		}
+
+		public int spriteSize() {
+			return this.spriteSize;
 		}
 
 		public String nameKey() {

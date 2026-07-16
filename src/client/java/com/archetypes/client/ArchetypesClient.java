@@ -63,9 +63,15 @@ public class ArchetypesClient implements ClientModInitializer {
 			}
 		});
 
-		// After HOTBAR, so the countdown draws over the shield's slot.
+		// The centred bar of owned-active cooldowns, and the proc flashes that
+		// fall from the crosshair. Both after HOTBAR so they draw on top.
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
-				com.archetypes.Archetypes.id("bash_cooldown"), BashCooldownHud::render);
+				com.archetypes.Archetypes.id("cooldown_bar"), CooldownBarHud::render);
+		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
+				com.archetypes.Archetypes.id("proc_indicators"), ProcIndicatorHud::render);
+
+		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.PassiveProcPayload.TYPE,
+				(payload, context) -> context.client().execute(() -> ProcIndicatorHud.push(payload)));
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
 			if (!(screen instanceof InventoryScreen) && !(screen instanceof CreativeModeInventoryScreen)) {

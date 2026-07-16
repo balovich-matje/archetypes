@@ -70,5 +70,7 @@ public abstract class ProjectileMixin {
 			arrow.setBaseDamage(((AbstractArrowAccessor) arrow).archetypes$getBaseDamage()
 					* Tuning.REFLECT_DAMAGE_FACTOR);
 		}
+
+		com.archetypes.ProcIndicators.send(player, SubTree.PROTECTOR, ProtectorNodes.Family.REFLECT);
 	}
 }
