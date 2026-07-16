@@ -4,13 +4,11 @@ import java.util.List;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.core.BlockPos;
-import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.BlockTags;
-import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.state.BlockState;
@@ -58,7 +56,9 @@ public final class SlayerActives {
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.DECIMATE_DAMAGE_MULTIPLIER);
 
-		player.swing(InteractionHand.MAIN_HAND, true);
+		// No vanilla swing: the PAL cleave pose owns the body for the swing's
+		// duration, on every client that can see us.
+		target.setAttached(ModAttachments.DECIMATE_SWING_AT, now);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.6F);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -123,20 +123,24 @@ public final class SlayerActives {
 			}
 		}
 
-		// The cleave itself: a sweep arc in front, tilting down across the
-		// swing (~25 degrees) to carry the claymore's weight.
+		// The cleave itself: five claymore-sized sweep flashes along the arc,
+		// tilting down across the swing (~25 degrees) to carry the claymore's
+		// weight, full-size at the centre and tapering toward the edges. With
+		// count 0 the offset triple becomes per-particle velocity, which our
+		// particle reads as its shrink factor — vanilla's own convention.
 		float yaw = (float) Math.toRadians(player.getYRot());
-		int steps = 11;
+		int steps = 5;
 
 		for (int i = 0; i < steps; i++) {
 			double swing = Math.toRadians(-70.0 + 140.0 * i / (steps - 1));
 			double angle = yaw + Math.PI / 2.0 + swing;
-			double height = 1.7 - 0.8 * i / (steps - 1);
-			level.sendParticles(ParticleTypes.SWEEP_ATTACK,
-					player.getX() + Math.cos(angle) * 2.4,
+			double height = 1.75 - 0.8 * i / (steps - 1);
+			double shrink = 0.25 * Math.abs(i - steps / 2);
+			level.sendParticles(ModParticles.CLAYMORE_SWEEP,
+					player.getX() + Math.cos(angle) * 2.6,
 					player.getY() + height,
-					player.getZ() + Math.sin(angle) * 2.4,
-					1, 0.0, 0.0, 0.0, 0.0);
+					player.getZ() + Math.sin(angle) * 2.6,
+					0, shrink, 0.0, 0.0, 1.0);
 		}
 	}
 

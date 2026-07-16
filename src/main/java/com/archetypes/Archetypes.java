@@ -15,6 +15,7 @@ public class Archetypes implements ModInitializer {
 	public void onInitialize() {
 		ModAttachments.initialize();
 		ModItems.initialize();
+		ModParticles.initialize();
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();
 		SlayerTicker.initialize();

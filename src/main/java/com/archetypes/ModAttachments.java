@@ -75,6 +75,12 @@ public final class ModAttachments {
 			Archetypes.id("bladestorm_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
+	/** Game-time tick when a Decimate swing started; synced to every client so
+	 * the cleave pose plays for onlookers too. */
+	public static final AttachmentType<Long> DECIMATE_SWING_AT = AttachmentRegistry.create(
+			Archetypes.id("decimate_swing_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
 	/** Game-time tick when the current bladestorm channel ends; synced to every
 	 * client so the spinning-blade renderer works for onlookers too. */
 	public static final AttachmentType<Long> BLADESTORM_END = AttachmentRegistry.create(
