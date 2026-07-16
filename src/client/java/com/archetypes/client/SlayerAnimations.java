@@ -6,6 +6,8 @@ import com.zigythebird.playeranim.animation.PlayerAnimResources;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
 import com.zigythebird.playeranimcore.animation.RawAnimation;
+import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
+import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
 import com.zigythebird.playeranimcore.enums.PlayState;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
@@ -25,18 +27,28 @@ public final class SlayerAnimations {
 	}
 
 	public static void initialize() {
-		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(LAYER_ID, 1000,
-				avatar -> new PlayerAnimationController(avatar, (controller, data, setter) -> {
-					Long end = ((AttachmentTarget) avatar).getAttached(ModAttachments.BLADESTORM_END);
-					boolean storming = end != null && end > avatar.level().getGameTime();
+		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(LAYER_ID, 1000, avatar -> {
+			PlayerAnimationController controller = new PlayerAnimationController(avatar,
+					(ctrl, data, setter) -> {
+						Long end = ((AttachmentTarget) avatar).getAttached(ModAttachments.BLADESTORM_END);
+						boolean storming = end != null && end > avatar.level().getGameTime();
 
-					if (!storming) {
-						return PlayState.STOP;
-					}
+						if (!storming) {
+							return PlayState.STOP;
+						}
 
-					return PlayerAnimResources.getAnimationOptional(BLADESTORM_ANIM)
-							.map(animation -> setter.setAnimation(RawAnimation.begin().thenLoop(animation)))
-							.orElse(PlayState.STOP);
-				}));
+						return PlayerAnimResources.getAnimationOptional(BLADESTORM_ANIM)
+								.map(animation -> setter.setAnimation(RawAnimation.begin().thenLoop(animation)))
+								.orElse(PlayState.STOP);
+					});
+
+			// In first person, swap the vanilla arms for the animated
+			// third-person model while the storm runs — otherwise the spin is
+			// invisible to the player doing it.
+			controller.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+			controller.setFirstPersonConfiguration(
+					new FirstPersonConfiguration(true, true, true, false));
+			return controller;
+		});
 	}
 }
