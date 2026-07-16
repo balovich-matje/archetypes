@@ -4,35 +4,17 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Items;
 
 /**
- * The melee families that own custom swing animations. Each class carries its
- * variant count: consecutive swings cycle through the variants (arc left, arc
- * right, overhead...) via the synced swing counter, deterministically on every
- * client. NONE keeps vanilla behaviour untouched.
+ * The melee families our combat rules apply to: swing gating (no half-charged
+ * flicks), hold-to-attack, and per-class flavour like the greatsword's whoosh.
+ * NONE keeps vanilla behaviour untouched. (The custom swing poses these once
+ * drove were deprecated in favour of future Better Combat compatibility.)
  */
 public enum WeaponClass {
-	GREATSWORD(3, 0.8F),
-	SWORD(2, 1.6F),
-	MACE(2, 0.6F),
-	HANDS(2, 4.0F),
-	NONE(0, 1.0F);
-
-	private final int variants;
-	private final float baseAttackSpeed;
-
-	WeaponClass(final int variants, final float baseAttackSpeed) {
-		this.variants = variants;
-		this.baseAttackSpeed = baseAttackSpeed;
-	}
-
-	public int variants() {
-		return this.variants;
-	}
-
-	/** The class's unmodified attack-speed attribute; swing animations were
-	 * authored against it, so playback scales by actual/base. */
-	public float baseAttackSpeed() {
-		return this.baseAttackSpeed;
-	}
+	GREATSWORD,
+	SWORD,
+	MACE,
+	HANDS,
+	NONE;
 
 	public static WeaponClass of(final Player player) {
 		var mainhand = player.getMainHandItem();

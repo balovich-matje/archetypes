@@ -41,7 +41,6 @@ public class ArchetypesClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
-		MeleeAnimations.initialize();
 
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);

@@ -81,12 +81,6 @@ public final class ModAttachments {
 			Archetypes.id("decimate_swing_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
 
-	/** The melee swing counter: (sequence << 2) | weapon-class ordinal, bumped
-	 * per combat swing and synced to every client — each change plays the next
-	 * swing pose in the class's cycle, for the swinger and onlookers alike. */
-	public static final AttachmentType<Integer> MELEE_SWING = AttachmentRegistry.create(
-			Archetypes.id("melee_swing"),
-			builder -> builder.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.all()));
 
 	/** Game-time tick when the current bladestorm channel ends; synced to every
 	 * client so the spinning-blade renderer works for onlookers too. */

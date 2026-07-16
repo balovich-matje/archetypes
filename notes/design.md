@@ -650,3 +650,15 @@ UI note ("2014 RPG minecraft"): node icons prefer real vanilla item renders
 with effect overlays; strength-effect icon hides behind the shield for Slam,
 piston pushes off it for Concussive Blow, dripstone grows from it for Spikes,
 quarter clock for Braced.
+
+**DECIDED: custom swing poses deprecated (2026-07-16).** Five iterations of
+blind pose-authoring across two animation formats (axis conventions bit twice
+— item roll vs pitch, z sign inverted) never got the greatsword arcs past
+"almost". The deeper reason to stop: Better Combat will port to 26.x
+eventually, and two systems fighting over first-person rendering, swing
+detection and attack pacing in one modpack is a support nightmare. Kept, all
+BC-independent: swing gating (no half-charged flicks), hold-to-attack, the
+bladestorm swing lock, the greatsword's 2H offhand restriction and heavy
+whoosh, and the PAL capstone poses (bladestorm spin, Decimate cleave) — those
+are ability-scoped and coexist with anything. When BC ships 26.x, our compat
+is pure data (weapon attributes JSON) plus possibly disabling our gating.

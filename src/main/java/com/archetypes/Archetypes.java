@@ -74,26 +74,14 @@ public class Archetypes implements ModInitializer {
 						? net.minecraft.world.InteractionResult.FAIL
 						: net.minecraft.world.InteractionResult.PASS);
 
-		// A combat swing began client-side; bump the synced counter that every
-		// client turns into the matching pose. The class is derived here, not
-		// trusted from the wire.
+		// Custom swing poses were deprecated (see notes/design.md — Better
+		// Combat compat), but the slab still announces itself: a deep whoosh
+		// under every charged greatsword swing.
 		ServerPlayNetworking.registerGlobalReceiver(MeleeSwingPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
 					var player = context.player();
-					WeaponClass weapon = WeaponClass.of(player);
 
-					if (weapon == WeaponClass.NONE) {
-						return;
-					}
-
-					var target = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player;
-					Integer previous = target.getAttached(ModAttachments.MELEE_SWING);
-					int sequence = previous == null ? 1 : ((previous >> 2) + 1) & 0x3FFF;
-					target.setAttached(ModAttachments.MELEE_SWING,
-							sequence << 2 | weapon.ordinal());
-
-					// The slab announces itself: a deep whoosh under every swing.
-					if (weapon == WeaponClass.GREATSWORD) {
+					if (WeaponClass.of(player) == WeaponClass.GREATSWORD) {
 						player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
 								net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP,
 								net.minecraft.sounds.SoundSource.PLAYERS, 1.1F, 0.55F);
