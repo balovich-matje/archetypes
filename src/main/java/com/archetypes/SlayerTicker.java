@@ -110,7 +110,8 @@ public final class SlayerTicker {
 		// feels continuous rather than metronomic: riptide whoosh layered
 		// under pitched sweeps on the half-beats.
 		if (remaining % (Tuning.BLADESTORM_VOLLEY_PERIOD / 2) == 0) {
-			player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+			// No arm swing: on this branch the Player Animation Library pose
+			// owns the body during the channel.
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.9F,
 					0.8F + level.getRandom().nextFloat() * 0.5F);

@@ -36,6 +36,8 @@ public class ArchetypesClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		SlayerAnimations.initialize();
+
 		// Default G; rebindable under Gameplay. The key only reports the press —
 		// the server decides whether a bash actually happens.
 		KeyMapping bashKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
