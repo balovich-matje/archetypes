@@ -77,14 +77,15 @@ public enum Archetype {
 	}
 
 	/**
-	 * Cut-out figure for a tier on the picker, or null where the art does not
-	 * exist yet and the caller should fall back to the item icon. Tracked as a
-	 * flag rather than probed at runtime: a missing texture would silently render
-	 * as the purple-and-black checkerboard.
+	 * The picker collage — the archetype's three sub-archetype weapons in one
+	 * crest — or null where the art does not exist yet and the caller should
+	 * fall back to the item icon. Tracked as a flag rather than probed at
+	 * runtime: a missing texture would silently render as the purple-and-black
+	 * checkerboard.
 	 */
-	public @Nullable Identifier portrait(final int tier) {
+	public @Nullable Identifier portrait() {
 		return this.hasPortraits
-				? Archetypes.id("textures/gui/picker/" + this.id + "_" + tier + ".png")
+				? Archetypes.id("textures/gui/picker/" + this.id + ".png")
 				: null;
 	}
 

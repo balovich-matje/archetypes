@@ -730,3 +730,16 @@ shaped damage for the splash. Trade-off accepted: the shaping hook can fire on
 hits later cancelled (iframes/shields) — rare — versus never firing on kills,
 which is the common case for this build. Slayer's AFTER_DAMAGE users
 (Hamstring, Rend) are correctly gated: slowing/bleeding a corpse is pointless.
+
+**Picker crests replace tier portraits (2026-07-16).** The pick screen's
+two cut-out character placeholders (Brawler/Colossus halves per frame) are
+scrapped. Each frame now carries the start-tier name only and one image:
+the archetype's crest, a collage of its three sub-archetype weapons.
+Strength = Protector's shield front and center with the Slayer's sword and
+the Crusher's mace crossed behind it — the shield a scale step smaller
+than the weapons, because at parity it swallowed the X and the crest read
+as "a shield" instead of "three arms". Composed by
+notes/art/make_picker_art.py from vanilla sprites at integer scales on a
+128px canvas, doubled to the 256px the screen samples. Agility and
+intellect fall back to their item icons until their trees decide what
+their three weapons even are.
