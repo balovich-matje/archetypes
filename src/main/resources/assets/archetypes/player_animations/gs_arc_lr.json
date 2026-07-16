@@ -1,0 +1,139 @@
+{
+	"name": "gs_arc_lr",
+	"author": "archetypes",
+	"description": "Archetypes melee pose, authored in emote format for exact rig semantics",
+	"emote": {
+		"isLoop": false,
+		"returnTick": 2,
+		"beginTick": 0,
+		"endTick": 8,
+		"stopTick": 12,
+		"degrees": true,
+		"moves": [
+			{
+				"tick": 0,
+				"easing": "EASEINQUAD",
+				"torso": {
+					"pitch": 12,
+					"yaw": 20
+				},
+				"head": {
+					"yaw": 0,
+					"pitch": 0
+				},
+				"rightArm": {
+					"pitch": 55,
+					"yaw": -70,
+					"roll": -130,
+					"x": -5,
+					"y": 2.5
+				},
+				"leftArm": {
+					"pitch": -30,
+					"yaw": 0,
+					"roll": -70,
+					"x": 2,
+					"y": 2.5,
+					"z": -3
+				},
+				"rightItem": {
+					"pitch": -30,
+					"yaw": -15,
+					"roll": 85
+				}
+			},
+			{
+				"tick": 2,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": -14,
+					"yaw": -30
+				},
+				"head": {
+					"yaw": 0,
+					"pitch": 0
+				},
+				"rightArm": {
+					"pitch": -100,
+					"yaw": -10,
+					"roll": 0,
+					"x": -4.5,
+					"y": 2
+				},
+				"leftArm": {
+					"pitch": -40,
+					"yaw": -12,
+					"roll": -90,
+					"x": 2,
+					"y": 2.3,
+					"z": -2.5
+				},
+				"rightItem": {
+					"pitch": -50,
+					"yaw": 0,
+					"roll": 90
+				}
+			},
+			{
+				"tick": 5,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": -16,
+					"yaw": -60
+				},
+				"head": {
+					"yaw": 0,
+					"pitch": 0
+				},
+				"rightArm": {
+					"pitch": -90,
+					"yaw": 30,
+					"roll": -5,
+					"x": -4.5,
+					"y": 2.2
+				},
+				"leftArm": {
+					"pitch": -55,
+					"yaw": -12,
+					"roll": -78,
+					"x": 5,
+					"y": 2,
+					"z": -3
+				},
+				"rightItem": {
+					"pitch": -75,
+					"yaw": 0,
+					"roll": 90
+				}
+			},
+			{
+				"tick": 8,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": -8,
+					"yaw": -45
+				},
+				"rightArm": {
+					"pitch": -80,
+					"yaw": 32,
+					"roll": -3,
+					"x": -4.5,
+					"y": 2.4
+				},
+				"leftArm": {
+					"pitch": -60,
+					"yaw": -8,
+					"roll": -74,
+					"x": 5,
+					"y": 2.2,
+					"z": -1.5
+				},
+				"rightItem": {
+					"pitch": -70,
+					"yaw": 0,
+					"roll": 80
+				}
+			}
+		]
+	}
+}
