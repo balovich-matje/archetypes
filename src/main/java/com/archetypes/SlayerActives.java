@@ -123,25 +123,17 @@ public final class SlayerActives {
 			}
 		}
 
-		// The cleave itself: five claymore-sized sweep flashes along the arc,
-		// tilting down across the swing (~25 degrees) to carry the claymore's
-		// weight, full-size at the centre and tapering toward the edges. With
-		// count 0 the offset triple becomes per-particle velocity, which our
-		// particle reads as its shrink factor — vanilla's own convention.
-		float yaw = (float) Math.toRadians(player.getYRot());
-		int steps = 5;
-
-		for (int i = 0; i < steps; i++) {
-			double swing = Math.toRadians(-70.0 + 140.0 * i / (steps - 1));
-			double angle = yaw + Math.PI / 2.0 + swing;
-			double height = 1.75 - 0.8 * i / (steps - 1);
-			double shrink = 0.25 * Math.abs(i - steps / 2);
-			level.sendParticles(ModParticles.CLAYMORE_SWEEP,
-					player.getX() + Math.cos(angle) * 2.6,
-					player.getY() + height,
-					player.getZ() + Math.sin(angle) * 2.6,
-					0, shrink, 0.0, 0.0, 1.0);
-		}
+		// The cleave itself: one claymore-wide flash centred in front, stretched
+		// along the swing's tangent and tilted down across it (~25 degrees) to
+		// carry the claymore's weight. With count 0 the offset triple becomes
+		// the particle's velocity, which claymore_sweep reads as its stretch
+		// direction instead.
+		double angle = Math.toRadians(player.getYRot()) + Math.PI / 2.0;
+		level.sendParticles(ModParticles.CLAYMORE_SWEEP,
+				player.getX() + Math.cos(angle) * 2.6,
+				player.getY() + 1.35,
+				player.getZ() + Math.sin(angle) * 2.6,
+				0, -Math.sin(angle), 0.0, Math.cos(angle), 1.0);
 	}
 
 	/** Bladestorm: start the channel; SlayerTicker runs the volleys. */

@@ -69,38 +69,39 @@ def build(name):
             im.putpixel((x, y), c[key])
 
     # Blade runs up the main diagonal: on row y its left edge sits at
-    # x = 30 - y, then the cross-section extends to the right. Left pixel is
-    # the lit edge, middle carries the fuller, right pixel is in shadow.
+    # x = 28 - y, then the cross-section extends to the right. Left pixel is
+    # the lit edge, the doubled middle carries the fuller, right pixel is in
+    # shadow. Eight pixels across — this is a six-ingot slab of metal, so it
+    # reads as a wall of blade with a single bevel at the tip, not a taper.
     def blade_row(y, section):
-        x = 30 - y
+        x = 28 - y
         for i, key in enumerate(section):
             put(x + i, y, key)
 
-    blade_row(1, "E")
-    blade_row(2, "EB")
-    blade_row(3, "EBD")
-    blade_row(4, "EBBD")
+    blade_row(1, "EB")
+    blade_row(2, "EBBD")
+    blade_row(3, "EBBBBD")
+    blade_row(4, "EBBFBBD")
     for y in range(5, 19):
-        blade_row(y, "EBFBD")
+        blade_row(y, "EBBFFBBD")
 
-    # Crossguard: a wide bar across the blade with flared, highlighted tips.
+    # Crossguard: a chunky straight bar, wider than even this blade.
     for y, x0 in ((19, 7), (20, 6)):
-        for x in range(x0, x0 + 9):
+        for x in range(x0, x0 + 12):
             put(x, y, "G")
         put(x0 - 1, y, "g")
-        put(x0 + 9, y, "E" if y == 19 else "g")
-    put(6, 18, "E")   # upper tip flare
-    put(15, 21, "g")  # lower tip flare
+    put(19, 19, "E")  # upper tip glint
+    put(17, 21, "g")  # lower tip shadow
 
     # Two-hand grip: two pixels thick, leather with guard-coloured wraps.
     for y in range(21, 28):
-        x = 30 - y
+        x = 29 - y
         wrap = y in (22, 24, 26)
         put(x, y, "G" if wrap else "H")
         put(x + 1, y, "H" if wrap else "g")
 
-    # Pommel: round-ish knob with a glint.
-    for x, y in ((2, 28), (3, 28), (1, 29), (2, 29), (3, 29), (2, 30)):
+    # Pommel: a squared-off counterweight block, same slab language.
+    for x, y in ((2, 28), (3, 28), (1, 29), (2, 29), (3, 29), (1, 30), (2, 30)):
         put(x, y, "G")
     put(1, 28, "E")
     put(3, 30, "g")

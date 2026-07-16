@@ -2,22 +2,30 @@ package com.archetypes.client;
 
 import com.archetypes.Archetypes;
 import com.archetypes.ModAttachments;
-import com.zigythebird.playeranim.animation.PlayerAnimResources;
+import com.zigythebird.playeranim.accessors.IAnimatedAvatar;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
-import com.zigythebird.playeranimcore.animation.RawAnimation;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
 import com.zigythebird.playeranimcore.enums.PlayState;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
+import net.minecraft.world.entity.Avatar;
 
 /**
- * Experiment branch: real player poses via Player Animation Library. One
- * controller layer per player; its state handler watches the synced
- * bladestorm-end attachment and loops the spin animation while the channel
- * runs — body and camera-independent, first and third person, ours to keyframe.
+ * Experiment branch: real player poses via Player Animation Library.
+ *
+ * One controller layer per player, but the controller's own state handler
+ * never starts anything: PAL only consults it while the controller is active
+ * or the player is being rendered, so a stopped controller on an unrendered
+ * player — exactly the first-person case — would deadlock, never starting and
+ * therefore never opening PAL's first-person render pass. Instead a client
+ * tick pass mirrors the synced ability attachments into explicit
+ * triggerAnimation/stop calls, which force the controller RUNNING from any
+ * state. Same path for every camera and for onlookers.
  */
 public final class SlayerAnimations {
 	private static final Identifier LAYER_ID = Archetypes.id("slayer_pose");
@@ -31,33 +39,14 @@ public final class SlayerAnimations {
 
 	public static void initialize() {
 		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(LAYER_ID, 1000, avatar -> {
-			PlayerAnimationController controller = new PlayerAnimationController(avatar,
-					(ctrl, data, setter) -> {
-						long now = avatar.level().getGameTime();
-
-						Long end = ((AttachmentTarget) avatar).getAttached(ModAttachments.BLADESTORM_END);
-						boolean storming = (end != null && end > now)
-								|| avatar.isShiftKeyDown(); // XXX debug probe, do not commit
-
-						if (storming) {
-							return PlayerAnimResources.getAnimationOptional(BLADESTORM_ANIM)
-									.map(animation -> setter.setAnimation(RawAnimation.begin().thenLoop(animation)))
-									.orElse(PlayState.STOP);
-						}
-
-						Long swingAt = ((AttachmentTarget) avatar).getAttached(ModAttachments.DECIMATE_SWING_AT);
-
-						if (swingAt != null && now - swingAt < DECIMATE_SWING_TICKS) {
-							return PlayerAnimResources.getAnimationOptional(DECIMATE_ANIM)
-									.map(animation -> setter.setAnimation(RawAnimation.begin().thenPlay(animation)))
-									.orElse(PlayState.STOP);
-						}
-
-						return PlayState.STOP;
-					});
+			// The handler runs while a state-handler animation plays (never —
+			// we only trigger) and once after a triggered one-shot finishes,
+			// where STOP is the right answer anyway.
+			PlayerAnimationController controller =
+					new PlayerAnimationController(avatar, (ctrl, data, setter) -> PlayState.STOP);
 
 			// In first person, swap the vanilla arms for the animated
-			// third-person model while the storm runs — otherwise the spin is
+			// third-person model while a pose runs — otherwise the spin is
 			// invisible to the player doing it.
 			controller.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
 			controller.setFirstPersonConfiguration(
@@ -65,18 +54,38 @@ public final class SlayerAnimations {
 			return controller;
 		});
 
-		// XXX debug probe, do not commit: log PAL's first-person gate once a second.
-		net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			if (client.player == null || client.player.tickCount % 20 != 0 || !client.player.isShiftKeyDown()) {
+		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+			if (client.level == null) {
 				return;
 			}
-			var manager = ((com.zigythebird.playeranim.accessors.IAnimatedAvatar) client.player)
-					.playerAnimLib$getAnimManager();
-			com.archetypes.Archetypes.LOGGER.info(
-					"[FP probe] shouldBeFirstPersonPass={} managerActive={} managerMode={} detached={}",
-					com.zigythebird.playeranim.util.ClientUtil.shouldBeFirstPersonPass(),
-					manager.isActive(), manager.getFirstPersonMode(),
-					client.gameRenderer.mainCamera().isDetached());
+
+			for (AbstractClientPlayer player : client.level.players()) {
+				drive(player, client.level.getGameTime());
+			}
 		});
+	}
+
+	/** Mirror the player's synced ability state onto their pose controller. */
+	private static void drive(final AbstractClientPlayer player, final long now) {
+		if (!(((Avatar) player) instanceof IAnimatedAvatar animated)
+				|| !(animated.playerAnimLib$getAnimation(LAYER_ID)
+						instanceof PlayerAnimationController controller)) {
+			return;
+		}
+
+		AttachmentTarget target = (AttachmentTarget) player;
+		Long end = target.getAttached(ModAttachments.BLADESTORM_END);
+		boolean storming = end != null && end > now;
+		Long swingAt = target.getAttached(ModAttachments.DECIMATE_SWING_AT);
+		boolean cleaving = swingAt != null && now - swingAt < DECIMATE_SWING_TICKS;
+
+		if ((storming || cleaving) && !controller.isActive()) {
+			// Loop flags come from the animation files: bladestorm loops until
+			// stopped below, decimate plays once and stops itself.
+			controller.triggerAnimation(storming ? BLADESTORM_ANIM : DECIMATE_ANIM);
+		} else if (!storming && !cleaving && controller.isActive()
+				&& controller.getTriggeredAnimation() != null) {
+			controller.stop();
+		}
 	}
 }
