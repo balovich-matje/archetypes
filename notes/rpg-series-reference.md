@@ -72,7 +72,7 @@ Also: tiered robes/staves/wands, spell enchantments (Spell Infinity, Spell Power
 Spell Haste), Wizard Towers in villages.
 
 ### Paladin — heavy-weapon support/bruiser
-**Paladin Libram**, used with hammers/claymores, optionally a shield.
+**Paladin Libram**, used with hammers/greatswords, optionally a shield.
 Skills: `flash_heal`, `divine_protection`, `judgement`, `battle_banner`, `immolation`
 
 ### Priest — holy caster, healer
@@ -94,7 +94,7 @@ Skills: `slice_and_dice`, `shock_powder`, `shadow_step`, `vanish`, `bear_trap`,
 `mutilate`
 
 ### Warrior — heavy weapons, weaken and smash
-**Warrior Codex**, best with slow heavy weapons (double axes, glaives, claymores).
+**Warrior Codex**, best with slow heavy weapons (double axes, glaives, greatswords).
 Skills: `throw`, `throw_net`, `charge`, `shout`, `last_stand`, `mortal_strike`
 
 ### Death Knight — three specialisations

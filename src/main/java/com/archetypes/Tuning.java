@@ -117,7 +117,7 @@ public final class Tuning {
 	public static final double LUNGE_BLOCKS_PER_RANK = 0.5;
 	public static final int LUNGE_COOLDOWN_TICKS = 40;
 
-	/** Immovable: knockback resistance per rank while a claymore is held. */
+	/** Immovable: knockback resistance per rank while a greatsword is held. */
 	public static final double KBRES_PER_RANK = 0.2;
 
 	/** Rend: damage per second per rank, for three seconds. */
@@ -129,19 +129,19 @@ public final class Tuning {
 	/** First Blood: bonus vs full-health targets per rank. */
 	public static final float FIRSTBLOOD_PER_RANK = 0.25F;
 
-	/** Executioner: claymore hits finish targets below this health fraction. */
+	/** Executioner: greatsword hits finish targets below this health fraction. */
 	public static final float EXECUTE_THRESHOLD = 0.15F;
 
 	/** Bloodlust: Speed I for this long after any melee kill. */
 	public static final int BLOODLUST_TICKS = 60;
 
-	/** Decimate: double damage, 30s cooldown, a wide tilted arc in front. */
+	/** Decimate: double damage, 30s cooldown, a wide tilted arc in front.
+	 * Only instant-break blocks (torches, grass, fire...) are swept away —
+	 * anything sturdier survives, so a swing in your own base clears clutter
+	 * without eating the walls. */
 	public static final float DECIMATE_DAMAGE_MULTIPLIER = 2.0F;
 	public static final int DECIMATE_COOLDOWN_TICKS = 600;
 	public static final double DECIMATE_RANGE = 3.5;
-	/** Blocks harder than this survive; logs and planks break by tag despite
-	 * being nominally harder than stone. */
-	public static final float DECIMATE_MAX_HARDNESS = 1.5F;
 	public static final int DECIMATE_MAX_BLOCKS = 48;
 
 	/** Relentless (tip): both capstone cooldowns drop by 15 seconds. */

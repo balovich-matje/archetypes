@@ -59,7 +59,7 @@ public final class BashCooldownHud {
 		}
 
 		// The Slayer actives ride the mainhand weapon.
-		if (com.archetypes.ModItems.isClaymore(player.getMainHandItem())) {
+		if (com.archetypes.ModItems.isGreatsword(player.getMainHandItem())) {
 			Long decimate = target.getAttached(ModAttachments.DECIMATE_READY_AT);
 
 			if (decimate != null && decimate > now) {
