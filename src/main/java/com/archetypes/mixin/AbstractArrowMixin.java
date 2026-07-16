@@ -49,30 +49,11 @@ public abstract class AbstractArrowMixin {
 			return;
 		}
 
-		LivingEntity nearest = null;
-		double best = Double.MAX_VALUE;
+		LivingEntity quarry = com.archetypes.Homing.pickTarget(arrow, Tuning.TRUE_SHOT_HOMING_RADIUS,
+				living -> living != arrow.getOwner());
 
-		for (LivingEntity candidate : arrow.level().getEntitiesOfClass(LivingEntity.class,
-				arrow.getBoundingBox().inflate(Tuning.TRUE_SHOT_HOMING_RADIUS),
-				living -> living.isAlive() && !living.isSpectator() && living != arrow.getOwner())) {
-			double distance = candidate.distanceToSqr(arrow);
-
-			if (distance < best) {
-				best = distance;
-				nearest = candidate;
-			}
+		if (quarry != null) {
+			com.archetypes.Homing.steer(arrow, quarry);
 		}
-
-		if (nearest == null) {
-			return;
-		}
-
-		Vec3 velocity = arrow.getDeltaMovement();
-		double speed = velocity.length();
-		Vec3 toTarget = nearest.getBoundingBox().getCenter().subtract(arrow.position()).normalize();
-		Vec3 steered = velocity.normalize().scale(0.8).add(toTarget.scale(0.2)).normalize().scale(speed);
-
-		arrow.setDeltaMovement(steered);
-		arrow.hurtMarked = true;
 	}
 }

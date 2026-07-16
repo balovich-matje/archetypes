@@ -74,6 +74,10 @@ public final class ModItems {
 	/** Creative-only: one skill point per use. See {@link SkillTokenItem}. */
 	public static final Item SKILL_TOKEN = registerSkillToken();
 
+	/** Creative-only Spellcasting boosts, the twin of Specialities' books. */
+	public static final Item SPELLCASTING_TOME_25 = registerTome(25);
+	public static final Item SPELLCASTING_TOME_100 = registerTome(100);
+
 	public static final Item WOODEN_GREATSWORD = greatsword("wooden", ToolMaterial.WOOD);
 	public static final Item STONE_GREATSWORD = greatsword("stone", ToolMaterial.STONE);
 	public static final Item COPPER_GREATSWORD = greatsword("copper", ToolMaterial.COPPER);
@@ -109,6 +113,13 @@ public final class ModItems {
 				new SkillTokenItem(new Item.Properties().setId(key)));
 	}
 
+	private static Item registerTome(final int levels) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM,
+				Archetypes.id("spellcasting_tome_" + levels));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.SpellcastingTomeItem(new Item.Properties().setId(key), levels));
+	}
+
 	private static Item greatsword(final String prefix, final ToolMaterial material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_greatsword"));
 		Item.Properties properties = material.applySwordProperties(
@@ -137,7 +148,11 @@ public final class ModItems {
 
 	public static void initialize() {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
-				.register(output -> output.accept(SKILL_TOKEN));
+				.register(output -> {
+					output.accept(SKILL_TOKEN);
+					output.accept(SPELLCASTING_TOME_25);
+					output.accept(SPELLCASTING_TOME_100);
+				});
 
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output -> {
 			output.accept(WOODEN_GREATSWORD);

@@ -177,6 +177,24 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * The Marksman's on-hit passives ride the victim's damage intake, before
+	 * death resolution — Combustion on a kill-shot must still detonate, and
+	 * AFTER_DAMAGE never fires for lethal hits.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$marksmanArrowHit(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
+				&& source.getEntity() instanceof ServerPlayer player
+				&& com.archetypes.MarksmanCombat.fromMarksmanWeapon(arrow)) {
+			com.archetypes.MarksmanCombat.onArrowHit(player, (LivingEntity) (Object) this, level, amount);
+		}
+
+		return amount;
+	}
+
+	/**
 	 * Sunder: virtual Breach levels for the Crusher's weapons — rank for the
 	 * mace, doubled for bare fists. Armor absorbs roughly 4% per point
 	 * (capped at 80%); each Sunder level claws 15% of that absorption back as

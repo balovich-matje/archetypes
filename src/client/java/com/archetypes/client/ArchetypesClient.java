@@ -90,6 +90,15 @@ public class ArchetypesClient implements ClientModInitializer {
 				}
 			}
 
+			// Disengage: the same sprint press while a bow is drawn. You can't
+			// sprint mid-draw anyway, so consuming the click costs nothing.
+			if (client.player != null && client.player.isUsingItem()
+					&& client.player.getUseItem().is(net.minecraft.world.item.Items.BOW)) {
+				while (client.options.keySprint.consumeClick()) {
+					ClientPlayNetworking.send(new com.archetypes.DisengagePayload());
+				}
+			}
+
 		});
 
 		// Seeker spells render as thrown items — the projectile carries which.

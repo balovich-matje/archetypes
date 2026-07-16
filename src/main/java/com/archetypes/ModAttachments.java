@@ -178,6 +178,16 @@ public final class ModAttachments {
 	public static final AttachmentType<Integer> STEP_TARGET =
 			AttachmentRegistry.<Integer>create(Archetypes.id("step_target"));
 
+	/** Disengage's short anti-spam clock. Server-side only. */
+	public static final AttachmentType<Long> DISENGAGE_READY_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("disengage_ready_at"));
+
+	/** Rapid Reload: a crossbow kill primes the next reload. Synced to the
+	 * owner because the client predicts charge time for the draw animation. */
+	public static final AttachmentType<Boolean> CROSSBOW_PRIMED = AttachmentRegistry.create(
+			Archetypes.id("crossbow_primed"),
+			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.targetOnly()));
+
 	/** Flamethrower channel: the last tick a channel payload arrived. */
 	public static final AttachmentType<Long> FLAME_LAST_TICK =
 			AttachmentRegistry.<Long>create(Archetypes.id("flame_last_tick"));

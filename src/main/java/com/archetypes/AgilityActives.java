@@ -35,7 +35,7 @@ public final class AgilityActives {
 	public static void trueShot(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.MARKSMAN);
 
-		if (!PlaceholderNodes.owns(SubTree.MARKSMAN, owned, PlaceholderNodes.Kind.ACTIVE)
+		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.TRUE_SHOT) <= 0
 				|| !player.getMainHandItem().is(Items.BOW)
 				|| onCooldown(player, ModAttachments.TRUE_SHOT_READY_AT)) {
 			return;
@@ -45,7 +45,7 @@ public final class AgilityActives {
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
 
-		if (PlaceholderNodes.owns(SubTree.MARKSMAN, owned, PlaceholderNodes.Kind.CAPSTONE_B)) {
+		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SNAP_SHOT) > 0) {
 			ItemStack projectile = player.getProjectile(player.getMainHandItem());
 
 			if (projectile.isEmpty()) {
@@ -175,6 +175,41 @@ public final class AgilityActives {
 
 		target.setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime()
 				+ (flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS));
+	}
+
+	/**
+	 * Disengage: sprint while the bowstring is drawn to spring backwards —
+	 * 3 blocks per rank, on a one-second clock so it reads as footwork, not
+	 * flight. The draw survives the hop; the aim is yours to recover.
+	 */
+	public static void disengage(final ServerPlayer player) {
+		if (MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
+				MarksmanNodes.Family.DISENGAGE) <= 0
+				|| !player.isUsingItem() || !player.getUseItem().is(Items.BOW)
+				|| onCooldown(player, ModAttachments.DISENGAGE_READY_AT)) {
+			return;
+		}
+
+		int rank = MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
+				MarksmanNodes.Family.DISENGAGE);
+		ServerLevel level = (ServerLevel) player.level();
+		Vec3 look = player.getLookAngle();
+		Vec3 back = new Vec3(-look.x, 0.0, -look.z);
+
+		if (back.lengthSqr() < 1.0E-4) {
+			return;
+		}
+
+		double impulse = rank * Tuning.DISENGAGE_BLOCKS_PER_RANK * Tuning.RUSH_IMPULSE_PER_BLOCK;
+		player.setDeltaMovement(player.getDeltaMovement()
+				.add(back.normalize().scale(impulse).add(0.0, 0.25, 0.0)));
+		player.hurtMarked = true;
+		((AttachmentTarget) player).setAttached(ModAttachments.DISENGAGE_READY_AT,
+				level.getGameTime() + Tuning.DISENGAGE_COOLDOWN_TICKS);
+		level.sendParticles(ParticleTypes.CLOUD,
+				player.getX(), player.getY() + 0.1, player.getZ(), 5, 0.2, 0.02, 0.2, 0.01);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.RABBIT_JUMP, SoundSource.PLAYERS, 1.0F, 0.7F);
 	}
 
 	/** One authentic full-charge attack: enchants, crits and all. */

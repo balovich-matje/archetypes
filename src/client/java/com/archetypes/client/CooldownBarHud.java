@@ -172,8 +172,8 @@ public final class CooldownBarHud {
 		// don't appear here — mana is their gauge and the bottle bar shows it.
 		var marksman = NodePurchases.owned(player, SubTree.MARKSMAN);
 
-		if (com.archetypes.PlaceholderNodes.owns(SubTree.MARKSMAN, marksman,
-				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+		if (com.archetypes.MarksmanNodes.rank(SubTree.MARKSMAN, marksman,
+				com.archetypes.MarksmanNodes.Family.TRUE_SHOT) > 0) {
 			abilities.add(new Ability(null, 0, new ItemStack(Items.SPECTRAL_ARROW),
 					null, 0, ArchetypesClient.ABILITY_KEYS[0],
 					ModAttachments.TRUE_SHOT_READY_AT, Tuning.TRUE_SHOT_COOLDOWN_TICKS));

@@ -879,3 +879,39 @@ A chunk-reloaded spell wakes modeless and discards itself.
 Wand rule confirmed: Wizard requires the wand; Elementalist and Priest
 cast bare-handed. The tree screen's blanket "Preview" header died — every
 tree now does something; only the placeholder minors say so, per node.
+
+**Testing QoL + Marksman passives (2026-07-17).** Spellcasting regen formula
+now +1/s per 25 levels (+5 at cap, on top of the base 1). Two creative
+Spellcasting Tomes (+25/+100 levels, Specialities' knowledge-book twins,
+bridge-guarded). Mana potions, shaped like their health twins: Mana Restore
+(lapis; instant +50/level) and Mana Regeneration (amethyst; +2/s per level,
+45s halved at II) — custom MobEffects + four Potion registrations; splash/
+lingering/tipped-arrow forms and creative-tab entries all come free from
+vanilla's potion plumbing.
+
+Seeker Arrow's "homes half the time" root cause: nearest-in-8-blocks target
+selection (including things BEHIND the arrow) plus a 20%-per-tick nudge that
+barely bends a 3-block-per-tick arrow. Shared Homing helper now: 16-block
+sensor, forward cone (dot > 0.2) so only things ahead count, 50% per-tick
+turn. Seeker Missile uses the same brain with an Enemy filter.
+
+Marksman is the first Cutpurse tree with real passives (graduated from
+PlaceholderNodes to MarksmanNodes): string side Conservation 1-4 (12.5%/rank
+arrow refund — refunds the item and downgrades the flying arrow to
+creative-only pickup so it can't be collected twice), Rapid Reload 1-4
+(crossbow kill primes the next charge, -25%/rank via a getChargeDuration
+ModifyReturnValue, floored at 1 tick because vanilla divides by it; prime
+synced to the owner for the draw animation, cleared server-side on load),
+Focus (arrow hits refund 10s of True Shot); stave side Disengage 1-2 (sprint
+mid-draw leaps 3/6 blocks back — same consumeClick trick as Shield Rush,
+which owns the press while blocking, this one while drawing), Nimble Draw
+1-3 (the draw slowdown is the USE_EFFECTS component's speedMultiplier, read
+in LocalPlayer.itemUseSpeedMultiplier — a client-only ModifyReturnValue
+hands back a third of the penalty per rank; players are movement-
+authoritative so no server half), Swift Flight 1-2 (+50%/rank arrow speed,
+damage-neutral: base damage divided back down since arrow damage scales
+with impact speed), Pinning 1-2 (Slowness I/II 3s), Combustion at the
+arrow-rest nub (burning target hit = 3-block blast for the arrow's full
+damage; on-hit batch lives in the hurtServer damage-shaping mixin — the
+AFTER_DAMAGE lethal gate again — with a reentrancy latch like Shockwave's).
+One node spare: the bow's top tip stays an Unnamed Star for a future idea.

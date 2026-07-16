@@ -237,7 +237,20 @@ public final class Tuning {
 	public static final float TRUE_SHOT_SNAP_SPEED = 3.0F;
 	/** Gravity-free arrows fly forever; these quietly stop existing here. */
 	public static final double TRUE_SHOT_RANGE_BLOCKS = 64.0;
-	public static final double TRUE_SHOT_HOMING_RADIUS = 8.0;
+	public static final double TRUE_SHOT_HOMING_RADIUS = 16.0;
+
+	// --- Marksman passives ---
+	public static final float CONSERVATION_PER_RANK = 0.125F;
+	public static final int PINNING_TICKS = 60;
+	/** Damage-neutral: velocity up by this, base damage down to match. */
+	public static final float SWIFT_FLIGHT_PER_RANK = 0.5F;
+	public static final double DISENGAGE_BLOCKS_PER_RANK = 3.0;
+	public static final int DISENGAGE_COOLDOWN_TICKS = 20;
+	/** A third of the draw slowdown back per rank; rank 3 walks free. */
+	public static final float NIMBLE_DRAW_PER_RANK = 1.0F / 3.0F;
+	public static final float RAPID_RELOAD_PER_RANK = 0.25F;
+	public static final double COMBUSTION_RADIUS = 3.0;
+	public static final int FOCUS_REFUND_TICKS = 200;
 
 	// --- Agility: Invisibility ---
 	public static final int INVIS_TICKS = 160;
@@ -259,8 +272,12 @@ public final class Tuning {
 	public static final float MANA_BASE = 100.0F;
 	public static final float MANA_REGEN_BASE_PER_SECOND = 1.0F;
 	public static final float MANA_PER_SPELLCASTING_LEVEL = 1.0F;
-	public static final int MANA_REGEN_LEVELS_PER_POINT = 20;
+	public static final int MANA_REGEN_LEVELS_PER_POINT = 25;
 	public static final float XP_PER_MANA = 1.0F;
+	/** The potions: Mana Restore gives a chunk per level, Mana Regeneration
+	 * a bonus stream per level on top of the natural one. */
+	public static final float MANA_RESTORE_PER_LEVEL = 50.0F;
+	public static final float MANA_REGEN_POTION_PER_LEVEL_PER_SECOND = 2.0F;
 
 	// --- Seeker: Fireball / Meteorite / Flamethrower ---
 	public static final float FIREBALL_COST = 50.0F;
@@ -289,7 +306,7 @@ public final class Tuning {
 	public static final double MISSILE_RANGE = 16.0;
 	public static final float MISSILE_SPEED = 1.5F;
 	public static final float MISSILE_HOMING_SPEED_FACTOR = 0.67F;
-	public static final double MISSILE_HOMING_RADIUS = 8.0;
+	public static final double MISSILE_HOMING_RADIUS = 12.0;
 	public static final double MISSILE_PIERCE_INFLATE = 0.75;
 
 	// --- Seeker: Holy Light ---

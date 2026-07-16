@@ -16,6 +16,8 @@ public class Archetypes implements ModInitializer {
 		ModAttachments.initialize();
 		ModItems.initialize();
 		ModEntities.initialize();
+		ManaEffects.initialize();
+		ManaPotions.initialize();
 		ModParticles.initialize();
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();
@@ -33,6 +35,7 @@ public class Archetypes implements ModInitializer {
 		PayloadTypeRegistry.serverboundPlay().register(SpellChannelPayload.TYPE, SpellChannelPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(MeleeSwingPayload.TYPE, MeleeSwingPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(DisengagePayload.TYPE, DisengagePayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
@@ -88,6 +91,9 @@ public class Archetypes implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(RushPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> ShieldRush.execute(context.player())));
+
+		ServerPlayNetworking.registerGlobalReceiver(DisengagePayload.TYPE, (payload, context) -> context
+				.server().execute(() -> AgilityActives.disengage(context.player())));
 
 		// The greatsword is strictly two-handed: while it's in the main hand
 		// the offhand is dead weight — no shields, no food, no blocks from it.

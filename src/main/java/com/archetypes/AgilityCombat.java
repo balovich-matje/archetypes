@@ -36,6 +36,8 @@ public final class AgilityCombat {
 				return;
 			}
 
+			MarksmanCombat.onArrowSpawn(player, arrow);
+
 			AttachmentTarget target = (AttachmentTarget) player;
 
 			if (!Boolean.TRUE.equals(target.getAttached(ModAttachments.TRUE_SHOT_ARMED))) {
@@ -44,8 +46,8 @@ public final class AgilityCombat {
 
 			target.removeAttached(ModAttachments.TRUE_SHOT_ARMED);
 
-			boolean homing = PlaceholderNodes.owns(SubTree.MARKSMAN,
-					NodePurchases.owned(player, SubTree.MARKSMAN), PlaceholderNodes.Kind.CAPSTONE_A);
+			boolean homing = MarksmanNodes.rank(SubTree.MARKSMAN,
+					NodePurchases.owned(player, SubTree.MARKSMAN), MarksmanNodes.Family.SEEKER_ARROW) > 0;
 			AgilityActives.empower(arrow,
 					homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER, homing);
 		});
@@ -58,6 +60,10 @@ public final class AgilityCombat {
 			}
 
 			AttachmentTarget target = (AttachmentTarget) player;
+
+			if (source.getDirectEntity() instanceof AbstractArrow arrow) {
+				MarksmanCombat.onArrowKill(player, arrow);
+			}
 
 			if (player.hasEffect(MobEffects.INVISIBILITY)
 					&& PlaceholderNodes.owns(SubTree.SHADOW,

@@ -12,7 +12,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Node tables for the six Cutpurse/Seeker trees while their passives are being
- * written: each tree has its ACTIVE at the constellation's root, a mutually
+ * written (Marksman has graduated to {@link MarksmanNodes}): each tree has
+ * its ACTIVE at the constellation's root, a mutually
  * exclusive capstone pair near the crown, and pickable-but-inert MINOR
  * placeholders everywhere else. When a tree's passives land it graduates to
  * its own class (the SlayerNodes pattern) and leaves this one.
@@ -33,9 +34,6 @@ public final class PlaceholderNodes {
 	}
 
 	private static final Map<SubTree, Spec> SPECS = new EnumMap<>(Map.of(
-			SubTree.MARKSMAN, new Spec("true_shot", "seeker_arrow", "snap_shot",
-					() -> Items.SPECTRAL_ARROW, () -> Items.ENDER_EYE, () -> Items.CROSSBOW,
-					3, 0, 2, 10, 4, 10),
 			SubTree.ASSASSIN, new Spec("shadow_step", "shadow_flurry", "momentum",
 					() -> Items.ENDER_PEARL, () -> ModItems.IRON_DAGGER, () -> Items.WITHER_SKELETON_SKULL,
 					3, 0, 2, 9, 4, 9),

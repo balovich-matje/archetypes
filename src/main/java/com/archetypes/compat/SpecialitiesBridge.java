@@ -29,6 +29,14 @@ public final class SpecialitiesBridge {
 		}
 	}
 
+	/**
+	 * The tomes: jump ahead whole Spellcasting levels. Returns the level
+	 * reached, or -1 without Specialities (there is no skill to level).
+	 */
+	public static int grantSpellcastingLevels(final ServerPlayer player, final int levels) {
+		return LOADED ? Linked.grantLevels(player, levels) : -1;
+	}
+
 	/** Everything that names a Specialities class, loaded lazily and only
 	 * behind the LOADED check above. */
 	private static final class Linked {
@@ -38,6 +46,11 @@ public final class SpecialitiesBridge {
 
 		private static void award(final ServerPlayer player, final int amount) {
 			com.specialities.skills.SkillManager.addXp(player, SpellcastingSkill.INSTANCE, amount);
+		}
+
+		private static int grantLevels(final ServerPlayer player, final int levels) {
+			com.specialities.skills.SkillManager.addLevels(player, SpellcastingSkill.INSTANCE, levels);
+			return level(player);
 		}
 	}
 }

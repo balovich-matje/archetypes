@@ -62,6 +62,14 @@ public final class Mana {
 		return current;
 	}
 
+	/** Potions and other refunds: straight in, clamped to the pool. */
+	public static void add(final ServerPlayer player, final float amount) {
+		if (amount > 0.0F) {
+			((AttachmentTarget) player).setAttached(ModAttachments.MANA,
+					Math.min(max(player), current(player) + amount));
+		}
+	}
+
 	/** Once per tick from the Seeker ticker. */
 	public static void regenTick(final ServerPlayer player) {
 		float current = current(player);

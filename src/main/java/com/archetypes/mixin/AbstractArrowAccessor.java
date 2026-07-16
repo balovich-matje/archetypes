@@ -13,4 +13,7 @@ public interface AbstractArrowAccessor {
 
 	@Accessor("baseDamage")
 	void archetypes$setBaseDamage(double damage);
+
+	@Accessor("pickupItemStack")
+	net.minecraft.world.item.ItemStack archetypes$getPickupItemStack();
 }

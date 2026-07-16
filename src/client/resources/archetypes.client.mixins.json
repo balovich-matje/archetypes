@@ -6,6 +6,7 @@
 		"AbstractContainerScreenAccessor",
 		"AvatarRendererMixin",
 		"LivingEntityRendererAccessor",
+		"LocalPlayerMixin",
 		"MinecraftMixin"
 	],
 	"injectors": {

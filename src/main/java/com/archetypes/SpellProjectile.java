@@ -124,32 +124,14 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		this.trail((ServerLevel) this.level());
 	}
 
-	/** Seeker Missile: bend toward the nearest enemy, keeping current speed. */
+	/** Seeker Missile: bend toward the nearest enemy ahead, keeping speed. */
 	private void steer() {
-		LivingEntity nearest = null;
-		double best = Double.MAX_VALUE;
+		LivingEntity target = Homing.pickTarget(this, Tuning.MISSILE_HOMING_RADIUS,
+				living -> living instanceof Enemy && living != this.getOwner());
 
-		for (LivingEntity candidate : this.level().getEntitiesOfClass(LivingEntity.class,
-				this.getBoundingBox().inflate(Tuning.MISSILE_HOMING_RADIUS),
-				living -> living instanceof Enemy && living.isAlive() && living != this.getOwner())) {
-			double distance = candidate.distanceToSqr(this);
-
-			if (distance < best) {
-				best = distance;
-				nearest = candidate;
-			}
+		if (target != null) {
+			Homing.steer(this, target);
 		}
-
-		if (nearest == null) {
-			return;
-		}
-
-		Vec3 velocity = this.getDeltaMovement();
-		double speed = velocity.length();
-		Vec3 toTarget = nearest.getBoundingBox().getCenter().subtract(this.position()).normalize();
-		this.setDeltaMovement(velocity.normalize().scale(0.75).add(toTarget.scale(0.25))
-				.normalize().scale(speed));
-		this.hurtMarked = true;
 	}
 
 	/**

@@ -6,6 +6,7 @@
 		"AbstractArrowAccessor",
 		"AbstractArrowMixin",
 		"BlocksAttacksMixin",
+		"CrossbowItemMixin",
 		"LivingEntityAccessor",
 		"LivingEntityMixin",
 		"PlayerMixin",
