@@ -26,21 +26,71 @@ public final class CrusherNodes {
 		BARE_KNUCKLE(() -> Items.BRICK),
 		IRON_SKIN(() -> Items.IRON_CHESTPLATE),
 		HAYMAKER(() -> Items.BLAZE_POWDER),
-		METEOR(() -> Items.ANVIL),
-		SHOCKWAVE(() -> Items.WIND_CHARGE),
-		EARTH_SHATTER(() -> Items.IRON_PICKAXE),
-		QUAKE(() -> Items.MACE),
-		BATTLE_TRANCE(() -> Items.GOLDEN_APPLE),
+		METEOR(() -> Items.MACE, Archetypes.id("textures/node/meteor_overlay.png"), 32, false),
+		SHOCKWAVE(() -> Items.MACE, Archetypes.id("textures/node/shockwave_overlay.png"), 32, false),
+		EARTH_SHATTER(() -> Items.MACE, Archetypes.id("textures/node/earth_shatter_overlay.png"), 32, false),
+		QUAKE(() -> Items.MACE, Archetypes.id("textures/node/quake_overlay.png"), 32, true),
+		BATTLE_TRANCE(net.minecraft.resources.Identifier.withDefaultNamespace(
+				"textures/gui/sprites/hud/heart/absorbing_full.png"), 9),
 		MINOR(null);
 
 		private final @Nullable Supplier<Item> icon;
+		private final net.minecraft.resources.@Nullable Identifier sprite;
+		private final int spriteSize;
+		private final net.minecraft.resources.@Nullable Identifier overlay;
+		private final int overlaySize;
+		private final boolean overlayBehind;
 
 		Family(final @Nullable Supplier<Item> icon) {
+			this(icon, null, 0, null, 0, false);
+		}
+
+		/** A pure texture icon, like the absorption heart. */
+		Family(final net.minecraft.resources.Identifier sprite, final int spriteSize) {
+			this(null, sprite, spriteSize, null, 0, false);
+		}
+
+		/** The real item render plus an effect layer, Protector-style. */
+		Family(final @Nullable Supplier<Item> icon,
+				final net.minecraft.resources.@Nullable Identifier overlay, final int overlaySize,
+				final boolean overlayBehind) {
+			this(icon, null, 0, overlay, overlaySize, overlayBehind);
+		}
+
+		Family(final @Nullable Supplier<Item> icon,
+				final net.minecraft.resources.@Nullable Identifier sprite, final int spriteSize,
+				final net.minecraft.resources.@Nullable Identifier overlay, final int overlaySize,
+				final boolean overlayBehind) {
 			this.icon = icon;
+			this.sprite = sprite;
+			this.spriteSize = spriteSize;
+			this.overlay = overlay;
+			this.overlaySize = overlaySize;
+			this.overlayBehind = overlayBehind;
 		}
 
 		public @Nullable Item icon() {
 			return this.icon == null ? null : this.icon.get();
+		}
+
+		public net.minecraft.resources.@Nullable Identifier sprite() {
+			return this.sprite;
+		}
+
+		public int spriteSize() {
+			return this.spriteSize;
+		}
+
+		public net.minecraft.resources.@Nullable Identifier overlay() {
+			return this.overlay;
+		}
+
+		public int overlaySize() {
+			return this.overlaySize;
+		}
+
+		public boolean overlayBehind() {
+			return this.overlayBehind;
 		}
 
 		public String nameKey() {

@@ -41,27 +41,47 @@ public final class TreeNodes {
 	/** Texture-based icon (effect sprites and the like), or null if the
 	 * family's icon is an item. */
 	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().sprite() : null;
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).family().sprite();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
+			default -> null;
+		};
 	}
 
 	/** Pixel size of the square texture behind iconSprite. */
 	public static int iconSpriteSize(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().spriteSize() : 0;
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).family().spriteSize();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
+			default -> 0;
+		};
 	}
 
 	/** Effect layer drawn over the item icon, or null when the item stands alone. */
 	public static net.minecraft.resources.@Nullable Identifier iconOverlay(final SubTree tree, final int index) {
-		return tree == SubTree.PROTECTOR ? ProtectorNodes.def(tree, index).family().overlay() : null;
+		return switch (tree) {
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().overlay();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().overlay();
+			default -> null;
+		};
 	}
 
 	/** Pixel size of the square texture behind iconOverlay. */
 	public static int iconOverlaySize(final SubTree tree, final int index) {
-		return tree == SubTree.PROTECTOR ? ProtectorNodes.def(tree, index).family().overlaySize() : 0;
+		return switch (tree) {
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().overlaySize();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().overlaySize();
+			default -> 0;
+		};
 	}
 
 	/** True when the effect layer draws under the item render, not over it. */
 	public static boolean iconOverlayBehind(final SubTree tree, final int index) {
-		return tree == SubTree.PROTECTOR && ProtectorNodes.def(tree, index).family().overlayBehind();
+		return switch (tree) {
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family().overlayBehind();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().overlayBehind();
+			default -> false;
+		};
 	}
 
 	public static boolean isMinor(final SubTree tree, final int index) {

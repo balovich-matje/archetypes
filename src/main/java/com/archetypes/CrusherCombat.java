@@ -46,7 +46,7 @@ public final class CrusherCombat {
 			Long smashedAt = target.getAttached(ModAttachments.SMASH_AT);
 
 			if (shockwave > 0 && weapon == WeaponClass.MACE && !splashing
-					&& smashedAt != null && smashedAt == now) {
+					&& smashedAt != null && now - smashedAt <= 3) {
 				int radius = shockwave * Tuning.SHOCKWAVE_RADIUS_PER_RANK;
 				var level = (net.minecraft.server.level.ServerLevel) player.level();
 				splashing = true;

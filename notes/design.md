@@ -706,3 +706,15 @@ cooldown and shatters blocks up to stone hardness in 2/4/6 radius (two
 layers: feet and below), one mace durability per block. Quake now scales
 with Density (+1.5/level) and Meteor (+2/rank): mace AD 9 x1.5 + 7.5 + 4 ≈
 25 — one-shots fresh zombies/skeletons at full investment.
+
+**Crusher fixes round 3 (2026-07-16).** Battle Trance root cause: since
+1.20.2 absorption clamps to the MAX_ABSORPTION attribute (default 0) — raw
+setAbsorptionAmount was clamped straight back to nothing while the proc
+indicator (same code block) fired happily. The ticker now holds a
+MAX_ABSORPTION modifier equal to the rank cap. Trance icon: vanilla's
+absorbing_full heart sprite. Shockwave hardened: the smash stamp now also
+comes from the ticker (mace + airborne + falling faster than 0.4/t) with a
+3-tick freshness window — immune to wherever vanilla resets fallDistance.
+Mace flange icons per spec: mace item render + fire charge corner (Meteor),
+compass corner (Shockwave), stone corner (Earth Shatterer), cracks-behind
+(Quake).

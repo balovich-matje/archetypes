@@ -21,6 +21,7 @@ public final class CrusherTicker {
 	private static final Identifier IRON_SKIN_TOUGHNESS_ID = Archetypes.id("iron_skin_toughness");
 	private static final Identifier ADRENALINE_ID = Archetypes.id("adrenaline");
 	private static final Identifier QUAKE_IMMUNITY_ID = Archetypes.id("quake_immunity");
+	private static final Identifier TRANCE_CAP_ID = Archetypes.id("battle_trance_cap");
 
 	private CrusherTicker() {
 	}
@@ -74,9 +75,25 @@ public final class CrusherTicker {
 			CrusherActives.quakeSlam(player);
 		}
 
+		// A true smash in progress: stamped from velocity, because vanilla
+		// resets fallDistance somewhere inside the mace's hit pipeline and
+		// AFTER_DAMAGE listeners (Shockwave) arrive too late to see it.
+		if (weapon == WeaponClass.MACE && !player.onGround()
+				&& player.getDeltaMovement().y < -0.4) {
+			target.setAttached(ModAttachments.SMASH_AT, now);
+		}
+
+		// Battle Trance banks raw absorption, and since 1.20.2 that amount is
+		// clamped to the MAX_ABSORPTION attribute — which defaults to zero.
+		// The rank's cap must live in the attribute or every grant clamps
+		// straight back to nothing.
+		int trance = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE);
+		apply(player.getAttribute(Attributes.MAX_ABSORPTION), TRANCE_CAP_ID,
+				trance > 0, trance * Tuning.TRANCE_CAP_PER_RANK,
+				AttributeModifier.Operation.ADD_VALUE);
+
 		// Battle Trance decay: the banked hearts fade once the fight is over.
-		if (CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE) > 0
-				&& player.getAbsorptionAmount() > 0) {
+		if (trance > 0 && player.getAbsorptionAmount() > 0) {
 			Long lastHit = target.getAttached(ModAttachments.TRANCE_HIT_AT);
 
 			if (lastHit != null && now - lastHit > Tuning.TRANCE_DECAY_DELAY_TICKS && now % 20 == 0) {

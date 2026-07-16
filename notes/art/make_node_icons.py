@@ -294,6 +294,41 @@ def ground_slam_overlay():
     save(im, "ground_slam_overlay")
 
 
+def meteor_overlay():
+    """The mace with a fire charge riding its shoulder — the falling star."""
+    im = canvas(32)
+    im.alpha_composite(vanilla("item/fire_charge.png"), (16, 0))
+    save(im, "meteor_overlay")
+
+
+def shockwave_overlay():
+    """The mace with a compass corner — the blow that reaches outward."""
+    im = canvas(32)
+    im.alpha_composite(vanilla("item/compass_16.png"), (16, 0))
+    save(im, "shockwave_overlay")
+
+
+def earth_shatter_overlay():
+    """The mace in front of stone about to give way."""
+    im = canvas(32)
+    im.alpha_composite(vanilla("block/stone.png"), (16, 16))
+    save(im, "earth_shatter_overlay")
+
+
+def quake_overlay():
+    """Cracks radiating behind the mace (drawn under the item render)."""
+    im = canvas(32)
+    crack = (70, 70, 74, 255)
+    crack_dim = (105, 105, 110, 200)
+    for line in (((3, 3), (7, 7), (9, 11)), ((28, 4), (24, 8), (22, 12)),
+                 ((2, 26), (7, 23), (11, 21)), ((29, 27), (25, 24), (21, 22)),
+                 ((15, 1), (16, 5), (15, 8))):
+        for i, (x, y) in enumerate(line):
+            im.putpixel((x, y), crack if i % 2 == 0 else crack_dim)
+            im.putpixel((x + 1, y), crack_dim)
+    save(im, "quake_overlay")
+
+
 def main():
     os.makedirs(DST, exist_ok=True)
     bladestorm()
@@ -312,6 +347,10 @@ def main():
     reflection_overlay()
     bulwark_overlay()
     ground_slam_overlay()
+    meteor_overlay()
+    shockwave_overlay()
+    earth_shatter_overlay()
+    quake_overlay()
 
 
 if __name__ == "__main__":
