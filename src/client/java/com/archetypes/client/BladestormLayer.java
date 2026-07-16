@@ -23,9 +23,9 @@ public class BladestormLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 	public static final RenderStateDataKey<Boolean> ACTIVE = RenderStateDataKey.create();
 	public static final RenderStateDataKey<ItemStackRenderState> GHOST = RenderStateDataKey.create();
 
-	private static final int GHOSTS = 4;
+	private static final int GHOSTS = 7;
 	private static final float RADIUS = 1.35F;
-	private static final float DEGREES_PER_TICK = 42.0F;
+	private static final float DEGREES_PER_TICK = 50.0F;
 
 	public BladestormLayer(final RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
 		super(parent);
@@ -46,14 +46,19 @@ public class BladestormLayer extends RenderLayer<AvatarRenderState, PlayerModel>
 
 		for (int i = 0; i < GHOSTS; i++) {
 			float angle = base + i * (360.0F / GHOSTS);
-			// Two bands of blades, alternating heights, tilted mostly flat.
-			float height = i % 2 == 0 ? 0.7F : 1.0F;
+			// Two bands of blades, alternating heights.
+			float height = i % 2 == 0 ? 0.65F : 0.95F;
 
 			pose.pushPose();
 			pose.mulPose(Axis.YP.rotationDegrees(-angle));
 			pose.translate(0.0F, height, RADIUS);
-			pose.mulPose(Axis.ZP.rotationDegrees(90.0F));
-			pose.mulPose(Axis.XP.rotationDegrees(20.0F));
+			// The FIXED sword sprite lies in a vertical plane, blade running
+			// its 45-degree diagonal. Straighten the diagonal onto one axis,
+			// then fold the plane flat — the blades sweep tangentially like a
+			// saw instead of standing up like scythes (screenshot-verified
+			// failure of the first guess).
+			pose.mulPose(Axis.ZP.rotationDegrees(-45.0F));
+			pose.mulPose(Axis.XP.rotationDegrees(90.0F));
 			ghost.submit(pose, collector, light, OverlayTexture.NO_OVERLAY, 0);
 			pose.popPose();
 		}

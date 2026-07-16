@@ -144,6 +144,9 @@ public final class Tuning {
 	public static final float DECIMATE_MAX_HARDNESS = 1.5F;
 	public static final int DECIMATE_MAX_BLOCKS = 48;
 
+	/** Relentless (tip): both capstone cooldowns drop by 15 seconds. */
+	public static final int RELENTLESS_REDUCTION_TICKS = 300;
+
 	/** Bladestorm: six half-damage volleys over three seconds, 45s cooldown. */
 	public static final int BLADESTORM_COOLDOWN_TICKS = 900;
 	public static final int BLADESTORM_CHANNEL_TICKS = 60;

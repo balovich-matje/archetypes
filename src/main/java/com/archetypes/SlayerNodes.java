@@ -30,6 +30,7 @@ public final class SlayerNodes {
 		FLURRY(() -> Items.SUGAR),
 		EXECUTIONER(() -> Items.NETHERITE_AXE),
 		BLOODLUST(() -> Items.FERMENTED_SPIDER_EYE),
+		RELENTLESS(() -> Items.CLOCK),
 		BLADESTORM(() -> Items.DIAMOND_SWORD),
 		DECIMATE(() -> ModItems.NETHERITE_CLAYMORE),
 		MINOR(null);
@@ -95,12 +96,13 @@ public final class SlayerNodes {
 		byCell.put(cell(5, 7), new Def(Family.FIRSTBLOOD, 2));
 		byCell.put(cell(5, 8), new Def(Family.EXECUTIONER, 1));
 
-		// The tip: capstones, mutually exclusive, and Bloodlust above them —
-		// its only neighbours are the capstones, so it is post-capstone by
-		// geometry alone.
+		// The tip: Bloodlust sits in the old X-crossing between the capstones,
+		// so every crown path runs through it; Relentless caps the very point,
+		// its only neighbours the capstones — post-capstone by geometry alone.
 		byCell.put(cell(3, 9), new Def(Family.BLADESTORM, 1));
 		byCell.put(cell(5, 9), new Def(Family.DECIMATE, 1));
-		byCell.put(cell(4, 10), new Def(Family.BLOODLUST, 1));
+		byCell.put(cell(4, 9), new Def(Family.BLOODLUST, 1));
+		byCell.put(cell(4, 10), new Def(Family.RELENTLESS, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.SLAYER_SWORD.nodes();

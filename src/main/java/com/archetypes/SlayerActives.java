@@ -47,7 +47,10 @@ public final class SlayerActives {
 			return;
 		}
 
-		target.setAttached(ModAttachments.DECIMATE_READY_AT, now + Tuning.DECIMATE_COOLDOWN_TICKS);
+		int decimateCooldown = Tuning.DECIMATE_COOLDOWN_TICKS
+				- (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.RELENTLESS) > 0
+						? Tuning.RELENTLESS_REDUCTION_TICKS : 0);
+		target.setAttached(ModAttachments.DECIMATE_READY_AT, now + decimateCooldown);
 
 		ServerLevel level = (ServerLevel) player.level();
 		Vec3 look = player.getLookAngle();
@@ -154,7 +157,10 @@ public final class SlayerActives {
 			return;
 		}
 
-		target.setAttached(ModAttachments.BLADESTORM_READY_AT, now + Tuning.BLADESTORM_COOLDOWN_TICKS);
+		int stormCooldown = Tuning.BLADESTORM_COOLDOWN_TICKS
+				- (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.RELENTLESS) > 0
+						? Tuning.RELENTLESS_REDUCTION_TICKS : 0);
+		target.setAttached(ModAttachments.BLADESTORM_READY_AT, now + stormCooldown);
 		target.setAttached(ModAttachments.BLADESTORM_END, now + Tuning.BLADESTORM_CHANNEL_TICKS);
 
 		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),

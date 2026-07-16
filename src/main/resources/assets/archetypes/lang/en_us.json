@@ -101,5 +101,7 @@
 	"node.archetypes.slayer.decimate": "Decimate",
 	"node.archetypes.slayer.decimate.desc": "Capstone (ability key with a claymore): one massive tilted cleave — double damage to everything in front, shattering weak blocks in its path. 30s cooldown. Locks out Bladestorm.",
 	"node.archetypes.slayer.minor": "+1% damage",
-	"node.archetypes.slayer.minor.desc": "Placeholder."
+	"node.archetypes.slayer.minor.desc": "Placeholder.",
+	"node.archetypes.slayer.relentless": "Relentless",
+	"node.archetypes.slayer.relentless.desc": "Your capstone comes back 15 seconds sooner — Decimate in 15, Bladestorm in 30."
 }

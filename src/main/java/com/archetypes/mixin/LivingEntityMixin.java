@@ -88,16 +88,18 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * Lunge: sword swings hop the player a short step along the look vector —
-	 * including upward. Hooked on the swing itself so whiffs lunge too (it is
-	 * a gap-closer, not a hit reward). Suppressed during a bladestorm, whose
-	 * volleys also swing.
+	 * Lunge: sword swings while sprinting hop the player a short step along the
+	 * look vector — including upward. Sprint-gated by playtest: firing on every
+	 * swing was disruptive (mining with a sword, casual whacks). Whiffs still
+	 * lunge — it is a gap-closer, not a hit reward. Suppressed during a
+	 * bladestorm, whose volleys also swing.
 	 */
 	@Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Z)V", at = @At("HEAD"))
 	private void archetypes$lunge(final net.minecraft.world.InteractionHand hand,
 			final boolean broadcast, final CallbackInfo ci) {
 		if (!((Object) this instanceof ServerPlayer player)
 				|| hand != net.minecraft.world.InteractionHand.MAIN_HAND
+				|| !player.isSprinting()
 				|| !ModItems.isSword(player.getMainHandItem())) {
 			return;
 		}

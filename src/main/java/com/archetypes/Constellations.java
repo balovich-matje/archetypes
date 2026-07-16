@@ -44,7 +44,7 @@ public final class Constellations {
 	 */
 	public static final Constellation SLAYER_SWORD = Constellation.of(
 			"....#....",
-			"...#.#...",
+			"...###...",
 			"...#.#...",
 			"...#.#...",
 			"...#.#...",
@@ -53,10 +53,9 @@ public final class Constellations {
 			"...#.#...",
 			".#######.",
 			"....#....",
-			"....#....")
-			// The capstone cross: each pre-capstone connects to both capstones.
-			.withEdge(3, 8, 5, 9)
-			.withEdge(5, 8, 3, 9);
+			"....#....");
+			// No explicit cross needed: Bloodlust sits in the crossing itself,
+			// adjacent to both pre-capstones, both capstones, and the tip.
 
 	public static final Constellation CRUSHER_MACE = Constellation.of(
 			"#..#..#",
