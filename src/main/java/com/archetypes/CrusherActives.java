@@ -52,17 +52,80 @@ public final class CrusherActives {
 	 * and the ground telling everyone about it. */
 	public static void quakeSlam(final ServerPlayer player) {
 		ServerLevel level = (ServerLevel) player.level();
-		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
-				* Tuning.QUAKE_DAMAGE_MULTIPLIER);
+		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
 
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
+		// Density feeds the slam, Meteor doubles down — at Density V with
+		// full Meteor the slam one-shots a fresh zombie.
+		int density = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
+				level.registryAccess()
+						.lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
+						.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.DENSITY),
+				player.getMainHandItem());
+		int meteor = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.METEOR);
+		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
+				* Tuning.QUAKE_DAMAGE_MULTIPLIER)
+				+ density * Tuning.QUAKE_DENSITY_BONUS
+				+ meteor * Tuning.QUAKE_METEOR_BONUS;
+
+		var victims = level.getEntitiesOfClass(LivingEntity.class,
 				player.getBoundingBox().inflate(Tuning.QUAKE_RADIUS, 1.5, Tuning.QUAKE_RADIUS),
-				entity -> entity != player && entity.isAlive() && !entity.isSpectator())) {
+				entity -> entity != player && entity.isAlive() && !entity.isSpectator());
+
+		for (LivingEntity victim : victims) {
 			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
 
 			if (victim instanceof net.minecraft.world.entity.monster.Monster) {
 				victim.push(0.0, Tuning.QUAKE_LAUNCH, 0.0);
 				victim.hurtMarked = true;
+			}
+		}
+
+		// Earth Shatterer: a slam that met no flesh vents into the ground —
+		// most of the cooldown refunded, and the earth itself gives way,
+		// one mace durability per block.
+		int shatter = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.EARTH_SHATTER);
+
+		if (victims.isEmpty() && shatter > 0) {
+			var target = (AttachmentTarget) player;
+			long now = level.getGameTime();
+			long refund = Math.round(Tuning.QUAKE_COOLDOWN_TICKS
+					* Tuning.EARTH_SHATTER_REFUND_PER_RANK * shatter);
+			Long readyAt = target.getAttached(ModAttachments.QUAKE_READY_AT);
+
+			if (readyAt != null) {
+				target.setAttached(ModAttachments.QUAKE_READY_AT, Math.max(now, readyAt - refund));
+			}
+
+			int radius = shatter * Tuning.EARTH_SHATTER_RADIUS_PER_RANK;
+			var centre = player.blockPosition();
+			var mace = player.getMainHandItem();
+
+			outer:
+			for (int dy = -1; dy <= 0; dy++) {
+				for (int dx = -radius; dx <= radius; dx++) {
+					for (int dz = -radius; dz <= radius; dz++) {
+						if (dx * dx + dz * dz > radius * radius) {
+							continue;
+						}
+
+						var pos = centre.offset(dx, dy, dz);
+						var state = level.getBlockState(pos);
+						float hardness = state.getDestroySpeed(level, pos);
+
+						if (state.isAir() || hardness < 0
+								|| hardness > Tuning.EARTH_SHATTER_MAX_HARDNESS) {
+							continue;
+						}
+
+						level.destroyBlock(pos, true, player);
+						mace.hurtAndBreak(1, player,
+								net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+
+						if (mace.isEmpty()) {
+							break outer;
+						}
+					}
+				}
 			}
 		}
 

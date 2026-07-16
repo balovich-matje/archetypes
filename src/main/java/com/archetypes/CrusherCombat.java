@@ -43,13 +43,16 @@ public final class CrusherCombat {
 			// to everything within rank blocks of the one you actually hit.
 			int shockwave = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.SHOCKWAVE);
 
+			Long smashedAt = target.getAttached(ModAttachments.SMASH_AT);
+
 			if (shockwave > 0 && weapon == WeaponClass.MACE && !splashing
-					&& player.fallDistance > Tuning.SMASH_MIN_FALL) {
+					&& smashedAt != null && smashedAt == now) {
+				int radius = shockwave * Tuning.SHOCKWAVE_RADIUS_PER_RANK;
 				var level = (net.minecraft.server.level.ServerLevel) player.level();
 				splashing = true;
 				try {
 					for (var other : level.getEntitiesOfClass(net.minecraft.world.entity.LivingEntity.class,
-							entity.getBoundingBox().inflate(shockwave, 1.0, shockwave),
+							entity.getBoundingBox().inflate(radius, 1.0, radius),
 							o -> o != player && o != entity && o.isAlive() && !o.isSpectator())) {
 						other.hurtServer(level, player.damageSources().playerAttack(player), taken);
 					}
@@ -57,8 +60,8 @@ public final class CrusherCombat {
 					splashing = false;
 				}
 				level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
-						entity.getX(), entity.getY(0.3), entity.getZ(), 2, shockwave * 0.4, 0.1,
-						shockwave * 0.4, 0.0);
+						entity.getX(), entity.getY(0.3), entity.getZ(), 2, radius * 0.4, 0.1,
+						radius * 0.4, 0.0);
 				ProcIndicators.send(player, SubTree.CRUSHER, CrusherNodes.Family.SHOCKWAVE);
 			}
 

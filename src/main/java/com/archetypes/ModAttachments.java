@@ -111,6 +111,12 @@ public final class ModAttachments {
 	public static final AttachmentType<Long> TRANCE_HIT_AT =
 			AttachmentRegistry.<Long>create(Archetypes.id("trance_hit_at"));
 
+	/** The tick of the player's last true mace smash. Stamped during damage
+	 * shaping, where fall distance is still intact — the mace's own post-hit
+	 * hook resets it before AFTER_DAMAGE listeners ever run. */
+	public static final AttachmentType<Long> SMASH_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("smash_at"));
+
 	/** Lunge's little hop cooldown. Server-only decision, synced for symmetry. */
 	public static final AttachmentType<Long> LUNGE_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("lunge_ready_at"),

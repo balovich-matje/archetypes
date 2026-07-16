@@ -186,12 +186,25 @@ public final class Tuning {
 	public static final float SMASH_MIN_FALL = 1.5F;
 
 	/** Shockwave: a falling mace hit splashes its damage to everything within
-	 * rank blocks of the victim. */
+	 * 2 blocks per rank of the victim. */
+	public static final int SHOCKWAVE_RADIUS_PER_RANK = 2;
+
+	/** Earth Shatterer: a Quake that meets no flesh refunds a third of its
+	 * cooldown per rank and shatters the ground instead — anything up to
+	 * stone hardness, 2 blocks of radius per rank, one mace durability per
+	 * block broken. */
+	public static final float EARTH_SHATTER_REFUND_PER_RANK = 0.33F;
+	public static final int EARTH_SHATTER_RADIUS_PER_RANK = 2;
+	public static final float EARTH_SHATTER_MAX_HARDNESS = 1.5F;
 
 	/** Quake: charge for 1.5s (knockback-immune, mace rising), then slam —
 	 * multiplied attack damage in the radius, hostiles launched skyward. */
 	public static final int QUAKE_CHARGE_TICKS = 30;
 	public static final float QUAKE_DAMAGE_MULTIPLIER = 1.5F;
+	/** Density feeds the slam: bonus damage per enchant level, plus per
+	 * Meteor rank — Density V with full Meteor one-shots a fresh zombie. */
+	public static final float QUAKE_DENSITY_BONUS = 1.5F;
+	public static final float QUAKE_METEOR_BONUS = 2.0F;
 	public static final double QUAKE_RADIUS = 3.0;
 	public static final double QUAKE_LAUNCH = 0.95;
 	public static final int QUAKE_COOLDOWN_TICKS = 600;

@@ -201,11 +201,20 @@ public abstract class LivingEntityMixin {
 		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
 		float result = amount;
 
+		// A real smash: stamp the tick, because the mace's own post-hit hook
+		// resets fallDistance before AFTER_DAMAGE (Shockwave) gets to look.
+		boolean smashing = weapon == com.archetypes.WeaponClass.MACE
+				&& player.fallDistance > Tuning.SMASH_MIN_FALL;
+
+		if (smashing) {
+			((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+					.setAttached(ModAttachments.SMASH_AT, player.level().getGameTime());
+		}
+
 		// Meteor: Density by another name — smash bonus per fallen block.
 		int meteor = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.METEOR);
 
-		if (meteor > 0 && weapon == com.archetypes.WeaponClass.MACE
-				&& player.fallDistance > Tuning.SMASH_MIN_FALL) {
+		if (meteor > 0 && smashing) {
 			result += player.fallDistance * Tuning.METEOR_PER_BLOCK_PER_RANK * meteor;
 		}
 

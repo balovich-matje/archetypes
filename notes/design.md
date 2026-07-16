@@ -693,3 +693,16 @@ block per rank), Quake capstone (B with mace: 1.5s knockback-immune charge
 with a rising-mace PAL pose, then a slam — 1.5x attack damage in 3 blocks,
 monsters launched skyward, MACE_SMASH_GROUND_HEAVY + muffled explosion for
 the rock-crushing feel). Two flange slots stay open for the utility perk.
+
+**Crusher mace flange, round 2 (2026-07-16).** Shockwave bug root-caused: the
+mace's post-hit hook resets fallDistance before AFTER_DAMAGE listeners run,
+so the splash's "was falling" gate never passed (the knockback the playtest
+saw was vanilla's own smash wind). Fixed with a SMASH_AT tick stamp written
+during damage shaping, where fallDistance is still intact. Shockwave is now
+2 ranks at 2/4 blocks. Flange reordered per spec: Meteor 1-2 at the base,
+Shockwave 1-2 above, Earth Shatterer 1-3 up the outer edge, Quake at the
+peak. Earth Shatterer: a Quake meeting no creature refunds 33%/rank of the
+cooldown and shatters blocks up to stone hardness in 2/4/6 radius (two
+layers: feet and below), one mace durability per block. Quake now scales
+with Density (+1.5/level) and Meteor (+2/rank): mace AD 9 x1.5 + 7.5 + 4 ≈
+25 — one-shots fresh zombies/skeletons at full investment.
