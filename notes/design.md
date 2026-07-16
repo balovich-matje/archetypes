@@ -563,6 +563,31 @@ mainhand — shield bashes, claymore Decimates, sword Bladestorms. No new binds.
 - Claymore texture v2: full 16px-diagonal blade + display-transform scale
   (1.35 third-person), so it reads player-length in hand.
 
+## Animation library research (checked 2026-07-16)
+
+The question: 2H claymore grip, dual-wield for the rogue, and real swing
+animations for Decimate/Bladestorm. Checked against Modrinth's live version
+data, not memory — 26.2 is three weeks old and support lags:
+
+| Mod | 26.2? | Verdict |
+| --- | --- | --- |
+| **Player Animation Library** (`player-animation-library`) | **yes** | The one. MIT, Fabric+NeoForge, actively maintained, loads Blockbench/GeckoLib JSON animations with molang and particle keyframes. Proof it works: Emotecraft ships on it for 26.2. The playerAnimator lineage's current form. |
+| playerAnimator (`playeranimator`) | no (caps at 1.21.7) | Superseded by the above for 26.x. |
+| Better Combat | **no** (caps at 1.21.11, updated 2 days ago) | Actively maintained but not yet through the 26.x port. Its data-driven weapon attributes (two_handed, dual_wield, per-weapon animations) are exactly what we want — when it ports. |
+| GeckoLib | yes | Wrong tool: entities/blocks/items, not player combat poses. |
+
+**Plan:**
+- Branch `player-animation-experiment`: Player Animation Library as the first
+  external dependency. Test cases: a real Decimate swing (the tilted cleave as
+  an actual body animation), a Bladestorm spin pose, and a 2H claymore idle.
+  Judge the feel against the dependency cost, then decide.
+- Better Combat compat can ship **today as pure data**: weapon-attribute JSONs
+  under `data/bettercombat/` are inert without BC installed — zero dependency,
+  and the claymore becomes properly two-handed for anyone who adds BC once it
+  ports to 26.x.
+- Rogue dual-wield: revisit when we get there; BC's port status decides
+  whether we ride theirs or build our own.
+
 ## Open questions
 - **Passive or active?** Specialities is entirely passive and that's been its
   character. Classes may want active buttons — but "all passives" is a genuinely
