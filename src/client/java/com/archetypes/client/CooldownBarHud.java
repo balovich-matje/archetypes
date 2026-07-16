@@ -39,17 +39,19 @@ public final class CooldownBarHud {
 
 	private record Ability(Identifier sprite, int texSize, ItemStack item, Identifier overlay,
 			int overlaySize, net.minecraft.client.KeyMapping key,
-			AttachmentType<Long> readyAt, int totalTicks, float manaCost) {
+			AttachmentType<Long> readyAt, int totalTicks, float manaCost, boolean spendsAll) {
 		/** Cooldown-driven active: no mana involved. */
 		private Ability(final Identifier sprite, final int texSize, final ItemStack item,
 				final Identifier overlay, final int overlaySize, final net.minecraft.client.KeyMapping key,
 				final AttachmentType<Long> readyAt, final int totalTicks) {
-			this(sprite, texSize, item, overlay, overlaySize, key, readyAt, totalTicks, 0.0F);
+			this(sprite, texSize, item, overlay, overlaySize, key, readyAt, totalTicks, 0.0F, false);
 		}
 
-		/** Mana-driven spell: no cooldown clock, greyed while unaffordable. */
-		private Ability(final ItemStack item, final net.minecraft.client.KeyMapping key, final float manaCost) {
-			this(null, 0, item, null, 0, key, null, 0, manaCost);
+		/** Mana-driven spell: no cooldown clock, greyed while unaffordable.
+		 * An all-mana spell (Meteorite) prices itself at the whole pool. */
+		private Ability(final ItemStack item, final net.minecraft.client.KeyMapping key,
+				final float manaCost, final boolean spendsAll) {
+			this(null, 0, item, null, 0, key, null, 0, manaCost, spendsAll);
 		}
 	}
 
@@ -109,11 +111,17 @@ public final class CooldownBarHud {
 			// Spells: the price tag sits top-left, and an unaffordable spell
 			// dims exactly like one on cooldown — the bar reads one language.
 			if (ability.manaCost() > 0.0F) {
-				if (com.archetypes.Mana.current(player) < ability.manaCost()) {
+				float current = com.archetypes.Mana.current(player);
+
+				if (current < ability.manaCost()) {
 					graphics.fill(iconX, iconY, iconX + ICON, iconY + ICON, 0xB3000000);
 				}
 
-				graphics.text(client.font, Integer.toString(Math.round(ability.manaCost())),
+				// An all-mana spell shows what it would drink right now; the
+				// threshold only decides when it greys out.
+				int shown = ability.spendsAll() && current >= ability.manaCost()
+						? (int) current : Math.round(ability.manaCost());
+				graphics.text(client.font, Integer.toString(shown),
 						x + 2, y + 2, 0xFF7FB2FF, true);
 			}
 
@@ -240,7 +248,8 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(
 					new ItemStack(meteor ? Items.MAGMA_BLOCK : flame ? Items.BLAZE_ROD : Items.FIRE_CHARGE),
 					ArchetypesClient.ABILITY_KEYS[0],
-					meteor ? Tuning.METEOR_MIN_MANA : flame ? Tuning.FLAME_START_COST : Tuning.FIREBALL_COST));
+					meteor ? Tuning.METEOR_MIN_MANA : flame ? Tuning.FLAME_START_COST : Tuning.FIREBALL_COST,
+					meteor));
 		}
 
 		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
@@ -248,7 +257,7 @@ public final class CooldownBarHud {
 		if (com.archetypes.PlaceholderNodes.owns(SubTree.WIZARD, wizard,
 				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
 			abilities.add(new Ability(new ItemStack(Items.AMETHYST_SHARD),
-					ArchetypesClient.ABILITY_KEYS[1], Tuning.MISSILE_COST));
+					ArchetypesClient.ABILITY_KEYS[1], Tuning.MISSILE_COST, false));
 		}
 
 		var priest = NodePurchases.owned(player, SubTree.PRIEST);
@@ -256,7 +265,7 @@ public final class CooldownBarHud {
 		if (com.archetypes.PlaceholderNodes.owns(SubTree.PRIEST, priest,
 				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
 			abilities.add(new Ability(new ItemStack(Items.GLOWSTONE_DUST),
-					ArchetypesClient.ABILITY_KEYS[2], Tuning.HOLY_COST));
+					ArchetypesClient.ABILITY_KEYS[2], Tuning.HOLY_COST, false));
 		}
 
 		return abilities;

@@ -1,9 +1,8 @@
-"""Generate the mana bar's 9x9 bottle sprites (full + empty).
+"""Generate the mana bar's 9x9 orb sprites (full + empty).
 
-Hand-plotted at hunger-icon scale rather than shrunk from the 16px item
-textures — a 16-to-9 resample turns pixel art to mush. Palette sampled from
-vanilla's glass bottle and water so the pair reads as "water bottle" at a
-glance.
+Blue orbs with the near-black outline vanilla's hearts and armor wear, so
+the row reads as native HUD. Drawn by radius test at hunger-icon scale —
+the first iteration's bottles are gone.
 
 Usage: python3 make_hud_icons.py
 """
@@ -15,51 +14,44 @@ DST = os.path.normpath(os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     "../../src/main/resources/assets/archetypes/textures/gui"))
 
-GLASS = (200, 220, 228, 255)
-GLASS_DIM = (140, 160, 172, 255)
-CORK = (146, 108, 62, 255)
-WATER = (47, 108, 219, 255)
-WATER_LIGHT = (86, 142, 234, 255)
+OUTLINE = (22, 22, 28, 255)
+BLUE = (45, 110, 230, 255)
+BLUE_DARK = (24, 62, 160, 255)
+BLUE_LIGHT = (140, 190, 255, 255)
+EMPTY = (44, 44, 54, 255)
+EMPTY_LIGHT = (66, 66, 80, 255)
 
 
-def bottle(filled):
+def orb(filled):
     im = Image.new("RGBA", (9, 9), (0, 0, 0, 0))
     px = im.load()
+    center = 4.0
 
-    def put(x, y, c):
-        px[x, y] = c
+    for y in range(9):
+        for x in range(9):
+            d = ((x - center) ** 2 + (y - center) ** 2) ** 0.5
 
-    # Cork and neck.
-    put(4, 0, CORK)
-    put(3, 1, GLASS_DIM)
-    put(4, 1, GLASS)
-    put(5, 1, GLASS_DIM)
+            if d > 4.4:
+                continue
 
-    # Body outline.
-    for y in range(2, 8):
-        put(2, y, GLASS_DIM)
-        put(6, y, GLASS_DIM)
-    for x in range(3, 6):
-        put(x, 8, GLASS_DIM)
-    put(2, 8, GLASS_DIM)
-    put(6, 8, GLASS_DIM)
-
-    # Contents.
-    for y in range(3, 8):
-        for x in range(3, 6):
-            if filled:
-                put(x, y, WATER_LIGHT if y == 3 else WATER)
-            elif y == 3:
-                put(x, y, (255, 255, 255, 40))
-
-    # A glass glint on the shoulder.
-    put(3, 2, GLASS)
+            if d > 3.3:
+                px[x, y] = OUTLINE
+            elif filled:
+                # Lit from the upper left, like the heart's glint.
+                if x + y <= 4:
+                    px[x, y] = BLUE_LIGHT
+                elif x + y >= 11:
+                    px[x, y] = BLUE_DARK
+                else:
+                    px[x, y] = BLUE
+            else:
+                px[x, y] = EMPTY_LIGHT if x + y <= 4 else EMPTY
 
     return im
 
 
 if __name__ == "__main__":
     os.makedirs(DST, exist_ok=True)
-    bottle(True).save(os.path.join(DST, "mana_bottle_full.png"))
-    bottle(False).save(os.path.join(DST, "mana_bottle_empty.png"))
-    print("mana_bottle_full.png\nmana_bottle_empty.png")
+    orb(True).save(os.path.join(DST, "mana_orb_full.png"))
+    orb(False).save(os.path.join(DST, "mana_orb_empty.png"))
+    print("mana_orb_full.png\nmana_orb_empty.png")

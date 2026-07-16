@@ -14,16 +14,17 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * The Seeker's mana as ten little bottles above the hunger bar. The count is
- * a percentage gauge, not a unit one: 47/100 mana is 4 full bottles (floor),
- * however big the pool has grown. First-iteration art — the user may replace
- * the bottles later.
+ * The Seeker's mana as ten blue orbs above the hunger bar, outlined like the
+ * hearts beside them. The count is a percentage gauge, not a unit one:
+ * 47/100 mana is 4 full orbs (floor), however big the pool has grown — the
+ * exact number sits over the middle of the row, the way the XP bar wears
+ * its level.
  */
 public final class ManaHud {
-	private static final Identifier FULL = Archetypes.id("textures/gui/mana_bottle_full.png");
-	private static final Identifier EMPTY = Archetypes.id("textures/gui/mana_bottle_empty.png");
+	private static final Identifier FULL = Archetypes.id("textures/gui/mana_orb_full.png");
+	private static final Identifier EMPTY = Archetypes.id("textures/gui/mana_orb_empty.png");
 
-	private static final int BOTTLES = 10;
+	private static final int ORBS = 10;
 	private static final int SPRITE = 9;
 	private static final int STEP = 8;
 	/** The hunger row's height above the screen bottom, plus one row. */
@@ -46,21 +47,35 @@ public final class ManaHud {
 			return;
 		}
 
+		float current = Mana.current(player);
 		float max = Mana.max(player);
-		int full = max <= 0.0F ? 0 : (int) (Mana.current(player) / max * BOTTLES);
+		int full = max <= 0.0F ? 0 : (int) (current / max * ORBS);
 
 		int width = client.getWindow().getGuiScaledWidth();
 		int height = client.getWindow().getGuiScaledHeight();
 		int right = width / 2 + 91;
 		int y = height - BOTTOM - (SPECIALITIES_LOADED ? SPECIALITIES_SHIFT : 0);
 
-		// Right-to-left like the hunger bar beneath: the first full bottle is
+		// Right-to-left like the hunger bar beneath: the first full orb is
 		// the outermost right one.
-		for (int i = 0; i < BOTTLES; i++) {
+		for (int i = 0; i < ORBS; i++) {
 			Identifier sprite = i < full ? FULL : EMPTY;
 			int x = right - SPRITE - i * STEP;
 			graphics.blit(RenderPipelines.GUI_TEXTURED, sprite, x, y,
 					0.0F, 0.0F, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE);
 		}
+
+		// The exact count over the row's middle, outlined the way the XP bar
+		// draws its level so it survives any backdrop.
+		String label = Integer.toString((int) current);
+		int rowWidth = SPRITE + (ORBS - 1) * STEP;
+		int textX = right - rowWidth + (rowWidth - client.font.width(label)) / 2;
+		int textY = y - 1;
+
+		graphics.text(client.font, label, textX + 1, textY, 0xFF000000, false);
+		graphics.text(client.font, label, textX - 1, textY, 0xFF000000, false);
+		graphics.text(client.font, label, textX, textY + 1, 0xFF000000, false);
+		graphics.text(client.font, label, textX, textY - 1, 0xFF000000, false);
+		graphics.text(client.font, label, textX, textY, 0xFF7FB2FF, false);
 	}
 }

@@ -80,22 +80,24 @@ public final class Constellations {
 			"....#....");
 
 	/**
-	 * A drawn bow pierced by its own arrow: two symmetric limbs meeting at
-	 * the grip (bottom, the root) and the crown (top, Focus — fed by either
-	 * capstone below it), with the arrow as a full horizontal row through the
-	 * middle — head poking past the left limb, fletching past the right —
-	 * bridging the two branches so both builds reach the shared shaft. Left
-	 * limb is the bow's, right limb the crossbow's.
+	 * A bow at rest, tall as it should be: the string a straight column down
+	 * the right (the crossbow branch), the stave arcing out left (the bow
+	 * branch), tips shared top and bottom — Focus at the top tip, fed by
+	 * either capstone; True Shot the root at the bottom — and the nocked
+	 * arrow as a horizontal row at the bulge, head poking out past the
+	 * stave, bridging the branches through the shared Conservation shaft.
 	 */
 	public static final Constellation MARKSMAN_BOW = Constellation.of(
-			".....#.....",
-			"....#.#....",
-			"...#...#...",
-			"..#.....#..",
-			"###########",
-			"...#...#...",
-			"....#.#....",
-			".....#.....");
+			".......#",
+			"......##",
+			".....#.#",
+			"....#..#",
+			".#######",
+			"...#...#",
+			"....#..#",
+			".....#.#",
+			"......##",
+			".......#");
 
 	/**
 	 * A single dagger, point up: a broad blade tapering to the tip, a guard a

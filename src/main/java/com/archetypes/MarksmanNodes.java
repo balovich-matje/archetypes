@@ -12,12 +12,12 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What each node of the Marksman constellation is. The constellation IS a
- * drawn bow with an arrow through it: True Shot at the grip (bottom), the
- * left limb the bow's (Disengage, Nimble Draw) up to Seeker Arrow, the right
- * limb the crossbow's (Night Vision, Rapid Reload) up to Snap Shot, the
- * arrow crossing the middle as the shared row — Combustion at the head,
- * Pinning barbs, the Conservation shaft between the limbs, Swift Flight in
- * the fletching — and Focus at the crown, fed by either capstone.
+ * resting bow with a nocked arrow: True Shot at the bottom tip, the string
+ * (right, straight) carrying the crossbow branch — Night's Gift, Pinning,
+ * Rapid Reload — up to Snap Shot, the stave (left, arcing) carrying the bow
+ * branch — Disengage, Nimble Draw, Swift Flight — up to Seeker Arrow, the
+ * arrow through the bulge with Combustion at its head and the shared
+ * Conservation shaft, and Focus at the top tip, fed by either capstone.
  */
 public final class MarksmanNodes {
 	public enum Family {
@@ -74,41 +74,41 @@ public final class MarksmanNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// The grip: where both limbs meet.
-		byCell.put(cell(5, 0), new Def(Family.TRUE_SHOT, 1));
+		// The bottom tip, where stave meets string.
+		byCell.put(cell(7, 0), new Def(Family.TRUE_SHOT, 1));
 
-		// Left limb, bottom-up: the bow's — footwork first, then the draw.
-		byCell.put(cell(4, 1), new Def(Family.DISENGAGE, 1));
-		byCell.put(cell(3, 2), new Def(Family.DISENGAGE, 2));
-		byCell.put(cell(2, 3), new Def(Family.NIMBLE_DRAW, 1));
-		byCell.put(cell(2, 4), new Def(Family.NIMBLE_DRAW, 2));
-		byCell.put(cell(3, 5), new Def(Family.NIMBLE_DRAW, 3));
-
-		// Right limb, bottom-up: the crossbow's — Night Vision at the base
-		// (it serves both weapons; the arrow row bridges builds across).
-		byCell.put(cell(6, 1), new Def(Family.NIGHT_VISION, 1));
-		byCell.put(cell(7, 2), new Def(Family.RAPID_RELOAD, 1));
-		byCell.put(cell(8, 3), new Def(Family.RAPID_RELOAD, 2));
-		byCell.put(cell(8, 4), new Def(Family.RAPID_RELOAD, 3));
-		byCell.put(cell(7, 5), new Def(Family.RAPID_RELOAD, 4));
-
-		// The arrow, left to right: burning head, a barb either end of the
-		// shared Conservation shaft, feathers for Swift Flight.
-		byCell.put(cell(0, 3), new Def(Family.COMBUSTION, 1));
-		byCell.put(cell(1, 3), new Def(Family.PINNING, 1));
-		byCell.put(cell(3, 3), new Def(Family.CONSERVATION, 1));
-		byCell.put(cell(4, 3), new Def(Family.CONSERVATION, 2));
-		byCell.put(cell(5, 3), new Def(Family.CONSERVATION, 3));
-		byCell.put(cell(6, 3), new Def(Family.CONSERVATION, 4));
+		// The string, bottom-up (the crossbow branch): Night's Gift at the
+		// nock, the Pinning barbs, then the Rapid Reload climb to Snap Shot.
+		byCell.put(cell(7, 1), new Def(Family.NIGHT_VISION, 1));
+		byCell.put(cell(7, 2), new Def(Family.PINNING, 1));
 		byCell.put(cell(7, 3), new Def(Family.PINNING, 2));
-		byCell.put(cell(9, 3), new Def(Family.SWIFT_FLIGHT, 1));
-		byCell.put(cell(10, 3), new Def(Family.SWIFT_FLIGHT, 2));
+		byCell.put(cell(7, 4), new Def(Family.RAPID_RELOAD, 1));
+		byCell.put(cell(7, 5), new Def(Family.RAPID_RELOAD, 2));
+		byCell.put(cell(7, 6), new Def(Family.RAPID_RELOAD, 3));
+		byCell.put(cell(7, 7), new Def(Family.RAPID_RELOAD, 4));
+		byCell.put(cell(7, 8), new Def(Family.SNAP_SHOT, 1));
 
-		// The crown: capstones atop their limbs, Focus at the very top,
-		// adjacent to both — either choice unlocks it.
-		byCell.put(cell(4, 6), new Def(Family.SEEKER_ARROW, 1));
-		byCell.put(cell(6, 6), new Def(Family.SNAP_SHOT, 1));
-		byCell.put(cell(5, 7), new Def(Family.FOCUS, 1));
+		// The stave, bottom-up (the bow branch): footwork, the draw at the
+		// grip, Swift Flight up the springy upper limb to Seeker Arrow.
+		byCell.put(cell(6, 1), new Def(Family.DISENGAGE, 1));
+		byCell.put(cell(5, 2), new Def(Family.DISENGAGE, 2));
+		byCell.put(cell(4, 3), new Def(Family.NIMBLE_DRAW, 1));
+		byCell.put(cell(3, 4), new Def(Family.NIMBLE_DRAW, 2));
+		byCell.put(cell(3, 5), new Def(Family.NIMBLE_DRAW, 3));
+		byCell.put(cell(4, 6), new Def(Family.SWIFT_FLIGHT, 1));
+		byCell.put(cell(5, 7), new Def(Family.SWIFT_FLIGHT, 2));
+		byCell.put(cell(6, 8), new Def(Family.SEEKER_ARROW, 1));
+
+		// The arrow at the bulge: burning head out past the stave, the
+		// shared Conservation shaft running through to the string.
+		byCell.put(cell(1, 5), new Def(Family.COMBUSTION, 1));
+		byCell.put(cell(2, 5), new Def(Family.CONSERVATION, 1));
+		byCell.put(cell(4, 5), new Def(Family.CONSERVATION, 2));
+		byCell.put(cell(5, 5), new Def(Family.CONSERVATION, 3));
+		byCell.put(cell(6, 5), new Def(Family.CONSERVATION, 4));
+
+		// The top tip: Focus, adjacent to both capstones below it.
+		byCell.put(cell(7, 9), new Def(Family.FOCUS, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.MARKSMAN_BOW.nodes();

@@ -943,3 +943,22 @@ language). Icon follows the build: fireball → magma block (Meteorite) or
 blaze rod (Flamethrower). Note: 8s Night Vision sits inside vanilla's
 sub-10s warning flicker the whole time; if it annoys, bump
 NIGHT_VISION_TICKS past 200.
+
+**Marksman constellation round 3 + mana HUD polish (2026-07-17).** The
+pierced-diamond read badly in game; the bow is now at rest and tall (10x8):
+string a straight column down the right (crossbow branch, bottom-up:
+Night's Gift, Pinning x2, Rapid Reload x4, Snap Shot), stave arcing left
+(bow branch: Disengage x2, Nimble Draw x3, Swift Flight x2, Seeker Arrow),
+tips shared — True Shot bottom, Focus top, still adjacent to both
+capstones — and the nocked arrow as a short horizontal row at the bulge:
+Combustion head poking past the stave, Conservation x4 shaft bridging to
+the string. No rank changes were needed; Pinning and Swift Flight just
+moved onto the limbs (they stay both-weapon mechanically; the arrow row
+bridges builds across).
+
+Mana HUD: bottles are now blue orbs with the hearts' near-black outline
+(radius-test drawn, glint upper-left; empties are dark sockets), and the
+exact current mana sits over the row's middle, black-outlined like the XP
+bar's level number. The Meteorite tile prices itself honestly: it shows
+the mana it would actually drink right now (the whole pool), greying out
+below the 100 minimum; fixed tiles keep their static costs.
