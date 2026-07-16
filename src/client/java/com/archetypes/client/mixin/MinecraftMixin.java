@@ -28,17 +28,30 @@ public abstract class MinecraftMixin {
 	@Shadow
 	public @Nullable LocalPlayer player;
 
-	@Inject(method = "startAttack", at = @At("HEAD"))
+	@Inject(method = "startAttack", at = @At("HEAD"), cancellable = true)
 	private void archetypes$combatSwing(final CallbackInfoReturnable<Boolean> cir) {
 		if (this.player == null
 				|| (this.hitResult != null && this.hitResult.getType() == HitResult.Type.BLOCK)) {
 			return;
 		}
 
-		// Only charged swings pose; a spam-click stays a vanilla flick, the
-		// same way the damage system already discounts it.
-		if (this.player.getAttackStrengthScale(0.0F) < 0.9F
-				|| WeaponClass.of(this.player) == WeaponClass.NONE) {
+		if (WeaponClass.of(this.player) == WeaponClass.NONE) {
+			return;
+		}
+
+		// No flailing mid-bladestorm: the storm owns the blade.
+		Long stormEnd = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) this.player)
+				.getAttached(com.archetypes.ModAttachments.BLADESTORM_END);
+
+		if (stormEnd != null && stormEnd > this.player.level().getGameTime()) {
+			cir.setReturnValue(false);
+			return;
+		}
+
+		// A recharging weapon doesn't swing at all — no half-charged flicks.
+		// Mining is untouched: block targets returned before this.
+		if (this.player.getAttackStrengthScale(0.0F) < 1.0F) {
+			cir.setReturnValue(false);
 			return;
 		}
 

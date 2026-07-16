@@ -61,6 +61,19 @@ public class Archetypes implements ModInitializer {
 		ServerPlayNetworking.registerGlobalReceiver(RushPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> ShieldRush.execute(context.player())));
 
+		// The greatsword is strictly two-handed: while it's in the main hand
+		// the offhand is dead weight — no shields, no food, no blocks from it.
+		net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, level, hand) ->
+				hand == net.minecraft.world.InteractionHand.OFF_HAND
+						&& ModItems.isGreatsword(player.getMainHandItem())
+						? net.minecraft.world.InteractionResult.FAIL
+						: net.minecraft.world.InteractionResult.PASS);
+		net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, level, hand, hit) ->
+				hand == net.minecraft.world.InteractionHand.OFF_HAND
+						&& ModItems.isGreatsword(player.getMainHandItem())
+						? net.minecraft.world.InteractionResult.FAIL
+						: net.minecraft.world.InteractionResult.PASS);
+
 		// A combat swing began client-side; bump the synced counter that every
 		// client turns into the matching pose. The class is derived here, not
 		// trusted from the wire.

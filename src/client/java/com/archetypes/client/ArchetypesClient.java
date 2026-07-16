@@ -78,12 +78,13 @@ public class ArchetypesClient implements ClientModInitializer {
 			}
 
 			// Hold-to-attack, Better Combat style: while the attack key is
-			// held on a target and the swing is fully charged, swing — no
-			// click rhythm needed. Blocks keep vanilla hold-to-mine.
+			// held and the swing is fully charged, swing — target or empty
+			// air alike, no click rhythm needed. Blocks keep vanilla
+			// hold-to-mine untouched.
 			if (client.player != null && client.gui.screen() == null
 					&& client.options.keyAttack.isDown()
-					&& client.hitResult != null
-					&& client.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.ENTITY
+					&& (client.hitResult == null
+							|| client.hitResult.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK)
 					&& client.player.getAttackStrengthScale(0.0F) >= 1.0F
 					&& com.archetypes.WeaponClass.of(client.player) != com.archetypes.WeaponClass.NONE) {
 				((com.archetypes.client.mixin.MinecraftInvoker) (Object) client).archetypes$startAttack();

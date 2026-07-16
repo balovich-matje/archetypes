@@ -27,7 +27,7 @@ public final class ProtectorNodes {
 		BASH(() -> Items.SHIELD, Archetypes.id("textures/node/bash_overlay.png"), 32),
 		SLAM(() -> Items.SHIELD, Archetypes.id("textures/node/shield_slam_overlay.png"), 32, true),
 		COOLDOWN(() -> Items.CLOCK),
-		KNOCKBACK(() -> Items.SHIELD, Archetypes.id("textures/node/concussive_overlay.png"), 32),
+		KNOCKBACK(() -> Items.PISTON),
 		WIDE(() -> Items.SHIELD, Archetypes.id("textures/node/wide_swings_overlay.png"), 32),
 		UNBREAKING(() -> Items.LEATHER),
 		SPIKES(() -> Items.SHIELD, Archetypes.id("textures/node/iron_spikes_overlay.png"), 32),

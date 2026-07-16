@@ -30,6 +30,10 @@ import net.minecraft.world.entity.Avatar;
  */
 public final class MeleeAnimations {
 	private static final Identifier LAYER_ID = Archetypes.id("melee_swing");
+	/** The 2H stance layer: under everything else, so any swing or capstone
+	 * pose simply plays over the grip and hands it back afterwards. */
+	private static final Identifier GRIP_LAYER_ID = Archetypes.id("greatsword_grip");
+	private static final Identifier GRIP_ANIM = Archetypes.id("gs_grip");
 
 	/** Animation names per weapon class, in cycle order. */
 	private static final Map<WeaponClass, Identifier[]> POSES = Map.of(
@@ -57,6 +61,11 @@ public final class MeleeAnimations {
 			return controller;
 		});
 
+		// The grip keeps vanilla first person: a permanent hand swap while
+		// just walking around would be jarring; third person tells the story.
+		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(GRIP_LAYER_ID, 500,
+				avatar -> new PlayerAnimationController(avatar, (ctrl, data, setter) -> PlayState.STOP));
+
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.level == null) {
 				LAST_SEEN.clear();
@@ -65,8 +74,26 @@ public final class MeleeAnimations {
 
 			for (AbstractClientPlayer player : client.level.players()) {
 				drive(player);
+				driveGrip(player);
 			}
 		});
+	}
+
+	/** Both hands on the greatsword whenever it's held and nothing louder plays. */
+	private static void driveGrip(final AbstractClientPlayer player) {
+		if (!(((Avatar) player) instanceof IAnimatedAvatar animated)
+				|| !(animated.playerAnimLib$getAnimation(GRIP_LAYER_ID)
+						instanceof PlayerAnimationController controller)) {
+			return;
+		}
+
+		boolean holding = WeaponClass.of(player) == WeaponClass.GREATSWORD;
+
+		if (holding && !controller.isActive()) {
+			controller.triggerAnimation(GRIP_ANIM);
+		} else if (!holding && controller.isActive()) {
+			controller.stop();
+		}
 	}
 
 	private static void drive(final AbstractClientPlayer player) {

@@ -231,17 +231,9 @@ def shield_slam_overlay():
 def iron_spikes_overlay():
     """Pointed dripstone grown straight out of the shield's face."""
     im = canvas(32)
-    spike = vanilla("item/pointed_dripstone.png").rotate(90, resample=Image.NEAREST)
-    im.alpha_composite(spike, (0, 8))
+    spike = vanilla("item/pointed_dripstone.png").rotate(-90, resample=Image.NEAREST)
+    im.alpha_composite(spike, (10, 8))
     save(im, "iron_spikes_overlay")
-
-
-def concussive_overlay():
-    """A piston driving away from the shield — the knockback trade."""
-    im = canvas(32)
-    piston = vanilla("block/piston_side.png").rotate(90, resample=Image.NEAREST)
-    im.alpha_composite(piston, (0, 8))
-    save(im, "concussive_overlay")
 
 
 def wide_swings_overlay():
@@ -315,7 +307,6 @@ def main():
     bash_overlay()
     shield_slam_overlay()
     iron_spikes_overlay()
-    concussive_overlay()
     wide_swings_overlay()
     braced_overlay()
     reflection_overlay()
