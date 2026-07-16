@@ -229,26 +229,49 @@ def shield_slam_overlay():
 
 
 def iron_spikes():
-    """Caltrops, hand-drawn: three four-pointed jacks of iron scattered on
-    the ground — step anywhere near this shield and regret it."""
+    """One big caltrop, item-sprite style: dark outline first, iron body
+    over it, bright tips — readable on any background."""
     im = canvas(32)
+    OUTLINE = (34, 34, 38, 255)
 
-    def caltrop(cx, cy, s):
-        # Two splayed legs, one spike straight up with a bright tip, one
-        # foreshortened toward the viewer.
-        for i in range(s):
-            im.putpixel((cx - 1 - i, cy + 1 + i), IRON_DARK)
-            im.putpixel((cx + 1 + i, cy + 1 + i), IRON)
-        for i in range(s + 1):
-            im.putpixel((cx, cy - 1 - i), IRON)
-        im.putpixel((cx, cy - s - 2), IRON_LIGHT)
-        im.putpixel((cx, cy), IRON)
-        im.putpixel((cx, cy + 1), IRON_LIGHT)
-        im.putpixel((cx, cy + 2), IRON_DARK)
+    def limb(x0, y0, x1, y1, width=2):
+        steps = max(abs(x1 - x0), abs(y1 - y0))
+        for i in range(steps + 1):
+            x = round(x0 + (x1 - x0) * i / steps)
+            y = round(y0 + (y1 - y0) * i / steps)
+            for dx in range(-width, width + 1):
+                for dy in range(-width, width + 1):
+                    if abs(dx) + abs(dy) <= width and 0 <= x + dx < 32 and 0 <= y + dy < 32:
+                        im.putpixel((x + dx, y + dy), OUTLINE)
 
-    caltrop(8, 8, 3)
-    caltrop(22, 13, 4)
-    caltrop(12, 23, 3)
+    # Outline pass: thick dark limbs.
+    limb(16, 17, 16, 4)      # up spike
+    limb(16, 17, 6, 27)      # left leg
+    limb(16, 17, 26, 27)     # right leg
+    limb(16, 17, 16, 24)     # front leg, foreshortened
+
+    # Body pass: iron over the outline, one pixel slimmer.
+    def core(x0, y0, x1, y1, colour):
+        steps = max(abs(x1 - x0), abs(y1 - y0))
+        for i in range(steps + 1):
+            x = round(x0 + (x1 - x0) * i / steps)
+            y = round(y0 + (y1 - y0) * i / steps)
+            im.putpixel((x, y), colour)
+            if x + 1 < 32:
+                im.putpixel((x + 1, y), colour)
+
+    core(16, 17, 16, 5, IRON)
+    core(16, 17, 7, 26, IRON_DARK)
+    core(16, 17, 25, 26, IRON)
+    core(16, 17, 16, 23, IRON_DARK)
+
+    # Tips and the joint highlight.
+    im.putpixel((16, 4), IRON_LIGHT)
+    im.putpixel((17, 5), IRON_LIGHT)
+    im.putpixel((6, 27), IRON_LIGHT)
+    im.putpixel((26, 27), IRON_LIGHT)
+    im.putpixel((16, 16), IRON_LIGHT)
+    im.putpixel((17, 16), IRON_LIGHT)
     save(im, "iron_spikes")
 
 

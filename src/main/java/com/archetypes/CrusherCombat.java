@@ -45,6 +45,15 @@ public final class CrusherCombat {
 
 			Long smashedAt = target.getAttached(ModAttachments.SMASH_AT);
 
+			// XXX debug, remove once Shockwave is confirmed: one line per mace
+			// hit with every gate value.
+			if (weapon == WeaponClass.MACE) {
+				Archetypes.LOGGER.info(
+						"[shockwave debug] rank={} smashedAt={} now={} fresh={} splashing={} fallDistance={}",
+						shockwave, smashedAt, now,
+						smashedAt != null && now - smashedAt <= 3, splashing, player.fallDistance);
+			}
+
 			if (shockwave > 0 && weapon == WeaponClass.MACE && !splashing
 					&& smashedAt != null && now - smashedAt <= 3) {
 				int radius = shockwave * Tuning.SHOCKWAVE_RADIUS_PER_RANK;
@@ -59,6 +68,7 @@ public final class CrusherCombat {
 				} finally {
 					splashing = false;
 				}
+				Archetypes.LOGGER.info("[shockwave debug] splash fired, radius={}", radius);
 				level.sendParticles(net.minecraft.core.particles.ParticleTypes.SWEEP_ATTACK,
 						entity.getX(), entity.getY(0.3), entity.getZ(), 2, radius * 0.4, 0.1,
 						radius * 0.4, 0.0);
