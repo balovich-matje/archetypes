@@ -89,45 +89,47 @@ public final class SlayerNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// The hilt: both weapon-agnostic chains side by side and touching on
-		// the tree's centre axis, both roots, so points weave between them
-		// freely. Full path economics: hilt 6 + guard-side 3 + edge 3 +
-		// capstone + Bloodlust + Relentless = 15 exactly, either weapon.
+		// The grip: Hamstring, the root — crowd control both weapons share.
+		// Full path economics: grip 2 + blood 3 + branch 7 + capstone +
+		// Bloodlust + Relentless = 15 exactly, either weapon.
 		byCell.put(cell(4, 0), new Def(Family.SLOWNESS, 1));
 		byCell.put(cell(4, 1), new Def(Family.SLOWNESS, 2));
-		byCell.put(cell(4, 2), new Def(Family.SLOWNESS, 3));
-		byCell.put(cell(5, 0), new Def(Family.TASTE_OF_BLOOD, 1));
-		byCell.put(cell(5, 1), new Def(Family.TASTE_OF_BLOOD, 2));
+
+		// The crossguard centre: Taste of Blood, the shared trio the grip
+		// opens into. Rank I sits on the axis so the natural next buy is
+		// always I; ranks fan out to the arms (rank is count-based, so buy
+		// order never matters mechanically).
+		byCell.put(cell(4, 2), new Def(Family.TASTE_OF_BLOOD, 1));
+		byCell.put(cell(3, 2), new Def(Family.TASTE_OF_BLOOD, 2));
 		byCell.put(cell(5, 2), new Def(Family.TASTE_OF_BLOOD, 3));
 
-		// The guard: a contiguous bar where the paths split. Each hilt top
-		// reaches its own quillon plus both inner entries — Hamstring picks
-		// from Flurry/Lunge/Immovable, Taste of Blood from Lunge/Immovable/
-		// First Blood. The quillons stay leaves, not tolls.
-		byCell.put(cell(3, 3), new Def(Family.FLURRY, 1));
-		byCell.put(cell(4, 3), new Def(Family.LUNGE, 1));
-		byCell.put(cell(5, 3), new Def(Family.KBRES, 1));
-		byCell.put(cell(6, 3), new Def(Family.FIRSTBLOOD, 1));
+		// The crossguard arms: each weapon path opens here, its outermost
+		// cell a quillon leaf you can grab on the way past, not a toll.
+		byCell.put(cell(2, 2), new Def(Family.LUNGE, 1));
+		byCell.put(cell(1, 2), new Def(Family.LUNGE, 2));
+		byCell.put(cell(6, 2), new Def(Family.KBRES, 1));
+		byCell.put(cell(7, 2), new Def(Family.FIRSTBLOOD, 1));
 
-		// Left blade edge: the sword path.
-		byCell.put(cell(3, 4), new Def(Family.LUNGE, 2));
-		byCell.put(cell(3, 5), new Def(Family.BLEED, 1));
-		byCell.put(cell(3, 6), new Def(Family.BLEED, 2));
-		byCell.put(cell(3, 7), new Def(Family.BLEED, 3));
+		// Left blade edge: the sword path, Flurry at the top like a false edge.
+		byCell.put(cell(3, 3), new Def(Family.LUNGE, 3));
+		byCell.put(cell(3, 4), new Def(Family.BLEED, 1));
+		byCell.put(cell(3, 5), new Def(Family.BLEED, 2));
+		byCell.put(cell(3, 6), new Def(Family.BLEED, 3));
+		byCell.put(cell(3, 7), new Def(Family.FLURRY, 1));
 
 		// Right blade edge: the greatsword path.
-		byCell.put(cell(6, 4), new Def(Family.KBRES, 2));
-		byCell.put(cell(6, 5), new Def(Family.HEAVY, 1));
-		byCell.put(cell(6, 6), new Def(Family.HEAVY, 2));
-		byCell.put(cell(6, 7), new Def(Family.EXECUTIONER, 1));
+		byCell.put(cell(5, 3), new Def(Family.KBRES, 2));
+		byCell.put(cell(5, 4), new Def(Family.HEAVY, 1));
+		byCell.put(cell(5, 5), new Def(Family.HEAVY, 2));
+		byCell.put(cell(5, 6), new Def(Family.HEAVY, 3));
+		byCell.put(cell(5, 7), new Def(Family.EXECUTIONER, 1));
 
-		// The 2x2 crown: capstones converge below, Bloodlust and Relentless
-		// cap the point above — reachable only through a capstone, so the
-		// crown stays post-commitment by geometry alone.
-		byCell.put(cell(4, 8), new Def(Family.BLADESTORM, 1));
+		// The tip: Bloodlust sits in the crossing between the capstones, so
+		// every crown path runs through it; Relentless caps the very point.
+		byCell.put(cell(3, 8), new Def(Family.BLADESTORM, 1));
 		byCell.put(cell(5, 8), new Def(Family.DECIMATE, 1));
-		byCell.put(cell(4, 9), new Def(Family.BLOODLUST, 1));
-		byCell.put(cell(5, 9), new Def(Family.RELENTLESS, 1));
+		byCell.put(cell(4, 8), new Def(Family.BLOODLUST, 1));
+		byCell.put(cell(4, 9), new Def(Family.RELENTLESS, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.SLAYER_SWORD.nodes();

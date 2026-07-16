@@ -34,14 +34,12 @@ public final class SlayerCombat {
 
 			var owned = NodePurchases.owned(player, SubTree.SLAYER);
 
-			// Hamstring: both weapons cripple. Ranks 1-2 deepen the effect,
-			// rank 3 stretches it — Slowness III would be a root, not a slow.
+			// Hamstring: both weapons cripple.
 			int slow = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.SLOWNESS);
 
 			if (slow > 0 && entity.isAlive()) {
-				int duration = slow >= 3 ? Tuning.SLOWNESS_LONG_TICKS : Tuning.SLOWNESS_TICKS;
-				entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, duration,
-						Math.min(slow, 2) - 1), player);
+				entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, Tuning.SLOWNESS_TICKS, slow - 1),
+						player);
 			}
 
 			// Rend: sword-only — a wound the greatsword's single blow does not need.
