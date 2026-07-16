@@ -53,6 +53,11 @@ public final class TreeNodes {
 		return tree == SubTree.SLAYER ? 0 : ProtectorNodes.def(tree, index).family().overlaySize();
 	}
 
+	/** True when the effect layer draws under the item render, not over it. */
+	public static boolean iconOverlayBehind(final SubTree tree, final int index) {
+		return tree != SubTree.SLAYER && ProtectorNodes.def(tree, index).family().overlayBehind();
+	}
+
 	public static boolean isMinor(final SubTree tree, final int index) {
 		return tree == SubTree.SLAYER
 				? SlayerNodes.def(tree, index).family() == SlayerNodes.Family.MINOR

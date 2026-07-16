@@ -25,9 +25,9 @@ import org.jspecify.annotations.Nullable;
 public final class ProtectorNodes {
 	public enum Family {
 		BASH(() -> Items.SHIELD, Archetypes.id("textures/node/bash_overlay.png"), 32),
-		SLAM(() -> Items.SHIELD, Archetypes.id("textures/node/shield_slam_overlay.png"), 32),
+		SLAM(() -> Items.SHIELD, Archetypes.id("textures/node/shield_slam_overlay.png"), 32, true),
 		COOLDOWN(() -> Items.CLOCK),
-		KNOCKBACK(() -> Items.PISTON),
+		KNOCKBACK(() -> Items.SHIELD, Archetypes.id("textures/node/concussive_overlay.png"), 32),
 		WIDE(() -> Items.SHIELD, Archetypes.id("textures/node/wide_swings_overlay.png"), 32),
 		UNBREAKING(() -> Items.LEATHER),
 		SPIKES(() -> Items.SHIELD, Archetypes.id("textures/node/iron_spikes_overlay.png"), 32),
@@ -42,6 +42,7 @@ public final class ProtectorNodes {
 		private final @Nullable Supplier<Item> icon;
 		private final net.minecraft.resources.@Nullable Identifier overlay;
 		private final int overlaySize;
+		private final boolean overlayBehind;
 
 		Family(final @Nullable Supplier<Item> icon) {
 			this(icon, null, 0);
@@ -51,9 +52,18 @@ public final class ProtectorNodes {
 		 * effect on top of it — see notes/art/make_node_icons.py. */
 		Family(final @Nullable Supplier<Item> icon,
 				final net.minecraft.resources.@Nullable Identifier overlay, final int overlaySize) {
+			this(icon, overlay, overlaySize, false);
+		}
+
+		/** behind = the effect layer draws first, so the item covers it —
+		 * "peeking out from behind the shield". */
+		Family(final @Nullable Supplier<Item> icon,
+				final net.minecraft.resources.@Nullable Identifier overlay, final int overlaySize,
+				final boolean overlayBehind) {
 			this.icon = icon;
 			this.overlay = overlay;
 			this.overlaySize = overlaySize;
+			this.overlayBehind = overlayBehind;
 		}
 
 		public @Nullable Item icon() {
@@ -66,6 +76,10 @@ public final class ProtectorNodes {
 
 		public int overlaySize() {
 			return this.overlaySize;
+		}
+
+		public boolean overlayBehind() {
+			return this.overlayBehind;
 		}
 
 		public String nameKey() {

@@ -5,7 +5,9 @@
 	"client": [
 		"AbstractContainerScreenAccessor",
 		"AvatarRendererMixin",
-		"LivingEntityRendererAccessor"
+		"LivingEntityRendererAccessor",
+		"MinecraftInvoker",
+		"MinecraftMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

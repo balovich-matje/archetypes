@@ -635,3 +635,18 @@ flavour single (Flurry / First Blood — leaves, not tolls). Ranks rebalanced so
 a full path is exactly 15 again: Lunge 2×0.75 blocks, Immovable 2×30%, Heavy
 Blows 2×15%, First Blood 1×40%. Hamstring wears the vanilla Slowness effect
 sprite — first non-item node icon (Family now supports texture icons).
+
+**Custom melee swings (2026-07-16, v1).** PAL-driven attack poses for four
+weapon classes — greatsword (arc L-R, arc R-L, overhead), sword (two diagonal
+slashes), mace (overhead, side), bare hands (alternating jabs; bare means
+BARE — an offhand item reverts to vanilla). Spears skipped (too new). Client
+catches startAttack when it isn't aimed at a block AND the swing is charged
+(>=0.9 attack strength — spam clicks stay vanilla flicks, matching the damage
+discount); server bumps a synced counter encoding (seq, class); every client
+plays the class's next pose in cycle. Attack layer priority 900 — below the
+capstone poses, so a bladestorm channel outranks a mid-storm click.
+Hold-to-attack: attack key held on an entity + full charge = auto swing.
+UI note ("2014 RPG minecraft"): node icons prefer real vanilla item renders
+with effect overlays; strength-effect icon hides behind the shield for Slam,
+piston pushes off it for Concussive Blow, dripstone grows from it for Spikes,
+quarter clock for Braced.

@@ -349,16 +349,25 @@ public class ArchetypeScreen extends Screen {
 							x + (size - 16) / 2, y + (size - 16) / 2,
 							0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
 				} else if (icon != null && size >= 16) {
-					graphics.fakeItem(new ItemStack(icon), x + (size - 16) / 2, y + (size - 16) / 2);
-
-					// The skill's effect layer, over the real item render.
+					// The skill's effect layer, over the real item render —
+					// or under it, for icons that peek out from behind.
 					var overlay = TreeNodes.iconOverlay(tree, i);
+					boolean behind = overlay != null && TreeNodes.iconOverlayBehind(tree, i);
+					int ox = x + (size - 16) / 2;
+					int oy = y + (size - 16) / 2;
 
-					if (overlay != null) {
+					if (behind) {
 						int tex = TreeNodes.iconOverlaySize(tree, i);
 						graphics.blit(RenderPipelines.GUI_TEXTURED, overlay,
-								x + (size - 16) / 2, y + (size - 16) / 2,
-								0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+								ox, oy, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+					}
+
+					graphics.fakeItem(new ItemStack(icon), ox, oy);
+
+					if (overlay != null && !behind) {
+						int tex = TreeNodes.iconOverlaySize(tree, i);
+						graphics.blit(RenderPipelines.GUI_TEXTURED, overlay,
+								ox, oy, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
 					}
 				}
 

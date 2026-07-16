@@ -41,6 +41,7 @@ public class ArchetypesClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
+		MeleeAnimations.initialize();
 
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
@@ -74,6 +75,18 @@ public class ArchetypesClient implements ClientModInitializer {
 				while (client.options.keySprint.consumeClick()) {
 					ClientPlayNetworking.send(new com.archetypes.RushPayload());
 				}
+			}
+
+			// Hold-to-attack, Better Combat style: while the attack key is
+			// held on a target and the swing is fully charged, swing — no
+			// click rhythm needed. Blocks keep vanilla hold-to-mine.
+			if (client.player != null && client.gui.screen() == null
+					&& client.options.keyAttack.isDown()
+					&& client.hitResult != null
+					&& client.hitResult.getType() == net.minecraft.world.phys.HitResult.Type.ENTITY
+					&& client.player.getAttackStrengthScale(0.0F) >= 1.0F
+					&& com.archetypes.WeaponClass.of(client.player) != com.archetypes.WeaponClass.NONE) {
+				((com.archetypes.client.mixin.MinecraftInvoker) (Object) client).archetypes$startAttack();
 			}
 		});
 

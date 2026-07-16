@@ -221,44 +221,48 @@ def bash_overlay():
 
 
 def shield_slam_overlay():
-    """Impact burst off the shield's upper face."""
+    """Vanilla's own Strength effect icon, peeking out from behind the
+    shield (the tree draws this layer first, the item render covers it)."""
     im = canvas(32)
-    for dx, dy in ((0, -2), (0, -1), (0, 1), (0, 2), (-2, 0), (-1, 0), (1, 0), (2, 0)):
-        im.putpixel((26 + dx, 6 + dy), ARC)
-    im.putpixel((26, 6), (255, 236, 160, 255))
-    for dx, dy in ((-3, -3), (3, -3), (-3, 3), (3, 3)):
-        im.putpixel((26 + dx, 6 + dy), ARC_DIM)
+    im.alpha_composite(vanilla("mob_effect/strength.png"), (13, 0))
     save(im, "shield_slam_overlay")
 
 
 def iron_spikes_overlay():
-    """Teeth at the compass points, poking past the shield's rim."""
+    """Pointed dripstone grown straight out of the shield's face."""
     im = canvas(32)
-    for x, y, dx, dy in ((15, 3, 0, -1), (28, 15, 1, 0), (15, 28, 0, 1), (3, 15, -1, 0)):
-        im.putpixel((x, y), IRON)
-        im.putpixel((x + dx, y + dy), IRON_LIGHT)
-        im.putpixel((x + dx * 2, y + dy * 2), IRON_LIGHT)
+    spike = vanilla("item/pointed_dripstone.png").rotate(90, resample=Image.NEAREST)
+    im.alpha_composite(spike, (0, 8))
     save(im, "iron_spikes_overlay")
 
 
-def wide_swings_overlay():
-    """The bash's arc thrown wide over the shield."""
+def concussive_overlay():
+    """A piston driving away from the shield — the knockback trade."""
     im = canvas(32)
-    for i, (x, y) in enumerate(((1, 11), (2, 8), (4, 5), (7, 3), (11, 1), (15, 0),
-                                (19, 1), (23, 3), (26, 5), (28, 8), (29, 11))):
-        im.putpixel((x, y), ARC if i % 2 else ARC_DIM)
+    piston = vanilla("block/piston_side.png").rotate(90, resample=Image.NEAREST)
+    im.alpha_composite(piston, (0, 8))
+    save(im, "concussive_overlay")
+
+
+def wide_swings_overlay():
+    """The bash's arc thrown wide over the shield — two pixels thick and
+    full white so it actually reads at slot size."""
+    im = canvas(32)
+    arc = ((1, 11), (2, 8), (3, 6), (5, 4), (7, 2), (10, 1), (13, 0), (16, 0),
+           (19, 1), (22, 2), (24, 4), (26, 6), (27, 8), (28, 11))
+    white = (255, 255, 255, 255)
+    for x, y in arc:
+        im.putpixel((x, y), white)
+        im.putpixel((x + 1, y), white)
+        if y + 1 < 32:
+            im.putpixel((x, y + 1), ARC_DIM)
     save(im, "wide_swings_overlay")
 
 
 def braced_overlay():
-    """The refund loop, circling back into the shield."""
+    """A quarter-size gold clock in the corner: blocking pays time back."""
     im = canvas(32)
-    for x, y in ((25, 3), (28, 5), (30, 8), (31, 12), (30, 16), (28, 19), (25, 21)):
-        im.putpixel((x, y), ARC)
-    # Arrowhead pointing back down-left into the shield.
-    im.putpixel((23, 22), ARC)
-    im.putpixel((24, 19), ARC_DIM)
-    im.putpixel((26, 23), ARC_DIM)
+    im.alpha_composite(vanilla("item/clock_00.png"), (16, 0))
     save(im, "braced_overlay")
 
 
@@ -311,6 +315,7 @@ def main():
     bash_overlay()
     shield_slam_overlay()
     iron_spikes_overlay()
+    concussive_overlay()
     wide_swings_overlay()
     braced_overlay()
     reflection_overlay()
