@@ -4,10 +4,10 @@
 	"description": "Archetypes melee pose",
 	"emote": {
 		"isLoop": false,
-		"returnTick": 3,
+		"returnTick": 4,
 		"beginTick": 0,
 		"endTick": 14,
-		"stopTick": 18,
+		"stopTick": 26,
 		"degrees": true,
 		"moves": [
 			{
