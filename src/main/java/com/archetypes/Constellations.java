@@ -5,8 +5,10 @@ package com.archetypes;
  * it appears on screen, so the shape can be judged and edited right here —
  * see {@link Constellation} for how they are parsed.
  *
- * <p>All nodes are placeholders for now: no effects, no ranks. The shapes are
- * the point.
+ * <p>Strength's three trees are real; the agility and intellect grids are
+ * placeholder silhouettes, but already at the final point economy — 23 nodes
+ * each, matching the 15-point subtree cap and 45 total levels — so building
+ * their skills later means naming nodes, not reshaping constellations.
  */
 public final class Constellations {
 	private Constellations() {
@@ -77,13 +79,18 @@ public final class Constellations {
 			"....#....",
 			"....#....");
 
+	/**
+	 * A strung bow in profile: the stave arcing out on the left, the string a
+	 * straight column on the right, tips shared top and bottom, and a single
+	 * nub on the stave's belly at mid-height — the arrow rest.
+	 */
 	public static final Constellation MARKSMAN_BOW = Constellation.of(
 			"...#...",
 			"..#.#..",
 			".#..#..",
 			"#...#..",
 			"#...#..",
-			"#...#..",
+			"##..#..",
 			"#...#..",
 			"#...#..",
 			"#...#..",
@@ -91,34 +98,55 @@ public final class Constellations {
 			"..#.#..",
 			"...#...");
 
-	public static final Constellation ASSASSIN_DAGGERS = Constellation.of(
-			"..#.....#..",
-			"...#...#...",
-			"....#.#....",
-			"...#####...",
-			"....#.#....",
-			".....#.....",
-			"....#.#....",
-			"...#####...",
-			"....#.#....",
-			"...#...#...",
-			"..##...##..");
-
-	public static final Constellation SHADOW_CLOAK = Constellation.of(
+	/**
+	 * A single dagger, point up: a broad blade tapering to the tip, a guard a
+	 * step narrower than the Slayer sword's, and — the tell that this is a
+	 * knife, not a sword — a handle nearly as long as the blade, capped by a
+	 * spread pommel.
+	 */
+	public static final Constellation ASSASSIN_DAGGER = Constellation.of(
 			"...#...",
 			"..#.#..",
 			"..#.#..",
-			".#...#.",
-			".#...#.",
-			"#.....#",
-			"#.....#",
-			"#.....#",
-			"#.....#",
-			"#######");
+			"..#.#..",
+			"..#.#..",
+			"..###..",
+			".#####.",
+			"...#...",
+			"...#...",
+			"...#...",
+			"..###..");
 
-	public static final Constellation FIRE_MAGE_FLAME = Constellation.of(
+	/**
+	 * A crescent moon opening right: the outer arc sweeps wide, the inner arc
+	 * hugs the hollow, and the two share their tips. The inner arc skips the
+	 * row where the outer bows deepest — the explicit edge bridges it so the
+	 * curve still draws unbroken.
+	 */
+	public static final Constellation SHADOW_MOON = Constellation.of(
+			"......#",
+			".....##",
+			"....#.#",
+			"...#.#.",
+			"..#..#.",
+			"..#..#.",
+			".#.....",
+			"..#..#.",
+			"..#..#.",
+			"...#.#.",
+			"....#.#",
+			".....##",
+			"......#")
+			.withEdge(5, 5, 5, 7);
+
+	/**
+	 * A flame — element-agnostic enough to carry the Elementalist: a wide
+	 * unsteady body pulled tighter on the left than the right, narrowing to a
+	 * two-node lick at the top.
+	 */
+	public static final Constellation ELEMENTALIST_FLAME = Constellation.of(
 			"....#....",
-			"...##....",
+			"....#....",
 			"...#.#...",
 			"..#...#..",
 			"..#....#.",
@@ -130,12 +158,17 @@ public final class Constellations {
 			"..#...#..",
 			"...###...");
 
+	/**
+	 * A wizard's staff: a diamond headpiece cradling a loose orb low in its
+	 * hollow, a lashed crossbar where head meets haft, and a flared cap at
+	 * the butt.
+	 */
 	public static final Constellation WIZARD_STAFF = Constellation.of(
 			"...#...",
 			"..#.#..",
 			".#...#.",
 			"#.....#",
-			".#...#.",
+			".#.#.#.",
 			"..#.#..",
 			"...#...",
 			"...#...",
@@ -143,16 +176,23 @@ public final class Constellations {
 			"...#...",
 			"...#...",
 			"...#...",
-			"...#...");
+			"..###..");
 
-	public static final Constellation HEALER_HEART = Constellation.of(
-			".###.###.",
-			"#...#...#",
+	/**
+	 * The Apothecary's round-bottom flask: a corked lip, a pinched neck, and
+	 * a fat globe of a body — the heart it replaced belonged to a healer;
+	 * this tree brews.
+	 */
+	public static final Constellation APOTHECARY_FLASK = Constellation.of(
+			"...###...",
+			"....#....",
+			"...#.#...",
+			"..#...#..",
+			".#.....#.",
+			".#.....#.",
 			"#.......#",
 			"#.......#",
 			".#.....#.",
-			"..#...#..",
-			"...#.#...",
-			"....#....");
+			"..#####..");
 
 }

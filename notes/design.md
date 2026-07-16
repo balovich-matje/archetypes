@@ -743,3 +743,20 @@ notes/art/make_picker_art.py from vanilla sprites at integer scales on a
 128px canvas, doubled to the 256px the screen samples. Agility and
 intellect fall back to their item icons until their trees decide what
 their three weapons even are.
+
+**Picker crest verdict + constellation economy (2026-07-16).** The
+shield-forward crest (big shield, weapon tips and grips peeking out) beat
+the weapons-dominant rebalance — reverted to it. All six agility/intellect
+placeholder constellations redrawn to the Brawler economy: 23 nodes each
+(15-point subtree cap, 45 levels), so building those trees later means
+naming nodes, not reshaping grids. Shape changes: Assassin's crossed pair
+is now a single dagger (broad tapered blade, long handle, spread pommel —
+the handle-to-blade ratio is what says "knife"); Shadow's cloak — which
+never read as one — is now a crescent moon, two arcs sharing tips with an
+explicit edge bridging the inner arc's skipped centre row; Fire Mage is
+renamed Elementalist (flame kept, tightened to 23; amethyst shard icon —
+element-neutral raw magic); Healer is renamed Apothecary and the heart
+became a round-bottom flask (corked lip, pinched neck, fat globe; brewing
+stand icon). Wizard's staff gained an orb cradled low in the diamond head
+and a flared butt cap; the bow gained an arrow-rest nub on the stave.
+Protector remains at 25 nodes — one per real skill, grandfathered.

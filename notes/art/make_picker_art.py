@@ -48,22 +48,22 @@ def save(im, name):
 
 def strength():
     """Crossed sword and mace behind the shield: the crest of a class whose
-    three trees are exactly these three items. The shield is deliberately a
-    scale step smaller than the weapons — at parity it swallows the X and
-    the collage reads as "a shield" instead of "three arms"."""
-    im = Image.new("RGBA", (128, 128), (0, 0, 0, 0))
+    three trees are exactly these three items. Shield-forward on purpose —
+    a rebalanced pass with the weapons dominant was tried and the big
+    shield with just the tips and grips peeking out read better."""
+    im = Image.new("RGBA", (64, 64), (0, 0, 0, 0))
 
     # Both weapon sprites run hilt-bottom-left to business-end-top-right;
     # mirroring the mace turns the pair into an X crossing at the canvas
     # middle, where the shield will sit.
-    sword = scaled(vanilla("item/iron_sword.png"), 6)
-    mace = scaled(vanilla("item/mace.png").transpose(Image.FLIP_LEFT_RIGHT), 6)
-    im.alpha_composite(mace, (16, 16))
-    im.alpha_composite(sword, (16, 16))
+    sword = scaled(vanilla("item/iron_sword.png"), 3)
+    mace = scaled(vanilla("item/mace.png").transpose(Image.FLIP_LEFT_RIGHT), 3)
+    im.alpha_composite(mace, (8, 8))
+    im.alpha_composite(sword, (8, 8))
 
     # Shield in front, nudged low so the tips read clear above it.
-    shield = scaled(shield_face(), 3)
-    im.alpha_composite(shield, ((128 - shield.width) // 2, 31))
+    shield = scaled(shield_face(), 2)
+    im.alpha_composite(shield, ((64 - shield.width) // 2, 11))
 
     save(im, "strength")
 

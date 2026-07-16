@@ -19,12 +19,15 @@ public enum SubTree {
 
 	MARKSMAN(Archetype.AGILITY, "marksman", () -> Items.BOW, Constellations.MARKSMAN_BOW),
 	// No dagger in vanilla; the sword stands in for the label icon.
-	ASSASSIN(Archetype.AGILITY, "assassin", () -> Items.IRON_SWORD, Constellations.ASSASSIN_DAGGERS),
-	SHADOW(Archetype.AGILITY, "shadow", () -> Items.LEATHER_CHESTPLATE, Constellations.SHADOW_CLOAK),
+	ASSASSIN(Archetype.AGILITY, "assassin", () -> Items.IRON_SWORD, Constellations.ASSASSIN_DAGGER),
+	SHADOW(Archetype.AGILITY, "shadow", () -> Items.LEATHER_CHESTPLATE, Constellations.SHADOW_MOON),
 
-	FIRE_MAGE(Archetype.INTELLECT, "fire_mage", () -> Items.FIRE_CHARGE, Constellations.FIRE_MAGE_FLAME),
+	// Was Fire Mage; the rename widened it to every element, so the fire
+	// charge gave way to a neutral shard of raw magic.
+	ELEMENTALIST(Archetype.INTELLECT, "elementalist", () -> Items.AMETHYST_SHARD, Constellations.ELEMENTALIST_FLAME),
 	WIZARD(Archetype.INTELLECT, "wizard", () -> Items.BLAZE_ROD, Constellations.WIZARD_STAFF),
-	HEALER(Archetype.INTELLECT, "healer", () -> Items.GOLDEN_APPLE, Constellations.HEALER_HEART);
+	// Was Healer; an apothecary brews rather than blesses.
+	APOTHECARY(Archetype.INTELLECT, "apothecary", () -> Items.BREWING_STAND, Constellations.APOTHECARY_FLASK);
 
 	private final Archetype archetype;
 	private final String id;
@@ -76,7 +79,7 @@ public enum SubTree {
 		return switch (archetype) {
 			case STRENGTH -> List.of(PROTECTOR, SLAYER, CRUSHER);
 			case AGILITY -> List.of(MARKSMAN, ASSASSIN, SHADOW);
-			case INTELLECT -> List.of(FIRE_MAGE, WIZARD, HEALER);
+			case INTELLECT -> List.of(ELEMENTALIST, WIZARD, APOTHECARY);
 		};
 	}
 }
