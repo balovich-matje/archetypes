@@ -4,10 +4,10 @@
 	"description": "Archetypes melee pose",
 	"emote": {
 		"isLoop": false,
-		"returnTick": 4,
+		"returnTick": 3,
 		"beginTick": 0,
-		"endTick": 14,
-		"stopTick": 26,
+		"endTick": 26,
+		"stopTick": 28,
 		"degrees": true,
 		"moves": [
 			{
@@ -142,6 +142,62 @@
 				"tick": 14,
 				"easing": "EASEINOUTQUAD",
 				"torso": {
+					"yaw": 8
+				},
+				"rightArm": {
+					"pitch": -60,
+					"yaw": -25,
+					"roll": -10,
+					"x": -4.5,
+					"y": 2.5,
+					"z": 0.5
+				},
+				"leftArm": {
+					"pitch": -60,
+					"yaw": 45,
+					"roll": 5,
+					"x": 4.5,
+					"y": 2.5,
+					"z": -1
+				},
+				"rightItem": {
+					"pitch": 30,
+					"yaw": 20,
+					"roll": 15
+				}
+			},
+			{
+				"tick": 21,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"yaw": 8
+				},
+				"rightArm": {
+					"pitch": -60,
+					"yaw": -25,
+					"roll": -10,
+					"x": -4.5,
+					"y": 2.5,
+					"z": 0.5
+				},
+				"leftArm": {
+					"pitch": -60,
+					"yaw": 45,
+					"roll": 5,
+					"x": 4.5,
+					"y": 2.5,
+					"z": -1
+				},
+				"rightItem": {
+					"pitch": 30,
+					"yaw": 20,
+					"roll": 15
+				}
+			},
+			{
+				"tick": 26,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
 					"yaw": 6
 				},
 				"rightArm": {
@@ -153,12 +209,12 @@
 					"z": 0
 				},
 				"leftArm": {
-					"pitch": -28,
-					"yaw": 42,
-					"roll": 8,
-					"x": 4.5,
-					"y": 1.5,
-					"z": -1.5
+					"pitch": -22,
+					"yaw": 30,
+					"roll": 6,
+					"x": 3.5,
+					"y": 1,
+					"z": -0.5
 				},
 				"rightItem": {
 					"pitch": 8,
