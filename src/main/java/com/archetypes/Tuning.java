@@ -113,9 +113,14 @@ public final class Tuning {
 	/** Taste of Blood: health restored per rank on a melee kill (1.0 = half a heart). */
 	public static final float TASTE_OF_BLOOD_HEAL_PER_RANK = 1.0F;
 
-	/** Lunge: half a block per rank along the look vector, 2s between hops. */
-	public static final double LUNGE_BLOCKS_PER_RANK = 0.5;
+	/** Lunge: a full block per rank along the look vector, 2s between hops. */
+	public static final double LUNGE_BLOCKS_PER_RANK = 1.0;
 	public static final int LUNGE_COOLDOWN_TICKS = 40;
+
+	/** Blade Dance: chance for a manual sword strike to lash out at another
+	 * nearby foe — any direction, the back included. */
+	public static final float BLADE_DANCE_CHANCE = 0.25F;
+	public static final double BLADE_DANCE_RANGE = 3.5;
 
 	/** Immovable: knockback resistance per rank while a greatsword is held. */
 	public static final double KBRES_PER_RANK = 0.3;

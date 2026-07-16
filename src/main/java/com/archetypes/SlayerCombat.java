@@ -1,12 +1,18 @@
 package com.archetypes;
 
+import java.util.List;
+
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
 
 /**
@@ -15,6 +21,10 @@ import net.minecraft.world.item.ItemStack;
  * {@link ModItems#isSword}, the shared ones accept the greatsword too.
  */
 public final class SlayerCombat {
+	/** True while a Blade Dance strike is being dealt, so the dance's own
+	 * damage event can never proc another dance. */
+	private static boolean dancing;
+
 	private SlayerCombat() {
 	}
 
@@ -47,6 +57,19 @@ public final class SlayerCombat {
 
 			if (bleed > 0 && sword && entity.isAlive()) {
 				SlayerTicker.startBleed(entity, player, bleed);
+			}
+
+			// Blade Dance: a manual sword strike may lash out at someone else
+			// nearby — any direction. Bladestorm's volleys are excluded; the
+			// storm already is that fantasy.
+			if (sword && !dancing
+					&& SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.BLADE_DANCE) > 0) {
+				Long stormEnd = ((AttachmentTarget) player).getAttached(ModAttachments.BLADESTORM_END);
+
+				if ((stormEnd == null || stormEnd <= player.level().getGameTime())
+						&& player.getRandom().nextFloat() < Tuning.BLADE_DANCE_CHANCE) {
+					bladeDance(player, entity);
+				}
 			}
 		});
 
@@ -86,4 +109,31 @@ public final class SlayerCombat {
 		});
 	}
 
+	/** The dance itself: full attack damage to a random other foe in reach. */
+	private static void bladeDance(final ServerPlayer player, final LivingEntity struck) {
+		ServerLevel level = (ServerLevel) player.level();
+		List<LivingEntity> nearby = level.getEntitiesOfClass(LivingEntity.class,
+				player.getBoundingBox().inflate(Tuning.BLADE_DANCE_RANGE, 1.0, Tuning.BLADE_DANCE_RANGE),
+				other -> other != player && other != struck && other.isAlive()
+						&& !other.isSpectator() && player.hasLineOfSight(other));
+
+		if (nearby.isEmpty()) {
+			return;
+		}
+
+		LivingEntity target = nearby.get(player.getRandom().nextInt(nearby.size()));
+		float damage = (float) player.getAttributeValue(Attributes.ATTACK_DAMAGE);
+
+		dancing = true;
+		try {
+			target.hurtServer(level, player.damageSources().playerAttack(player), damage);
+		} finally {
+			dancing = false;
+		}
+
+		level.sendParticles(ParticleTypes.SWEEP_ATTACK,
+				target.getX(), target.getY(0.5), target.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+		level.playSound(null, target.getX(), target.getY(), target.getZ(),
+				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.8F, 1.3F);
+	}
 }

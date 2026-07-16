@@ -28,6 +28,7 @@ public final class SlayerNodes {
 		LUNGE(() -> Items.RABBIT_FOOT),
 		KBRES(() -> Items.OBSIDIAN),
 		BLEED(Archetypes.id("textures/node/rend.png"), 16),
+		BLADE_DANCE(Archetypes.id("textures/node/blade_dance.png"), 16),
 		HEAVY(() -> ModItems.IRON_GREATSWORD),
 		FIRSTBLOOD(Archetypes.id("textures/node/first_blood.png"), 16),
 		FLURRY(() -> Items.SUGAR),
@@ -95,30 +96,29 @@ public final class SlayerNodes {
 		byCell.put(cell(4, 0), new Def(Family.SLOWNESS, 1));
 		byCell.put(cell(4, 1), new Def(Family.SLOWNESS, 2));
 
-		// The crossguard centre: Taste of Blood, the shared trio the grip
-		// opens into. Rank I sits on the axis so the natural next buy is
-		// always I; ranks fan out to the arms (rank is count-based, so buy
-		// order never matters mechanically).
-		byCell.put(cell(4, 2), new Def(Family.TASTE_OF_BLOOD, 1));
-		byCell.put(cell(3, 2), new Def(Family.TASTE_OF_BLOOD, 2));
+		// The crossguard, left to right: [L1][L2][T1][T2][T3][I1][I2] — the
+		// mobility ranks out the sword arm, Taste of Blood as the shared
+		// centre trio, the stability ranks out the greatsword arm. Rank is
+		// count-based, so buy order never matters mechanically.
+		byCell.put(cell(1, 2), new Def(Family.LUNGE, 1));
+		byCell.put(cell(2, 2), new Def(Family.LUNGE, 2));
+		byCell.put(cell(3, 2), new Def(Family.TASTE_OF_BLOOD, 1));
+		byCell.put(cell(4, 2), new Def(Family.TASTE_OF_BLOOD, 2));
 		byCell.put(cell(5, 2), new Def(Family.TASTE_OF_BLOOD, 3));
-
-		// The crossguard arms: each weapon path opens here, its outermost
-		// cell a quillon leaf you can grab on the way past, not a toll.
-		byCell.put(cell(2, 2), new Def(Family.LUNGE, 1));
-		byCell.put(cell(1, 2), new Def(Family.LUNGE, 2));
 		byCell.put(cell(6, 2), new Def(Family.KBRES, 1));
-		byCell.put(cell(7, 2), new Def(Family.FIRSTBLOOD, 1));
+		byCell.put(cell(7, 2), new Def(Family.KBRES, 2));
 
-		// Left blade edge: the sword path, Flurry at the top like a false edge.
-		byCell.put(cell(3, 3), new Def(Family.LUNGE, 3));
-		byCell.put(cell(3, 4), new Def(Family.BLEED, 1));
-		byCell.put(cell(3, 5), new Def(Family.BLEED, 2));
-		byCell.put(cell(3, 6), new Def(Family.BLEED, 3));
-		byCell.put(cell(3, 7), new Def(Family.FLURRY, 1));
+		// Left blade edge, bottom-up: the sword path's flavour singles first,
+		// then Rend stacked just under the capstone as the direct DPS climb.
+		byCell.put(cell(3, 3), new Def(Family.FLURRY, 1));
+		byCell.put(cell(3, 4), new Def(Family.BLADE_DANCE, 1));
+		byCell.put(cell(3, 5), new Def(Family.BLEED, 1));
+		byCell.put(cell(3, 6), new Def(Family.BLEED, 2));
+		byCell.put(cell(3, 7), new Def(Family.BLEED, 3));
 
-		// Right blade edge: the greatsword path.
-		byCell.put(cell(5, 3), new Def(Family.KBRES, 2));
+		// Right blade edge, mirroring it: the opener first, Heavy Blows as
+		// the DPS climb, Executioner against the capstone.
+		byCell.put(cell(5, 3), new Def(Family.FIRSTBLOOD, 1));
 		byCell.put(cell(5, 4), new Def(Family.HEAVY, 1));
 		byCell.put(cell(5, 5), new Def(Family.HEAVY, 2));
 		byCell.put(cell(5, 6), new Def(Family.HEAVY, 3));

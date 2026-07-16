@@ -113,6 +113,20 @@ def first_blood():
     save(im, "first_blood")
 
 
+def blade_dance():
+    """Two swords swinging opposite ways out of the middle, an arc over
+    each — strikes going in different directions at once."""
+    sword = vanilla("item/iron_sword.png").resize((13, 13), Image.NEAREST)
+    im = canvas()
+    im.alpha_composite(sword.transpose(Image.FLIP_LEFT_RIGHT), (0, 3))
+    im.alpha_composite(sword, (3, 3))
+    for x, y in ((12, 1), (14, 2), (3, 1), (1, 2)):
+        im.putpixel((x, y), ARC)
+    for x, y in ((10, 1), (5, 1)):
+        im.putpixel((x, y), ARC_DIM)
+    save(im, "blade_dance")
+
+
 def executioner():
     """The headsman's frame: axe fallen head-down onto the block, swing arc
     still hanging in the air behind it."""
@@ -148,6 +162,7 @@ def decimate():
 def main():
     os.makedirs(DST, exist_ok=True)
     bladestorm()
+    blade_dance()
     rend()
     taste_of_blood()
     first_blood()
