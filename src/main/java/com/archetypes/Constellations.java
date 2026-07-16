@@ -179,20 +179,23 @@ public final class Constellations {
 			"..###..");
 
 	/**
-	 * The Apothecary's round-bottom flask: a corked lip, a pinched neck, and
-	 * a fat globe of a body — the heart it replaced belonged to a healer;
-	 * this tree brews.
+	 * The Priest's ankh: a five-wide loop closing onto the crossbar's centre,
+	 * arms reaching one node past the loop on each side, and a shaft as long
+	 * as the loop is tall. Where loop, arms and shaft meet, the junction node
+	 * touches five neighbours — the knot the whole symbol hangs from.
 	 */
-	public static final Constellation APOTHECARY_FLASK = Constellation.of(
-			"...###...",
-			"....#....",
-			"...#.#...",
-			"..#...#..",
-			".#.....#.",
-			".#.....#.",
-			"#.......#",
-			"#.......#",
-			".#.....#.",
-			"..#####..");
+	public static final Constellation PRIEST_ANKH = Constellation.of(
+			"..###..",
+			".#...#.",
+			".#...#.",
+			"..#.#..",
+			"...#...",
+			"#######",
+			"...#...",
+			"...#...",
+			"...#...",
+			"...#...",
+			"...#...",
+			"...#...");
 
 }

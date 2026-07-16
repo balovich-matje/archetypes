@@ -760,3 +760,67 @@ became a round-bottom flask (corked lip, pinched neck, fat globe; brewing
 stand icon). Wizard's staff gained an orb cradled low in the diamond head
 and a flared butt cap; the bow gained an arrow-rest nub on the stave.
 Protector remains at 25 nodes — one per real skill, grandfathered.
+
+**Cutpurse & Seeker: weapons + skill plan (2026-07-16).**
+
+*Weapons first, trees second.* The Cutpurse's dagger: seven material tiers
+derived from the vanilla swords in make_weapon_textures.py (the blade cut
+four diagonal steps shorter — palette and outline stay vanilla for free);
+recipe one material over one stick; stats 0.6x the sword's damage at 1.5x
+the swings = 0.9x DPS, the Assassin tree pays the tenth back. In
+minecraft:swords like the greatswords, excluded from isSword() so Slayer
+passives never proc from a knife. The Seeker's starting Magic Wand: two
+sticks stacked, a longer carved stick with a spark at the tip, no melee
+stats; casting checks the archetypes:wands tag so better wands are just a
+texture and a recipe. WeaponClass gained DAGGER and WAND.
+
+*Apothecary is now Priest*, third rename of this tree (Healer, Apothecary,
+Priest) — the kit below is holy, not herbal. Constellation: an ankh (loop
+of 10, crossbar of 7, shaft of 6 = 23). Icon: totem of undying.
+
+*Planned actives and capstones* (numbers are first drafts; every tree also
+gets its passive families later, same 23-node/15-cap economy as Brawler):
+
+- Marksman — True Shot, first node: 20s cooldown, next bow shot flies
+  without gravity at x2.0 damage; the arrow quietly despawns past 64
+  blocks (deliberately not in the description). Capstones: (1) True Shot
+  homes to the nearest target but drops to x1.0 — trades the damage for
+  never missing; (2) x4.0 and fires instantly on use, no draw.
+- Shadow — Invisibility: 8s of the effect, 30s cooldown. Capstones:
+  (1) kills while invisible renew the full duration; (2) cheat death —
+  fatal damage instead cleanses negative effects, grants 2s of total
+  immunity and casts Invisibility; both then share a 180s cooldown.
+- Assassin — Shadow Step: teleport behind a target up to 16 blocks away
+  and strike once, dagger in hand required, 15s cooldown. Capstones:
+  (1) the step strikes 4 times at full power, cooldown 30s; (2) any kill
+  resets Shadow Step's cooldown.
+
+*Seeker casts on mana, not cooldowns.* Mana comes from a new Specialities
+skill, Spellcasting: +1 max mana per level, +1 base regen per 20 levels,
+XP earned by spending mana. Base 100 mana, 1 regen/s. Mana bar sits above
+the hunger bar: ten water bottles as a percentage gauge (47/100 mana =
+4 full bottles, floor rounding); the bottle count never changes with the
+pool. Placeholder art, may replace later. NOTE: registering a skill from
+Archetypes means Specialities needs a public skill-registration API — that
+half of the work belongs to the Specialities chat and needs coordinating.
+
+- Elementalist — Fireball: 50 mana, 2.5 hearts, ignites the target,
+  ghast-style projectile that cannot be reflected. Capstones: (1)
+  Meteorite — fireball becomes a meteor spawned 16 blocks above the
+  target block, flying down fast into AoE damage; spends ALL current
+  mana (100 minimum), more mana = bigger radius and damage; wipes
+  zero-hardness blocks (torches etc.) in the area; uncastable without
+  clear sky above the target. (2) Flamethrower — fireball becomes a
+  channel: rapid blaze-style bolts, 50 mana to start + 25/s held.
+- Wizard — Magic Missile: 25 mana, wand in main hand, straight line up
+  to 16 blocks, 3 hearts. Capstones: (1) missiles home to the nearest
+  enemy at 33% less projectile speed; (2) missiles pierce everything
+  they hit and get a larger hitbox.
+- Priest — Holy Light: 50 mana, a projectile that bursts on hard
+  surfaces like a splash potion — 2.5 hearts of healing to the living,
+  the same as damage to undead. Capstones: (1) also grants Regeneration
+  for 10s to non-hostiles; (2) also grants a random positive effect for
+  10s to non-hostiles — Speed, Strength, Resistance or Fire Resistance.
+
+Open question, parked: only Magic Missile names a wand requirement — do
+Fireball and Holy Light require one too, or is the wand Wizard-flavoured?

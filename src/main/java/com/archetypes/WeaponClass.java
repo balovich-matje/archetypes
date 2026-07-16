@@ -12,7 +12,9 @@ import net.minecraft.world.item.Items;
 public enum WeaponClass {
 	GREATSWORD,
 	SWORD,
+	DAGGER,
 	MACE,
+	WAND,
 	HANDS,
 	NONE;
 
@@ -23,12 +25,20 @@ public enum WeaponClass {
 			return GREATSWORD;
 		}
 
+		if (ModItems.isDagger(mainhand)) {
+			return DAGGER;
+		}
+
 		if (ModItems.isSword(mainhand)) {
 			return SWORD;
 		}
 
 		if (mainhand.is(Items.MACE)) {
 			return MACE;
+		}
+
+		if (ModItems.isWand(mainhand)) {
+			return WAND;
 		}
 
 		// Bare hands means BARE: an offhand item turns punching back vanilla.

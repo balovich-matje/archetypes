@@ -1,0 +1,11 @@
+{
+  "values": [
+    "archetypes:wooden_dagger",
+    "archetypes:stone_dagger",
+    "archetypes:copper_dagger",
+    "archetypes:iron_dagger",
+    "archetypes:golden_dagger",
+    "archetypes:diamond_dagger",
+    "archetypes:netherite_dagger"
+  ]
+}

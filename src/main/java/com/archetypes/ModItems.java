@@ -35,17 +35,40 @@ public final class ModItems {
 	/** Sword is -2.4 (1.6 swings/s off a 4.0 base); -3.2 gives 0.8/s, half. */
 	private static final float GREATSWORD_ATTACK_SPEED = -3.2F;
 
+	/**
+	 * A dagger is the sword's opposite trade to the greatsword: 0.6x the
+	 * damage at 1.5x the swings, landing at 0.9x the sword's DPS — quick,
+	 * cheap hits for the Assassin, whose tree pays the missing tenth back
+	 * with interest. Derived from the material like the greatsword's, so the
+	 * ratio holds from wood to netherite.
+	 */
+	private static final float DAGGER_MULTIPLIER = 0.6F;
+	/** Sword is -2.4 (1.6 swings/s off a 4.0 base); -1.6 gives 2.4/s, 1.5x. */
+	private static final float DAGGER_ATTACK_SPEED = -1.6F;
+
 	/** All seven greatswords; kept out of minecraft:swords so sword-scoped
 	 * passives (bleed, lunge) never trigger from the two-hander. */
 	public static final TagKey<Item> GREATSWORDS = TagKey.create(Registries.ITEM, Archetypes.id("greatswords"));
+	public static final TagKey<Item> DAGGERS = TagKey.create(Registries.ITEM, Archetypes.id("daggers"));
+	/** Just the starting wand for now, but casting will check the tag, so
+	 * better wands are a texture and a recipe, not a code change. */
+	public static final TagKey<Item> WANDS = TagKey.create(Registries.ITEM, Archetypes.id("wands"));
 
 	public static boolean isGreatsword(final net.minecraft.world.item.ItemStack stack) {
 		return stack.is(GREATSWORDS);
 	}
 
-	/** A one-handed sword: the vanilla tag minus our greatswords. */
+	public static boolean isDagger(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(DAGGERS);
+	}
+
+	public static boolean isWand(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(WANDS);
+	}
+
+	/** A one-handed sword: the vanilla tag minus our own blades in it. */
 	public static boolean isSword(final net.minecraft.world.item.ItemStack stack) {
-		return stack.is(ItemTags.SWORDS) && !stack.is(GREATSWORDS);
+		return stack.is(ItemTags.SWORDS) && !stack.is(GREATSWORDS) && !stack.is(DAGGERS);
 	}
 
 	/** Creative-only: one skill point per use. See {@link SkillTokenItem}. */
@@ -58,6 +81,18 @@ public final class ModItems {
 	public static final Item GOLDEN_GREATSWORD = greatsword("golden", ToolMaterial.GOLD);
 	public static final Item DIAMOND_GREATSWORD = greatsword("diamond", ToolMaterial.DIAMOND);
 	public static final Item NETHERITE_GREATSWORD = greatsword("netherite", ToolMaterial.NETHERITE);
+
+	public static final Item WOODEN_DAGGER = dagger("wooden", ToolMaterial.WOOD);
+	public static final Item STONE_DAGGER = dagger("stone", ToolMaterial.STONE);
+	public static final Item COPPER_DAGGER = dagger("copper", ToolMaterial.COPPER);
+	public static final Item IRON_DAGGER = dagger("iron", ToolMaterial.IRON);
+	public static final Item GOLDEN_DAGGER = dagger("golden", ToolMaterial.GOLD);
+	public static final Item DIAMOND_DAGGER = dagger("diamond", ToolMaterial.DIAMOND);
+	public static final Item NETHERITE_DAGGER = dagger("netherite", ToolMaterial.NETHERITE);
+
+	/** The Seeker's casting focus. No melee stats: a wand casts, it does not
+	 * club — whacking with it is exactly as effective as an empty fist. */
+	public static final Item MAGIC_WAND = registerWand();
 
 	private ModItems() {
 	}
@@ -81,6 +116,25 @@ public final class ModItems {
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
 
+	/** Base damage that makes this material's dagger exactly 0.6x its sword. */
+	private static float daggerDamageFor(final ToolMaterial material) {
+		float bonus = material.attackDamageBonus();
+		return DAGGER_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + bonus) - 1.0F - bonus;
+	}
+
+	private static Item dagger(final String prefix, final ToolMaterial material) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_dagger"));
+		Item.Properties properties = material.applySwordProperties(
+				new Item.Properties().setId(key), daggerDamageFor(material), DAGGER_ATTACK_SPEED);
+		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
+	}
+
+	private static Item registerWand() {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_wand"));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new Item(new Item.Properties().setId(key).stacksTo(1)));
+	}
+
 	public static void initialize() {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
 				.register(output -> output.accept(SKILL_TOKEN));
@@ -93,6 +147,14 @@ public final class ModItems {
 			output.accept(GOLDEN_GREATSWORD);
 			output.accept(DIAMOND_GREATSWORD);
 			output.accept(NETHERITE_GREATSWORD);
+			output.accept(WOODEN_DAGGER);
+			output.accept(STONE_DAGGER);
+			output.accept(COPPER_DAGGER);
+			output.accept(IRON_DAGGER);
+			output.accept(GOLDEN_DAGGER);
+			output.accept(DIAMOND_DAGGER);
+			output.accept(NETHERITE_DAGGER);
+			output.accept(MAGIC_WAND);
 		});
 	}
 }

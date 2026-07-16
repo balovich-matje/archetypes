@@ -26,8 +26,8 @@ public enum SubTree {
 	// charge gave way to a neutral shard of raw magic.
 	ELEMENTALIST(Archetype.INTELLECT, "elementalist", () -> Items.AMETHYST_SHARD, Constellations.ELEMENTALIST_FLAME),
 	WIZARD(Archetype.INTELLECT, "wizard", () -> Items.BLAZE_ROD, Constellations.WIZARD_STAFF),
-	// Was Healer; an apothecary brews rather than blesses.
-	APOTHECARY(Archetype.INTELLECT, "apothecary", () -> Items.BREWING_STAND, Constellations.APOTHECARY_FLASK);
+	// Was Healer, then briefly Apothecary; the holy-light kit is a priest's.
+	PRIEST(Archetype.INTELLECT, "priest", () -> Items.TOTEM_OF_UNDYING, Constellations.PRIEST_ANKH);
 
 	private final Archetype archetype;
 	private final String id;
@@ -79,7 +79,7 @@ public enum SubTree {
 		return switch (archetype) {
 			case STRENGTH -> List.of(PROTECTOR, SLAYER, CRUSHER);
 			case AGILITY -> List.of(MARKSMAN, ASSASSIN, SHADOW);
-			case INTELLECT -> List.of(ELEMENTALIST, WIZARD, APOTHECARY);
+			case INTELLECT -> List.of(ELEMENTALIST, WIZARD, PRIEST);
 		};
 	}
 }
