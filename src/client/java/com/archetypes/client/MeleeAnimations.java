@@ -61,10 +61,18 @@ public final class MeleeAnimations {
 			return controller;
 		});
 
-		// The grip keeps vanilla first person: a permanent hand swap while
-		// just walking around would be jarring; third person tells the story.
-		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(GRIP_LAYER_ID, 500,
-				avatar -> new PlayerAnimationController(avatar, (ctrl, data, setter) -> PlayState.STOP));
+		// The grip owns first person too: vanilla's disembodied hand can never
+		// match the model's pose, so while a greatsword is held the animated
+		// model is ALL you see — rest, swing, guard, lower, rest — and there
+		// is no handoff left to jump.
+		PlayerAnimationFactory.ANIMATION_DATA_FACTORY.registerFactory(GRIP_LAYER_ID, 500, avatar -> {
+			PlayerAnimationController controller =
+					new PlayerAnimationController(avatar, (ctrl, data, setter) -> PlayState.STOP);
+			controller.setFirstPersonMode(FirstPersonMode.THIRD_PERSON_MODEL);
+			controller.setFirstPersonConfiguration(
+					new FirstPersonConfiguration(true, true, true, false));
+			return controller;
+		});
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			if (client.level == null) {
