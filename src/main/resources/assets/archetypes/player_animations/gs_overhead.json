@@ -1,0 +1,152 @@
+{
+	"name": "gs_overhead",
+	"author": "archetypes",
+	"description": "Two-handed overhead",
+	"emote": {
+		"isLoop": false,
+		"returnTick": 4,
+		"beginTick": 0,
+		"endTick": 14,
+		"stopTick": 26,
+		"degrees": true,
+		"moves": [
+			{
+				"tick": 0,
+				"easing": "EASEINQUAD",
+				"torso": {
+					"pitch": -8
+				},
+				"head": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"rightArm": {
+					"pitch": -160,
+					"yaw": -8,
+					"roll": -6,
+					"x": -3.5,
+					"y": 2
+				},
+				"leftArm": {
+					"pitch": -158,
+					"yaw": -30,
+					"roll": 12,
+					"x": 3.5,
+					"y": 2
+				},
+				"rightItem": {
+					"pitch": -20
+				}
+			},
+			{
+				"tick": 3,
+				"easing": "EASEINQUAD",
+				"torso": {
+					"pitch": -14
+				},
+				"head": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"rightArm": {
+					"pitch": -172,
+					"yaw": -8,
+					"roll": -6,
+					"x": -3.5,
+					"y": 2
+				},
+				"leftArm": {
+					"pitch": -170,
+					"yaw": -30,
+					"roll": 12,
+					"x": 3.5,
+					"y": 2
+				},
+				"rightItem": {
+					"pitch": -20
+				}
+			},
+			{
+				"tick": 6,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 24
+				},
+				"head": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"rightArm": {
+					"pitch": -55,
+					"yaw": -4,
+					"roll": -8,
+					"x": -3.5,
+					"y": 1.8
+				},
+				"leftArm": {
+					"pitch": -52,
+					"yaw": -18,
+					"roll": 12,
+					"x": 3.5,
+					"y": 1.8
+				},
+				"rightItem": {
+					"pitch": -35
+				}
+			},
+			{
+				"tick": 10,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 12
+				},
+				"rightArm": {
+					"pitch": -38,
+					"yaw": -8,
+					"roll": -4,
+					"x": -2.5,
+					"y": 1
+				},
+				"leftArm": {
+					"pitch": -36,
+					"yaw": 10,
+					"roll": 10,
+					"x": 4,
+					"y": 1.2,
+					"z": -1
+				},
+				"rightItem": {
+					"pitch": -12
+				}
+			},
+			{
+				"tick": 14,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"yaw": 6
+				},
+				"rightArm": {
+					"pitch": -20,
+					"yaw": -12,
+					"roll": 0,
+					"x": -1,
+					"y": 0.5,
+					"z": 0
+				},
+				"leftArm": {
+					"pitch": -28,
+					"yaw": 42,
+					"roll": 8,
+					"x": 4.5,
+					"y": 1.5,
+					"z": -1.5
+				},
+				"rightItem": {
+					"pitch": 8,
+					"yaw": 10,
+					"roll": 4
+				}
+			}
+		]
+	}
+}

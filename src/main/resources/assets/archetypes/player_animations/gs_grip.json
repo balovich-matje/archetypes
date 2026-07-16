@@ -1,10 +1,10 @@
 {
 	"name": "gs_grip",
 	"author": "archetypes",
-	"description": "Archetypes melee pose, authored in emote format for exact rig semantics",
+	"description": "Two-handed low carry",
 	"emote": {
 		"isLoop": true,
-		"returnTick": 2,
+		"returnTick": 3,
 		"beginTick": 0,
 		"endTick": 4,
 		"stopTick": 6,
@@ -14,56 +14,56 @@
 				"tick": 0,
 				"easing": "EASEINOUTQUAD",
 				"torso": {
-					"yaw": 8
+					"yaw": 6
 				},
 				"rightArm": {
-					"pitch": -60,
-					"yaw": -25,
-					"roll": -10,
-					"x": -4.5,
-					"y": 2.5,
-					"z": 0.5
+					"pitch": -20,
+					"yaw": -12,
+					"roll": 0,
+					"x": -1,
+					"y": 0.5,
+					"z": 0
 				},
 				"leftArm": {
-					"pitch": -60,
-					"yaw": 45,
-					"roll": 5,
+					"pitch": -28,
+					"yaw": 42,
+					"roll": 8,
 					"x": 4.5,
-					"y": 2.5,
-					"z": -1
+					"y": 1.5,
+					"z": -1.5
 				},
 				"rightItem": {
-					"pitch": 30,
-					"yaw": 20,
-					"roll": 15
+					"pitch": 8,
+					"yaw": 10,
+					"roll": 4
 				}
 			},
 			{
 				"tick": 4,
 				"easing": "EASEINOUTQUAD",
 				"torso": {
-					"yaw": 8
+					"yaw": 6
 				},
 				"rightArm": {
-					"pitch": -60,
-					"yaw": -25,
-					"roll": -10,
-					"x": -4.5,
-					"y": 2.5,
-					"z": 0.5
+					"pitch": -20,
+					"yaw": -12,
+					"roll": 0,
+					"x": -1,
+					"y": 0.5,
+					"z": 0
 				},
 				"leftArm": {
-					"pitch": -60,
-					"yaw": 45,
-					"roll": 5,
+					"pitch": -28,
+					"yaw": 42,
+					"roll": 8,
 					"x": 4.5,
-					"y": 2.5,
-					"z": -1
+					"y": 1.5,
+					"z": -1.5
 				},
 				"rightItem": {
-					"pitch": 30,
-					"yaw": 20,
-					"roll": 15
+					"pitch": 8,
+					"yaw": 10,
+					"roll": 4
 				}
 			}
 		]

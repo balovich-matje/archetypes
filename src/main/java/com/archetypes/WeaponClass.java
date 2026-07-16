@@ -10,20 +10,28 @@ import net.minecraft.world.item.Items;
  * client. NONE keeps vanilla behaviour untouched.
  */
 public enum WeaponClass {
-	GREATSWORD(3),
-	SWORD(2),
-	MACE(2),
-	HANDS(2),
-	NONE(0);
+	GREATSWORD(3, 0.8F),
+	SWORD(2, 1.6F),
+	MACE(2, 0.6F),
+	HANDS(2, 4.0F),
+	NONE(0, 1.0F);
 
 	private final int variants;
+	private final float baseAttackSpeed;
 
-	WeaponClass(final int variants) {
+	WeaponClass(final int variants, final float baseAttackSpeed) {
 		this.variants = variants;
+		this.baseAttackSpeed = baseAttackSpeed;
 	}
 
 	public int variants() {
 		return this.variants;
+	}
+
+	/** The class's unmodified attack-speed attribute; swing animations were
+	 * authored against it, so playback scales by actual/base. */
+	public float baseAttackSpeed() {
+		return this.baseAttackSpeed;
 	}
 
 	public static WeaponClass of(final Player player) {

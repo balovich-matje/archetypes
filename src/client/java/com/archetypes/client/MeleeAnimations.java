@@ -114,8 +114,23 @@ public final class MeleeAnimations {
 		WeaponClass weapon = WeaponClass.values()[swing & 0x3];
 		Identifier[] poses = POSES.get(weapon);
 
-		if (poses != null) {
-			controller.triggerAnimation(poses[(swing >> 2) % poses.length]);
+		if (poses == null) {
+			return;
 		}
+
+		// Poses are authored against the class's base attack speed; slower or
+		// faster readiness (Heavy Blows, modifiers) scales playback to match,
+		// so the swing always spans the actual recovery.
+		float factor = (float) player.getAttributeValue(
+				net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED)
+				/ weapon.baseAttackSpeed();
+		controller.removeAllModifiers();
+
+		if (Math.abs(factor - 1.0F) > 0.01F) {
+			controller.addModifierLast(
+					new com.zigythebird.playeranimcore.animation.layered.modifier.SpeedModifier(factor));
+		}
+
+		controller.triggerAnimation(poses[(swing >> 2) % poses.length]);
 	}
 }
