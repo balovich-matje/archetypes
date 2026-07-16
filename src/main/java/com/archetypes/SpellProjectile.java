@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class SpellProjectile extends ThrowableItemProjectile {
 	public enum Mode {
-		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT
+		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST, SNOW_BOLT
 	}
 
 	private @Nullable Mode mode;
@@ -45,6 +45,17 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private boolean pierce;
 	private boolean blessRegen;
 	private boolean blessRandom;
+	/** Elementalist shaping, decided at cast: Scorch/Arcane Power damage,
+	 * Ignition's longer burn, the water interactions, Shatter's bonus and
+	 * the ice spells' slow/freeze payloads. */
+	private float damageOverride;
+	private int igniteSeconds = -1;
+	private boolean vaporize;
+	private boolean permafrost;
+	private int shatterRank;
+	private int slowAmp = -1;
+	private int slowTicks;
+	private int freezeTicks;
 	private final Set<Integer> pierced = new HashSet<>();
 	private double traveled;
 
@@ -75,6 +86,42 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	public SpellProjectile withBlessing(final boolean regen, final boolean random) {
 		this.blessRegen = regen;
 		this.blessRandom = random;
+		return this;
+	}
+
+	public SpellProjectile withDamage(final float damage) {
+		this.damageOverride = damage;
+		return this;
+	}
+
+	public SpellProjectile withIgnite(final int seconds) {
+		this.igniteSeconds = seconds;
+		return this;
+	}
+
+	public SpellProjectile withVaporize() {
+		this.vaporize = true;
+		return this;
+	}
+
+	public SpellProjectile withPermafrost() {
+		this.permafrost = true;
+		return this;
+	}
+
+	public SpellProjectile withShatter(final int rank) {
+		this.shatterRank = rank;
+		return this;
+	}
+
+	public SpellProjectile withSlow(final int amplifier, final int ticks) {
+		this.slowAmp = amplifier;
+		this.slowTicks = ticks;
+		return this;
+	}
+
+	public SpellProjectile withFreeze(final int ticks) {
+		this.freezeTicks = ticks;
 		return this;
 	}
 
@@ -121,6 +168,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			this.pierceSweep();
 		}
 
+		this.meddleWithWater((ServerLevel) this.level());
 		this.trail((ServerLevel) this.level());
 	}
 
@@ -150,6 +198,34 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		}
 	}
 
+	/** Vaporize boils water off the flight path; Permafrost glazes it over
+	 * with the same self-melting ice frost walkers leave. */
+	private void meddleWithWater(final ServerLevel level) {
+		if (!this.vaporize && !this.permafrost) {
+			return;
+		}
+
+		net.minecraft.core.BlockPos center = this.blockPosition();
+
+		for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
+				center.offset(-1, -1, -1), center.offset(1, 0, 1))) {
+			if (!level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER)) {
+				continue;
+			}
+
+			if (this.vaporize) {
+				level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+				level.sendParticles(ParticleTypes.CLOUD,
+						pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 3, 0.2, 0.1, 0.2, 0.01);
+				level.playSound(null, pos.getX(), pos.getY(), pos.getZ(),
+						SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.4F, 1.6F);
+			} else {
+				level.setBlockAndUpdate(pos,
+						net.minecraft.world.level.block.Blocks.FROSTED_ICE.defaultBlockState());
+			}
+		}
+	}
+
 	private void trail(final ServerLevel level) {
 		switch (this.mode) {
 			case FIREBALL -> {
@@ -170,6 +246,10 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					this.getX(), this.getY(), this.getZ(), 1, 0.02, 0.02, 0.02, 0.0);
 			case HOLY_LIGHT -> level.sendParticles(ParticleTypes.GLOW,
 					this.getX(), this.getY(), this.getZ(), 2, 0.1, 0.1, 0.1, 0.0);
+			case ICE_BLAST -> level.sendParticles(ParticleTypes.SNOWFLAKE,
+					this.getX(), this.getY(), this.getZ(), 3, 0.15, 0.15, 0.15, 0.01);
+			case SNOW_BOLT -> level.sendParticles(ParticleTypes.SNOWFLAKE,
+					this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.005);
 			case null -> {
 			}
 		}
@@ -192,17 +272,39 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		switch (this.mode) {
 			case FIREBALL -> {
-				victim.igniteForSeconds(Tuning.FIREBALL_FIRE_SECONDS);
+				victim.igniteForSeconds(this.igniteSeconds >= 0
+						? this.igniteSeconds : Tuning.FIREBALL_FIRE_SECONDS);
 				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
-						Tuning.FIREBALL_DAMAGE);
+						this.shattered(victim, this.damageOverride > 0.0F
+								? this.damageOverride : Tuning.FIREBALL_DAMAGE));
 			}
 			case FLAME_BOLT -> {
-				victim.igniteForSeconds(Tuning.FLAME_BOLT_FIRE_SECONDS);
+				victim.igniteForSeconds(this.igniteSeconds >= 0
+						? this.igniteSeconds : Tuning.FLAME_BOLT_FIRE_SECONDS);
 				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
-						Tuning.FLAME_BOLT_DAMAGE);
+						this.shattered(victim, this.damageOverride > 0.0F
+								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
 			}
 			case MISSILE -> victim.hurtServer(level,
 					this.damageSources().indirectMagic(this, this.getOwner()), Tuning.MISSILE_DAMAGE);
+			case ICE_BLAST, SNOW_BOLT -> {
+				// Shatter reads the slow/freeze the victim ALREADY has, so a
+				// volley ramps: the first bolt tags, the next ones profit.
+				float damage = this.shattered(victim, this.damageOverride > 0.0F
+						? this.damageOverride
+						: this.mode == Mode.ICE_BLAST ? Tuning.ICE_BLAST_DAMAGE : Tuning.SNOW_BOLT_DAMAGE);
+
+				if (this.slowAmp >= 0) {
+					victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
+							this.slowTicks, this.slowAmp));
+				}
+
+				if (this.freezeTicks > 0) {
+					victim.setTicksFrozen(Math.max(victim.getTicksFrozen(), this.freezeTicks));
+				}
+
+				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+			}
 			case null, default -> {
 				// Meteor and Holy Light area-effect from onHit, ground or flesh alike.
 			}
@@ -228,6 +330,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			}
 			case METEOR -> this.impact(level);
 			case HOLY_LIGHT -> this.burst(level);
+			case ICE_BLAST -> {
+				level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
+						15, 0.3, 0.3, 0.3, 0.05);
+				level.playSound(null, this.getX(), this.getY(), this.getZ(),
+						SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.8F, 1.4F);
+			}
 			case null, default -> {
 			}
 		}
@@ -311,6 +419,16 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				SoundEvents.SPLASH_POTION_BREAK, SoundSource.PLAYERS, 1.0F, 1.3F);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
 				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 0.7F);
+	}
+
+	/** Shatter: the cold-cracked take more from every one of your spells. */
+	private float shattered(final LivingEntity victim, final float damage) {
+		if (this.shatterRank > 0
+				&& (victim.hasEffect(MobEffects.SLOWNESS) || victim.isFullyFrozen())) {
+			return damage * (1.0F + Tuning.SHATTER_PER_RANK * this.shatterRank);
+		}
+
+		return damage;
 	}
 
 	private static net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> randomBlessing(

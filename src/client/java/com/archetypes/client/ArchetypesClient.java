@@ -70,16 +70,20 @@ public class ArchetypesClient implements ClientModInitializer {
 				}
 			}
 
-			// Flamethrower is a channel, not a press: while the elementalist
-			// key is held, one payload per tick keeps the stream alive. The
-			// press payload above still goes out; the server ignores it for
-			// flamethrower holders.
+			// Flamethrower and Blizzard are channels, not presses: while the
+			// elementalist key is held, one payload per tick keeps the stream
+			// alive. The press payload above still goes out; the server
+			// ignores it for channel holders.
 			if (client.player != null && ABILITY_KEYS[0].isDown()
-					&& ModAttachments.get(client.player) == Archetype.INTELLECT
-					&& PlaceholderNodes.owns(SubTree.ELEMENTALIST,
-							NodePurchases.owned(client.player, SubTree.ELEMENTALIST),
-							PlaceholderNodes.Kind.CAPSTONE_B)) {
-				ClientPlayNetworking.send(new SpellChannelPayload());
+					&& ModAttachments.get(client.player) == Archetype.INTELLECT) {
+				var owned = NodePurchases.owned(client.player, SubTree.ELEMENTALIST);
+
+				if (com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
+						com.archetypes.ElementalistNodes.Family.FLAMETHROWER) > 0
+						|| com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
+								com.archetypes.ElementalistNodes.Family.BLIZZARD) > 0) {
+					ClientPlayNetworking.send(new SpellChannelPayload());
+				}
 			}
 
 			// Shield Rush: sprint pressed while the shield is raised. Only

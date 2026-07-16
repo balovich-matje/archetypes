@@ -76,17 +76,28 @@ public final class MarksmanCombat {
 	}
 
 	/**
-	 * On-hit passives, pre-death: Pinning's slow, Focus's cooldown refund,
-	 * and Combustion's blast on burning targets. {@code amount} is what the
+	 * On-hit passives, pre-death: Piercing Tips' armor bypass (returned as
+	 * shaped damage), Pinning's slow, Focus's cooldown refund, and
+	 * Combustion's blast on burning targets. {@code amount} is what the
 	 * victim is about to take; the blast copies it.
 	 */
-	public static void onArrowHit(final ServerPlayer player, final LivingEntity victim,
+	public static float onArrowHit(final ServerPlayer player, final LivingEntity victim,
 			final ServerLevel level, final float amount) {
 		if (detonating) {
-			return;
+			return amount;
 		}
 
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.MARKSMAN);
+		float result = amount;
+
+		// Piercing Tips: compensate what two armor points would have eaten
+		// (~4% each, the Sunder trick), so the shot lands as if they weren't
+		// there. No effect on the unarmored.
+		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.PIERCING_TIPS) > 0) {
+			float armor = (float) victim.getAttributeValue(
+					net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
+			result += amount * 0.04F * Math.min(Tuning.PIERCING_TIPS_ARMOR, armor);
+		}
 
 		int pinning = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.PINNING);
 
@@ -113,7 +124,7 @@ public final class MarksmanCombat {
 						victim.getBoundingBox().inflate(Tuning.COMBUSTION_RADIUS),
 						living -> living != player && living != victim && living.isAlive()
 								&& !living.isSpectator())) {
-					other.hurtServer(level, player.damageSources().playerAttack(player), amount);
+					other.hurtServer(level, player.damageSources().playerAttack(player), result);
 				}
 			} finally {
 				detonating = false;
@@ -124,6 +135,8 @@ public final class MarksmanCombat {
 			level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
 					SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.8F, 1.2F);
 		}
+
+		return result;
 	}
 
 	/** Rapid Reload's prime: a crossbow kill charges the next reload. */

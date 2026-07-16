@@ -51,6 +51,15 @@ public abstract class AvatarRendererMixin {
 			fabricState.setData(BulwarkRenderData.GHOST, ghost);
 		}
 
+		// Ghost Armor: an invisible Shadow's armor vanishes too — the state's
+		// equipment fields are what the armor and head layers render from.
+		if (Boolean.TRUE.equals(((AttachmentTarget) entity).getAttached(ModAttachments.ARMOR_HIDDEN))) {
+			state.headEquipment = net.minecraft.world.item.ItemStack.EMPTY;
+			state.chestEquipment = net.minecraft.world.item.ItemStack.EMPTY;
+			state.legsEquipment = net.minecraft.world.item.ItemStack.EMPTY;
+			state.feetEquipment = net.minecraft.world.item.ItemStack.EMPTY;
+		}
+
 		// Bladestorm: same handoff, keyed on the synced channel-end timestamp.
 		Long stormEnd = ((AttachmentTarget) entity).getAttached(ModAttachments.BLADESTORM_END);
 		boolean storming = stormEnd != null && stormEnd > entity.level().getGameTime();

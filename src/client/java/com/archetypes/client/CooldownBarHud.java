@@ -215,10 +215,10 @@ public final class CooldownBarHud {
 
 		var assassin = NodePurchases.owned(player, SubTree.ASSASSIN);
 
-		if (com.archetypes.PlaceholderNodes.owns(SubTree.ASSASSIN, assassin,
-				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
-			boolean flurry = com.archetypes.PlaceholderNodes.owns(SubTree.ASSASSIN, assassin,
-					com.archetypes.PlaceholderNodes.Kind.CAPSTONE_A);
+		if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, assassin,
+				com.archetypes.AssassinNodes.Family.SHADOW_STEP) > 0) {
+			boolean flurry = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, assassin,
+					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0;
 			abilities.add(new Ability(null, 0, new ItemStack(Items.ENDER_PEARL),
 					null, 0, ArchetypesClient.ABILITY_KEYS[1],
 					ModAttachments.SHADOW_STEP_READY_AT, flurry
@@ -228,8 +228,8 @@ public final class CooldownBarHud {
 
 		var shadow = NodePurchases.owned(player, SubTree.SHADOW);
 
-		if (com.archetypes.PlaceholderNodes.owns(SubTree.SHADOW, shadow,
-				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+		if (com.archetypes.ShadowNodes.rank(SubTree.SHADOW, shadow,
+				com.archetypes.ShadowNodes.Family.INVISIBILITY) > 0) {
 			abilities.add(new Ability(null, 0, new ItemStack(Items.FERMENTED_SPIDER_EYE),
 					null, 0, ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
@@ -238,18 +238,32 @@ public final class CooldownBarHud {
 		// The Seeker's spells: no cooldowns, so these are keybind + price
 		// tags over the mana bar, dimming when the pool can't pay.
 		var elementalist = NodePurchases.owned(player, SubTree.ELEMENTALIST);
+		boolean fire = com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST, elementalist,
+				com.archetypes.ElementalistNodes.Family.FIREBALL) > 0;
+		boolean ice = com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST, elementalist,
+				com.archetypes.ElementalistNodes.Family.ICE_BLAST) > 0;
 
-		if (com.archetypes.PlaceholderNodes.owns(SubTree.ELEMENTALIST, elementalist,
-				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
-			boolean meteor = com.archetypes.PlaceholderNodes.owns(SubTree.ELEMENTALIST, elementalist,
-					com.archetypes.PlaceholderNodes.Kind.CAPSTONE_A);
-			boolean flame = com.archetypes.PlaceholderNodes.owns(SubTree.ELEMENTALIST, elementalist,
-					com.archetypes.PlaceholderNodes.Kind.CAPSTONE_B);
-			abilities.add(new Ability(
-					new ItemStack(meteor ? Items.MAGMA_BLOCK : flame ? Items.BLAZE_ROD : Items.FIRE_CHARGE),
-					ArchetypesClient.ABILITY_KEYS[0],
-					meteor ? Tuning.METEOR_MIN_MANA : flame ? Tuning.FLAME_START_COST : Tuning.FIREBALL_COST,
-					meteor));
+		if (fire || ice) {
+			boolean meteor = fire && com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST,
+					elementalist, com.archetypes.ElementalistNodes.Family.METEORITE) > 0;
+			boolean flame = fire && com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST,
+					elementalist, com.archetypes.ElementalistNodes.Family.FLAMETHROWER) > 0;
+			boolean glacial = ice && com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST,
+					elementalist, com.archetypes.ElementalistNodes.Family.GLACIAL_SPIKE) > 0;
+			boolean blizzard = ice && com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST,
+					elementalist, com.archetypes.ElementalistNodes.Family.BLIZZARD) > 0;
+
+			net.minecraft.world.item.Item icon = meteor ? Items.MAGMA_BLOCK
+					: flame ? Items.BLAZE_ROD
+					: glacial ? Items.BLUE_ICE
+					: blizzard ? Items.SNOW_BLOCK
+					: ice ? Items.ICE : Items.FIRE_CHARGE;
+			float cost = meteor ? Tuning.METEOR_MIN_MANA
+					: com.archetypes.SeekerSpells.elementCost(player,
+							flame || blizzard ? Tuning.FLAME_START_COST
+									: ice ? Tuning.ICE_BLAST_COST : Tuning.FIREBALL_COST,
+							fire, ice);
+			abilities.add(new Ability(new ItemStack(icon), ArchetypesClient.ABILITY_KEYS[0], cost, meteor));
 		}
 
 		var wizard = NodePurchases.owned(player, SubTree.WIZARD);

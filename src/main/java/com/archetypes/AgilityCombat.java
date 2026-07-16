@@ -1,19 +1,13 @@
 package com.archetypes;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
-import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.effect.MobEffect;
-import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
@@ -93,24 +87,19 @@ public final class AgilityCombat {
 
 			if (source.getDirectEntity() instanceof AbstractArrow arrow) {
 				MarksmanCombat.onArrowKill(player, arrow);
-
-				// Night's Gift: any bow or crossbow kill lights the dark.
-				if (MarksmanCombat.fromMarksmanWeapon(arrow)
-						&& MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
-								MarksmanNodes.Family.NIGHT_VISION) > 0) {
-					player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
-							Tuning.NIGHT_VISION_TICKS));
-				}
 			}
+
+			ShadowTicker.onKill(player);
 
 			if (player.hasEffect(MobEffects.INVISIBILITY)
-					&& PlaceholderNodes.owns(SubTree.SHADOW,
-							NodePurchases.owned(player, SubTree.SHADOW), PlaceholderNodes.Kind.CAPSTONE_A)) {
-				player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Tuning.INVIS_TICKS));
+					&& ShadowNodes.rank(SubTree.SHADOW, NodePurchases.owned(player, SubTree.SHADOW),
+							ShadowNodes.Family.PREDATOR) > 0) {
+				player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,
+						ShadowTicker.invisDuration(player)));
 			}
 
-			if (PlaceholderNodes.owns(SubTree.ASSASSIN,
-					NodePurchases.owned(player, SubTree.ASSASSIN), PlaceholderNodes.Kind.CAPSTONE_B)) {
+			if (AssassinNodes.rank(SubTree.ASSASSIN, NodePurchases.owned(player, SubTree.ASSASSIN),
+					AssassinNodes.Family.MOMENTUM) > 0) {
 				target.removeAttached(ModAttachments.SHADOW_STEP_READY_AT);
 			}
 		});
@@ -128,25 +117,17 @@ public final class AgilityCombat {
 			Long ready = target.getAttached(ModAttachments.CHEAT_DEATH_READY_AT);
 
 			if ((ready != null && now < ready)
-					|| !PlaceholderNodes.owns(SubTree.SHADOW,
-							NodePurchases.owned(player, SubTree.SHADOW), PlaceholderNodes.Kind.CAPSTONE_B)) {
+					|| ShadowNodes.rank(SubTree.SHADOW, NodePurchases.owned(player, SubTree.SHADOW),
+							ShadowNodes.Family.LAST_SHADOW) <= 0) {
 				return true;
 			}
 
 			player.setHealth(1.0F);
-
-			List<Holder<MobEffect>> harmful = new ArrayList<>();
-
-			for (var active : player.getActiveEffectsMap().keySet()) {
-				if (active.value().getCategory() == MobEffectCategory.HARMFUL) {
-					harmful.add(active);
-				}
-			}
-
-			harmful.forEach(player::removeEffect);
+			ShadowTicker.cleanse(player);
 
 			target.setAttached(ModAttachments.IMMUNE_UNTIL, now + Tuning.CHEAT_DEATH_IMMUNE_TICKS);
-			player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Tuning.INVIS_TICKS));
+			player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,
+					ShadowTicker.invisDuration(player)));
 			target.setAttached(ModAttachments.INVIS_READY_AT, now + Tuning.CHEAT_DEATH_COOLDOWN_TICKS);
 			target.setAttached(ModAttachments.CHEAT_DEATH_READY_AT, now + Tuning.CHEAT_DEATH_COOLDOWN_TICKS);
 

@@ -248,14 +248,15 @@ public final class Tuning {
 	public static final int PINNING_TICKS = 60;
 	/** Damage-neutral: velocity up by this, base damage down to match. */
 	public static final float SWIFT_FLIGHT_PER_RANK = 0.5F;
-	public static final double DISENGAGE_BLOCKS_PER_RANK = 3.0;
+	public static final double ACROBATICS_BLOCKS_PER_RANK = 2.0;
 	public static final int DISENGAGE_COOLDOWN_TICKS = 160;
 	/** A third of the draw slowdown back per rank; rank 3 walks free. */
 	public static final float NIMBLE_DRAW_PER_RANK = 1.0F / 3.0F;
 	public static final float RAPID_RELOAD_PER_RANK = 0.25F;
 	public static final double COMBUSTION_RADIUS = 3.0;
 	public static final int FOCUS_REFUND_TICKS = 200;
-	public static final int NIGHT_VISION_TICKS = 160;
+	/** Piercing Tips: how many armor points ranged shots pretend away. */
+	public static final float PIERCING_TIPS_ARMOR = 2.0F;
 
 	// --- Agility: Invisibility ---
 	public static final int INVIS_TICKS = 160;
@@ -263,6 +264,19 @@ public final class Tuning {
 	public static final int CHEAT_DEATH_IMMUNE_TICKS = 40;
 	/** Shared by the invis active and the cheat-death passive after it fires. */
 	public static final int CHEAT_DEATH_COOLDOWN_TICKS = 3600;
+
+	// --- Shadow passives ---
+	public static final float SWIFT_SHADOW_PER_RANK = 0.20F;
+	public static final float DARK_MENDING_HEAL = 2.0F;
+	public static final float DIM_PRESENCE_PER_RANK = 0.15F;
+	public static final float FIRST_STRIKE_PER_RANK = 0.30F;
+	public static final float BLOODRUSH_PER_RANK = 0.20F;
+	public static final int BLOODRUSH_TICKS = 80;
+	public static final float REAPER_HEAL = 4.0F;
+	public static final int UMBRAL_MASTERY_BONUS_TICKS = 80;
+	public static final double UMBRAL_SIGHT_RADIUS = 8.0;
+	/** Kept above 210 so vanilla's low-timer flicker never shows. */
+	public static final int NIGHT_EYES_TICKS = 250;
 
 	// --- Agility: Shadow Step ---
 	public static final double SHADOW_STEP_RANGE = 16.0;
@@ -272,6 +286,20 @@ public final class Tuning {
 	public static final int FLURRY_EXTRA_STRIKES = 3;
 	public static final int FLURRY_STRIKE_PERIOD_TICKS = 3;
 	public static final double FLURRY_REACH = 5.0;
+
+	// --- Assassin passives ---
+	public static final float LIGHTFOOT_PER_RANK = 0.10F;
+	public static final float SIDESTEP_PER_RANK = 0.07F;
+	public static final int ADRENALINE_RUSH_TICKS = 60;
+	public static final int OPPORTUNIST_REFUND_TICKS = 60;
+	public static final float RAZOR_EDGE_PER_RANK = 0.08F;
+	public static final float FRENZY_PER_RANK = 0.10F;
+	public static final float EXPOSE_BONUS = 0.15F;
+	public static final int VENOM_TICKS = 80;
+	public static final int BLIGHT_TICKS = 60;
+	/** Fraction of armor's absorption clawed back per rank; rank 2 = all. */
+	public static final float FLENSE_PER_RANK = 0.5F;
+	public static final float DEATHBLOW_MULTIPLIER = 1.5F;
 
 	// --- Mana (the Seeker's resource; Spellcasting skill in Specialities) ---
 	public static final float MANA_BASE = 100.0F;
@@ -304,6 +332,26 @@ public final class Tuning {
 	public static final int FLAME_BOLT_FIRE_SECONDS = 3;
 	public static final float FLAME_BOLT_SPEED = 1.2F;
 	public static final int FLAME_BOLT_PERIOD_TICKS = 2;
+
+	// --- Elementalist: ice + element passives ---
+	public static final float ICE_BLAST_COST = 50.0F;
+	public static final float ICE_BLAST_DAMAGE = 4.0F;
+	public static final float ICE_BLAST_SPEED = 1.2F;
+	/** Slowness III for 4s at base; Frostbite adds a level and a second. */
+	public static final int ICE_SLOW_AMP = 2;
+	public static final int ICE_SLOW_TICKS = 80;
+	public static final float SNOW_BOLT_DAMAGE = 2.0F;
+	public static final int SNOW_BOLT_SLOW_TICKS = 40;
+	public static final float GLACIAL_MULTIPLIER = 2.5F;
+	public static final int GLACIAL_FREEZE_TICKS = 240;
+	public static final float KINDLING_DISCOUNT_PER_RANK = 5.0F;
+	public static final float CHILL_DISCOUNT_PER_RANK = 5.0F;
+	public static final float SCORCH_PER_RANK = 2.0F;
+	public static final int IGNITION_SECONDS_PER_RANK = 3;
+	public static final float SHATTER_PER_RANK = 0.15F;
+	public static final float SPELLWEAVER_FACTOR = 0.9F;
+	public static final float ARCANE_POWER_FACTOR = 1.2F;
+	public static final float FOCUSED_MIND_REGEN = 0.5F;
 
 	// --- Seeker: Magic Missile ---
 	public static final float MISSILE_COST = 25.0F;

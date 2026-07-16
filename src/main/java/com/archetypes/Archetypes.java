@@ -25,6 +25,7 @@ public class Archetypes implements ModInitializer {
 		CrusherTicker.initialize();
 		AgilityCombat.initialize();
 		AgilityTicker.initialize();
+		ShadowTicker.initialize();
 		SeekerTicker.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
@@ -93,7 +94,7 @@ public class Archetypes implements ModInitializer {
 				.server().execute(() -> ShieldRush.execute(context.player())));
 
 		ServerPlayNetworking.registerGlobalReceiver(DisengagePayload.TYPE, (payload, context) -> context
-				.server().execute(() -> AgilityActives.disengage(context.player())));
+				.server().execute(() -> AgilityActives.acrobatics(context.player())));
 
 		// The greatsword is strictly two-handed: while it's in the main hand
 		// the offhand is dead weight — no shields, no food, no blocks from it.

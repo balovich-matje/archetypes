@@ -188,10 +188,148 @@ public abstract class LivingEntityMixin {
 		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
 				&& source.getEntity() instanceof ServerPlayer player
 				&& com.archetypes.MarksmanCombat.fromMarksmanWeapon(arrow)) {
-			com.archetypes.MarksmanCombat.onArrowHit(player, (LivingEntity) (Object) this, level, amount);
+			return com.archetypes.MarksmanCombat.onArrowHit(player, (LivingEntity) (Object) this, level, amount);
 		}
 
 		return amount;
+	}
+
+	/**
+	 * The dagger's damage shaping and DoTs, all on the victim's intake:
+	 * Razor Edge's steel, Expose's finishing bonus, Flense clawing back what
+	 * armor would eat, Deathblow recognising a Shadow Step strike by its
+	 * same-tick stamp — and the Venom/Blight coatings applied here so they
+	 * land even on killing blows.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$daggerDamage(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!(source.getEntity() instanceof ServerPlayer player)
+				|| source.getDirectEntity() != player
+				|| !ModItems.isDagger(player.getMainHandItem())) {
+			return amount;
+		}
+
+		LivingEntity victim = (LivingEntity) (Object) this;
+		var owned = NodePurchases.owned(player, SubTree.ASSASSIN);
+		float result = amount;
+
+		result *= 1.0F + Tuning.RAZOR_EDGE_PER_RANK
+				* com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+						com.archetypes.AssassinNodes.Family.RAZOR_EDGE);
+
+		if (victim.getHealth() < victim.getMaxHealth() * 0.5F
+				&& com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+						com.archetypes.AssassinNodes.Family.EXPOSE) > 0) {
+			result *= 1.0F + Tuning.EXPOSE_BONUS;
+		}
+
+		int flense = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+				com.archetypes.AssassinNodes.Family.FLENSE);
+
+		if (flense > 0) {
+			// Exact compensation: post-armor damage comes out as if the
+			// ignored fraction of armor's absorption wasn't there.
+			float absorbed = Math.min(0.8F, (float) victim.getAttributeValue(
+					net.minecraft.world.entity.ai.attributes.Attributes.ARMOR) * 0.04F);
+			float ignored = Math.min(1.0F, Tuning.FLENSE_PER_RANK * flense);
+			result = result * (1.0F - absorbed * (1.0F - ignored)) / (1.0F - absorbed);
+		}
+
+		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
+
+		if (stepStrike != null && stepStrike == level.getGameTime()
+				&& com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+						com.archetypes.AssassinNodes.Family.DEATHBLOW) > 0) {
+			result *= Tuning.DEATHBLOW_MULTIPLIER;
+		}
+
+		int venom = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+				com.archetypes.AssassinNodes.Family.VENOM);
+
+		if (venom > 0) {
+			victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+					net.minecraft.world.effect.MobEffects.POISON, Tuning.VENOM_TICKS, venom - 1));
+		}
+
+		int blight = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+				com.archetypes.AssassinNodes.Family.BLIGHT);
+
+		if (blight > 0) {
+			victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+					net.minecraft.world.effect.MobEffects.WITHER, Tuning.BLIGHT_TICKS, blight - 1));
+		}
+
+		return result;
+	}
+
+	/**
+	 * Sidestep: sometimes the blow simply meets air. Melee only — the
+	 * attacker must BE the damage, not have thrown it.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void archetypes$sidestep(final ServerLevel level, final DamageSource source,
+			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (!((Object) this instanceof ServerPlayer player)
+				|| !ModItems.isDagger(player.getMainHandItem())
+				|| !(source.getDirectEntity() instanceof LivingEntity)
+				|| source.getDirectEntity() != source.getEntity()) {
+			return;
+		}
+
+		int rank = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN,
+				NodePurchases.owned(player, SubTree.ASSASSIN), com.archetypes.AssassinNodes.Family.SIDESTEP);
+
+		if (rank > 0 && player.getRandom().nextFloat() < Tuning.SIDESTEP_PER_RANK * rank) {
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
+					player.getX(), player.getY() + 1.0, player.getZ(), 4, 0.2, 0.3, 0.2, 0.01);
+			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP,
+					net.minecraft.sounds.SoundSource.PLAYERS, 0.6F, 1.6F);
+			cir.setReturnValue(false);
+		}
+	}
+
+	/**
+	 * First Strike: melee out of invisibility opens +30% per rank harder.
+	 * Vanilla breaks the invisibility right after the hit lands, so this
+	 * naturally pays once per vanishing.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$firstStrike(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!(source.getEntity() instanceof ServerPlayer player)
+				|| source.getDirectEntity() != player
+				|| !player.hasEffect(net.minecraft.world.effect.MobEffects.INVISIBILITY)) {
+			return amount;
+		}
+
+		int rank = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
+				NodePurchases.owned(player, SubTree.SHADOW), com.archetypes.ShadowNodes.Family.FIRST_STRIKE);
+		return rank > 0 ? amount * (1.0F + Tuning.FIRST_STRIKE_PER_RANK * rank) : amount;
+	}
+
+	/**
+	 * Dim Presence: mobs simply notice this player less, hidden or not —
+	 * the same channel sneaking and invisibility already use, so it stacks
+	 * multiplicatively with both (and with Specialities' Sneaking, which
+	 * modifies the same return).
+	 */
+	@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent",
+			at = @At("RETURN"))
+	private double archetypes$dimPresence(final double original) {
+		if ((Object) this instanceof ServerPlayer player) {
+			int rank = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
+					NodePurchases.owned(player, SubTree.SHADOW), com.archetypes.ShadowNodes.Family.DIM_PRESENCE);
+
+			if (rank > 0) {
+				return original * (1.0 - Tuning.DIM_PRESENCE_PER_RANK * rank);
+			}
+		}
+
+		return original;
 	}
 
 	/**

@@ -97,17 +97,23 @@ public final class AgilityActives {
 		}
 	}
 
-	/** Invisibility: eight seconds of the vanilla effect on a half-minute clock. */
+	/** Invisibility: eight seconds of the vanilla effect on a half-minute
+	 * clock — longer with Umbral Mastery, cleaner with Cleansing Veil. */
 	public static void invisibility(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.SHADOW);
 
-		if (!PlaceholderNodes.owns(SubTree.SHADOW, owned, PlaceholderNodes.Kind.ACTIVE)
+		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.INVISIBILITY) <= 0
 				|| onCooldown(player, ModAttachments.INVIS_READY_AT)) {
 			return;
 		}
 
 		ServerLevel level = (ServerLevel) player.level();
-		player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, Tuning.INVIS_TICKS));
+
+		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.CLEANSING_VEIL) > 0) {
+			ShadowTicker.cleanse(player);
+		}
+
+		player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, ShadowTicker.invisDuration(player)));
 		((AttachmentTarget) player).setAttached(ModAttachments.INVIS_READY_AT,
 				level.getGameTime() + Tuning.INVIS_COOLDOWN_TICKS);
 		level.sendParticles(ParticleTypes.LARGE_SMOKE,
@@ -125,7 +131,7 @@ public final class AgilityActives {
 	public static void shadowStep(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ASSASSIN);
 
-		if (!PlaceholderNodes.owns(SubTree.ASSASSIN, owned, PlaceholderNodes.Kind.ACTIVE)
+		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_STEP) <= 0
 				|| !ModItems.isDagger(player.getMainHandItem())
 				|| onCooldown(player, ModAttachments.SHADOW_STEP_READY_AT)) {
 			return;
@@ -173,44 +179,53 @@ public final class AgilityActives {
 
 		strike(player, victim);
 
+		// Adrenaline Rush: the blink leaves you fast.
+		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.ADRENALINE_RUSH) > 0) {
+			player.addEffect(new MobEffectInstance(MobEffects.SPEED, Tuning.ADRENALINE_RUSH_TICKS, 1));
+		}
+
 		AttachmentTarget target = (AttachmentTarget) player;
-		boolean flurry = PlaceholderNodes.owns(SubTree.ASSASSIN, owned, PlaceholderNodes.Kind.CAPSTONE_A);
+		boolean flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_FLURRY) > 0;
 
 		if (flurry) {
 			target.setAttached(ModAttachments.STEP_STRIKES_LEFT, Tuning.FLURRY_EXTRA_STRIKES);
 			target.setAttached(ModAttachments.STEP_TARGET, victim.getId());
 		}
 
-		target.setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime()
-				+ (flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS));
+		int cooldown = flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS;
+
+		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.OPPORTUNIST) > 0) {
+			cooldown -= Tuning.OPPORTUNIST_REFUND_TICKS;
+		}
+
+		target.setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime() + cooldown);
 	}
 
 	/**
-	 * Disengage: sprint while the bowstring is drawn to spring backwards —
-	 * 3 blocks per rank, on a one-second clock so it reads as footwork, not
-	 * flight. The draw survives the hop; the aim is yours to recover.
+	 * Acrobatics: sprint while the bowstring is drawn to roll forward — 2
+	 * blocks per rank, kept low so it reads as a tumble, not a lunge. The
+	 * draw survives the roll; the aim is yours to recover.
 	 */
-	public static void disengage(final ServerPlayer player) {
-		if (MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
-				MarksmanNodes.Family.DISENGAGE) <= 0
-				|| !player.isUsingItem() || !player.getUseItem().is(Items.BOW)
+	public static void acrobatics(final ServerPlayer player) {
+		int rank = MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
+				MarksmanNodes.Family.ACROBATICS);
+
+		if (rank <= 0 || !player.isUsingItem() || !player.getUseItem().is(Items.BOW)
 				|| onCooldown(player, ModAttachments.DISENGAGE_READY_AT)) {
 			return;
 		}
 
-		int rank = MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
-				MarksmanNodes.Family.DISENGAGE);
 		ServerLevel level = (ServerLevel) player.level();
 		Vec3 look = player.getLookAngle();
-		Vec3 back = new Vec3(-look.x, 0.0, -look.z);
+		Vec3 forward = new Vec3(look.x, 0.0, look.z);
 
-		if (back.lengthSqr() < 1.0E-4) {
+		if (forward.lengthSqr() < 1.0E-4) {
 			return;
 		}
 
-		double impulse = rank * Tuning.DISENGAGE_BLOCKS_PER_RANK * Tuning.RUSH_IMPULSE_PER_BLOCK;
+		double impulse = rank * Tuning.ACROBATICS_BLOCKS_PER_RANK * Tuning.RUSH_IMPULSE_PER_BLOCK;
 		player.setDeltaMovement(player.getDeltaMovement()
-				.add(back.normalize().scale(impulse).add(0.0, 0.25, 0.0)));
+				.add(forward.normalize().scale(impulse).add(0.0, 0.15, 0.0)));
 		player.hurtMarked = true;
 		((AttachmentTarget) player).setAttached(ModAttachments.DISENGAGE_READY_AT,
 				level.getGameTime() + Tuning.DISENGAGE_COOLDOWN_TICKS);
@@ -220,9 +235,12 @@ public final class AgilityActives {
 				SoundEvents.RABBIT_JUMP, SoundSource.PLAYERS, 1.0F, 0.7F);
 	}
 
-	/** One authentic full-charge attack: enchants, crits and all. */
+	/** One authentic full-charge attack: enchants, crits and all. The stamp
+	 * lets Deathblow's shaping recognise it mid-pipeline. */
 	public static void strike(final ServerPlayer player, final LivingEntity victim) {
 		((LivingEntityAccessor) player).archetypes$setAttackStrengthTicker(1000);
+		((AttachmentTarget) player).setAttached(ModAttachments.STEP_STRIKE_AT,
+				player.level().getGameTime());
 		player.attack(victim);
 		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 	}

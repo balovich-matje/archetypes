@@ -21,37 +21,121 @@ public final class SeekerSpells {
 	private SeekerSpells() {
 	}
 
-	/** The elementalist key: Meteorite replaces Fireball once owned. */
+	/** How Elementalist passives discount a cast. Client-safe: the cooldown
+	 * bar prices its tiles with the same arithmetic. */
+	public static float elementCost(final net.minecraft.world.entity.player.Player player,
+			final float base, final boolean fire, final boolean ice) {
+		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
+		float cost = base;
+
+		if (fire) {
+			cost -= Tuning.KINDLING_DISCOUNT_PER_RANK
+					* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.KINDLING);
+		}
+
+		if (ice) {
+			cost -= Tuning.CHILL_DISCOUNT_PER_RANK
+					* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.CHILL);
+		}
+
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SPELLWEAVER) > 0) {
+			cost *= Tuning.SPELLWEAVER_FACTOR;
+		}
+
+		return Math.max(1.0F, cost);
+	}
+
+	private static float arcane(final Set<Integer> owned, final float damage) {
+		return ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ARCANE_POWER) > 0
+				? damage * Tuning.ARCANE_POWER_FACTOR : damage;
+	}
+
+	/** The elementalist key: whichever element you opened with, upgraded by
+	 * whatever you've learned since. Channel capstones cast via the channel
+	 * payload stream instead; a single press from them does nothing. */
 	public static void castElementalist(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
 
-		if (!PlaceholderNodes.owns(SubTree.ELEMENTALIST, owned, PlaceholderNodes.Kind.ACTIVE)) {
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ICE_BLAST) > 0) {
+			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.BLIZZARD) > 0) {
+				return;
+			}
+
+			iceBlast(player, owned,
+					ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.GLACIAL_SPIKE) > 0);
 			return;
 		}
 
-		if (PlaceholderNodes.owns(SubTree.ELEMENTALIST, owned, PlaceholderNodes.Kind.CAPSTONE_A)) {
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FIREBALL) <= 0) {
+			return;
+		}
+
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.METEORITE) > 0) {
 			meteorite(player);
 			return;
 		}
 
-		// Flamethrower holders channel through SpellChannelPayload instead;
-		// a single press from them casts nothing.
-		if (PlaceholderNodes.owns(SubTree.ELEMENTALIST, owned, PlaceholderNodes.Kind.CAPSTONE_B)) {
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FLAMETHROWER) > 0) {
 			return;
 		}
 
-		if (!Mana.spend(player, Tuning.FIREBALL_COST)) {
+		if (!Mana.spend(player, elementCost(player, Tuning.FIREBALL_COST, true, false))) {
 			return;
 		}
 
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile fireball = new SpellProjectile(player, level,
-				SpellProjectile.Mode.FIREBALL, new ItemStack(Items.FIRE_CHARGE));
+				SpellProjectile.Mode.FIREBALL, new ItemStack(Items.FIRE_CHARGE))
+				.withDamage(arcane(owned, Tuning.FIREBALL_DAMAGE + Tuning.SCORCH_PER_RANK
+						* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SCORCH)))
+				.withIgnite(Tuning.FIREBALL_FIRE_SECONDS + Tuning.IGNITION_SECONDS_PER_RANK
+						* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.IGNITION))
+				.withShatter(ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SHATTER));
+
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.VAPORIZE) > 0) {
+			fireball.withVaporize();
+		}
+
 		fireball.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.FIREBALL_SPEED, 0.5F);
 		level.addFreshEntity(fireball);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.GHAST_SHOOT, SoundSource.PLAYERS, 0.7F, 1.3F);
+	}
+
+	/**
+	 * Ice Blast, and its Glacial Spike transformation: the other opening
+	 * element — a freezing bolt that slows what it hits (harder and longer
+	 * with Frostbite), glazes water with Permafrost, and as the Spike simply
+	 * hits like winter itself, leaving the target freezing in place.
+	 */
+	private static void iceBlast(final ServerPlayer player, final Set<Integer> owned, final boolean glacial) {
+		if (!Mana.spend(player, elementCost(player, Tuning.ICE_BLAST_COST, false, true))) {
+			return;
+		}
+
+		int frostbite = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FROSTBITE);
+		float damage = arcane(owned, Tuning.ICE_BLAST_DAMAGE * (glacial ? Tuning.GLACIAL_MULTIPLIER : 1.0F));
+		ServerLevel level = (ServerLevel) player.level();
+		SpellProjectile blast = new SpellProjectile(player, level, SpellProjectile.Mode.ICE_BLAST,
+				new ItemStack(glacial ? Items.BLUE_ICE : Items.ICE))
+				.withDamage(damage)
+				.withSlow(Tuning.ICE_SLOW_AMP + frostbite, Tuning.ICE_SLOW_TICKS + 20 * frostbite)
+				.withShatter(ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SHATTER));
+
+		if (glacial) {
+			blast.withFreeze(Tuning.GLACIAL_FREEZE_TICKS);
+		}
+
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.PERMAFROST) > 0) {
+			blast.withPermafrost();
+		}
+
+		blast.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
+				Tuning.ICE_BLAST_SPEED, 0.5F);
+		level.addFreshEntity(blast);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.PLAYER_HURT_FREEZE, SoundSource.PLAYERS, 1.0F, 1.4F);
 	}
 
 	/**
@@ -84,7 +168,8 @@ public final class SeekerSpells {
 		}
 
 		SpellProjectile meteor = new SpellProjectile(player, level,
-				SpellProjectile.Mode.METEOR, new ItemStack(Items.MAGMA_BLOCK)).withPower(spent);
+				SpellProjectile.Mode.METEOR, new ItemStack(Items.MAGMA_BLOCK))
+				.withPower(arcane(NodePurchases.owned(player, SubTree.ELEMENTALIST), spent));
 		meteor.setPos(targetPos.getX() + 0.5, targetPos.getY() + 1 + Tuning.METEOR_HEIGHT,
 				targetPos.getZ() + 0.5);
 		meteor.setDeltaMovement(0.0, -Tuning.METEOR_SPEED, 0.0);
@@ -100,9 +185,14 @@ public final class SeekerSpells {
 	 */
 	public static void channelFlame(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
+		boolean flame = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
+				ElementalistNodes.Family.FLAMETHROWER) > 0
+				&& ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FIREBALL) > 0;
+		boolean blizzard = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
+				ElementalistNodes.Family.BLIZZARD) > 0
+				&& ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ICE_BLAST) > 0;
 
-		if (!PlaceholderNodes.owns(SubTree.ELEMENTALIST, owned, PlaceholderNodes.Kind.ACTIVE)
-				|| !PlaceholderNodes.owns(SubTree.ELEMENTALIST, owned, PlaceholderNodes.Kind.CAPSTONE_B)) {
+		if (!flame && !blizzard) {
 			return;
 		}
 
@@ -112,7 +202,9 @@ public final class SeekerSpells {
 		Long last = target.getAttached(ModAttachments.FLAME_LAST_TICK);
 		boolean fresh = last == null || now - last > 3;
 
-		if (!Mana.spend(player, fresh ? Tuning.FLAME_START_COST : Tuning.FLAME_COST_PER_TICK)) {
+		if (!Mana.spend(player, fresh
+				? elementCost(player, Tuning.FLAME_START_COST, flame, blizzard)
+				: Tuning.FLAME_COST_PER_TICK)) {
 			return;
 		}
 
@@ -122,13 +214,39 @@ public final class SeekerSpells {
 			return;
 		}
 
-		SpellProjectile bolt = new SpellProjectile(player, level,
-				SpellProjectile.Mode.FLAME_BOLT, new ItemStack(Items.BLAZE_POWDER));
+		int shatter = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SHATTER);
+		SpellProjectile bolt;
+
+		if (flame) {
+			bolt = new SpellProjectile(player, level,
+					SpellProjectile.Mode.FLAME_BOLT, new ItemStack(Items.BLAZE_POWDER))
+					.withDamage(arcane(owned, Tuning.FLAME_BOLT_DAMAGE + 0.5F * Tuning.SCORCH_PER_RANK
+							* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SCORCH)))
+					.withIgnite(Tuning.FLAME_BOLT_FIRE_SECONDS + Tuning.IGNITION_SECONDS_PER_RANK
+							* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.IGNITION))
+					.withShatter(shatter);
+
+			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.VAPORIZE) > 0) {
+				bolt.withVaporize();
+			}
+		} else {
+			bolt = new SpellProjectile(player, level,
+					SpellProjectile.Mode.SNOW_BOLT, new ItemStack(Items.SNOWBALL))
+					.withDamage(arcane(owned, Tuning.SNOW_BOLT_DAMAGE))
+					.withSlow(1, Tuning.SNOW_BOLT_SLOW_TICKS)
+					.withShatter(shatter);
+
+			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.PERMAFROST) > 0) {
+				bolt.withPermafrost();
+			}
+		}
+
 		bolt.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.FLAME_BOLT_SPEED, 4.0F);
 		level.addFreshEntity(bolt);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.BLAZE_SHOOT, SoundSource.PLAYERS, 0.4F, 1.4F);
+				flame ? SoundEvents.BLAZE_SHOOT : SoundEvents.SNOW_HIT,
+				SoundSource.PLAYERS, 0.4F, flame ? 1.4F : 1.2F);
 	}
 
 	/** Magic Missile: straight line, sixteen blocks, wand in hand. */
@@ -137,7 +255,7 @@ public final class SeekerSpells {
 
 		if (!PlaceholderNodes.owns(SubTree.WIZARD, owned, PlaceholderNodes.Kind.ACTIVE)
 				|| !ModItems.isWand(player.getMainHandItem())
-				|| !Mana.spend(player, Tuning.MISSILE_COST)) {
+				|| !Mana.spend(player, elementCost(player, Tuning.MISSILE_COST, false, false))) {
 			return;
 		}
 
@@ -167,7 +285,7 @@ public final class SeekerSpells {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.PRIEST);
 
 		if (!PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.ACTIVE)
-				|| !Mana.spend(player, Tuning.HOLY_COST)) {
+				|| !Mana.spend(player, elementCost(player, Tuning.HOLY_COST, false, false))) {
 			return;
 		}
 

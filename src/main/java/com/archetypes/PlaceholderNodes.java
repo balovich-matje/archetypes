@@ -11,8 +11,8 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * Node tables for the six Cutpurse/Seeker trees while their passives are being
- * written (Marksman has graduated to {@link MarksmanNodes}): each tree has
+ * Node tables for the Wizard and Priest trees while their passives are being
+ * written (every other tree has graduated to its own class): each tree has
  * its ACTIVE at the constellation's root, a mutually
  * exclusive capstone pair near the crown, and pickable-but-inert MINOR
  * placeholders everywhere else. When a tree's passives land it graduates to
@@ -34,15 +34,6 @@ public final class PlaceholderNodes {
 	}
 
 	private static final Map<SubTree, Spec> SPECS = new EnumMap<>(Map.of(
-			SubTree.ASSASSIN, new Spec("shadow_step", "shadow_flurry", "momentum",
-					() -> Items.ENDER_PEARL, () -> ModItems.IRON_DAGGER, () -> Items.WITHER_SKELETON_SKULL,
-					3, 0, 2, 9, 4, 9),
-			SubTree.SHADOW, new Spec("invisibility", "predator", "last_shadow",
-					() -> Items.FERMENTED_SPIDER_EYE, () -> Items.SKELETON_SKULL, () -> Items.TOTEM_OF_UNDYING,
-					6, 0, 5, 11, 6, 11),
-			SubTree.ELEMENTALIST, new Spec("fireball", "meteorite", "flamethrower",
-					() -> Items.FIRE_CHARGE, () -> Items.MAGMA_BLOCK, () -> Items.BLAZE_ROD,
-					4, 0, 3, 9, 5, 9),
 			SubTree.WIZARD, new Spec("magic_missile", "seeker_missile", "lance",
 					() -> Items.AMETHYST_SHARD, () -> Items.ENDER_EYE, () -> Items.END_ROD,
 					3, 0, 0, 9, 6, 9),

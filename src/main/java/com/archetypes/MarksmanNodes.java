@@ -13,7 +13,7 @@ import org.jspecify.annotations.Nullable;
 /**
  * What each node of the Marksman constellation is. The constellation IS a
  * resting bow with a nocked arrow: True Shot at the bottom tip, the string
- * (right, straight) carrying the crossbow branch — Night's Gift, Pinning,
+ * (right, straight) carrying the crossbow branch — Piercing Tips, Pinning,
  * Rapid Reload — up to Snap Shot, the stave (left, arcing) carrying the bow
  * branch — Disengage, Nimble Draw, Swift Flight — up to Seeker Arrow, the
  * arrow through the bulge with Combustion at its head and the shared
@@ -28,8 +28,8 @@ public final class MarksmanNodes {
 		PINNING(() -> Items.COBWEB),
 		/** Faster arrows, damage-neutral (speed up, base damage down). */
 		SWIFT_FLIGHT(() -> Items.FEATHER),
-		/** Sprint while drawing a bow: a quick leap backwards. */
-		DISENGAGE(() -> Items.RABBIT_FOOT),
+		/** Sprint while drawing a bow: a quick roll forward. */
+		ACROBATICS(() -> Items.RABBIT_FOOT),
 		/** Walk closer to full speed while the bowstring is drawn. */
 		NIMBLE_DRAW(() -> Items.STRING),
 		/** A crossbow kill charges the next reload, up to instant. */
@@ -38,8 +38,8 @@ public final class MarksmanNodes {
 		COMBUSTION(() -> Items.FIRE_CHARGE),
 		/** Arrow hits shave seconds off True Shot's cooldown. */
 		FOCUS(() -> Items.SPYGLASS),
-		/** Kills with either weapon grant Night Vision. */
-		NIGHT_VISION(() -> Items.GOLDEN_CARROT),
+		/** Bow and crossbow shots ignore two points of armor. */
+		PIERCING_TIPS(() -> Items.IRON_NUGGET),
 		SEEKER_ARROW(() -> Items.ENDER_EYE),
 		SNAP_SHOT(() -> Items.CROSSBOW),
 		MINOR((Supplier<Item>) null);
@@ -77,9 +77,9 @@ public final class MarksmanNodes {
 		// The bottom tip, where stave meets string.
 		byCell.put(cell(7, 0), new Def(Family.TRUE_SHOT, 1));
 
-		// The string, bottom-up (the crossbow branch): Night's Gift at the
+		// The string, bottom-up (the crossbow branch): Piercing Tips at the
 		// nock, the Pinning barbs, then the Rapid Reload climb to Snap Shot.
-		byCell.put(cell(7, 1), new Def(Family.NIGHT_VISION, 1));
+		byCell.put(cell(7, 1), new Def(Family.PIERCING_TIPS, 1));
 		byCell.put(cell(7, 2), new Def(Family.PINNING, 1));
 		byCell.put(cell(7, 3), new Def(Family.PINNING, 2));
 		byCell.put(cell(7, 4), new Def(Family.RAPID_RELOAD, 1));
@@ -90,8 +90,8 @@ public final class MarksmanNodes {
 
 		// The stave, bottom-up (the bow branch): footwork, the draw at the
 		// grip, Swift Flight up the springy upper limb to Seeker Arrow.
-		byCell.put(cell(6, 1), new Def(Family.DISENGAGE, 1));
-		byCell.put(cell(5, 2), new Def(Family.DISENGAGE, 2));
+		byCell.put(cell(6, 1), new Def(Family.ACROBATICS, 1));
+		byCell.put(cell(5, 2), new Def(Family.ACROBATICS, 2));
 		byCell.put(cell(4, 3), new Def(Family.NIMBLE_DRAW, 1));
 		byCell.put(cell(3, 4), new Def(Family.NIMBLE_DRAW, 2));
 		byCell.put(cell(3, 5), new Def(Family.NIMBLE_DRAW, 3));

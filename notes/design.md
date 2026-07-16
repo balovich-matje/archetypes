@@ -962,3 +962,65 @@ exact current mana sits over the row's middle, black-outlined like the XP
 bar's level number. The Meteorite tile prices itself honestly: it shows
 the mana it would actually drink right now (the whole pool), greying out
 below the 100 minimum; fixed tiles keep their static costs.
+
+**Three trees built while the user was away (2026-07-17): Shadow, Assassin,
+Elementalist — plus Marksman fixes.** Wizard and Priest stay placeholders
+per instruction. All numbers are DRAFTS for the balance pass.
+
+Marksman: Disengage became Acrobatics — a 2/4-block forward roll on sprint
+mid-draw, 8s cooldown. Night's Gift died to vanilla's sub-10s night-vision
+flicker; its node is now Piercing Tips: bow/crossbow shots ignore 2 armor
+points (Sunder-style compensation in the arrow damage shaping).
+
+SHADOW (user's five passives + fillers on their branch brief). Outer arc =
+endure the dark: Night Eyes (sneak = flicker-free Night Vision, fades
+after), Swift Shadow 2 (+20%/rank speed while invisible), Dark Mending 4
+(heart per 8/6/4/2s invisible), Dim Presence 2 (mobs notice you 15%/rank
+less, always — same getVisibilityPercent channel as sneaking, stacks),
+Cleansing Veil (cast cleanses debuffs), capstone Last Shadow. Inner arc =
+kill in it: Umbral Sight (hostiles within 8 glow while sneaking/hidden),
+Stillness 2 (standing still halves then stops the invis timer — re-adding
+the effect each tick), First Strike 2 (+30%/rank melee from invisibility;
+vanilla breaks invis after, so it self-limits), Bloodrush 2 (kills grant
++20%/rank attack speed 4s), Reaper (kills while invisible heal 2 hearts),
+Ghost Armor (ARMOR_HIDDEN all-sync attachment; the avatar renderer's
+extract clears the state's equipment fields so armor vanishes for every
+onlooker), capstone Predator. Umbral Mastery crowns the top tip (+4s to
+every invisibility: active, renewals, cheat-death).
+
+ASSASSIN (dps branch to sword-parity, DoT branch, shared utility, and a
+post-capstone improver, per brief). Pommel/grip shared: Lightfoot 2
+(+10%/rank speed with dagger), Sidestep 3 (7%/rank melee dodge with
+dagger). Centre line improves the active: Adrenaline Rush (Speed II 3s
+after the blink), Opportunist (-3s step cooldown). Left edge dps: Razor
+Edge 3 (+8%/rank), Frenzy 2 (+10%/rank attack speed), Expose (+15% below
+half HP) — dagger 0.9x sword dps base becomes ~1.36x with everything, in
+Slayer-sword territory. Right edge DoTs: Venom 2 (Poison I/II 4s), Blight
+2 (Wither I/II 3s), Flense 2 (ignore 50%/100% of armor — exact
+compensation, so full ranks vs 20-armor targets is a x5 on the absorbed
+share). Deathblow at the point: Shadow Step strikes (flurry included)
++50%, recognised by a same-tick attachment stamp.
+
+ELEMENTALIST (two elements, exclusive at the root, per brief). Base row:
+Fireball left, ICE BLAST right (new spell: 50 mana, 2 hearts, Slowness III
+4s, PLAYER_HURT_FREEZE report), mutually exclusive — picking one locks the
+other AND its whole branch, since each branch only connects through its
+root. Focused Mind between them (+0.5 regen). Fire edge: Kindling 2 (-5
+cost/rank), Scorch 2 (+1 heart/rank fireball, half for flame bolts),
+Ignition 2 (+3s burn/rank), Vaporize (fire projectiles boil water blocks
+off their path), then the old Meteorite-or-Flamethrower choice. Ice edge:
+Chill 2 (-5 cost/rank), Frostbite 2 (slow +1 level +1s per rank), Shatter
+2 (slowed/freezing targets take +15%/rank from ALL your spells — reads the
+slow already on the victim, so volleys ramp), Permafrost (ice projectiles
+glaze water into frost-walker ice), then a new choice: GLACIAL SPIKE
+(x2.5 lance that also powder-snow-freezes the target in place via
+setTicksFrozen) or BLIZZARD (snow-bolt channel, flamethrower's twin: 50 +
+25/s, bolts slow and stack Shatter). Crown above either capstone:
+Spellweaver (all spells -10% mana — cross-tree, missile and holy light
+included) and Arcane Power (all spells +20% damage). Ice/snow modes are
+two new SpellProjectile modes; all per-cast shaping (Scorch/Ignition/
+Shatter/water meddling/slow/freeze) rides builder flags set at cast time.
+
+Cooldown-bar tile follows the element and build: fireball/magma/blaze rod
+vs ice/blue ice/snow block, priced through the same elementCost() the
+server charges.
