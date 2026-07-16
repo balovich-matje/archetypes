@@ -15,21 +15,27 @@ public final class TreeNodes {
 	}
 
 	public static String nameKey(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).family().nameKey()
-				: ProtectorNodes.def(tree, index).family().nameKey();
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).family().nameKey();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().nameKey();
+			default -> ProtectorNodes.def(tree, index).family().nameKey();
+		};
 	}
 
 	public static String descriptionKey(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).family().descriptionKey()
-				: ProtectorNodes.def(tree, index).family().descriptionKey();
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).family().descriptionKey();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().descriptionKey();
+			default -> ProtectorNodes.def(tree, index).family().descriptionKey();
+		};
 	}
 
 	public static @Nullable Item icon(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).family().icon()
-				: ProtectorNodes.def(tree, index).family().icon();
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).family().icon();
+			case CRUSHER -> CrusherNodes.def(tree, index).family().icon();
+			default -> ProtectorNodes.def(tree, index).family().icon();
+		};
 	}
 
 	/** Texture-based icon (effect sprites and the like), or null if the
@@ -45,29 +51,33 @@ public final class TreeNodes {
 
 	/** Effect layer drawn over the item icon, or null when the item stands alone. */
 	public static net.minecraft.resources.@Nullable Identifier iconOverlay(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER ? null : ProtectorNodes.def(tree, index).family().overlay();
+		return tree == SubTree.PROTECTOR ? ProtectorNodes.def(tree, index).family().overlay() : null;
 	}
 
 	/** Pixel size of the square texture behind iconOverlay. */
 	public static int iconOverlaySize(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER ? 0 : ProtectorNodes.def(tree, index).family().overlaySize();
+		return tree == SubTree.PROTECTOR ? ProtectorNodes.def(tree, index).family().overlaySize() : 0;
 	}
 
 	/** True when the effect layer draws under the item render, not over it. */
 	public static boolean iconOverlayBehind(final SubTree tree, final int index) {
-		return tree != SubTree.SLAYER && ProtectorNodes.def(tree, index).family().overlayBehind();
+		return tree == SubTree.PROTECTOR && ProtectorNodes.def(tree, index).family().overlayBehind();
 	}
 
 	public static boolean isMinor(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).family() == SlayerNodes.Family.MINOR
-				: ProtectorNodes.def(tree, index).family() == ProtectorNodes.Family.MINOR;
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).family() == SlayerNodes.Family.MINOR;
+			case CRUSHER -> CrusherNodes.def(tree, index).family() == CrusherNodes.Family.MINOR;
+			default -> ProtectorNodes.def(tree, index).family() == ProtectorNodes.Family.MINOR;
+		};
 	}
 
 	public static int rankOf(final SubTree tree, final int index) {
-		return tree == SubTree.SLAYER
-				? SlayerNodes.def(tree, index).rank()
-				: ProtectorNodes.def(tree, index).rank();
+		return switch (tree) {
+			case SLAYER -> SlayerNodes.def(tree, index).rank();
+			case CRUSHER -> CrusherNodes.def(tree, index).rank();
+			default -> ProtectorNodes.def(tree, index).rank();
+		};
 	}
 
 	/** How many nodes share this node's family — >1 means show the rank label. */
@@ -85,7 +95,8 @@ public final class TreeNodes {
 
 	/**
 	 * Capstones come in mutually exclusive pairs: owning one locks the other.
-	 * Protector: Bulwark vs Ground Slam. Slayer: Bladestorm vs Decimate.
+	 * Protector: Bulwark vs Ground Slam. Slayer: Bladestorm vs Decimate. The
+	 * Crusher's mace capstone joins Haymaker's lockout when it lands.
 	 */
 	public static boolean exclusiveTaken(final SubTree tree, final Set<Integer> owned, final int index) {
 		if (tree == SubTree.SLAYER) {
@@ -99,6 +110,10 @@ public final class TreeNodes {
 				return SlayerNodes.rank(tree, owned, SlayerNodes.Family.BLADESTORM) > 0;
 			}
 
+			return false;
+		}
+
+		if (tree == SubTree.CRUSHER) {
 			return false;
 		}
 

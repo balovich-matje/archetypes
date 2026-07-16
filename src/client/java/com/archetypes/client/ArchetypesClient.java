@@ -37,6 +37,7 @@ public class ArchetypesClient implements ClientModInitializer {
 	/** The ability binds, exposed so the cooldown bar can label its slots. */
 	static KeyMapping BASH_KEY;
 	static KeyMapping SLAYER_KEY;
+	static KeyMapping CRUSHER_KEY;
 
 	@Override
 	public void onInitializeClient() {
@@ -54,6 +55,9 @@ public class ArchetypesClient implements ClientModInitializer {
 		SLAYER_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.archetypes.slayer_ability", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_H,
 				KeyMapping.Category.GAMEPLAY));
+		CRUSHER_KEY = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+				"key.archetypes.crusher_ability", InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_B,
+				KeyMapping.Category.GAMEPLAY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (BASH_KEY.consumeClick()) {
@@ -68,6 +72,12 @@ public class ArchetypesClient implements ClientModInitializer {
 				}
 			}
 
+			while (CRUSHER_KEY.consumeClick()) {
+				if (client.player != null) {
+					ClientPlayNetworking.send(new com.archetypes.CrusherAbilityPayload());
+				}
+			}
+
 			// Shield Rush: sprint pressed while the shield is raised. Only
 			// consumed while blocking, so normal sprinting is untouched.
 			if (client.player != null && client.player.isBlocking()) {
@@ -76,18 +86,6 @@ public class ArchetypesClient implements ClientModInitializer {
 				}
 			}
 
-			// Hold-to-attack, Better Combat style: while the attack key is
-			// held and the swing is fully charged, swing — target or empty
-			// air alike, no click rhythm needed. Blocks keep vanilla
-			// hold-to-mine untouched.
-			if (client.player != null && client.gui.screen() == null
-					&& client.options.keyAttack.isDown()
-					&& (client.hitResult == null
-							|| client.hitResult.getType() != net.minecraft.world.phys.HitResult.Type.BLOCK)
-					&& client.player.getAttackStrengthScale(0.0F) >= 1.0F
-					&& com.archetypes.WeaponClass.of(client.player) != com.archetypes.WeaponClass.NONE) {
-				((com.archetypes.client.mixin.MinecraftInvoker) (Object) client).archetypes$startAttack();
-			}
 		});
 
 		// The centred bar of owned-active cooldowns, and the proc flashes that

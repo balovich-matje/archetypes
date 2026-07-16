@@ -88,6 +88,19 @@ public final class ModAttachments {
 			Archetypes.id("bladestorm_end"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
 
+	/** Haymaker's cooldown, same shape as the bash's. */
+	public static final AttachmentType<Long> HAYMAKER_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("haymaker_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/** Adrenaline's buff window and Battle Trance's last-hit mark. Pure
+	 * server-side bookkeeping — the ticker reads them, nobody else. */
+	public static final AttachmentType<Long> ADRENALINE_UNTIL =
+			AttachmentRegistry.<Long>create(Archetypes.id("adrenaline_until"));
+
+	public static final AttachmentType<Long> TRANCE_HIT_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("trance_hit_at"));
+
 	/** Lunge's little hop cooldown. Server-only decision, synced for symmetry. */
 	public static final AttachmentType<Long> LUNGE_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("lunge_ready_at"),

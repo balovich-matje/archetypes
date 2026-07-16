@@ -58,19 +58,24 @@ public final class Constellations {
 			// No explicit cross needed: Bloodlust sits in the crossing itself,
 			// adjacent to both pre-capstones, both capstones, and the tip.
 
+	/**
+	 * The Crusher constellation IS a mace: a four-node shared handle (the
+	 * weapon-agnostic bruiser passives, root at the pommel), a top-heavy head
+	 * whose left flange is the bare-fists path and right flange the mace path
+	 * (eight nodes each, capstone at each flange's peak), and a three-node
+	 * crown across the top — Battle Trance, shared, fed by either capstone.
+	 */
 	public static final Constellation CRUSHER_MACE = Constellation.of(
-			"#..#..#",
-			".#.#.#.",
-			"#######",
-			"#.....#",
-			"#.....#",
-			"#######",
-			".#.#.#.",
-			"...#...",
-			"...#...",
-			"...#...",
-			"...#...",
-			"...#...");
+			"...###...",
+			"..##.##..",
+			"..##.##..",
+			"..##.##..",
+			"...#.#...",
+			"...#.#...",
+			"....#....",
+			"....#....",
+			"....#....",
+			"....#....");
 
 	public static final Constellation MARKSMAN_BOW = Constellation.of(
 			"...#...",

@@ -662,3 +662,21 @@ bladestorm swing lock, the greatsword's 2H offhand restriction and heavy
 whoosh, and the PAL capstone poses (bladestorm spin, Decimate cleave) — those
 are ability-scoped and coexist with anything. When BC ships 26.x, our compat
 is pure data (weapon attributes JSON) plus possibly disabling our gating.
+
+**DECIDED: hold-to-attack deprecated too (2026-07-16)** — same principle as the
+swing poses: base-game combat behaviour belongs to combat mods (BC ships it).
+Swing gating stays for now.
+
+**Crusher tree, fists half (2026-07-16).** The constellation IS a mace: shared
+handle of 4 (Adrenaline 2 — landing mace/fist hits grants 5%/10% attack speed
+for 3s, doubled for fists; Sunder 2 — virtual Breach I/II mace, II/IV fists,
+approximated as clawing back 15%/level of armor's ~4%/point absorption,
+stacks with the real enchant), left flange fists (Bare-Knuckle 4 ranks ×0.5 →
+fist DPS ≈ iron sword; Iron Skin 3 ranks +1.5 armor/+0.5 toughness while
+bare-handed; Haymaker capstone on B: 2.5x attack damage single punch + 1.5s
+near-stun, cooldown only spent on a hit), crown Battle Trance 3 ranks —
+absorption per hit (doubled fists), 1 heart cap/rank, drains 5s after the
+fight. Right flange: 8 placeholder minors, mace perks next. Economy mirrors
+Slayer exactly: 23 nodes, 15 per full path (the math forces crown = 3 nodes —
+went 3-rank Battle Trance rather than invent an unasked tip node). Item
+placeholder icons until the perks settle.

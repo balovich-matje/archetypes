@@ -19,6 +19,8 @@ public class Archetypes implements ModInitializer {
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();
 		SlayerTicker.initialize();
+		CrusherCombat.initialize();
+		CrusherTicker.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
@@ -27,6 +29,7 @@ public class Archetypes implements ModInitializer {
 		PayloadTypeRegistry.serverboundPlay().register(ShieldBashPayload.TYPE, ShieldBashPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(SlayerAbilityPayload.TYPE, SlayerAbilityPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(MeleeSwingPayload.TYPE, MeleeSwingPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(CrusherAbilityPayload.TYPE, CrusherAbilityPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
@@ -46,6 +49,9 @@ public class Archetypes implements ModInitializer {
 		// mainhand, since the two capstones are mutually exclusive anyway.
 		ServerPlayNetworking.registerGlobalReceiver(ShieldBashPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> ShieldBash.execute(context.player())));
+
+		ServerPlayNetworking.registerGlobalReceiver(CrusherAbilityPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> CrusherActives.haymaker(context.player())));
 
 		ServerPlayNetworking.registerGlobalReceiver(SlayerAbilityPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {

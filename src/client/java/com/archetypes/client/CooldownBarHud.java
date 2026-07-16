@@ -151,6 +151,16 @@ public final class CooldownBarHud {
 					ModAttachments.BLADESTORM_READY_AT, Tuning.BLADESTORM_COOLDOWN_TICKS - relentless));
 		}
 
+		var crusher = NodePurchases.owned(player, SubTree.CRUSHER);
+
+		if (com.archetypes.CrusherNodes.rank(SubTree.CRUSHER, crusher,
+				com.archetypes.CrusherNodes.Family.HAYMAKER) > 0) {
+			var icon = com.archetypes.CrusherNodes.Family.HAYMAKER.icon();
+			abilities.add(new Ability(null, 0, icon == null ? ItemStack.EMPTY : new ItemStack(icon),
+					null, 0, ArchetypesClient.CRUSHER_KEY,
+					ModAttachments.HAYMAKER_READY_AT, Tuning.HAYMAKER_COOLDOWN_TICKS));
+		}
+
 		return abilities;
 	}
 }

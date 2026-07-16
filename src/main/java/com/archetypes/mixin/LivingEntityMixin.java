@@ -1,5 +1,6 @@
 package com.archetypes.mixin;
 
+import com.archetypes.CrusherNodes;
 import com.archetypes.ModAttachments;
 import com.archetypes.ModItems;
 import com.archetypes.NodePurchases;
@@ -173,6 +174,44 @@ public abstract class LivingEntityMixin {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Sunder: virtual Breach levels for the Crusher's weapons — rank for the
+	 * mace, doubled for bare fists. Armor absorbs roughly 4% per point
+	 * (capped at 80%); each Sunder level claws 15% of that absorption back as
+	 * bonus damage, which stacks naturally with the real Breach enchantment
+	 * doing its own work inside the armor formula.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$sunderDamage(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!(source.getEntity() instanceof ServerPlayer player)
+				|| source.getDirectEntity() != player) {
+			return amount;
+		}
+
+		com.archetypes.WeaponClass weapon = com.archetypes.WeaponClass.of(player);
+
+		if (weapon != com.archetypes.WeaponClass.MACE && weapon != com.archetypes.WeaponClass.HANDS) {
+			return amount;
+		}
+
+		int rank = CrusherNodes.rank(SubTree.CRUSHER,
+				NodePurchases.owned(player, SubTree.CRUSHER), CrusherNodes.Family.SUNDER);
+
+		if (rank == 0) {
+			return amount;
+		}
+
+		int levels = rank * (weapon == com.archetypes.WeaponClass.HANDS ? 2 : 1);
+		LivingEntity victim = (LivingEntity) (Object) this;
+		float absorbed = Math.min(0.8F,
+				(float) victim.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
+						* 0.04F);
+
+		return amount + amount * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
 	}
 
 	/**

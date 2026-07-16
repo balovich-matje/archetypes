@@ -149,6 +149,41 @@ public final class Tuning {
 	public static final double DECIMATE_RANGE = 3.5;
 	public static final int DECIMATE_MAX_BLOCKS = 48;
 
+	// --- Crusher ---
+
+	/** Adrenaline: landing a mace or fist hit grants attack speed for a few
+	 * seconds — per rank, doubled for bare fists. */
+	public static final float ADRENALINE_SPEED_PER_RANK = 0.05F;
+	public static final int ADRENALINE_TICKS = 60;
+
+	/** Sunder: virtual Breach levels (rank for mace, doubled for fists). Each
+	 * level claws back 15% of what the victim's armor absorbed — approximated
+	 * as bonus damage from the armor's ~4%/point reduction, additive with the
+	 * real Breach enchantment. */
+	public static final float SUNDER_PER_LEVEL = 0.15F;
+
+	/** Bare-Knuckle: unarmed damage per rank. Four ranks take the 1.0 fist to
+	 * 3.0 — with the fist's 4/s recovery and hurt-invulnerability capping real
+	 * exchanges, sustained damage lands near an iron sword's. */
+	public static final float BARE_KNUCKLE_PER_RANK = 0.5F;
+
+	/** Iron Skin: armor and toughness per rank while the hands are bare. */
+	public static final float IRON_SKIN_ARMOR_PER_RANK = 1.5F;
+	public static final float IRON_SKIN_TOUGHNESS_PER_RANK = 0.5F;
+
+	/** Haymaker: one enormous punch — multiplied attack damage and a stun. */
+	public static final float HAYMAKER_DAMAGE_MULTIPLIER = 2.5F;
+	public static final int HAYMAKER_STUN_TICKS = 30;
+	public static final int HAYMAKER_STUN_AMPLIFIER = 5;
+	public static final int HAYMAKER_COOLDOWN_TICKS = 400;
+	public static final double HAYMAKER_RANGE = 3.0;
+
+	/** Battle Trance: absorption per landed hit (doubled for fists), capped
+	 * per rank, draining once the fight goes quiet. */
+	public static final float TRANCE_ABSORPTION_PER_HIT = 1.0F;
+	public static final float TRANCE_CAP_PER_RANK = 2.0F;
+	public static final int TRANCE_DECAY_DELAY_TICKS = 100;
+
 	/** Relentless (tip): both capstone cooldowns drop by 15 seconds. */
 	public static final int RELENTLESS_REDUCTION_TICKS = 300;
 
