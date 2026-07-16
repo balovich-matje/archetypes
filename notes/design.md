@@ -625,3 +625,13 @@ claymore — the name says slender Scottish two-hander, the sprite says wall of
 metal. "Greatsword" tells every RPG player exactly what it is. Item ids, tag,
 recipes, particle and code all renamed; old claymore items in test worlds are
 gone (id change, pre-release so no migration).
+
+**Slayer tree rework (2026-07-16).** Weapon-agnostic families now live at the
+bottom, weapon-specific ones in their branches. The hilt is two columns — both
+roots: Hamstring (now 3 ranks — I, II, then 5s duration) and Taste of Blood
+(ex-Vampirism, renamed + raw-beef icon; was nonsensically split between guard
+and sword edge). The guard shrank to four nodes; its quillons carry each path's
+flavour single (Flurry / First Blood — leaves, not tolls). Ranks rebalanced so
+a full path is exactly 15 again: Lunge 2×0.75 blocks, Immovable 2×30%, Heavy
+Blows 2×15%, First Blood 1×40%. Hamstring wears the vanilla Slowness effect
+sprite — first non-item node icon (Family now supports texture icons).

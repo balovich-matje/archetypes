@@ -340,8 +340,14 @@ public class ArchetypeScreen extends Screen {
 
 				// The skill's icon, when the node is big enough to hold a sprite.
 				Item icon = TreeNodes.icon(tree, i);
+				var iconSprite = TreeNodes.iconSprite(tree, i);
 
-				if (icon != null && size >= 16) {
+				if (iconSprite != null && size >= 16) {
+					// Effect icons are 18x18 textures; scale into the item slot.
+					graphics.blit(RenderPipelines.GUI_TEXTURED, iconSprite,
+							x + (size - 16) / 2, y + (size - 16) / 2,
+							0.0F, 0.0F, 16, 16, 18, 18, 18, 18);
+				} else if (icon != null && size >= 16) {
 					graphics.fakeItem(new ItemStack(icon), x + (size - 16) / 2, y + (size - 16) / 2);
 				}
 

@@ -107,27 +107,29 @@ public final class Tuning {
 
 	// --- Slayer ---
 
-	/** Hamstring: Slowness (rank-1 amplifier) for this long on melee hits. */
+	/** Hamstring: Slowness I, then II, on melee hits; rank 3 stretches the
+	 * duration instead of deepening the effect (Slowness III roots outright). */
 	public static final int SLOWNESS_TICKS = 60;
+	public static final int SLOWNESS_LONG_TICKS = 100;
 
-	/** Vampirism: health restored per rank on a melee kill (1.0 = half a heart... 2 = 1 heart). */
-	public static final float VAMP_HEAL_PER_RANK = 1.0F;
+	/** Taste of Blood: health restored per rank on a melee kill (1.0 = half a heart). */
+	public static final float TASTE_OF_BLOOD_HEAL_PER_RANK = 1.0F;
 
-	/** Lunge: half a block per rank along the look vector, 2s between hops. */
-	public static final double LUNGE_BLOCKS_PER_RANK = 0.5;
+	/** Lunge: three quarters of a block per rank along the look vector, 2s between hops. */
+	public static final double LUNGE_BLOCKS_PER_RANK = 0.75;
 	public static final int LUNGE_COOLDOWN_TICKS = 40;
 
 	/** Immovable: knockback resistance per rank while a greatsword is held. */
-	public static final double KBRES_PER_RANK = 0.2;
+	public static final double KBRES_PER_RANK = 0.3;
 
 	/** Rend: damage per second per rank, for three seconds. */
 	public static final int BLEED_DURATION_TICKS = 60;
 
 	/** Heavy Blows: damage up and swing speed down by this much per rank. */
-	public static final float HEAVY_PER_RANK = 0.10F;
+	public static final float HEAVY_PER_RANK = 0.15F;
 
-	/** First Blood: bonus vs full-health targets per rank. */
-	public static final float FIRSTBLOOD_PER_RANK = 0.25F;
+	/** First Blood: bonus vs full-health targets. Single rank — the opener. */
+	public static final float FIRSTBLOOD_PER_RANK = 0.40F;
 
 	/** Executioner: greatsword hits finish targets below this health fraction. */
 	public static final float EXECUTE_THRESHOLD = 0.15F;

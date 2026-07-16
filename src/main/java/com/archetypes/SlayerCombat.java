@@ -34,12 +34,14 @@ public final class SlayerCombat {
 
 			var owned = NodePurchases.owned(player, SubTree.SLAYER);
 
-			// Hamstring: both weapons cripple.
+			// Hamstring: both weapons cripple. Ranks 1-2 deepen the effect,
+			// rank 3 stretches it — Slowness III would be a root, not a slow.
 			int slow = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.SLOWNESS);
 
 			if (slow > 0 && entity.isAlive()) {
-				entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, Tuning.SLOWNESS_TICKS, slow - 1),
-						player);
+				int duration = slow >= 3 ? Tuning.SLOWNESS_LONG_TICKS : Tuning.SLOWNESS_TICKS;
+				entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, duration,
+						Math.min(slow, 2) - 1), player);
 			}
 
 			// Rend: sword-only — a wound the greatsword's single blow does not need.
@@ -65,13 +67,13 @@ public final class SlayerCombat {
 
 			var owned = NodePurchases.owned(player, SubTree.SLAYER);
 
-			// Vampirism: half a heart per rank on any melee kill.
-			int vamp = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.VAMP);
+			// Taste of Blood: half a heart per rank on any melee kill.
+			int taste = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.TASTE_OF_BLOOD);
 
-			if (vamp > 0) {
-				player.heal(vamp * Tuning.VAMP_HEAL_PER_RANK);
+			if (taste > 0) {
+				player.heal(taste * Tuning.TASTE_OF_BLOOD_HEAL_PER_RANK);
 				((ServerLevel) player.level()).sendParticles(ParticleTypes.HEART,
-						player.getX(), player.getY() + 1.5, player.getZ(), vamp, 0.3, 0.3, 0.3, 0.0);
+						player.getX(), player.getY() + 1.5, player.getZ(), taste, 0.3, 0.3, 0.3, 0.0);
 			}
 
 			// Flurry: sword kills reset the lunge.

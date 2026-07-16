@@ -37,10 +37,11 @@ public final class Constellations {
 			.withDecorativeEdge(0, 8, 8, 8);
 
 	/**
-	 * The Slayer constellation IS a sword: pommel root, grip, a 7-node
-	 * crossguard where the paths split, the two blade edges as the sword and
-	 * greatsword paths (fuller empty between them), capstones flanking the tip
-	 * with Bloodlust above — reachable only through a capstone by geometry.
+	 * The Slayer constellation IS a sword: a wide two-column hilt (both roots —
+	 * the weapon-agnostic Hamstring and Taste of Blood chains, pick your entry),
+	 * a short quilloned guard where the weapon paths split, the two blade edges
+	 * as the sword and greatsword paths (fuller empty between them), capstones
+	 * flanking the tip with Bloodlust in the crossing.
 	 */
 	public static final Constellation SLAYER_SWORD = Constellation.of(
 			"....#....",
@@ -49,11 +50,10 @@ public final class Constellations {
 			"...#.#...",
 			"...#.#...",
 			"...#.#...",
+			"..##.##..",
 			"...#.#...",
 			"...#.#...",
-			".#######.",
-			"....#....",
-			"....#....");
+			"...#.#...");
 			// No explicit cross needed: Bloodlust sits in the crossing itself,
 			// adjacent to both pre-capstones, both capstones, and the tip.
 

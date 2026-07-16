@@ -32,6 +32,12 @@ public final class TreeNodes {
 				: ProtectorNodes.def(tree, index).family().icon();
 	}
 
+	/** Texture-based icon (effect sprites and the like), or null if the
+	 * family's icon is an item. */
+	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
+		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().sprite() : null;
+	}
+
 	public static boolean isMinor(final SubTree tree, final int index) {
 		return tree == SubTree.SLAYER
 				? SlayerNodes.def(tree, index).family() == SlayerNodes.Family.MINOR

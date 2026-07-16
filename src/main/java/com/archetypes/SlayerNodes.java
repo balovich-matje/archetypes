@@ -6,22 +6,25 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
  * What each node of the Slayer constellation is. The constellation IS a sword:
- * pommel root at the bottom (Hamstring — CC that serves both weapons), grip,
- * the crossguard row where the paths split (Lunge arm left, Immovable arm
- * right), then the two blade edges — sword path up the left (gap-closing,
- * crowd control, sustain), greatsword path up the right (the oneshot fantasy) —
- * with an empty fuller between them and the capstone crown at the tip.
+ * a two-column hilt at the bottom holding the weapon-agnostic families — both
+ * are roots, so the player enters through Hamstring or Taste of Blood as they
+ * please — then the guard row where the weapon paths split (its quillons carry
+ * each path's flavour single: Flurry left, First Blood right), then the two
+ * blade edges — sword path up the left (gap-closing, crowd control), greatsword
+ * path up the right (the oneshot fantasy) — with an empty fuller between them
+ * and the capstone crown at the tip.
  */
 public final class SlayerNodes {
 	public enum Family {
-		SLOWNESS(() -> Items.COBWEB),
-		VAMP(() -> Items.GLISTERING_MELON_SLICE),
+		SLOWNESS(Identifier.withDefaultNamespace("textures/mob_effect/slowness.png")),
+		TASTE_OF_BLOOD(() -> Items.BEEF),
 		LUNGE(() -> Items.RABBIT_FOOT),
 		KBRES(() -> Items.OBSIDIAN),
 		BLEED(() -> Items.REDSTONE),
@@ -33,16 +36,28 @@ public final class SlayerNodes {
 		RELENTLESS(() -> Items.CLOCK),
 		BLADESTORM(() -> Items.DIAMOND_SWORD),
 		DECIMATE(() -> ModItems.NETHERITE_GREATSWORD),
-		MINOR(null);
+		MINOR((Supplier<Item>) null);
 
 		private final @Nullable Supplier<Item> icon;
+		private final @Nullable Identifier sprite;
 
 		Family(final @Nullable Supplier<Item> icon) {
 			this.icon = icon;
+			this.sprite = null;
+		}
+
+		/** For effects and other icons that exist as textures, not items. */
+		Family(final Identifier sprite) {
+			this.icon = null;
+			this.sprite = sprite;
 		}
 
 		public @Nullable Item icon() {
 			return this.icon == null ? null : this.icon.get();
+		}
+
+		public @Nullable Identifier sprite() {
+			return this.sprite;
 		}
 
 		public String nameKey() {
@@ -66,43 +81,42 @@ public final class SlayerNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// Pommel and grip: crowd control both weapons share.
-		byCell.put(cell(4, 0), new Def(Family.SLOWNESS, 1));
-		byCell.put(cell(4, 1), new Def(Family.SLOWNESS, 2));
+		// The hilt: both weapon-agnostic chains side by side, both roots.
+		// Full path economics: hilt 6 + guard-side 3 + edge 3 + capstone +
+		// Bloodlust + Relentless = 15 exactly, either weapon.
+		byCell.put(cell(3, 0), new Def(Family.SLOWNESS, 1));
+		byCell.put(cell(3, 1), new Def(Family.SLOWNESS, 2));
+		byCell.put(cell(3, 2), new Def(Family.SLOWNESS, 3));
+		byCell.put(cell(5, 0), new Def(Family.TASTE_OF_BLOOD, 1));
+		byCell.put(cell(5, 1), new Def(Family.TASTE_OF_BLOOD, 2));
+		byCell.put(cell(5, 2), new Def(Family.TASTE_OF_BLOOD, 3));
 
-		// Crossguard: Lunge out the left arm, Immovable out the right, sustain
-		// at the junction.
-		byCell.put(cell(3, 2), new Def(Family.LUNGE, 1));
-		byCell.put(cell(2, 2), new Def(Family.LUNGE, 2));
-		byCell.put(cell(1, 2), new Def(Family.LUNGE, 3));
-		byCell.put(cell(4, 2), new Def(Family.VAMP, 1));
-		byCell.put(cell(5, 2), new Def(Family.KBRES, 1));
-		byCell.put(cell(6, 2), new Def(Family.KBRES, 2));
-		byCell.put(cell(7, 2), new Def(Family.KBRES, 3));
+		// The guard: paths split here. Each quillon is its path's flavour
+		// single — a leaf you can grab on the way past, not a toll.
+		byCell.put(cell(2, 3), new Def(Family.FLURRY, 1));
+		byCell.put(cell(3, 3), new Def(Family.LUNGE, 1));
+		byCell.put(cell(5, 3), new Def(Family.KBRES, 1));
+		byCell.put(cell(6, 3), new Def(Family.FIRSTBLOOD, 1));
 
 		// Left blade edge: the sword path.
-		byCell.put(cell(3, 3), new Def(Family.BLEED, 1));
-		byCell.put(cell(3, 4), new Def(Family.BLEED, 2));
-		byCell.put(cell(3, 5), new Def(Family.BLEED, 3));
-		byCell.put(cell(3, 6), new Def(Family.VAMP, 2));
-		byCell.put(cell(3, 7), new Def(Family.VAMP, 3));
-		byCell.put(cell(3, 8), new Def(Family.FLURRY, 1));
+		byCell.put(cell(3, 4), new Def(Family.LUNGE, 2));
+		byCell.put(cell(3, 5), new Def(Family.BLEED, 1));
+		byCell.put(cell(3, 6), new Def(Family.BLEED, 2));
+		byCell.put(cell(3, 7), new Def(Family.BLEED, 3));
 
 		// Right blade edge: the greatsword path.
-		byCell.put(cell(5, 3), new Def(Family.HEAVY, 1));
-		byCell.put(cell(5, 4), new Def(Family.HEAVY, 2));
-		byCell.put(cell(5, 5), new Def(Family.HEAVY, 3));
-		byCell.put(cell(5, 6), new Def(Family.FIRSTBLOOD, 1));
-		byCell.put(cell(5, 7), new Def(Family.FIRSTBLOOD, 2));
-		byCell.put(cell(5, 8), new Def(Family.EXECUTIONER, 1));
+		byCell.put(cell(5, 4), new Def(Family.KBRES, 2));
+		byCell.put(cell(5, 5), new Def(Family.HEAVY, 1));
+		byCell.put(cell(5, 6), new Def(Family.HEAVY, 2));
+		byCell.put(cell(5, 7), new Def(Family.EXECUTIONER, 1));
 
-		// The tip: Bloodlust sits in the old X-crossing between the capstones,
-		// so every crown path runs through it; Relentless caps the very point,
+		// The tip: Bloodlust sits in the crossing between the capstones, so
+		// every crown path runs through it; Relentless caps the very point,
 		// its only neighbours the capstones — post-capstone by geometry alone.
-		byCell.put(cell(3, 9), new Def(Family.BLADESTORM, 1));
-		byCell.put(cell(5, 9), new Def(Family.DECIMATE, 1));
-		byCell.put(cell(4, 9), new Def(Family.BLOODLUST, 1));
-		byCell.put(cell(4, 10), new Def(Family.RELENTLESS, 1));
+		byCell.put(cell(3, 8), new Def(Family.BLADESTORM, 1));
+		byCell.put(cell(5, 8), new Def(Family.DECIMATE, 1));
+		byCell.put(cell(4, 8), new Def(Family.BLOODLUST, 1));
+		byCell.put(cell(4, 9), new Def(Family.RELENTLESS, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.SLAYER_SWORD.nodes();
