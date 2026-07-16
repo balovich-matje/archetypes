@@ -35,8 +35,14 @@ public final class AgilityActives {
 	public static void trueShot(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.MARKSMAN);
 
+		boolean snapShot = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SNAP_SHOT) > 0;
+		// The base skill is a bow's; Snap Shot conjures its own shot and
+		// serves the crossbow branch too.
+		boolean weaponOk = player.getMainHandItem().is(Items.BOW)
+				|| (snapShot && player.getMainHandItem().is(Items.CROSSBOW));
+
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.TRUE_SHOT) <= 0
-				|| !player.getMainHandItem().is(Items.BOW)
+				|| !weaponOk
 				|| onCooldown(player, ModAttachments.TRUE_SHOT_READY_AT)) {
 			return;
 		}
@@ -45,7 +51,7 @@ public final class AgilityActives {
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
 
-		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SNAP_SHOT) > 0) {
+		if (snapShot) {
 			ItemStack projectile = player.getProjectile(player.getMainHandItem());
 
 			if (projectile.isEmpty()) {
@@ -72,7 +78,9 @@ public final class AgilityActives {
 					SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.PLAYERS, 0.8F, 1.3F);
 		}
 
-		target.setAttached(ModAttachments.TRUE_SHOT_READY_AT, now + Tuning.TRUE_SHOT_COOLDOWN_TICKS);
+		boolean seeker = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SEEKER_ARROW) > 0;
+		target.setAttached(ModAttachments.TRUE_SHOT_READY_AT, now
+				+ (seeker ? Tuning.TRUE_SHOT_SEEKER_COOLDOWN_TICKS : Tuning.TRUE_SHOT_COOLDOWN_TICKS));
 	}
 
 	/** Applied to an armed player's arrow the moment it enters the world. */

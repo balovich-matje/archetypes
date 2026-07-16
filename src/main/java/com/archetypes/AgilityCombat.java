@@ -16,6 +16,8 @@ import net.minecraft.world.effect.MobEffect;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 
 /**
@@ -50,6 +52,34 @@ public final class AgilityCombat {
 					NodePurchases.owned(player, SubTree.MARKSMAN), MarksmanNodes.Family.SEEKER_ARROW) > 0;
 			AgilityActives.empower(arrow,
 					homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER, homing);
+
+			// The Seeker Arrow aims itself: whatever the player was pointing
+			// at, the shot leaves toward the nearest visible hostile. Flight
+			// homing (the arrow mixin) does the rest; non-hostiles are ghosts
+			// to it — canHitEntity waves them through.
+			if (homing) {
+				LivingEntity quarry = null;
+				double best = Double.MAX_VALUE;
+
+				for (LivingEntity candidate : level.getEntitiesOfClass(LivingEntity.class,
+						player.getBoundingBox().inflate(Tuning.SEEKER_AIM_RANGE),
+						living -> living instanceof Enemy && living.isAlive()
+								&& !living.isSpectator() && player.hasLineOfSight(living))) {
+					double distance = candidate.distanceToSqr(player);
+
+					if (distance < best) {
+						best = distance;
+						quarry = candidate;
+					}
+				}
+
+				if (quarry != null) {
+					double speed = arrow.getDeltaMovement().length();
+					arrow.setDeltaMovement(quarry.getBoundingBox().getCenter()
+							.subtract(arrow.position()).normalize().scale(speed));
+					arrow.hurtMarked = true;
+				}
+			}
 		});
 
 		// Kills feed two capstones: Predator refreshes a running invisibility,
@@ -63,6 +93,14 @@ public final class AgilityCombat {
 
 			if (source.getDirectEntity() instanceof AbstractArrow arrow) {
 				MarksmanCombat.onArrowKill(player, arrow);
+
+				// Night's Gift: any bow or crossbow kill lights the dark.
+				if (MarksmanCombat.fromMarksmanWeapon(arrow)
+						&& MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
+								MarksmanNodes.Family.NIGHT_VISION) > 0) {
+					player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
+							Tuning.NIGHT_VISION_TICKS));
+				}
 			}
 
 			if (player.hasEffect(MobEffects.INVISIBILITY)

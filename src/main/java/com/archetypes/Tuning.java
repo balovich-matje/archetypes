@@ -231,8 +231,12 @@ public final class Tuning {
 	/** Cooldown starts on arming, not on the shot. */
 	public static final int TRUE_SHOT_COOLDOWN_TICKS = 400;
 	public static final float TRUE_SHOT_MULTIPLIER = 2.0F;
-	/** The Seeker Arrow capstone trades the bonus damage away for homing. */
+	/** The Seeker Arrow capstone trades the bonus damage away for homing —
+	 * and casts twice as often; with Focus it can chain indefinitely. */
 	public static final float TRUE_SHOT_HOMING_MULTIPLIER = 1.0F;
+	public static final int TRUE_SHOT_SEEKER_COOLDOWN_TICKS = 200;
+	/** How far the Seeker Arrow looks for its own target at launch. */
+	public static final double SEEKER_AIM_RANGE = 24.0;
 	public static final float TRUE_SHOT_SNAP_MULTIPLIER = 4.0F;
 	public static final float TRUE_SHOT_SNAP_SPEED = 3.0F;
 	/** Gravity-free arrows fly forever; these quietly stop existing here. */
@@ -245,12 +249,13 @@ public final class Tuning {
 	/** Damage-neutral: velocity up by this, base damage down to match. */
 	public static final float SWIFT_FLIGHT_PER_RANK = 0.5F;
 	public static final double DISENGAGE_BLOCKS_PER_RANK = 3.0;
-	public static final int DISENGAGE_COOLDOWN_TICKS = 20;
+	public static final int DISENGAGE_COOLDOWN_TICKS = 160;
 	/** A third of the draw slowdown back per rank; rank 3 walks free. */
 	public static final float NIMBLE_DRAW_PER_RANK = 1.0F / 3.0F;
 	public static final float RAPID_RELOAD_PER_RANK = 0.25F;
 	public static final double COMBUSTION_RADIUS = 3.0;
 	public static final int FOCUS_REFUND_TICKS = 200;
+	public static final int NIGHT_VISION_TICKS = 160;
 
 	// --- Agility: Invisibility ---
 	public static final int INVIS_TICKS = 160;

@@ -39,7 +39,18 @@ public final class CooldownBarHud {
 
 	private record Ability(Identifier sprite, int texSize, ItemStack item, Identifier overlay,
 			int overlaySize, net.minecraft.client.KeyMapping key,
-			AttachmentType<Long> readyAt, int totalTicks) {
+			AttachmentType<Long> readyAt, int totalTicks, float manaCost) {
+		/** Cooldown-driven active: no mana involved. */
+		private Ability(final Identifier sprite, final int texSize, final ItemStack item,
+				final Identifier overlay, final int overlaySize, final net.minecraft.client.KeyMapping key,
+				final AttachmentType<Long> readyAt, final int totalTicks) {
+			this(sprite, texSize, item, overlay, overlaySize, key, readyAt, totalTicks, 0.0F);
+		}
+
+		/** Mana-driven spell: no cooldown clock, greyed while unaffordable. */
+		private Ability(final ItemStack item, final net.minecraft.client.KeyMapping key, final float manaCost) {
+			this(null, 0, item, null, 0, key, null, 0, manaCost);
+		}
 	}
 
 	private CooldownBarHud() {
@@ -91,8 +102,20 @@ public final class CooldownBarHud {
 						ability.overlaySize(), ability.overlaySize());
 			}
 
-			Long readyAt = ((AttachmentTarget) player).getAttached(ability.readyAt());
+			Long readyAt = ability.readyAt() == null ? null
+					: ((AttachmentTarget) player).getAttached(ability.readyAt());
 			long remaining = readyAt == null ? 0 : readyAt - now;
+
+			// Spells: the price tag sits top-left, and an unaffordable spell
+			// dims exactly like one on cooldown — the bar reads one language.
+			if (ability.manaCost() > 0.0F) {
+				if (com.archetypes.Mana.current(player) < ability.manaCost()) {
+					graphics.fill(iconX, iconY, iconX + ICON, iconY + ICON, 0xB3000000);
+				}
+
+				graphics.text(client.font, Integer.toString(Math.round(ability.manaCost())),
+						x + 2, y + 2, 0xFF7FB2FF, true);
+			}
 
 			if (remaining > 0) {
 				// Draining overlay from the top, vanilla item-cooldown style.
@@ -174,9 +197,12 @@ public final class CooldownBarHud {
 
 		if (com.archetypes.MarksmanNodes.rank(SubTree.MARKSMAN, marksman,
 				com.archetypes.MarksmanNodes.Family.TRUE_SHOT) > 0) {
+			boolean seeker = com.archetypes.MarksmanNodes.rank(SubTree.MARKSMAN, marksman,
+					com.archetypes.MarksmanNodes.Family.SEEKER_ARROW) > 0;
 			abilities.add(new Ability(null, 0, new ItemStack(Items.SPECTRAL_ARROW),
 					null, 0, ArchetypesClient.ABILITY_KEYS[0],
-					ModAttachments.TRUE_SHOT_READY_AT, Tuning.TRUE_SHOT_COOLDOWN_TICKS));
+					ModAttachments.TRUE_SHOT_READY_AT, seeker
+							? Tuning.TRUE_SHOT_SEEKER_COOLDOWN_TICKS : Tuning.TRUE_SHOT_COOLDOWN_TICKS));
 		}
 
 		var assassin = NodePurchases.owned(player, SubTree.ASSASSIN);
@@ -199,6 +225,38 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(null, 0, new ItemStack(Items.FERMENTED_SPIDER_EYE),
 					null, 0, ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
+		}
+
+		// The Seeker's spells: no cooldowns, so these are keybind + price
+		// tags over the mana bar, dimming when the pool can't pay.
+		var elementalist = NodePurchases.owned(player, SubTree.ELEMENTALIST);
+
+		if (com.archetypes.PlaceholderNodes.owns(SubTree.ELEMENTALIST, elementalist,
+				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+			boolean meteor = com.archetypes.PlaceholderNodes.owns(SubTree.ELEMENTALIST, elementalist,
+					com.archetypes.PlaceholderNodes.Kind.CAPSTONE_A);
+			boolean flame = com.archetypes.PlaceholderNodes.owns(SubTree.ELEMENTALIST, elementalist,
+					com.archetypes.PlaceholderNodes.Kind.CAPSTONE_B);
+			abilities.add(new Ability(
+					new ItemStack(meteor ? Items.MAGMA_BLOCK : flame ? Items.BLAZE_ROD : Items.FIRE_CHARGE),
+					ArchetypesClient.ABILITY_KEYS[0],
+					meteor ? Tuning.METEOR_MIN_MANA : flame ? Tuning.FLAME_START_COST : Tuning.FIREBALL_COST));
+		}
+
+		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
+
+		if (com.archetypes.PlaceholderNodes.owns(SubTree.WIZARD, wizard,
+				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+			abilities.add(new Ability(new ItemStack(Items.AMETHYST_SHARD),
+					ArchetypesClient.ABILITY_KEYS[1], Tuning.MISSILE_COST));
+		}
+
+		var priest = NodePurchases.owned(player, SubTree.PRIEST);
+
+		if (com.archetypes.PlaceholderNodes.owns(SubTree.PRIEST, priest,
+				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+			abilities.add(new Ability(new ItemStack(Items.GLOWSTONE_DUST),
+					ArchetypesClient.ABILITY_KEYS[2], Tuning.HOLY_COST));
 		}
 
 		return abilities;

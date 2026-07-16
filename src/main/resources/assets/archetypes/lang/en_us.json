@@ -143,9 +143,9 @@
 	"node.archetypes.marksman.true_shot": "True Shot",
 	"node.archetypes.marksman.true_shot.desc": "20s cooldown. Your next bow shot flies dead straight, unbent by gravity, and deals x2.0 damage.",
 	"node.archetypes.marksman.seeker_arrow": "Seeker Arrow",
-	"node.archetypes.marksman.seeker_arrow.desc": "True Shot deals x1.0 damage but steers itself toward the nearest target.",
+	"node.archetypes.marksman.seeker_arrow.desc": "True Shot deals x1.0 damage, aims itself at the nearest hostile — flying through anything friendly untouched — and its cooldown drops to 10s.",
 	"node.archetypes.marksman.snap_shot": "Snap Shot",
-	"node.archetypes.marksman.snap_shot.desc": "True Shot deals x4.0 damage and fires the instant you use it — no draw.",
+	"node.archetypes.marksman.snap_shot.desc": "True Shot deals x4.0 damage and fires the instant you use it — no draw, no load. Works with bow and crossbow.",
 	"node.archetypes.marksman.minor": "Unnamed Star",
 	"node.archetypes.marksman.minor.desc": "A placeholder — this passive is still being written.",
 	"node.archetypes.assassin.shadow_step": "Shadow Step",
@@ -209,7 +209,7 @@
 	"node.archetypes.marksman.swift_flight": "Swift Flight",
 	"node.archetypes.marksman.swift_flight.desc": "Arrows fly 50%/100% faster — flatter, quicker to arrive, same damage. Bows and crossbows.",
 	"node.archetypes.marksman.disengage": "Disengage",
-	"node.archetypes.marksman.disengage.desc": "While drawing a bow, press sprint to spring 3/6 blocks backwards.",
+	"node.archetypes.marksman.disengage.desc": "While drawing a bow, press sprint to spring 3/6 blocks backwards. 8s cooldown.",
 	"node.archetypes.marksman.nimble_draw": "Nimble Draw",
 	"node.archetypes.marksman.nimble_draw.desc": "Walk 33% closer to full speed per rank while the bowstring is drawn; rank 3 removes the penalty entirely.",
 	"node.archetypes.marksman.rapid_reload": "Rapid Reload",
@@ -217,5 +217,7 @@
 	"node.archetypes.marksman.combustion": "Combustion",
 	"node.archetypes.marksman.combustion.desc": "Hitting a burning target detonates it: everything within 3 blocks takes the arrow's full damage.",
 	"node.archetypes.marksman.focus": "Focus",
-	"node.archetypes.marksman.focus.desc": "Every arrow that lands shaves 10 seconds off True Shot's cooldown."
+	"node.archetypes.marksman.focus.desc": "Every arrow that lands shaves 10 seconds off True Shot's cooldown. Crowning either capstone.",
+	"node.archetypes.marksman.night_vision": "Night's Gift",
+	"node.archetypes.marksman.night_vision.desc": "Bow and crossbow kills grant Night Vision for 8 seconds."
 }

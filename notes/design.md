@@ -915,3 +915,31 @@ arrow-rest nub (burning target hit = 3-block blast for the arrow's full
 damage; on-hit batch lives in the hurtServer damage-shaping mixin — the
 AFTER_DAMAGE lethal gate again — with a reentrancy latch like Shockwave's).
 One node spare: the bow's top tip stays an Unnamed Star for a future idea.
+
+**Marksman rework round 2 + spell price tags (2026-07-17).** The bow
+constellation is now what the user asked for literally: a drawn bow with
+an arrow through it — two symmetric limbs from grip (True Shot, bottom) to
+crown (Focus, top, adjacent to BOTH capstones so either choice unlocks
+it), and the arrow as a full 11-cell horizontal row bridging the branches:
+Combustion at the head, a Pinning barb either end of the shared
+4-node Conservation shaft, Swift Flight in the fletching. Left limb bow
+(Disengage, Nimble Draw → Seeker Arrow), right limb crossbow (Night's
+Gift — the new both-weapons Night Vision-on-kill passive, which landed
+exactly in the one spare node — then Rapid Reload → Snap Shot).
+
+Balance/behavior: Disengage cooldown 1s → 8s. Snap Shot now fires from a
+crossbow too (the base arming stays bow-only; the capstone conjures its
+own shot). Seeker Arrow rebuilt from "steering" to "aimbot": on launch it
+picks the nearest visible hostile within 24 and leaves TOWARD it, flight
+homing is hostile-only, non-hostiles are ghosts (canHitEntity waves them
+through — a self-aiming arrow must not murder pets), and the base
+cooldown drops to 10s so Focus (10s refund per hit) chains it
+indefinitely — the low-damage spam fantasy vs Snap Shot's x4 nuke.
+
+Cooldown bar: Seeker spells get tiles after all — not clocks but price
+tags: mana cost top-left in blue, keybind bottom-right as usual, and the
+icon dims exactly like a cooldown when the pool can't pay (one visual
+language). Icon follows the build: fireball → magma block (Meteorite) or
+blaze rod (Flamethrower). Note: 8s Night Vision sits inside vanilla's
+sub-10s warning flicker the whole time; if it annoys, bump
+NIGHT_VISION_TICKS past 200.
