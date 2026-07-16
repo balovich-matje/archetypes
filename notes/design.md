@@ -718,3 +718,15 @@ comes from the ticker (mace + airborne + falling faster than 0.4/t) with a
 Mace flange icons per spec: mace item render + fire charge corner (Meteor),
 compass corner (Shockwave), stone corner (Earth Shatterer), cracks-behind
 (Quake).
+
+**Shockwave finally root-caused (2026-07-16, evening).** The playtest log held
+the smoking gun: an Over-Overkill advancement (50-heart mace blow) with ZERO
+handler activity. Fabric's AFTER_DAMAGE is bytecode-gated on
+!isDeadOrDying() — it never fires on lethal hits, and a Density/Meteor
+Shockwave test one-shots everything. All Crusher on-hit passives (Adrenaline,
+Shockwave, Battle Trance) moved out of AFTER_DAMAGE into the hurtServer
+damage-shaping mixin, which runs before death resolution and knows the exact
+shaped damage for the splash. Trade-off accepted: the shaping hook can fire on
+hits later cancelled (iframes/shields) — rare — versus never firing on kills,
+which is the common case for this build. Slayer's AFTER_DAMAGE users
+(Hamstring, Rend) are correctly gated: slowing/bleeding a corpse is pointless.

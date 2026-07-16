@@ -201,15 +201,14 @@ public abstract class LivingEntityMixin {
 		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
 		float result = amount;
 
-		// A real smash: stamp the tick, because the mace's own post-hit hook
-		// resets fallDistance before AFTER_DAMAGE (Shockwave) gets to look.
+		// A real smash: live fallDistance, or the ticker's mid-fall stamp
+		// (belt and suspenders — vanilla resets fallDistance somewhere in the
+		// mace pipeline and the exact point is version-dependent).
+		Long stamp = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
+				.getAttached(ModAttachments.SMASH_AT);
 		boolean smashing = weapon == com.archetypes.WeaponClass.MACE
-				&& player.fallDistance > Tuning.SMASH_MIN_FALL;
-
-		if (smashing) {
-			((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
-					.setAttached(ModAttachments.SMASH_AT, player.level().getGameTime());
-		}
+				&& (player.fallDistance > Tuning.SMASH_MIN_FALL
+						|| (stamp != null && player.level().getGameTime() - stamp <= 3));
 
 		// Meteor: Density by another name — smash bonus per fallen block.
 		int meteor = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.METEOR);
@@ -218,19 +217,24 @@ public abstract class LivingEntityMixin {
 			result += player.fallDistance * Tuning.METEOR_PER_BLOCK_PER_RANK * meteor;
 		}
 
+		LivingEntity victim = (LivingEntity) (Object) this;
 		int rank = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.SUNDER);
 
 		if (rank == 0) {
+			com.archetypes.CrusherCombat.onCrusherHit(player, victim, level, result, weapon,
+					owned, smashing);
 			return result;
 		}
 
 		int levels = rank * (weapon == com.archetypes.WeaponClass.HANDS ? 2 : 1);
-		LivingEntity victim = (LivingEntity) (Object) this;
 		float absorbed = Math.min(0.8F,
 				(float) victim.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
 						* 0.04F);
 
-		return result + result * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
+		result = result + result * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
+		com.archetypes.CrusherCombat.onCrusherHit(player, victim, level, result, weapon,
+				owned, smashing);
+		return result;
 	}
 
 	/**

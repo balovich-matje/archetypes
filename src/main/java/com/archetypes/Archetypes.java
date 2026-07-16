@@ -19,7 +19,6 @@ public class Archetypes implements ModInitializer {
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();
 		SlayerTicker.initialize();
-		CrusherCombat.initialize();
 		CrusherTicker.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
