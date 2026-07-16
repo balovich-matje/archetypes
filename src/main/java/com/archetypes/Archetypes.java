@@ -91,6 +91,13 @@ public class Archetypes implements ModInitializer {
 					int sequence = previous == null ? 1 : ((previous >> 2) + 1) & 0x3FFF;
 					target.setAttached(ModAttachments.MELEE_SWING,
 							sequence << 2 | weapon.ordinal());
+
+					// The slab announces itself: a deep whoosh under every swing.
+					if (weapon == WeaponClass.GREATSWORD) {
+						player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
+								net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP,
+								net.minecraft.sounds.SoundSource.PLAYERS, 1.1F, 0.55F);
+					}
 				}));
 
 		ServerPlayNetworking.registerGlobalReceiver(PickArchetypePayload.TYPE, (payload, context) -> {

@@ -1,13 +1,13 @@
 {
 	"name": "gs_arc_rl",
 	"author": "archetypes",
-	"description": "Archetypes melee pose, authored in emote format for exact rig semantics",
+	"description": "Archetypes melee pose",
 	"emote": {
 		"isLoop": false,
-		"returnTick": 2,
+		"returnTick": 3,
 		"beginTick": 0,
-		"endTick": 8,
-		"stopTick": 12,
+		"endTick": 14,
+		"stopTick": 18,
 		"degrees": true,
 		"moves": [
 			{
@@ -22,56 +22,56 @@
 					"pitch": 0
 				},
 				"rightArm": {
-					"pitch": 55,
-					"yaw": 70,
-					"roll": 130,
+					"pitch": 60,
+					"yaw": 75,
+					"roll": 135,
 					"x": -5,
 					"y": 2.5
 				},
 				"leftArm": {
-					"pitch": -30,
+					"pitch": -28,
 					"yaw": 0,
-					"roll": 70,
+					"roll": 72,
 					"x": 2,
 					"y": 2.5,
 					"z": -3
 				},
 				"rightItem": {
-					"pitch": -30,
-					"yaw": 15,
-					"roll": -85
+					"pitch": -31,
+					"yaw": 16,
+					"roll": -82
 				}
 			},
 			{
-				"tick": 2,
-				"easing": "EASEINOUTQUAD",
+				"tick": 3,
+				"easing": "EASEINQUAD",
 				"torso": {
-					"pitch": -14,
-					"yaw": 30
+					"pitch": 14,
+					"yaw": -22
 				},
 				"head": {
 					"yaw": 0,
 					"pitch": 0
 				},
 				"rightArm": {
-					"pitch": -100,
-					"yaw": 10,
-					"roll": 0,
-					"x": -4.5,
-					"y": 2
+					"pitch": 63,
+					"yaw": 78,
+					"roll": 140,
+					"x": -5.2,
+					"y": 2.5
 				},
 				"leftArm": {
-					"pitch": -40,
-					"yaw": 12,
-					"roll": 90,
+					"pitch": -28,
+					"yaw": 0,
+					"roll": 72,
 					"x": 2,
-					"y": 2.3,
-					"z": -2.5
+					"y": 2.7,
+					"z": -2.8
 				},
 				"rightItem": {
-					"pitch": -50,
-					"yaw": 0,
-					"roll": -90
+					"pitch": -31,
+					"yaw": 16,
+					"roll": -82
 				}
 			},
 			{
@@ -79,59 +79,91 @@
 				"easing": "EASEINOUTQUAD",
 				"torso": {
 					"pitch": -16,
-					"yaw": 60
+					"yaw": 38
 				},
 				"head": {
 					"yaw": 0,
 					"pitch": 0
 				},
 				"rightArm": {
-					"pitch": -90,
-					"yaw": -30,
-					"roll": 5,
-					"x": -4.5,
-					"y": 2.2
+					"pitch": -105,
+					"yaw": 12,
+					"roll": 1,
+					"x": -4.4,
+					"y": 2
 				},
 				"leftArm": {
-					"pitch": -55,
-					"yaw": 12,
-					"roll": 78,
-					"x": 5,
-					"y": 2,
-					"z": -3
+					"pitch": -38,
+					"yaw": 14,
+					"roll": 98,
+					"x": 2,
+					"y": 2.3,
+					"z": -2.7
 				},
 				"rightItem": {
-					"pitch": -75,
-					"yaw": 0,
-					"roll": -90
+					"pitch": -54,
+					"yaw": 2,
+					"roll": -95
 				}
 			},
 			{
-				"tick": 8,
+				"tick": 9,
 				"easing": "EASEINOUTQUAD",
 				"torso": {
-					"pitch": -8,
-					"yaw": 45
+					"pitch": -18,
+					"yaw": 62
+				},
+				"head": {
+					"yaw": 0,
+					"pitch": 0
 				},
 				"rightArm": {
-					"pitch": -80,
-					"yaw": -32,
-					"roll": 3,
+					"pitch": -92,
+					"yaw": -13,
+					"roll": 8,
+					"x": -4.4,
+					"y": 1.8
+				},
+				"leftArm": {
+					"pitch": -52,
+					"yaw": 15,
+					"roll": 80,
+					"x": 5.4,
+					"y": 1.9,
+					"z": -3.3
+				},
+				"rightItem": {
+					"pitch": -81,
+					"yaw": 2,
+					"roll": -95
+				}
+			},
+			{
+				"tick": 14,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"yaw": 8
+				},
+				"rightArm": {
+					"pitch": -60,
+					"yaw": -25,
+					"roll": -10,
 					"x": -4.5,
-					"y": 2.4
+					"y": 2.5,
+					"z": 0.5
 				},
 				"leftArm": {
 					"pitch": -60,
-					"yaw": 8,
-					"roll": 74,
-					"x": 5,
-					"y": 2.2,
-					"z": -1.5
+					"yaw": 45,
+					"roll": 5,
+					"x": 4.5,
+					"y": 2.5,
+					"z": -1
 				},
 				"rightItem": {
-					"pitch": -70,
-					"yaw": 0,
-					"roll": -80
+					"pitch": 30,
+					"yaw": 20,
+					"roll": 15
 				}
 			}
 		]

@@ -1,13 +1,13 @@
 {
 	"name": "sword_slash_rl",
 	"author": "archetypes",
-	"description": "Archetypes melee pose, authored in emote format for exact rig semantics",
+	"description": "Archetypes melee pose",
 	"emote": {
 		"isLoop": false,
-		"returnTick": 2,
+		"returnTick": 3,
 		"beginTick": 0,
-		"endTick": 6,
-		"stopTick": 9,
+		"endTick": 8,
+		"stopTick": 11,
 		"degrees": true,
 		"moves": [
 			{
@@ -29,9 +29,9 @@
 					"y": 1
 				},
 				"rightItem": {
-					"pitch": -20,
-					"yaw": 10,
-					"roll": -55
+					"pitch": -25,
+					"yaw": 12,
+					"roll": -60
 				}
 			},
 			{
@@ -53,47 +53,49 @@
 					"y": 1
 				},
 				"rightItem": {
-					"pitch": -40,
-					"yaw": 0,
-					"roll": -60
+					"pitch": -45,
+					"yaw": 2,
+					"roll": -70
 				}
 			},
 			{
-				"tick": 4,
+				"tick": 5,
 				"easing": "EASEINOUTQUAD",
 				"torso": {
 					"pitch": -10,
-					"yaw": 38
+					"yaw": 36
 				},
 				"rightArm": {
 					"pitch": -85,
-					"yaw": -25,
-					"roll": 3,
+					"yaw": -24,
+					"roll": 4,
 					"x": -1,
 					"y": 1
 				},
 				"rightItem": {
-					"pitch": -55,
-					"yaw": 0,
-					"roll": -55
+					"pitch": -62,
+					"yaw": 2,
+					"roll": -70
 				}
 			},
 			{
-				"tick": 6,
+				"tick": 8,
 				"easing": "EASEINOUTQUAD",
 				"torso": {
-					"pitch": -5,
-					"yaw": 26
+					"pitch": 0,
+					"yaw": 0
 				},
 				"rightArm": {
-					"pitch": -70,
-					"yaw": -24,
-					"roll": 2
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0,
+					"x": 0,
+					"y": 0
 				},
 				"rightItem": {
-					"pitch": -45,
+					"pitch": 0,
 					"yaw": 0,
-					"roll": -40
+					"roll": 0
 				}
 			}
 		]
