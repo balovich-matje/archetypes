@@ -3,7 +3,7 @@
   "category": "equipment",
   "key": {
     "#": "minecraft:stick",
-    "X": "#minecraft:iron_tool_materials"
+    "X": "#minecraft:diamond_tool_materials"
   },
   "pattern": [
     "XXX",
@@ -11,6 +11,6 @@
     " # "
   ],
   "result": {
-    "id": "archetypes:iron_claymore"
+    "id": "archetypes:diamond_greatsword"
   }
 }

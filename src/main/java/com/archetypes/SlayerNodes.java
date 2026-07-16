@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * pommel root at the bottom (Hamstring — CC that serves both weapons), grip,
  * the crossguard row where the paths split (Lunge arm left, Immovable arm
  * right), then the two blade edges — sword path up the left (gap-closing,
- * crowd control, sustain), claymore path up the right (the oneshot fantasy) —
+ * crowd control, sustain), greatsword path up the right (the oneshot fantasy) —
  * with an empty fuller between them and the capstone crown at the tip.
  */
 public final class SlayerNodes {
@@ -25,14 +25,14 @@ public final class SlayerNodes {
 		LUNGE(() -> Items.RABBIT_FOOT),
 		KBRES(() -> Items.OBSIDIAN),
 		BLEED(() -> Items.REDSTONE),
-		HEAVY(() -> ModItems.IRON_CLAYMORE),
+		HEAVY(() -> ModItems.IRON_GREATSWORD),
 		FIRSTBLOOD(() -> Items.TARGET),
 		FLURRY(() -> Items.SUGAR),
 		EXECUTIONER(() -> Items.NETHERITE_AXE),
 		BLOODLUST(() -> Items.FERMENTED_SPIDER_EYE),
 		RELENTLESS(() -> Items.CLOCK),
 		BLADESTORM(() -> Items.DIAMOND_SWORD),
-		DECIMATE(() -> ModItems.NETHERITE_CLAYMORE),
+		DECIMATE(() -> ModItems.NETHERITE_GREATSWORD),
 		MINOR(null);
 
 		private final @Nullable Supplier<Item> icon;
@@ -88,7 +88,7 @@ public final class SlayerNodes {
 		byCell.put(cell(3, 7), new Def(Family.VAMP, 3));
 		byCell.put(cell(3, 8), new Def(Family.FLURRY, 1));
 
-		// Right blade edge: the claymore path.
+		// Right blade edge: the greatsword path.
 		byCell.put(cell(5, 3), new Def(Family.HEAVY, 1));
 		byCell.put(cell(5, 4), new Def(Family.HEAVY, 2));
 		byCell.put(cell(5, 5), new Def(Family.HEAVY, 3));

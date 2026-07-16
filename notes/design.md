@@ -320,7 +320,7 @@ make the fantasy *fit better*; they never switch it on.
 | --- | --- | --- | --- |
 | Seeker | **Wand** | 2 sticks | Cast with it held in either hand. Deliberately first-minute cheap. |
 | Cutpurse | **Dagger** | stick + ingot/diamond/etc | Sword-like but shorter. Faster movement while sneaking; **less damage than a sword outside stealth**. |
-| Brawler | **Claymore** | stick + more material than a sword | Bigger and slower, more damage per swing. |
+| Brawler | **Greatsword** | stick + more material than a sword | Bigger and slower, more damage per swing. |
 
 Notes on each, honestly:
 
@@ -330,7 +330,7 @@ Notes on each, honestly:
   is what keeps this honest — **if casting ever requires the wand, the rule is broken.**
 - **Dagger is the model.** It gives up damage to gain a situational advantage; it is
   never strictly better than a sword. Copy this shape for anything later.
-- **Claymore needs care.** "Costs more, hits harder" is a straight vertical upgrade —
+- **Greatsword needs care.** "Costs more, hits harder" is a straight vertical upgrade —
   exactly what the next section says not to build. It only stays honest if the extra
   damage is paid for in swing speed, i.e. **similar DPS, different rhythm**: big
   commitment, big recovery. If it ends up simply better than a sword, it is power
@@ -532,19 +532,20 @@ Notes:
 The constellation IS a sword: pommel root (Hamstring — CC both weapons share),
 grip, a 7-node crossguard where the paths split (Lunge out the left arm,
 Immovable out the right, Vampirism at the junction), the two blade edges as the
-paths — **sword left: gap-closing, crowd control, sustain; claymore right:
+paths — **sword left: gap-closing, crowd control, sustain; greatsword right:
 oneshots, slow, immovable** — an empty fuller between them, and the capstone
 cross at the tip with Bloodlust above it, reachable only through a capstone by
-geometry alone. 24 nodes; full sword lane 14, claymore lane 13, cap 15.
+geometry alone. 24 nodes; full sword lane 14, greatsword lane 13, cap 15.
 
 **One ability key.** G is now "Archetype Ability": the server dispatches on the
-mainhand — shield bashes, claymore Decimates, sword Bladestorms. No new binds.
+mainhand — shield bashes, greatsword Decimates, sword Bladestorms. No new binds.
 
-- **Decimate** (claymore capstone): one tilted cleave (sweep arc drawn falling
-  ~25° across the swing), double attribute damage in the front arc, shatters
-  blocks weaker than stone — plus logs and planks by tag, which are nominally
-  *harder* than stone (2.0 vs 1.5) but belong to the fantasy. Capped at 48
-  blocks. 30s cooldown.
+- **Decimate** (greatsword capstone): one tilted cleave (sweep arc drawn falling
+  ~25° across the swing), double attribute damage in the front arc. Blocks:
+  only instant-break clutter (torches, grass, fire...) is swept — playtesting
+  showed anything stronger turns base defence into base demolition, so the
+  earlier weaker-than-stone + logs/planks rule is gone. Capped at 48 blocks.
+  30s cooldown.
 - **Bladestorm** (sword capstone): 3s channel, six half-damage volleys, ends
   early if the sword leaves the hand. 45s cooldown. Four copies of the actual
   sword spin near-flat around the player at two heights (the Bulwark ghost
@@ -552,20 +553,20 @@ mainhand — shield bashes, claymore Decimates, sword Bladestorms. No new binds.
 - Passives: Hamstring (Slowness I/II on hit), Vampirism (half heart per rank on
   melee kills), Lunge (sword swings hop you along the look vector — whiffs
   too, it is a gap-closer; suppressed during bladestorm whose volleys swing),
-  Immovable + Heavy Blows (transient attribute modifiers while claymore held),
+  Immovable + Heavy Blows (transient attribute modifiers while greatsword held),
   Rend (bleed, sword only), First Blood (+25%/rank vs unhurt targets),
-  Executioner (claymore finishes below 15%), Flurry (sword kills reset Lunge),
+  Executioner (greatsword finishes below 15%), Flurry (sword kills reset Lunge),
   Bloodlust (kills grant Speed).
-- Claymores live in `#archetypes:claymores` and are deliberately NOT in
+- Greatswords live in `#archetypes:greatswords` and are deliberately NOT in
   `#minecraft:swords`-scoped passives: `ModItems.isSword` subtracts the tag, so
   bleed and lunge never trigger from the two-hander.
 - Cooldown numbers ride the weapon slots like the bash's, same HUD.
-- Claymore texture v2: full 16px-diagonal blade + display-transform scale
+- Greatsword texture v2: full 16px-diagonal blade + display-transform scale
   (1.35 third-person), so it reads player-length in hand.
 
 ## Animation library research (checked 2026-07-16)
 
-The question: 2H claymore grip, dual-wield for the rogue, and real swing
+The question: 2H greatsword grip, dual-wield for the rogue, and real swing
 animations for Decimate/Bladestorm. Checked against Modrinth's live version
 data, not memory — 26.2 is three weeks old and support lags:
 
@@ -579,11 +580,11 @@ data, not memory — 26.2 is three weeks old and support lags:
 **Plan:**
 - Branch `player-animation-experiment`: Player Animation Library as the first
   external dependency. Test cases: a real Decimate swing (the tilted cleave as
-  an actual body animation), a Bladestorm spin pose, and a 2H claymore idle.
+  an actual body animation), a Bladestorm spin pose, and a 2H greatsword idle.
   Judge the feel against the dependency cost, then decide.
 - Better Combat compat can ship **today as pure data**: weapon-attribute JSONs
   under `data/bettercombat/` are inert without BC installed — zero dependency,
-  and the claymore becomes properly two-handed for anyone who adds BC once it
+  and the greatsword becomes properly two-handed for anyone who adds BC once it
   ports to 26.x.
 - Rogue dual-wield: revisit when we get there; BC's port status decides
   whether we ride theirs or build our own.
@@ -618,3 +619,9 @@ The whole spine transfers; it's server-authoritative and already solved:
 - Attribute-modifier passives applied on join/respawn/change (`DefencePassives`).
 - All 26.2 API gotchas already documented in `specialities/CLAUDE.md` — read that
   before writing any 26.2 code here.
+
+**Claymore → Greatsword rename (2026-07-16).** The six-ingot slab never was a
+claymore — the name says slender Scottish two-hander, the sprite says wall of
+metal. "Greatsword" tells every RPG player exactly what it is. Item ids, tag,
+recipes, particle and code all renamed; old claymore items in test worlds are
+gone (id change, pre-release so no migration).

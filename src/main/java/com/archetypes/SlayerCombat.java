@@ -12,7 +12,7 @@ import net.minecraft.world.item.ItemStack;
 /**
  * The Slayer's on-hit and on-kill passives, hung off Fabric's entity events.
  * Weapon scoping is the tree's split made literal: sword-only passives check
- * {@link ModItems#isSword}, the shared ones accept the claymore too.
+ * {@link ModItems#isSword}, the shared ones accept the greatsword too.
  */
 public final class SlayerCombat {
 	private SlayerCombat() {
@@ -26,9 +26,9 @@ public final class SlayerCombat {
 
 			ItemStack weapon = player.getMainHandItem();
 			boolean sword = ModItems.isSword(weapon);
-			boolean claymore = ModItems.isClaymore(weapon);
+			boolean greatsword = ModItems.isGreatsword(weapon);
 
-			if (!sword && !claymore) {
+			if (!sword && !greatsword) {
 				return;
 			}
 
@@ -42,7 +42,7 @@ public final class SlayerCombat {
 						player);
 			}
 
-			// Rend: sword-only — a wound the claymore's single blow does not need.
+			// Rend: sword-only — a wound the greatsword's single blow does not need.
 			int bleed = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.BLEED);
 
 			if (bleed > 0 && sword && entity.isAlive()) {
@@ -57,9 +57,9 @@ public final class SlayerCombat {
 
 			ItemStack weapon = player.getMainHandItem();
 			boolean sword = ModItems.isSword(weapon);
-			boolean claymore = ModItems.isClaymore(weapon);
+			boolean greatsword = ModItems.isGreatsword(weapon);
 
-			if (!sword && !claymore) {
+			if (!sword && !greatsword) {
 				return;
 			}
 

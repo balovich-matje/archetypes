@@ -1,9 +1,9 @@
 {
   "type": "minecraft:smithing_transform",
   "template": "minecraft:netherite_upgrade_smithing_template",
-  "base": "archetypes:diamond_claymore",
+  "base": "archetypes:diamond_greatsword",
   "addition": "#minecraft:netherite_tool_materials",
   "result": {
-    "id": "archetypes:netherite_claymore"
+    "id": "archetypes:netherite_greatsword"
   }
 }

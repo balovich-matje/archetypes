@@ -13,7 +13,7 @@ import net.minecraft.util.RandomSource;
 import org.joml.Quaternionf;
 
 /**
- * One claymore-wide sweep flash. The 26.2 particle pipeline only carries a
+ * One greatsword-wide sweep flash. The 26.2 particle pipeline only carries a
  * single square quad size per particle, so the stretch is composited: this
  * particle extracts three overlapping camera-facing quads spread along the
  * swing's tangent (passed in through the velocity channel), stepping downward
@@ -21,7 +21,7 @@ import org.joml.Quaternionf;
  * feathered ends make the overlap read as one long flash. Vanilla's eight
  * sweep frames, fullbright, six ticks.
  */
-public class ClaymoreSweepParticle extends SingleQuadParticle {
+public class GreatswordSweepParticle extends SingleQuadParticle {
 	private static final float QUAD_SIZE = 2.6F;
 	/** Neighbour quad offset, in quad sizes; < 1 so the trio overlaps. */
 	private static final float SPREAD = 0.55F;
@@ -32,7 +32,7 @@ public class ClaymoreSweepParticle extends SingleQuadParticle {
 	private final float tangentX;
 	private final float tangentZ;
 
-	private ClaymoreSweepParticle(final ClientLevel level, final double x, final double y,
+	private GreatswordSweepParticle(final ClientLevel level, final double x, final double y,
 			final double z, final double tx, final double tz, final SpriteSet sprites) {
 		super(level, x, y, z, 0.0, 0.0, 0.0, sprites.first());
 		this.sprites = sprites;
@@ -104,7 +104,7 @@ public class ClaymoreSweepParticle extends SingleQuadParticle {
 		public Particle createParticle(final SimpleParticleType type, final ClientLevel level,
 				final double x, final double y, final double z,
 				final double xd, final double yd, final double zd, final RandomSource random) {
-			return new ClaymoreSweepParticle(level, x, y, z, xd, zd, this.sprites);
+			return new GreatswordSweepParticle(level, x, y, z, xd, zd, this.sprites);
 		}
 	}
 }

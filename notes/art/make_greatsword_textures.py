@@ -1,6 +1,6 @@
-"""Generate 32x32 claymore item sprites, one per tool material.
+"""Generate 32x32 greatsword item sprites, one per tool material.
 
-v2 of make_claymore_textures.py: same idea (palettes sampled from each vanilla
+v2 of make_greatsword_textures.py: same idea (palettes sampled from each vanilla
 sword sprite so materials match for free), but double resolution and a real
 greatsword silhouette — long blade with a central fuller, wide diagonal
 crossguard with flared tips, two-hand grip with leather wraps, round pommel.
@@ -8,7 +8,7 @@ crossguard with flared tips, two-hand grip with leather wraps, round pommel.
 The sprite plane in-world is still one "item unit" scaled by the model's
 display transforms, so doubling the texture doubles detail, not size.
 
-Usage: python3 make_claymore_textures_v2.py
+Usage: python3 make_greatsword_textures_v2.py
 """
 import os
 import zipfile
@@ -106,8 +106,8 @@ def build(name):
     put(1, 28, "E")
     put(3, 30, "g")
 
-    im.save(os.path.join(DST, f"{name}_claymore.png"))
-    print(f"{name}_claymore.png")
+    im.save(os.path.join(DST, f"{name}_greatsword.png"))
+    print(f"{name}_greatsword.png")
 
 
 def main():

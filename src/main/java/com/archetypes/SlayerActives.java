@@ -8,7 +8,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.state.BlockState;
@@ -17,7 +16,7 @@ import net.minecraft.world.phys.Vec3;
 /**
  * The Slayer capstone actives. Both ride the shared ability key: the payload
  * receiver dispatches on the mainhand item, so G is bash with a shield,
- * Decimate with a claymore, Bladestorm with a sword.
+ * Decimate with a greatsword, Bladestorm with a sword.
  */
 public final class SlayerActives {
 	private SlayerActives() {
@@ -25,15 +24,15 @@ public final class SlayerActives {
 
 	/**
 	 * Decimate: one massive tilted cleave. Double attribute damage to every
-	 * living thing in the front arc, and blocks weaker than stone — plus logs
-	 * and planks, which are nominally harder but belong to the fantasy —
-	 * shatter in its path.
+	 * living thing in the front arc, and instant-break clutter — torches,
+	 * grass, fire — is swept from its path. Nothing sturdier: swinging this
+	 * inside your own base must never redecorate it.
 	 */
 	public static void decimate(final ServerPlayer player) {
 		var owned = NodePurchases.owned(player, SubTree.SLAYER);
 
 		if (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.DECIMATE) == 0
-				|| !ModItems.isClaymore(player.getMainHandItem())) {
+				|| !ModItems.isGreatsword(player.getMainHandItem())) {
 			return;
 		}
 
@@ -78,8 +77,8 @@ public final class SlayerActives {
 			victim.push(push.x * 0.8, 0.2, push.z * 0.8);
 		}
 
-		// Blocks: weak matter in the arc shatters. destroyBlock drops loot and
-		// plays each block's own break effect, which doubles as our debris.
+		// Blocks: only instant-break clutter is swept. destroyBlock drops loot
+		// and plays each block's own break effect, which doubles as our debris.
 		BlockPos centre = player.blockPosition();
 		int destroyed = 0;
 
@@ -106,11 +105,7 @@ public final class SlayerActives {
 						continue;
 					}
 
-					float hardness = state.getDestroySpeed(level, pos);
-					boolean weak = hardness >= 0 && hardness < Tuning.DECIMATE_MAX_HARDNESS;
-					boolean woody = state.is(BlockTags.LOGS) || state.is(BlockTags.PLANKS);
-
-					if (!weak && !woody) {
+					if (state.getDestroySpeed(level, pos) != 0.0F) {
 						continue;
 					}
 
@@ -123,13 +118,13 @@ public final class SlayerActives {
 			}
 		}
 
-		// The cleave itself: one claymore-wide flash centred in front, stretched
+		// The cleave itself: one greatsword-wide flash centred in front, stretched
 		// along the swing's tangent and tilted down across it (~25 degrees) to
-		// carry the claymore's weight. With count 0 the offset triple becomes
-		// the particle's velocity, which claymore_sweep reads as its stretch
+		// carry the greatsword's weight. With count 0 the offset triple becomes
+		// the particle's velocity, which greatsword_sweep reads as its stretch
 		// direction instead.
 		double angle = Math.toRadians(player.getYRot()) + Math.PI / 2.0;
-		level.sendParticles(ModParticles.CLAYMORE_SWEEP,
+		level.sendParticles(ModParticles.GREATSWORD_SWEEP,
 				player.getX() + Math.cos(angle) * 2.6,
 				player.getY() + 1.35,
 				player.getZ() + Math.sin(angle) * 2.6,

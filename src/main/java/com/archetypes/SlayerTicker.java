@@ -21,17 +21,17 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  * The Slayer's per-tick work:
  *
  * <ul>
- * <li><b>Claymore stance</b> — Immovable's knockback resistance and Heavy
+ * <li><b>Greatsword stance</b> — Immovable's knockback resistance and Heavy
  * Blows' swing-speed cost live as transient attribute modifiers, applied while
- * a claymore is held and stripped the moment it is not.</li>
+ * a greatsword is held and stripped the moment it is not.</li>
  * <li><b>Bladestorm</b> — the channel: six half-damage volleys over three
  * seconds, cancelled early if the sword leaves the hand.</li>
  * <li><b>Bleeds</b> — Rend's open wounds, one damage tick a second.</li>
  * </ul>
  */
 public final class SlayerTicker {
-	private static final Identifier KBRES_ID = Archetypes.id("claymore_kbres");
-	private static final Identifier HEAVY_SPEED_ID = Archetypes.id("claymore_heavy_speed");
+	private static final Identifier KBRES_ID = Archetypes.id("greatsword_kbres");
+	private static final Identifier HEAVY_SPEED_ID = Archetypes.id("greatsword_heavy_speed");
 
 	private record Bleed(ServerPlayer source, int rank) {
 	}
@@ -61,7 +61,7 @@ public final class SlayerTicker {
 
 	private static void tickStance(final ServerPlayer player) {
 		var owned = NodePurchases.owned(player, SubTree.SLAYER);
-		boolean holding = ModItems.isClaymore(player.getMainHandItem());
+		boolean holding = ModItems.isGreatsword(player.getMainHandItem());
 
 		int kbres = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.KBRES);
 		applyStanceModifier(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), KBRES_ID,

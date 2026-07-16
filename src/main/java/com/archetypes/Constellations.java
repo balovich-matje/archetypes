@@ -39,7 +39,7 @@ public final class Constellations {
 	/**
 	 * The Slayer constellation IS a sword: pommel root, grip, a 7-node
 	 * crossguard where the paths split, the two blade edges as the sword and
-	 * claymore paths (fuller empty between them), capstones flanking the tip
+	 * greatsword paths (fuller empty between them), capstones flanking the tip
 	 * with Bloodlust above — reachable only through a capstone by geometry.
 	 */
 	public static final Constellation SLAYER_SWORD = Constellation.of(

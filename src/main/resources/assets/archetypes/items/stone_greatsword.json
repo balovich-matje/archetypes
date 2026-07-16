@@ -1,6 +1,6 @@
 {
   "model": {
     "type": "minecraft:model",
-    "model": "archetypes:item/iron_claymore"
+    "model": "archetypes:item/stone_greatsword"
   }
 }

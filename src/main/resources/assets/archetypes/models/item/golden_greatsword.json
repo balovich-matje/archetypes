@@ -1,7 +1,7 @@
 {
   "parent": "minecraft:item/handheld",
   "textures": {
-    "layer0": "archetypes:item/copper_claymore"
+    "layer0": "archetypes:item/golden_greatsword"
   },
   "display": {
     "thirdperson_righthand": {

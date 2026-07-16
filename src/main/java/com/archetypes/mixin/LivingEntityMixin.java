@@ -135,17 +135,17 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * The claymore's damage shaping, all in one place on the victim's intake:
+	 * The greatsword's damage shaping, all in one place on the victim's intake:
 	 * Heavy Blows' flat bonus, First Blood's opener bonus against the unhurt,
 	 * and the Executioner's finisher on anything already below the threshold.
 	 */
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
 			at = @At("HEAD"), argsOnly = true)
-	private float archetypes$claymoreDamage(final float amount, final ServerLevel level,
+	private float archetypes$greatswordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
-				|| !ModItems.isClaymore(player.getMainHandItem())) {
+				|| !ModItems.isGreatsword(player.getMainHandItem())) {
 			return amount;
 		}
 

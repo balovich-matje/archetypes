@@ -39,7 +39,7 @@ public class ArchetypesClient implements ClientModInitializer {
 		SlayerAnimations.initialize();
 
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
-				.register(com.archetypes.ModParticles.CLAYMORE_SWEEP, ClaymoreSweepParticle.Provider::new);
+				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
 
 		// Default G; rebindable under Gameplay. The key only reports the press —
 		// the server decides whether a bash actually happens.
