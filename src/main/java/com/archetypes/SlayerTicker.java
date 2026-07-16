@@ -103,34 +103,43 @@ public final class SlayerTicker {
 			return;
 		}
 
-		if ((end - now) % Tuning.BLADESTORM_VOLLEY_PERIOD != 0) {
+		ServerLevel level = (ServerLevel) player.level();
+		long remaining = end - now;
+
+		// Sound and sweeps pulse twice as often as the damage, so the storm
+		// feels continuous rather than metronomic: riptide whoosh layered
+		// under pitched sweeps on the half-beats.
+		if (remaining % (Tuning.BLADESTORM_VOLLEY_PERIOD / 2) == 0) {
+			player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.9F,
+					0.8F + level.getRandom().nextFloat() * 0.5F);
+			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS, 0.7F,
+					1.2F + level.getRandom().nextFloat() * 0.3F);
+
+			for (int i = 0; i < 6; i++) {
+				double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
+				double distance = 1.0 + level.getRandom().nextDouble() * 1.5;
+				level.sendParticles(ParticleTypes.SWEEP_ATTACK,
+						player.getX() + Math.cos(angle) * distance,
+						player.getY() + 0.8 + level.getRandom().nextDouble() * 0.6,
+						player.getZ() + Math.sin(angle) * distance,
+						1, 0.0, 0.0, 0.0, 0.0);
+			}
+		}
+
+		if (remaining % Tuning.BLADESTORM_VOLLEY_PERIOD != 0) {
 			return;
 		}
 
-		ServerLevel level = (ServerLevel) player.level();
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.BLADESTORM_DAMAGE_FACTOR);
-
-		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
-		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F,
-				0.9F + level.getRandom().nextFloat() * 0.3F);
 
 		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
 				player.getBoundingBox().inflate(Tuning.BLADESTORM_RADIUS, 1.0, Tuning.BLADESTORM_RADIUS),
 				entity -> entity != player && entity.isAlive() && !entity.isSpectator())) {
 			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
-		}
-
-		// A ring of sweeps marks each volley.
-		for (int i = 0; i < 6; i++) {
-			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
-			double distance = 1.0 + level.getRandom().nextDouble() * 1.5;
-			level.sendParticles(ParticleTypes.SWEEP_ATTACK,
-					player.getX() + Math.cos(angle) * distance,
-					player.getY() + 0.8 + level.getRandom().nextDouble() * 0.6,
-					player.getZ() + Math.sin(angle) * distance,
-					1, 0.0, 0.0, 0.0, 0.0);
 		}
 	}
 
