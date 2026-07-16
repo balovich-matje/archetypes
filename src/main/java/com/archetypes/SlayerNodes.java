@@ -23,33 +23,37 @@ import org.jspecify.annotations.Nullable;
  */
 public final class SlayerNodes {
 	public enum Family {
-		SLOWNESS(Identifier.withDefaultNamespace("textures/mob_effect/slowness.png")),
-		TASTE_OF_BLOOD(() -> Items.BEEF),
+		SLOWNESS(Identifier.withDefaultNamespace("textures/mob_effect/slowness.png"), 18),
+		TASTE_OF_BLOOD(Archetypes.id("textures/node/taste_of_blood.png"), 16),
 		LUNGE(() -> Items.RABBIT_FOOT),
 		KBRES(() -> Items.OBSIDIAN),
-		BLEED(() -> Items.REDSTONE),
+		BLEED(Archetypes.id("textures/node/rend.png"), 16),
 		HEAVY(() -> ModItems.IRON_GREATSWORD),
-		FIRSTBLOOD(() -> Items.TARGET),
+		FIRSTBLOOD(Archetypes.id("textures/node/first_blood.png"), 16),
 		FLURRY(() -> Items.SUGAR),
-		EXECUTIONER(() -> Items.NETHERITE_AXE),
+		EXECUTIONER(Archetypes.id("textures/node/executioner.png"), 16),
 		BLOODLUST(() -> Items.FERMENTED_SPIDER_EYE),
 		RELENTLESS(() -> Items.CLOCK),
-		BLADESTORM(() -> Items.DIAMOND_SWORD),
-		DECIMATE(() -> ModItems.NETHERITE_GREATSWORD),
+		BLADESTORM(Archetypes.id("textures/node/bladestorm.png"), 16),
+		DECIMATE(Archetypes.id("textures/node/decimate.png"), 16),
 		MINOR((Supplier<Item>) null);
 
 		private final @Nullable Supplier<Item> icon;
 		private final @Nullable Identifier sprite;
+		private final int spriteSize;
 
 		Family(final @Nullable Supplier<Item> icon) {
 			this.icon = icon;
 			this.sprite = null;
+			this.spriteSize = 0;
 		}
 
-		/** For effects and other icons that exist as textures, not items. */
-		Family(final Identifier sprite) {
+		/** For icons that exist as textures, not items — effect sprites and
+		 * our own drawn node icons (see notes/art/make_node_icons.py). */
+		Family(final Identifier sprite, final int spriteSize) {
 			this.icon = null;
 			this.sprite = sprite;
+			this.spriteSize = spriteSize;
 		}
 
 		public @Nullable Item icon() {
@@ -58,6 +62,10 @@ public final class SlayerNodes {
 
 		public @Nullable Identifier sprite() {
 			return this.sprite;
+		}
+
+		public int spriteSize() {
+			return this.spriteSize;
 		}
 
 		public String nameKey() {
@@ -81,15 +89,19 @@ public final class SlayerNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// The hilt: both weapon-agnostic chains side by side, both roots.
+		// The hilt: both weapon-agnostic chains side by side and touching, both
+		// roots, so points can weave between them freely. Taste of Blood holds
+		// the centre axis, whose top is diagonal to BOTH branch entries — a
+		// blood-only build reaches either weapon directly; Hamstring's column
+		// leans sword-side and reaches the greatsword through one blood node.
 		// Full path economics: hilt 6 + guard-side 3 + edge 3 + capstone +
 		// Bloodlust + Relentless = 15 exactly, either weapon.
 		byCell.put(cell(3, 0), new Def(Family.SLOWNESS, 1));
 		byCell.put(cell(3, 1), new Def(Family.SLOWNESS, 2));
 		byCell.put(cell(3, 2), new Def(Family.SLOWNESS, 3));
-		byCell.put(cell(5, 0), new Def(Family.TASTE_OF_BLOOD, 1));
-		byCell.put(cell(5, 1), new Def(Family.TASTE_OF_BLOOD, 2));
-		byCell.put(cell(5, 2), new Def(Family.TASTE_OF_BLOOD, 3));
+		byCell.put(cell(4, 0), new Def(Family.TASTE_OF_BLOOD, 1));
+		byCell.put(cell(4, 1), new Def(Family.TASTE_OF_BLOOD, 2));
+		byCell.put(cell(4, 2), new Def(Family.TASTE_OF_BLOOD, 3));
 
 		// The guard: paths split here. Each quillon is its path's flavour
 		// single — a leaf you can grab on the way past, not a toll.

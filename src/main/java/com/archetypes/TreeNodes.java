@@ -38,6 +38,11 @@ public final class TreeNodes {
 		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().sprite() : null;
 	}
 
+	/** Pixel size of the square texture behind iconSprite. */
+	public static int iconSpriteSize(final SubTree tree, final int index) {
+		return tree == SubTree.SLAYER ? SlayerNodes.def(tree, index).family().spriteSize() : 0;
+	}
+
 	public static boolean isMinor(final SubTree tree, final int index) {
 		return tree == SubTree.SLAYER
 				? SlayerNodes.def(tree, index).family() == SlayerNodes.Family.MINOR

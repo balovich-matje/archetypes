@@ -343,10 +343,11 @@ public class ArchetypeScreen extends Screen {
 				var iconSprite = TreeNodes.iconSprite(tree, i);
 
 				if (iconSprite != null && size >= 16) {
-					// Effect icons are 18x18 textures; scale into the item slot.
+					// Full texture scaled into the item slot, whatever its size.
+					int tex = TreeNodes.iconSpriteSize(tree, i);
 					graphics.blit(RenderPipelines.GUI_TEXTURED, iconSprite,
 							x + (size - 16) / 2, y + (size - 16) / 2,
-							0.0F, 0.0F, 16, 16, 18, 18, 18, 18);
+							0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
 				} else if (icon != null && size >= 16) {
 					graphics.fakeItem(new ItemStack(icon), x + (size - 16) / 2, y + (size - 16) / 2);
 				}
