@@ -228,12 +228,28 @@ def shield_slam_overlay():
     save(im, "shield_slam_overlay")
 
 
-def iron_spikes_overlay():
-    """Pointed dripstone grown straight out of the shield's face."""
+def iron_spikes():
+    """Caltrops, hand-drawn: three four-pointed jacks of iron scattered on
+    the ground — step anywhere near this shield and regret it."""
     im = canvas(32)
-    spike = vanilla("item/pointed_dripstone.png").rotate(-90, resample=Image.NEAREST)
-    im.alpha_composite(spike, (10, 8))
-    save(im, "iron_spikes_overlay")
+
+    def caltrop(cx, cy, s):
+        # Two splayed legs, one spike straight up with a bright tip, one
+        # foreshortened toward the viewer.
+        for i in range(s):
+            im.putpixel((cx - 1 - i, cy + 1 + i), IRON_DARK)
+            im.putpixel((cx + 1 + i, cy + 1 + i), IRON)
+        for i in range(s + 1):
+            im.putpixel((cx, cy - 1 - i), IRON)
+        im.putpixel((cx, cy - s - 2), IRON_LIGHT)
+        im.putpixel((cx, cy), IRON)
+        im.putpixel((cx, cy + 1), IRON_LIGHT)
+        im.putpixel((cx, cy + 2), IRON_DARK)
+
+    caltrop(8, 8, 3)
+    caltrop(22, 13, 4)
+    caltrop(12, 23, 3)
+    save(im, "iron_spikes")
 
 
 def wide_swings_overlay():
@@ -308,24 +324,39 @@ def shockwave_overlay():
     save(im, "shockwave_overlay")
 
 
+def iso_block(texture):
+    """A quarter-size isometric block 'item icon' built from a block texture:
+    diamond top, shaded left and right faces — the classic inventory cube."""
+    tex = vanilla(f"block/{texture}.png")
+    cube = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    top = tex.rotate(45, expand=True).resize((16, 8), Image.NEAREST)
+    cube.alpha_composite(top, (0, 0))
+    for face, x0, shade in ((0, 0, 150), (1, 8, 210)):
+        for x in range(8):
+            sx = x * 2
+            drop_y = (x if face == 0 else 7 - x) // 2
+            for y in range(8):
+                r, g, b, a = tex.getpixel((sx, y * 2))
+                if a:
+                    py = 4 + drop_y + y
+                    if py < 16:
+                        cube.putpixel((x0 + x, py),
+                                (r * shade // 255, g * shade // 255, b * shade // 255, 255))
+    return cube
+
+
 def earth_shatter_overlay():
-    """The mace in front of stone about to give way."""
+    """The stone block (as an inventory cube) behind the mace's corner."""
     im = canvas(32)
-    im.alpha_composite(vanilla("block/stone.png"), (16, 16))
+    im.alpha_composite(iso_block("stone"), (16, 16))
     save(im, "earth_shatter_overlay")
 
 
 def quake_overlay():
-    """Cracks radiating behind the mace (drawn under the item render)."""
+    """Cobblestone filling the frame behind the mace — the earth about to
+    answer for it."""
     im = canvas(32)
-    crack = (70, 70, 74, 255)
-    crack_dim = (105, 105, 110, 200)
-    for line in (((3, 3), (7, 7), (9, 11)), ((28, 4), (24, 8), (22, 12)),
-                 ((2, 26), (7, 23), (11, 21)), ((29, 27), (25, 24), (21, 22)),
-                 ((15, 1), (16, 5), (15, 8))):
-        for i, (x, y) in enumerate(line):
-            im.putpixel((x, y), crack if i % 2 == 0 else crack_dim)
-            im.putpixel((x + 1, y), crack_dim)
+    im.alpha_composite(vanilla("block/cobblestone.png").resize((32, 32), Image.NEAREST), (0, 0))
     save(im, "quake_overlay")
 
 
@@ -341,7 +372,7 @@ def main():
     heavy_blows()
     bash_overlay()
     shield_slam_overlay()
-    iron_spikes_overlay()
+    iron_spikes()
     wide_swings_overlay()
     braced_overlay()
     reflection_overlay()

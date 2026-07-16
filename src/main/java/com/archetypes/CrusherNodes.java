@@ -28,7 +28,7 @@ public final class CrusherNodes {
 		HAYMAKER(() -> Items.BLAZE_POWDER),
 		METEOR(() -> Items.MACE, Archetypes.id("textures/node/meteor_overlay.png"), 32, false),
 		SHOCKWAVE(() -> Items.MACE, Archetypes.id("textures/node/shockwave_overlay.png"), 32, false),
-		EARTH_SHATTER(() -> Items.MACE, Archetypes.id("textures/node/earth_shatter_overlay.png"), 32, false),
+		EARTH_SHATTER(() -> Items.MACE, Archetypes.id("textures/node/earth_shatter_overlay.png"), 32, true),
 		QUAKE(() -> Items.MACE, Archetypes.id("textures/node/quake_overlay.png"), 32, true),
 		BATTLE_TRANCE(net.minecraft.resources.Identifier.withDefaultNamespace(
 				"textures/gui/sprites/hud/heart/absorbing_full.png"), 9),

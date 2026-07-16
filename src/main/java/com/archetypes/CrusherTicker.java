@@ -75,11 +75,11 @@ public final class CrusherTicker {
 			CrusherActives.quakeSlam(player);
 		}
 
-		// A true smash in progress: stamped from velocity, because vanilla
-		// resets fallDistance somewhere inside the mace's hit pipeline and
-		// AFTER_DAMAGE listeners (Shockwave) arrive too late to see it.
+		// A true smash in progress. fallDistance, not velocity: player motion
+		// is client-authoritative and the server's copy is stale, but the
+		// server tracks fallDistance itself (fall damage depends on it).
 		if (weapon == WeaponClass.MACE && !player.onGround()
-				&& player.getDeltaMovement().y < -0.4) {
+				&& player.fallDistance > Tuning.SMASH_MIN_FALL) {
 			target.setAttached(ModAttachments.SMASH_AT, now);
 		}
 

@@ -30,7 +30,7 @@ public final class ProtectorNodes {
 		KNOCKBACK(() -> Items.PISTON),
 		WIDE(() -> Items.SHIELD, Archetypes.id("textures/node/wide_swings_overlay.png"), 32),
 		UNBREAKING(() -> Items.LEATHER),
-		SPIKES(() -> Items.SHIELD, Archetypes.id("textures/node/iron_spikes_overlay.png"), 32),
+		SPIKES(Archetypes.id("textures/node/iron_spikes.png"), 32),
 		RUSH(() -> Items.WIND_CHARGE),
 		BRACED(() -> Items.SHIELD, Archetypes.id("textures/node/braced_overlay.png"), 32),
 		REFLECT(() -> Items.SHIELD, Archetypes.id("textures/node/reflection_overlay.png"), 32),
@@ -40,12 +40,24 @@ public final class ProtectorNodes {
 		MINOR(null);
 
 		private final @Nullable Supplier<Item> icon;
+		private final net.minecraft.resources.@Nullable Identifier sprite;
+		private final int spriteSize;
 		private final net.minecraft.resources.@Nullable Identifier overlay;
 		private final int overlaySize;
 		private final boolean overlayBehind;
 
 		Family(final @Nullable Supplier<Item> icon) {
 			this(icon, null, 0);
+		}
+
+		/** A pure texture icon — hand-drawn, no item render underneath. */
+		Family(final net.minecraft.resources.Identifier sprite, final int spriteSize) {
+			this.icon = null;
+			this.sprite = sprite;
+			this.spriteSize = spriteSize;
+			this.overlay = null;
+			this.overlaySize = 0;
+			this.overlayBehind = false;
 		}
 
 		/** The real item render stays the base; the overlay draws the skill's
@@ -61,9 +73,19 @@ public final class ProtectorNodes {
 				final net.minecraft.resources.@Nullable Identifier overlay, final int overlaySize,
 				final boolean overlayBehind) {
 			this.icon = icon;
+			this.sprite = null;
+			this.spriteSize = 0;
 			this.overlay = overlay;
 			this.overlaySize = overlaySize;
 			this.overlayBehind = overlayBehind;
+		}
+
+		public net.minecraft.resources.@Nullable Identifier sprite() {
+			return this.sprite;
+		}
+
+		public int spriteSize() {
+			return this.spriteSize;
 		}
 
 		public @Nullable Item icon() {

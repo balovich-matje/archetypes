@@ -44,7 +44,7 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().sprite();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
-			default -> null;
+			default -> ProtectorNodes.def(tree, index).family().sprite();
 		};
 	}
 
@@ -53,7 +53,7 @@ public final class TreeNodes {
 		return switch (tree) {
 			case SLAYER -> SlayerNodes.def(tree, index).family().spriteSize();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
-			default -> 0;
+			default -> ProtectorNodes.def(tree, index).family().spriteSize();
 		};
 	}
 
