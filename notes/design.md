@@ -1457,3 +1457,29 @@ unflagged, unfixed, watch for it.) Colors: the ink() darkening read as
 plain black in-game (user); reverted to the bright archetype colors
 drawn WITH the picker's drop shadow (header, mastery line, points line).
 VanillaUi.ink() deleted.
+
+**Description unification pass (2026-07-18 overnight, part 2).** Six
+Sonnet agents rewrote every Brawler + Seeker node desc into the
+Cutpurse house style (plain, per-rank values spelled out, effects by
+their Minecraft names, cooldowns/costs at the end) — 45 rewrites
+applied, user-authored sketch texts left untouched. The agents also
+surfaced 9 desc-vs-code mismatches; maintainer resolutions (descs
+follow code):
+- Bash cooldown is really 6.8s (16t swing floor + 120t ability), not
+  the claimed 6s -> desc now says 7s; Quick Recovery desc drops the
+  stale "6-second" figure.
+- Reflection only halves ARROW damage (other projectiles return at full)
+  -> desc says so.
+- Bloodlust only triggers on sword/greatsword kills, not "any melee"
+  -> desc says so.
+- Arcane Power / Shatter said "all your spells" but only cover the
+  elementalist's own paths (Shatter additionally skips meteor impact +
+  blizzard pulses) -> descs scoped to "fire and ice spells" /
+  "fire and ice projectiles".
+- AEGIS/SANCTUARY: the user-authored "1/2 hearts of absorption" is
+  IMPOSSIBLE as written — vanilla Absorption quantizes at 2 hearts per
+  level, and the code grants Absorption I/II = 2/4 hearts. Descs now say
+  2/4 hearts. FLAG FOR USER: if 1/2 hearts was the real intent the
+  mechanic needs a custom absorption amount, not amplifiers.
+- CODE FIX: EARTH_SHATTER_REFUND_PER_RANK 0.33F -> exact third, so rank
+  3 refunds 100% of Quake's cooldown as designed instead of 99%.

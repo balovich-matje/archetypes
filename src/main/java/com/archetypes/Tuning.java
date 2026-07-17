@@ -193,7 +193,8 @@ public final class Tuning {
 	 * cooldown per rank and shatters the ground instead — anything up to
 	 * stone hardness, 2 blocks of radius per rank, one mace durability per
 	 * block broken. */
-	public static final float EARTH_SHATTER_REFUND_PER_RANK = 0.33F;
+	/** An exact third: rank 3 refunds the whole cooldown, not 99% of it. */
+	public static final float EARTH_SHATTER_REFUND_PER_RANK = 1.0F / 3.0F;
 	public static final int EARTH_SHATTER_RADIUS_PER_RANK = 2;
 	public static final float EARTH_SHATTER_MAX_HARDNESS = 1.5F;
 
