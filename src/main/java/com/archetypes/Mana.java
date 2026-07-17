@@ -23,9 +23,9 @@ public final class Mana {
 	}
 
 	public static float regenPerSecond(final Player player) {
-		float focused = ElementalistNodes.rank(SubTree.ELEMENTALIST,
+		float focused = Tuning.FOCUSED_MIND_REGEN * ElementalistNodes.rank(SubTree.ELEMENTALIST,
 				NodePurchases.owned(player, SubTree.ELEMENTALIST),
-				ElementalistNodes.Family.FOCUSED_MIND) > 0 ? Tuning.FOCUSED_MIND_REGEN : 0.0F;
+				ElementalistNodes.Family.FOCUSED_MIND);
 		return Tuning.MANA_REGEN_BASE_PER_SECOND + focused
 				+ SpecialitiesBridge.spellcastingLevel(player) / Tuning.MANA_REGEN_LEVELS_PER_POINT;
 	}

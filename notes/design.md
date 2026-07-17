@@ -1056,3 +1056,16 @@ synergy (crown = cross-tree), (b) invisibility grants absorption on cast,
 (c) breaking invisibility by attacking leaves a 2s afterimage that mobs
 target instead. Last Shadow's own cooldown may also want to grow past
 180s once the tree settles.
+
+**Elementalist crown unlocked (2026-07-17).** Playtest found Blizzard (and
+symmetrically any outer capstone) walling the player off the crown: the
+capstones were the only bridge upward and exclusivity locked the
+neighbouring one. New flame: 26 nodes (second tree past the 23 standard,
+after Protector's 25) — a four-capstone tongue row [Flamethrower]
+[Meteorite][Glacial Spike][Blizzard] under a side-by-side crown
+[Arcane Power][Spellweaver], every tongue touching a crown cell; plus one
+explicit edge Permafrost→Glacial Spike, whose only grid neighbour among
+the ice capstones was Blizzard (the same exclusivity deadlock, one level
+down). Focused Mind grew to 4 ranks (+0.5 regen/s each) rising up the
+flame's core, making a pure-element path exactly 15 points: root 1 +
+passives 7 + capstone 1 + crown 2 + mind 4.

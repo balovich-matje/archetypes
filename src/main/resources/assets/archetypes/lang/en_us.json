@@ -259,7 +259,7 @@
 	"node.archetypes.elementalist.ice_blast": "Ice Blast",
 	"node.archetypes.elementalist.ice_blast.desc": "50 mana. Hurl a freezing bolt: 2 hearts and Slowness III for 4 seconds. Choosing ice locks away fire.",
 	"node.archetypes.elementalist.focused_mind": "Focused Mind",
-	"node.archetypes.elementalist.focused_mind.desc": "+0.5 mana regeneration per second.",
+	"node.archetypes.elementalist.focused_mind.desc": "+0.5 mana regeneration per second, per rank.",
 	"node.archetypes.elementalist.kindling": "Kindling",
 	"node.archetypes.elementalist.kindling.desc": "Fire spells cost 5 less mana per rank.",
 	"node.archetypes.elementalist.scorch": "Scorch",

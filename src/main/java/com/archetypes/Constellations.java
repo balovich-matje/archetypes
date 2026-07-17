@@ -141,23 +141,29 @@ public final class Constellations {
 			.withEdge(5, 5, 5, 7);
 
 	/**
-	 * A flame — element-agnostic enough to carry the Elementalist: a wide
-	 * unsteady body pulled tighter on the left than the right, narrowing to a
-	 * two-node lick at the top.
+	 * A flame with a forked crown, 26 nodes (the two-element tree outgrows
+	 * the 23 standard the way Protector outgrew it): fire up the left edge,
+	 * ice up the right, both starting spells side by side at the base with
+	 * Focused Mind between them — its four ranks rising as the flame's core
+	 * into the hollow — and the top split into four capstone tongues under
+	 * the two crown nodes, each capstone touching the crown so no choice
+	 * ever walls off the finish.
 	 */
 	public static final Constellation ELEMENTALIST_FLAME = Constellation.of(
-			"....#....",
-			"....#....",
-			"...#.#...",
+			"...##....",
+			"..####...",
 			"..#...#..",
-			"..#....#.",
 			".#.....#.",
-			".#......#",
-			"#.......#",
-			"#.......#",
 			".#.....#.",
-			"..#...#..",
-			"...###...");
+			"#.......#",
+			"#...#...#",
+			".#..#..#.",
+			"..#.#.#..",
+			"...###...")
+			// Permafrost reaches Glacial Spike directly: its only grid
+			// neighbour among the ice capstones is Blizzard, and exclusivity
+			// would otherwise wall the Spike off for every ice build.
+			.withEdge(6, 7, 4, 8);
 
 	/**
 	 * A wizard's staff: a diamond headpiece cradling a loose orb low in its
