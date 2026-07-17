@@ -62,9 +62,10 @@ public final class TreeNodes {
 	 * textures/node/test/, sources in notes/art/icon_test). Flip the
 	 * string and rebuild to swap all fifty icons at once.
 	 */
-	private static final String TEST_ICON_SET = "sonnet";
+	private static final String TEST_ICON_SET = "opus";
 
-	private static net.minecraft.resources.@Nullable Identifier testSprite(final SubTree tree,
+	/** Public so the proc HUD's crosshair flash follows the switch too. */
+	public static net.minecraft.resources.@Nullable Identifier testSprite(final SubTree tree,
 			final Enum<?> family) {
 		return "MINOR".equals(family.name()) ? null
 				: Archetypes.id("textures/node/test/" + TEST_ICON_SET + "/" + tree.id()

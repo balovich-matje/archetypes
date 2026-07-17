@@ -68,12 +68,16 @@ public final class ProcIndicatorHud {
 				item = base == null ? ItemStack.EMPTY : new ItemStack(base);
 			}
 		} else if ("wizard".equals(payload.subTreeId())) {
-			// The wizard families are plain item icons, no sprite layer.
+			// The wizard flash wears the same bake-off sprite the tree
+			// screen shows, so the proc display follows TEST_ICON_SET.
 			var family = com.archetypes.WizardNodes.Family.valueOf(payload.family());
-			sprite = null;
-			size = 0;
-			Item base = family.icon();
-			item = base == null ? ItemStack.EMPTY : new ItemStack(base);
+			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.WIZARD, family);
+			size = 32;
+
+			if (sprite == null) {
+				Item base = family.icon();
+				item = base == null ? ItemStack.EMPTY : new ItemStack(base);
+			}
 		} else {
 			var family = ProtectorNodes.Family.valueOf(payload.family());
 
