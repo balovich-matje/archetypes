@@ -146,7 +146,9 @@ public final class ModItems {
 	private static Item greatsword(final String prefix, final ToolMaterial material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_greatsword"));
 		Item.Properties properties = material.applySwordProperties(
-				new Item.Properties().setId(key), baseDamageFor(material), GREATSWORD_ATTACK_SPEED);
+				new Item.Properties().setId(key), baseDamageFor(material), GREATSWORD_ATTACK_SPEED)
+				// Three times the ingots, three times the life in it.
+				.durability(material.durability() * 3);
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
 
@@ -166,7 +168,8 @@ public final class ModItems {
 	private static Item registerWand(final String path) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
 		return Registry.register(BuiltInRegistries.ITEM, key,
-				new Item(new Item.Properties().setId(key).stacksTo(1)));
+				new com.archetypes.items.WandItem(new Item.Properties().setId(key).stacksTo(1),
+						path.equals("magic_wand") ? null : "item.archetypes." + path + ".tooltip"));
 	}
 
 	public static void initialize() {

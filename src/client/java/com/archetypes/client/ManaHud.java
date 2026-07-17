@@ -77,5 +77,11 @@ public final class ManaHud {
 		graphics.text(client.font, label, textX, textY + 1, 0xFF000000, false);
 		graphics.text(client.font, label, textX, textY - 1, 0xFF000000, false);
 		graphics.text(client.font, label, textX, textY, 0xFF7FB2FF, false);
+
+		// A drawn weapon stops the flow — grey the whole bar so the WHY of
+		// "my mana isn't coming back" is on screen, not in a wiki.
+		if (com.archetypes.ModItems.holdingCombatWeapon(player)) {
+			graphics.fill(right - rowWidth - 1, y - 1, right + 1, y + SPRITE + 1, 0x99000000);
+		}
 	}
 }

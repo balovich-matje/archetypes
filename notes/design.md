@@ -1198,3 +1198,19 @@ deliberately-slower Seeker Missile) with Concussion taking its place on
 the finisher face — and Concussion now also applies Weakness I for 3s on
 hit. Sketchpad TREES table now reads WizardNodes/PriestNodes, so the tool
 renders the real trees for the user's upcoming edits.
+
+**Playtest fixes round (2026-07-17, evening).** Skill Token x45 was a
+checkerboard: the original token borrows vanilla's experience_bottle MODEL
+outright (no archetypes texture exists), and the x45 definition pointed at
+a texture that was never there — it now borrows the same vanilla model.
+Wand ornaments reseated: both big tips now start with a socket pixel ON
+the stick's tip (they floated before), and the apprentice crystal doubled
+again (~7px faceted gem) so it reads at a glance against the basic wand's
+small crystal. All five wands became WandItem with hover tooltips: a
+shared "Casts Seeker spells" line plus the wand's own bonus line. Wand
+bonuses confirmed main-hand-only by construction (elementCost/wandPower/
+holy heal all read getMainHandItem) — an offhand wand adds nothing, so
+dual-wielding never doubles. Mana bar now greys out entirely (dark
+overlay) while a regen-blocking weapon is held in either hand — the "why
+is my mana stuck" answer on screen. Greatswords: durability = 3x their
+material's sword (three ingots, three lives); vanilla-matching before.

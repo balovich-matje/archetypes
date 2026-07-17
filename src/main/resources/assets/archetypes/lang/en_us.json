@@ -341,5 +341,10 @@
 	"node.archetypes.priest.miracle": "Miracle",
 	"node.archetypes.priest.miracle.desc": "10% chance per rank that Holy Light costs nothing.",
 	"node.archetypes.priest.ascendant": "Ascendant",
-	"node.archetypes.priest.ascendant.desc": "Holy Light's healing and smiting are 25% stronger."
+	"node.archetypes.priest.ascendant.desc": "Holy Light's healing and smiting are 25% stronger.",
+	"item.archetypes.wand.casts": "Casts Seeker spells",
+	"item.archetypes.apprentice_wand.tooltip": "All spells cost 10 less mana",
+	"item.archetypes.blaze_wand.tooltip": "Fire spells cost 15 less mana and deal x1.5 damage",
+	"item.archetypes.breeze_wand.tooltip": "Frost spells cost 15 less mana and deal x1.5 damage",
+	"item.archetypes.holy_wand.tooltip": "Priest spells cost 15 less mana and heal x1.5 stronger"
 }
