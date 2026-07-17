@@ -314,8 +314,9 @@ public final class SeekerSpells {
 
 	/** Magic Missile: straight line, wand in hand — sharpened by the whole
 	 * staff: Force damage, Clarity's price, Range's reach, Velocity, the
-	 * two-sided Overwhelm/Shatterpoint conditionals, Concussion's shove,
-	 * Echo's free twin, and the Archmage's fifth on top. */
+	 * two-sided Overwhelm/Shatterpoint conditionals, Concussion's weakness,
+	 * Echo's free twin, and the Archmage's fifth on top. Mind Well and Echo
+	 * announce themselves through the proc display. */
 	public static void castMissile(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.WIZARD);
 		var target = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player;
@@ -351,6 +352,10 @@ public final class SeekerSpells {
 				missileSpeed(owned), 0.0F);
 		level.addFreshEntity(missile);
 
+		if (empowered) {
+			ProcIndicators.send(player, SubTree.WIZARD, WizardNodes.Family.MIND_WELL);
+		}
+
 		// Echo: sometimes the shard leaves with a free twin, a hair wide.
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.ECHO) > 0
 				&& player.getRandom().nextFloat() < Tuning.ECHO_CHANCE) {
@@ -358,6 +363,7 @@ public final class SeekerSpells {
 			twin.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 					missileSpeed(owned), 2.0F);
 			level.addFreshEntity(twin);
+			ProcIndicators.send(player, SubTree.WIZARD, WizardNodes.Family.ECHO);
 		}
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -388,6 +394,10 @@ public final class SeekerSpells {
 				.withRange(Tuning.MISSILE_RANGE + Tuning.RANGE_PER_RANK
 						* WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.RANGE));
 
+		if (empowered) {
+			missile.withEmpowered();
+		}
+
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.SEEKER_MISSILE) > 0) {
 			missile.withHoming();
 		}
@@ -414,8 +424,8 @@ public final class SeekerSpells {
 	/** Holy Light: a lobbed burst that heals the living and burns the
 	 * undead, ministered by the whole ankh — Lumen both ways, Mercy the
 	 * heal, Wrath the harm, Radiance the reach, Fervent Cast the flight,
-	 * Aegis and Sanctuary shelling caster and friends, Vitality's fire
-	 * and Miracle's weakness riding the harm side. */
+	 * Aegis and Sanctuary shelling caster and friends, Immolation's fire
+	 * and Judgement's weakness riding the harm side. */
 	public static void castHolyLight(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.PRIEST);
 
@@ -448,8 +458,8 @@ public final class SeekerSpells {
 						* PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.RADIANCE))
 				.withAegis(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.AEGIS))
 				.withSanctuary(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.SANCTUARY))
-				.withVitality(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.VITALITY))
-				.withMiracle(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.MIRACLE))
+				.withImmolation(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.IMMOLATION))
+				.withJudgement(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.JUDGEMENT))
 				.withBlessing(
 						PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.RENEWAL) > 0,
 						PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.BENEDICTION) > 0);

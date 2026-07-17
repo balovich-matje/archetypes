@@ -163,18 +163,19 @@ public final class Constellations {
 			"...###...");
 
 	/**
-	 * The wizard's staff (user sketch, Wizard-redisign-20260717): a long
-	 * plain haft (root, Force, Range), a two-row grip block where the
-	 * casting economy lives — the Mana Shields up its centre — a tower
-	 * rising through Siphon to the Arcane Orb inside the diamond head,
-	 * capstones at the head's side points and the crown arc closing over
-	 * the top.
+	 * The wizard's staff (user sketches, Wizard-redisign then
+	 * new-edits-for-wizard, both 2026-07-17): a long plain haft (root,
+	 * Force, Range), a two-row grip block — Flow, the single Mana Shield
+	 * and Arcane Orb, Mind Well — Siphon alone in the diamond's heart,
+	 * capstones at the head's side points, and the crown arc (Clarity,
+	 * Velocity, Echo, Concussion) closing over the top. 22 nodes: the
+	 * second Mana Shield died in the second sketch.
 	 */
 	public static final Constellation WIZARD_STAFF = Constellation.of(
 			"...#...",
 			"..#.#..",
 			".#...#.",
-			"#..#..#",
+			"#.....#",
 			".#.#.#.",
 			"..###..",
 			"..###..",

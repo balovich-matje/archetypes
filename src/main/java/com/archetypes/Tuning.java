@@ -370,8 +370,8 @@ public final class Tuning {
 	public static final double MISSILE_PIERCE_INFLATE = 0.75;
 
 	// --- Wizard tree ---
-	/** Fraction of incoming damage per rank the shield converts to mana. */
-	public static final float MANA_SHIELD_ABSORB_PER_RANK = 0.25F;
+	/** Fraction of incoming damage the (single-rank) shield converts to mana. */
+	public static final float MANA_SHIELD_ABSORB = 0.5F;
 	public static final float MANA_SHIELD_MANA_PER_DAMAGE = 2.0F;
 	public static final float FORCE_PER_RANK = 1.0F;
 	public static final float CLARITY_DISCOUNT = 5.0F;
@@ -404,9 +404,9 @@ public final class Tuning {
 	public static final float BEACON_MANA = 25.0F;
 	/** Aegis shells the caster, Sanctuary the friends nearby — same shell. */
 	public static final int AEGIS_TICKS = 600;
-	/** Vitality's fire and Miracle's weakness, laid on the undead only. */
-	public static final int VITALITY_FIRE_SECONDS_PER_RANK = 3;
-	public static final int MIRACLE_WEAKNESS_TICKS = 120;
+	/** Immolation's fire and Judgement's weakness, laid on the undead only. */
+	public static final int IMMOLATION_FIRE_SECONDS_PER_RANK = 3;
+	public static final int JUDGEMENT_WEAKNESS_TICKS = 120;
 	public static final float ASCENDANT_FACTOR = 1.25F;
 
 	// --- Seeker: Holy Light ---

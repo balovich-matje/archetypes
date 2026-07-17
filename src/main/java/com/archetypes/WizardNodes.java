@@ -12,19 +12,19 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What each node of the Wizard constellation is (user sketch,
- * Wizard-redisign-20260717). The long haft carries the active, Force and
- * Range; the two-row grip block is the casting economy (Clarity and both
- * Mana Shields up the centre, Echo / Concussion, Velocity); the tower
- * rises through Siphon to the Arcane Orb inside the diamond head, so the
- * shields come cheap and the mana engine costs the climb; the faces split into
- * finisher (Overwhelm → Seeker Missile) and opener (Shatterpoint → Lance);
- * and the crown arc — Mind Wells' empowered casts, Flow, the Archmage's
- * tip — closes over the top, fed by either capstone.
+ * new-edits-for-wizard-20260717). The long haft carries the active, Force
+ * and Range; the grip block holds the mana engine early — Flow's regen and
+ * Mind Well's empowered casts up the sides, the single Mana Shield and the
+ * Arcane Orb up the centre; Siphon sits alone in the diamond's heart with
+ * the conditional-damage faces splitting to the capstones (Overwhelm →
+ * Seeker Missile, Shatterpoint → Lance); and the casting economy moved to
+ * the crown — Clarity, Velocity, Echo, Concussion — under the Archmage's
+ * tip, fed by either capstone.
  */
 public final class WizardNodes {
 	public enum Family {
 		MAGIC_MISSILE(() -> Items.AMETHYST_SHARD),
-		/** Part of the damage you take drains mana instead of health. */
+		/** Half the damage you take drains mana instead of health. */
 		MANA_SHIELD(() -> Items.SHULKER_SHELL),
 		/** +1 missile damage per rank. */
 		FORCE(() -> Items.BREEZE_ROD),
@@ -93,28 +93,27 @@ public final class WizardNodes {
 		byCell.put(cell(3, 4), new Def(Family.RANGE, 1));
 		byCell.put(cell(3, 5), new Def(Family.RANGE, 2));
 
-		// The grip block: the casting economy in two rows.
-		byCell.put(cell(2, 6), new Def(Family.CLARITY, 1));
+		// The grip block: the mana engine, right off the haft.
+		byCell.put(cell(2, 6), new Def(Family.FLOW, 1));
 		byCell.put(cell(3, 6), new Def(Family.MANA_SHIELD, 1));
-		byCell.put(cell(4, 6), new Def(Family.ECHO, 1));
-		byCell.put(cell(2, 7), new Def(Family.CONCUSSION, 1));
-		byCell.put(cell(3, 7), new Def(Family.MANA_SHIELD, 2));
-		byCell.put(cell(4, 7), new Def(Family.VELOCITY, 1));
+		byCell.put(cell(4, 6), new Def(Family.MIND_WELL, 1));
+		byCell.put(cell(2, 7), new Def(Family.FLOW, 2));
+		byCell.put(cell(3, 7), new Def(Family.ARCANE_ORB, 1));
+		byCell.put(cell(4, 7), new Def(Family.MIND_WELL, 2));
 
-		// The diamond: the tower topping out through Siphon at the Arcane
-		// Orb, a conditional-damage face per side, capstones at the points.
+		// The diamond: Siphon alone in the heart, a conditional-damage
+		// face per side, capstones at the points.
 		byCell.put(cell(1, 8), new Def(Family.OVERWHELM, 1));
 		byCell.put(cell(3, 8), new Def(Family.SIPHON, 1));
 		byCell.put(cell(5, 8), new Def(Family.SHATTERPOINT, 1));
 		byCell.put(cell(0, 9), new Def(Family.SEEKER_MISSILE, 1));
-		byCell.put(cell(3, 9), new Def(Family.ARCANE_ORB, 1));
 		byCell.put(cell(6, 9), new Def(Family.LANCE, 1));
 
-		// The crown arc over the head, fed by either capstone.
-		byCell.put(cell(1, 10), new Def(Family.MIND_WELL, 1));
-		byCell.put(cell(5, 10), new Def(Family.FLOW, 1));
-		byCell.put(cell(2, 11), new Def(Family.MIND_WELL, 2));
-		byCell.put(cell(4, 11), new Def(Family.FLOW, 2));
+		// The crown arc: the casting economy, fed by either capstone.
+		byCell.put(cell(1, 10), new Def(Family.CLARITY, 1));
+		byCell.put(cell(5, 10), new Def(Family.VELOCITY, 1));
+		byCell.put(cell(2, 11), new Def(Family.ECHO, 1));
+		byCell.put(cell(4, 11), new Def(Family.CONCUSSION, 1));
 		byCell.put(cell(3, 12), new Def(Family.ARCHMAGE, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();

@@ -123,10 +123,10 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		});
 
-		// Seeker spells render as thrown items — the projectile carries which.
+		// Seeker spells render as thrown items — the projectile carries which,
+		// and empowered missiles come out half again bigger.
 		net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
-				ModEntities.SPELL_PROJECTILE,
-				net.minecraft.client.renderer.entity.ThrownItemRenderer::new);
+				ModEntities.SPELL_PROJECTILE, SpellProjectileRenderer::new);
 
 		// The centred bar of owned-active cooldowns, the proc flashes that
 		// fall from the crosshair, and the Seeker's mana bottles. All after

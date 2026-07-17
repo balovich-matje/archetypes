@@ -246,6 +246,10 @@ public final class ModItems {
 									net.minecraft.world.item.Items.SPLASH_POTION, ManaPotions.MANA_REGENERATION));
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 									net.minecraft.world.item.Items.SPLASH_POTION, ManaPotions.STRONG_MANA_REGENERATION));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.POTION, AmnesiaPotions.AMNESIA));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.POTION, AmnesiaPotions.STRONG_AMNESIA));
 							output.accept(SKILL_TOKEN);
 							output.accept(SKILL_TOKEN_45);
 							output.accept(SPELLCASTING_TOME_25);

@@ -244,13 +244,35 @@ public final class ModAttachments {
 
 	/**
 	 * Back to unpicked, so the picker opens again. Creative-only, for testing.
-	 * Progress goes with it: keeping banked levels or owned nodes across a
-	 * re-pick would make reset a respec exploit rather than a clean slate.
+	 * Progress goes with it: unlike the Amnesia respecs below, the testing
+	 * reset is a clean slate — banked levels go too.
 	 */
 	public static void clear(final Player player) {
 		((AttachmentTarget) player).removeAttached(ARCHETYPE);
 		((AttachmentTarget) player).removeAttached(ARCHETYPE_XP);
 		((AttachmentTarget) player).removeAttached(SPENT_POINTS);
 		((AttachmentTarget) player).removeAttached(PURCHASED);
+	}
+
+	/** Amnesia I: every node refunded, the archetype and its levels untouched. */
+	public static void forgetNodes(final Player player) {
+		((AttachmentTarget) player).removeAttached(PURCHASED);
+		((AttachmentTarget) player).removeAttached(SPENT_POINTS);
+		// Proc bookkeeping tied to owned nodes goes too, or a respec inherits
+		// it: a Mind Well counter at 7/8 would empower the first missile after
+		// re-buying, and an armed True Shot fires without the node.
+		((AttachmentTarget) player).removeAttached(MISSILE_CAST_COUNT);
+		((AttachmentTarget) player).removeAttached(TRUE_SHOT_ARMED);
+		((AttachmentTarget) player).removeAttached(CROSSBOW_PRIMED);
+	}
+
+	/**
+	 * Amnesia II: the choice itself forgotten, nodes included. Banked XP
+	 * stays — this is the sanctioned survival respec, paid for at the
+	 * brewing stand, not a progress wipe.
+	 */
+	public static void forgetArchetype(final Player player) {
+		forgetNodes(player);
+		((AttachmentTarget) player).removeAttached(ARCHETYPE);
 	}
 }

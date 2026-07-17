@@ -347,7 +347,7 @@ public abstract class LivingEntityMixin {
 			return amount;
 		}
 
-		float absorbable = amount * Tuning.MANA_SHIELD_ABSORB_PER_RANK * rank;
+		float absorbable = amount * Tuning.MANA_SHIELD_ABSORB;
 		float drained = com.archetypes.Mana.drain(player,
 				absorbable * Tuning.MANA_SHIELD_MANA_PER_DAMAGE);
 		float absorbed = drained / Tuning.MANA_SHIELD_MANA_PER_DAMAGE;

@@ -1272,3 +1272,32 @@ Wizard: the user reconsidered the tower — Mana Shield should be CHEAP,
 not deep. New climb bottom-up: MS1 -> MS2 (grip rows) -> Siphon ->
 Arcane Orb (diamond), so the defensive shells sit two steps off the
 haft and the mana engine is what costs the climb.
+
+**Immolation & Judgement, wizard sketch #2, mastery cosmetics, Amnesia
+(2026-07-17, second chunk).** Vitality and Miracle kept their reworked
+mechanics but lost their stale names — they're Immolation and Judgement
+now (user agreed to the rename suggestion). Wizard tree, per the
+new-edits-for-wizard sketch: the mana engine moved EARLY (Flow 1-2, Mind
+Well 1-2, Arcane Orb in the grip rows; single Mana Shield at 50% right
+off the haft) and the casting economy moved LATE (Clarity, Velocity,
+Echo, Concussion form the crown arc under Archmage). Mana Shield rank 2
+was deleted outright — the tree is 22 nodes now; the sketch's parked
+cell at (0,6) was the drag-tool's parking spot, not a real node. Siphon
+sits alone in the diamond's heart. Missile visuals: only Mind Well's
+empowered missile keeps the white END_ROD trail (normal missiles fly
+clean) and it renders 1.5x via a new SpellProjectileRenderer reading a
+synced DATA_EMPOWERED flag. Mind Well (on empowered cast) and Echo (on
+twin) now flash the crosshair proc display — first wizard families
+there, item-icon branch added to ProcIndicatorHud. Tree screen: the
+header now uses SkillPoints.tier() — a 45 Seeker reads "Oracle" — and
+once level 45 AND every point is spent the two progress bars give way to
+a centered "Full potential unlocked — you are now a true %s." line in
+the archetype color. Amnesia potions for the SMP respec path: awkward +
+red mushroom = Amnesia I (refunds every node), + glowstone = Amnesia II
+(also forgets the archetype choice; banked XP STAYS both ways — these
+are respecs, the creative Reset button remains the full wipe). Strictly
+drinkable by construction: the instant effect fires only when
+source == target, which only the drink path produces — the splash/
+lingering/arrow forms vanilla brewing derives are inert, so no thrown-
+bottle griefing. Sketch .json files are deleted after porting from now
+on (.txt kept as archive).

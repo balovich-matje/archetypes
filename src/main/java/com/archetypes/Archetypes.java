@@ -18,6 +18,7 @@ public class Archetypes implements ModInitializer {
 		ModEntities.initialize();
 		ManaEffects.initialize();
 		ManaPotions.initialize();
+		AmnesiaPotions.initialize();
 		ModParticles.initialize();
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();

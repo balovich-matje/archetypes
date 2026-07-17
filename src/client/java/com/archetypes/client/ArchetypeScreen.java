@@ -265,7 +265,13 @@ public class ArchetypeScreen extends Screen {
 
 		VanillaUi.window(graphics, panelLeft, panelTop, this.panelWidth(), this.panelHeight());
 
-		graphics.text(this.font, this.title, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, false);
+		// The header wears your tier's name: Seeker on the way up, Oracle at
+		// the end of the journey. Computed per frame — cheap, always current.
+		int tier = this.minecraft.player == null ? 0 : SkillPoints.tier(this.minecraft.player);
+		Component header = Component.translatable("screen.archetypes.tree.title",
+				this.archetype.tierName(tier).copy()
+						.withStyle(style -> style.withColor(this.archetype.color() & 0xFFFFFF)));
+		graphics.text(this.font, header, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, false);
 
 		int canvasWidth = this.canvasWidth();
 		int canvasHeight = this.canvasBottom() - this.canvasTop();
@@ -458,6 +464,17 @@ public class ArchetypeScreen extends Screen {
 
 		int level = SkillPoints.level(player);
 		int unspent = SkillPoints.available(player);
+
+		// The journey over and every point committed: the bars have nothing
+		// left to say, so a line of flavor stands where they were.
+		if (level >= SkillPoints.MAX_LEVEL && unspent <= 0) {
+			Component mastered = Component.translatable("screen.archetypes.tree.mastered",
+					this.archetype.tierName(1));
+			graphics.text(this.font, mastered,
+					left + (width - this.font.width(mastered)) / 2, top + 14,
+					this.archetype.color(), false);
+			return;
+		}
 
 		// Long bar: start tier -> peak tier.
 		Component road = Component.translatable("screen.archetypes.tree.bar.archetype",

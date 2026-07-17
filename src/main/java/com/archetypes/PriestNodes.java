@@ -17,8 +17,8 @@ import org.jspecify.annotations.Nullable;
  * two ministries: Mercy heals harder toward Renewal on the left, Wrath
  * burns the undead toward Benediction on the right. The loop above is the
  * halo (per the user's sketch): protection up the left arc — Aegis for the
- * caster, Sanctuary for friends — wrath up the right — Vitality's fire and
- * Miracle's weakness on the undead — with the Ascendant at the circle's top.
+ * caster, Sanctuary for friends — wrath up the right — Immolation's fire
+ * and Judgement's weakness on the undead — with the Ascendant at the top.
  */
 public final class PriestNodes {
 	public enum Family {
@@ -44,13 +44,13 @@ public final class PriestNodes {
 		 * protective arm on the left, the wrathful on the right. */
 		BEACON(() -> Items.CONDUIT),
 		/** Holy Light sets undead ablaze, 3/6 seconds. */
-		VITALITY(() -> Items.SOUL_TORCH),
+		IMMOLATION(() -> Items.SOUL_TORCH),
 		/** Casting shells YOU in 1/2 absorption hearts. */
 		AEGIS(() -> Items.SHIELD),
 		/** Casting shells friendly targets in 1/2 absorption hearts. */
 		SANCTUARY(() -> Items.ENCHANTED_GOLDEN_APPLE),
 		/** Holy Light lays Weakness I/II on the undead. */
-		MIRACLE(() -> Items.FERMENTED_SPIDER_EYE),
+		JUDGEMENT(() -> Items.FERMENTED_SPIDER_EYE),
 		ASCENDANT(() -> Items.END_CRYSTAL),
 		MINOR((Supplier<Item>) null);
 
@@ -109,10 +109,10 @@ public final class PriestNodes {
 		byCell.put(cell(1, 9), new Def(Family.AEGIS, 2));
 		byCell.put(cell(1, 10), new Def(Family.SANCTUARY, 1));
 		byCell.put(cell(2, 11), new Def(Family.SANCTUARY, 2));
-		byCell.put(cell(4, 8), new Def(Family.VITALITY, 1));
-		byCell.put(cell(5, 9), new Def(Family.VITALITY, 2));
-		byCell.put(cell(5, 10), new Def(Family.MIRACLE, 1));
-		byCell.put(cell(4, 11), new Def(Family.MIRACLE, 2));
+		byCell.put(cell(4, 8), new Def(Family.IMMOLATION, 1));
+		byCell.put(cell(5, 9), new Def(Family.IMMOLATION, 2));
+		byCell.put(cell(5, 10), new Def(Family.JUDGEMENT, 1));
+		byCell.put(cell(4, 11), new Def(Family.JUDGEMENT, 2));
 		byCell.put(cell(3, 11), new Def(Family.ASCENDANT, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();

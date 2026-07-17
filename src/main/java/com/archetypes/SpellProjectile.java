@@ -38,6 +38,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST, SNOW_BOLT
 	}
 
+	/** Mind Well's empowered missile — synced, because the client renders it
+	 * half again bigger; it's also the only missile that keeps the trail. */
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_EMPOWERED =
+			net.minecraft.network.syncher.SynchedEntityData.defineId(SpellProjectile.class,
+					net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
+
 	private @Nullable Mode mode;
 	/** Meteorite: the mana that was poured in — impact scales off it. */
 	private float power;
@@ -68,8 +74,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private boolean flatArc;
 	private int aegisRank;
 	private int sanctuaryRank;
-	private int vitalityRank;
-	private int miracleRank;
+	private int immolationRank;
+	private int judgementRank;
 	private final Set<Integer> pierced = new HashSet<>();
 	private double traveled;
 
@@ -80,6 +86,21 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	public SpellProjectile(final LivingEntity owner, final Level level, final Mode mode, final ItemStack look) {
 		super(ModEntities.SPELL_PROJECTILE, owner, level, look);
 		this.mode = mode;
+	}
+
+	@Override
+	protected void defineSynchedData(final net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
+		super.defineSynchedData(builder);
+		builder.define(DATA_EMPOWERED, false);
+	}
+
+	public SpellProjectile withEmpowered() {
+		this.getEntityData().set(DATA_EMPOWERED, true);
+		return this;
+	}
+
+	public boolean isEmpowered() {
+		return this.getEntityData().get(DATA_EMPOWERED);
 	}
 
 	public SpellProjectile withPower(final float manaSpent) {
@@ -189,13 +210,13 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return this;
 	}
 
-	public SpellProjectile withVitality(final int rank) {
-		this.vitalityRank = rank;
+	public SpellProjectile withImmolation(final int rank) {
+		this.immolationRank = rank;
 		return this;
 	}
 
-	public SpellProjectile withMiracle(final int rank) {
-		this.miracleRank = rank;
+	public SpellProjectile withJudgement(final int rank) {
+		this.judgementRank = rank;
 		return this;
 	}
 
@@ -320,8 +341,14 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			}
 			case FLAME_BOLT -> level.sendParticles(ParticleTypes.FLAME,
 					this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.005);
-			case MISSILE -> level.sendParticles(ParticleTypes.END_ROD,
-					this.getX(), this.getY(), this.getZ(), 1, 0.02, 0.02, 0.02, 0.0);
+			// Only the empowered missile wears the white trail; the rank and
+			// file fly clean (user sketch, new-edits-for-wizard).
+			case MISSILE -> {
+				if (this.isEmpowered()) {
+					level.sendParticles(ParticleTypes.END_ROD,
+							this.getX(), this.getY(), this.getZ(), 2, 0.05, 0.05, 0.05, 0.0);
+				}
+			}
 			case HOLY_LIGHT -> level.sendParticles(ParticleTypes.GLOW,
 					this.getX(), this.getY(), this.getZ(), 2, 0.1, 0.1, 0.1, 0.0);
 			case ICE_BLAST -> level.sendParticles(ParticleTypes.SNOWFLAKE,
@@ -463,8 +490,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	/**
 	 * Holy Light's burst, splash-potion shaped: the living are healed, the
 	 * undead take the same number as damage (their own rules, inverted) plus
-	 * Vitality's fire and Miracle's weakness, and Sanctuary's shell and the
-	 * capstone blessings land on anything that isn't hostile.
+	 * Immolation's fire and Judgement's weakness, and Sanctuary's shell and
+	 * the capstone blessings land on anything that isn't hostile.
 	 */
 	private void burst(final ServerLevel level) {
 		double radius = this.radiusOverride > 0.0 ? this.radiusOverride : Tuning.HOLY_RADIUS;
@@ -474,18 +501,18 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				living -> living.isAlive()
 						&& living.distanceToSqr(this) <= radius * radius)) {
 			if (creature.isInvertedHealAndHarm()) {
-				// Vitality: lit before the hit, so even a killing blow burns.
-				if (this.vitalityRank > 0) {
-					creature.igniteForSeconds(Tuning.VITALITY_FIRE_SECONDS_PER_RANK * this.vitalityRank);
+				// Immolation: lit before the hit, so even a killing blow burns.
+				if (this.immolationRank > 0) {
+					creature.igniteForSeconds(Tuning.IMMOLATION_FIRE_SECONDS_PER_RANK * this.immolationRank);
 				}
 
 				creature.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
 						this.harmOverride > 0.0F ? this.harmOverride : Tuning.HOLY_AMOUNT);
 
-				// Miracle: the light saps the undead arm.
-				if (this.miracleRank > 0 && creature.isAlive()) {
+				// Judgement: the light saps the undead arm.
+				if (this.judgementRank > 0 && creature.isAlive()) {
 					creature.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
-							Tuning.MIRACLE_WEAKNESS_TICKS, this.miracleRank - 1));
+							Tuning.JUDGEMENT_WEAKNESS_TICKS, this.judgementRank - 1));
 				}
 			} else {
 				creature.heal(this.healOverride > 0.0F ? this.healOverride : Tuning.HOLY_AMOUNT);
