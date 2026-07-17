@@ -292,15 +292,17 @@ public final class Tuning {
 	// --- Assassin passives ---
 	public static final float LIGHTFOOT_PER_RANK = 0.10F;
 	public static final float SIDESTEP_PER_RANK = 0.07F;
-	public static final int ADRENALINE_RUSH_TICKS = 60;
-	public static final int OPPORTUNIST_REFUND_TICKS = 60;
+	/** Crippling Poison: Slowness I/II riding every dagger hit, 4s. */
+	public static final int CRIPPLING_SLOW_TICKS = 80;
 	public static final float RAZOR_EDGE_PER_RANK = 0.08F;
 	public static final float EXPOSE_PER_RANK = 0.10F;
 	public static final int VENOM_TICKS = 80;
 	public static final int BLIGHT_TICKS = 60;
 	/** Fraction of armor's absorption clawed back per rank; rank 2 = all. */
 	public static final float FLENSE_PER_RANK = 0.5F;
-	public static final float DEATHBLOW_MULTIPLIER = 1.5F;
+	/** Twin Fangs: the off-hand dagger joins the step strike at this
+	 * weight — identical daggers reproduce old Deathblow's x1.5. */
+	public static final float TWIN_FANGS_OFFHAND_FACTOR = 0.5F;
 
 	// --- Mana (the Seeker's resource; Spellcasting skill in Specialities) ---
 	public static final float MANA_BASE = 100.0F;

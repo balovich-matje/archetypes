@@ -1361,3 +1361,29 @@ storm delivered 7/8 of its damage with a dead second up front. Fixed
 with a +1 tick pad on endTick. Known cosmetic edge, deliberately left:
 thorns retaliation landing DURING a pulse also has its knockback
 suppressed (the flag window covers the whole hurtServer chain).
+
+**Assassin rebalance ported from Sketchpad (2026-07-17,
+assassin-rebalance sketch).** The dagger constellation narrowed to a
+5-wide guard (23 nodes still) and the centre-line active perks were
+replaced:
+- Adrenaline Rush + Opportunist DELETED. Their old effects (Speed II
+  after the blink; -3s cooldown) are gone with them.
+- CRIPPLING_POISON new: dagger hits apply Slowness I/II for 4s
+  (CRIPPLING_SLOW_TICKS 80), a third coating alongside Venom/Blight on
+  the guard row. Icon = fermented spider eye + grey down-chevrons.
+- DEATHBLOW reworked+renamed to TWIN_FANGS: Shadow Step's strike now
+  also lands the OFF-HAND dagger at x0.5 efficiency
+  (TWIN_FANGS_OFFHAND_FACTOR 0.5). Math: result *= 1 + 0.5*(offDmg/mainDmg)
+  using ModItems.daggerSwingDamage() — identical daggers reproduce old
+  Deathblow's exact x1.5, a bare/non-dagger off-hand gives nothing, so
+  the node nudges toward dual-wielding for the fantasy. Applied only to
+  the STEP_STRIKE_AT-stamped hit. Icon = two parallel iron daggers.
+Node reshuffle: Razor Edge 1-2 + Flense 1 + Crippling Poison 1-2 on the
+guard; Razor Edge 3 / Flense 2 / Venom 1 on the base row; Expose climbs
+the left edge to Shadow Flurry, Venom/Blight climb the right to Momentum;
+Twin Fangs at the point. Full desc rewrites ported to lang (per-rank
+values spelled out: 8/16/24%, 7/14/21%, 10/20/30%, 50/100%). Icon
+verdict for Assassin is opus; both opus AND sonnet fallback sets updated
+(stale adrenaline_rush/opportunist/deathblow removed) so no flip can
+miss a texture. Crusher's own ADRENALINE_* Tuning constants are
+unrelated and untouched.

@@ -100,23 +100,23 @@ public final class Constellations {
 			"....#");
 
 	/**
-	 * A single dagger, point up: a broad blade tapering to the tip, a guard a
-	 * step narrower than the Slayer sword's, and — the tell that this is a
-	 * knife, not a sword — a handle nearly as long as the blade, capped by a
-	 * spread pommel.
+	 * A single dagger, point up (user sketch, assassin-rebalance-20260717):
+	 * a slim two-edged blade over a five-wide guard, a handle nearly as
+	 * long as the blade, a spread pommel — narrower than before, so the
+	 * silhouette reads knife at a glance.
 	 */
 	public static final Constellation ASSASSIN_DAGGER = Constellation.of(
-			"...#...",
-			"..#.#..",
-			"..#.#..",
-			"..#.#..",
-			"..#.#..",
-			"..###..",
-			".#####.",
-			"...#...",
-			"...#...",
-			"...#...",
-			"..###..");
+			"..#..",
+			".#.#.",
+			".#.#.",
+			".#.#.",
+			".#.#.",
+			".###.",
+			"#####",
+			"..#..",
+			"..#..",
+			"..#..",
+			".###.");
 
 	/**
 	 * A crescent moon opening right (user sketch, new-shadow-20260717):

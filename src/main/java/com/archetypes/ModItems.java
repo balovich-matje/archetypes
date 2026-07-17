@@ -152,6 +152,20 @@ public final class ModItems {
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
 
+	/** A dagger's full swing damage (fist plus item), for Twin Fangs'
+	 * off-hand ratio. Zero for anything that isn't one of our daggers. */
+	public static float daggerSwingDamage(final net.minecraft.world.item.ItemStack stack) {
+		ToolMaterial material = stack.is(WOODEN_DAGGER) ? ToolMaterial.WOOD
+				: stack.is(STONE_DAGGER) ? ToolMaterial.STONE
+				: stack.is(COPPER_DAGGER) ? ToolMaterial.COPPER
+				: stack.is(IRON_DAGGER) ? ToolMaterial.IRON
+				: stack.is(GOLDEN_DAGGER) ? ToolMaterial.GOLD
+				: stack.is(DIAMOND_DAGGER) ? ToolMaterial.DIAMOND
+				: stack.is(NETHERITE_DAGGER) ? ToolMaterial.NETHERITE : null;
+		return material == null ? 0.0F
+				: DAGGER_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + material.attackDamageBonus());
+	}
+
 	/** Base damage that makes this material's dagger exactly 0.6x its sword. */
 	private static float daggerDamageFor(final ToolMaterial material) {
 		float bonus = material.attackDamageBonus();

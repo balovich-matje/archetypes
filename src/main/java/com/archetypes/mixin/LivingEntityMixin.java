@@ -241,15 +241,23 @@ public abstract class LivingEntityMixin {
 
 		if (stepStrike != null && stepStrike == level.getGameTime()) {
 			// A Shadow Step strike: Shadow Flurry lands it with three
-			// daggers' weight, Deathblow adds half again on top.
+			// daggers' weight; Twin Fangs brings the off-hand dagger into
+			// the same blow at half its weight — identical daggers give the
+			// old Deathblow's x1.5, and a bare off-hand gives nothing, so
+			// the node nudges toward actually wearing two knives.
 			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
 					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0) {
 				result *= Tuning.SHADOW_FLURRY_MULTIPLIER;
 			}
 
 			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-					com.archetypes.AssassinNodes.Family.DEATHBLOW) > 0) {
-				result *= Tuning.DEATHBLOW_MULTIPLIER;
+					com.archetypes.AssassinNodes.Family.TWIN_FANGS) > 0) {
+				float main = ModItems.daggerSwingDamage(player.getMainHandItem());
+				float off = ModItems.daggerSwingDamage(player.getOffhandItem());
+
+				if (main > 0.0F && off > 0.0F) {
+					result *= 1.0F + Tuning.TWIN_FANGS_OFFHAND_FACTOR * off / main;
+				}
 			}
 		}
 
@@ -267,6 +275,15 @@ public abstract class LivingEntityMixin {
 		if (blight > 0) {
 			victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
 					net.minecraft.world.effect.MobEffects.WITHER, Tuning.BLIGHT_TICKS, blight - 1));
+		}
+
+		int crippling = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+				com.archetypes.AssassinNodes.Family.CRIPPLING_POISON);
+
+		if (crippling > 0) {
+			victim.addEffect(new net.minecraft.world.effect.MobEffectInstance(
+					net.minecraft.world.effect.MobEffects.SLOWNESS, Tuning.CRIPPLING_SLOW_TICKS,
+					crippling - 1));
 		}
 
 		return result;

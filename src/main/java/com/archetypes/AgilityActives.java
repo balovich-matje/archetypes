@@ -124,9 +124,10 @@ public final class AgilityActives {
 
 	/**
 	 * Shadow Step: blink behind whatever the crosshair rests on within 16
-	 * blocks and land one full-strength dagger strike. The Shadow Flurry
-	 * capstone makes that strike land with three daggers' weight (the x3 is
-	 * applied in the damage shaping) for a doubled cooldown.
+	 * blocks and land one full-strength dagger strike. Shadow Flurry lands
+	 * it with three daggers' weight for a doubled cooldown, and Twin Fangs
+	 * folds the off-hand dagger into the blow — both applied in the damage
+	 * shaping, not here.
 	 */
 	public static void shadowStep(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ASSASSIN);
@@ -179,20 +180,9 @@ public final class AgilityActives {
 
 		strike(player, victim);
 
-		// Adrenaline Rush: the blink leaves you fast.
-		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.ADRENALINE_RUSH) > 0) {
-			player.addEffect(new MobEffectInstance(MobEffects.SPEED, Tuning.ADRENALINE_RUSH_TICKS, 1));
-		}
-
-		AttachmentTarget target = (AttachmentTarget) player;
 		boolean flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_FLURRY) > 0;
-		int cooldown = flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS;
-
-		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.OPPORTUNIST) > 0) {
-			cooldown -= Tuning.OPPORTUNIST_REFUND_TICKS;
-		}
-
-		target.setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime() + cooldown);
+		((AttachmentTarget) player).setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime()
+				+ (flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS));
 	}
 
 	/**
