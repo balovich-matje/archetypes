@@ -43,6 +43,10 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * exposed so the cooldown bar can label its slots. */
 	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[3];
 
+	/** Last archetype level seen, for the level-up toast; -1 = not yet
+	 * observed this session, so the join-time sync never toasts. */
+	private static int lastLevel = -1;
+
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
@@ -68,6 +72,21 @@ public class ArchetypesClient implements ClientModInitializer {
 						ClientPlayNetworking.send(new ActiveAbilityPayload(slot));
 					}
 				}
+			}
+
+			// The level-up toast: the XP attachment syncs to this client, so
+			// watching the derived level needs no packet of its own.
+			if (client.player == null || ModAttachments.get(client.player) == null) {
+				lastLevel = -1;
+			} else {
+				int level = com.archetypes.SkillPoints.level(client.player);
+
+				if (lastLevel >= 0 && level > lastLevel) {
+					client.gui.toastManager().addToast(new ArchetypeLevelUpToast(
+							ModAttachments.get(client.player), lastLevel, level));
+				}
+
+				lastLevel = level;
 			}
 
 			// Flamethrower and Blizzard are channels, not presses: while the

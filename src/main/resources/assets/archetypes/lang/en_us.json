@@ -287,5 +287,9 @@
 	"item.archetypes.apprentice_wand": "Apprentice Wand",
 	"item.archetypes.blaze_wand": "Blaze Wand",
 	"item.archetypes.breeze_wand": "Breeze Wand",
-	"item.archetypes.holy_wand": "Holy Wand"
+	"item.archetypes.holy_wand": "Holy Wand",
+	"itemGroup.archetypes.archetypes": "Archetypes",
+	"item.archetypes.skill_token_45": "Skill Token x45",
+	"toast.archetypes.levelup": "Archetype Level %s",
+	"toast.archetypes.levelup.desc": "Level %s -> %s"
 }

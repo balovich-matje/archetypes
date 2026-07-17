@@ -87,8 +87,9 @@ public final class ModItems {
 		return stack.is(ItemTags.SWORDS) && !stack.is(GREATSWORDS) && !stack.is(DAGGERS);
 	}
 
-	/** Creative-only: one skill point per use. See {@link SkillTokenItem}. */
-	public static final Item SKILL_TOKEN = registerSkillToken();
+	/** Creative-only: skill points per use. See {@link SkillTokenItem}. */
+	public static final Item SKILL_TOKEN = registerSkillToken("skill_token", 1);
+	public static final Item SKILL_TOKEN_45 = registerSkillToken("skill_token_45", 45);
 
 	/** Creative-only Spellcasting boosts, the twin of Specialities' books. */
 	public static final Item SPELLCASTING_TOME_25 = registerTome(25);
@@ -129,10 +130,10 @@ public final class ModItems {
 		return DAMAGE_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + bonus) - 1.0F - bonus;
 	}
 
-	private static Item registerSkillToken() {
-		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("skill_token"));
+	private static Item registerSkillToken(final String path, final int levels) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
 		return Registry.register(BuiltInRegistries.ITEM, key,
-				new SkillTokenItem(new Item.Properties().setId(key)));
+				new SkillTokenItem(new Item.Properties().setId(key), levels));
 	}
 
 	private static Item registerTome(final int levels) {
@@ -197,5 +198,56 @@ public final class ModItems {
 			output.accept(BREEZE_WAND);
 			output.accept(HOLY_WAND);
 		});
+
+		// The mod's own creative tab: weapons, wands, potions, testing items.
+		net.minecraft.resources.ResourceKey<net.minecraft.world.item.CreativeModeTab> tabKey =
+				net.minecraft.resources.ResourceKey.create(Registries.CREATIVE_MODE_TAB,
+						Archetypes.id("archetypes"));
+		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, tabKey,
+				net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab.builder()
+						.title(net.minecraft.network.chat.Component.translatable("itemGroup.archetypes.archetypes"))
+						.icon(() -> new net.minecraft.world.item.ItemStack(MAGIC_WAND))
+						.displayItems((parameters, output) -> {
+							output.accept(WOODEN_GREATSWORD);
+							output.accept(STONE_GREATSWORD);
+							output.accept(COPPER_GREATSWORD);
+							output.accept(IRON_GREATSWORD);
+							output.accept(GOLDEN_GREATSWORD);
+							output.accept(DIAMOND_GREATSWORD);
+							output.accept(NETHERITE_GREATSWORD);
+							output.accept(WOODEN_DAGGER);
+							output.accept(STONE_DAGGER);
+							output.accept(COPPER_DAGGER);
+							output.accept(IRON_DAGGER);
+							output.accept(GOLDEN_DAGGER);
+							output.accept(DIAMOND_DAGGER);
+							output.accept(NETHERITE_DAGGER);
+							output.accept(MAGIC_WAND);
+							output.accept(APPRENTICE_WAND);
+							output.accept(BLAZE_WAND);
+							output.accept(BREEZE_WAND);
+							output.accept(HOLY_WAND);
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.POTION, ManaPotions.MANA_RESTORE));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.POTION, ManaPotions.STRONG_MANA_RESTORE));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.POTION, ManaPotions.MANA_REGENERATION));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.POTION, ManaPotions.STRONG_MANA_REGENERATION));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.SPLASH_POTION, ManaPotions.MANA_RESTORE));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.SPLASH_POTION, ManaPotions.STRONG_MANA_RESTORE));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.SPLASH_POTION, ManaPotions.MANA_REGENERATION));
+							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+									net.minecraft.world.item.Items.SPLASH_POTION, ManaPotions.STRONG_MANA_REGENERATION));
+							output.accept(SKILL_TOKEN);
+							output.accept(SKILL_TOKEN_45);
+							output.accept(SPELLCASTING_TOME_25);
+							output.accept(SPELLCASTING_TOME_100);
+						})
+						.build());
 	}
 }

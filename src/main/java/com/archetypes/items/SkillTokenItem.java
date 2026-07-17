@@ -10,12 +10,16 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 
 /**
- * Testing affordance: grants one skill point on use. Creative only — the server
- * checks the game mode itself rather than trusting that the item is hard to get.
+ * Testing affordance: grants skill points on use — one for the plain token,
+ * the full 45 for the greater one. Creative only — the server checks the
+ * game mode itself rather than trusting that the item is hard to get.
  */
 public class SkillTokenItem extends Item {
-	public SkillTokenItem(final Properties properties) {
+	private final int levels;
+
+	public SkillTokenItem(final Properties properties, final int levels) {
 		super(properties);
+		this.levels = levels;
 	}
 
 	@Override
@@ -28,7 +32,7 @@ public class SkillTokenItem extends Item {
 			return InteractionResult.SUCCESS;
 		}
 
-		SkillPoints.grantPoint(player);
+		SkillPoints.grantLevels(player, this.levels);
 		// Action bar rather than chat: this fires on every click while testing.
 		// 26.2 renamed displayClientMessage(component, true) to sendOverlayMessage.
 		player.sendOverlayMessage(Component.translatable("item.archetypes.skill_token.granted",

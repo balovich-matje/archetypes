@@ -97,7 +97,11 @@ public final class SkillPoints {
 
 	/** Testing affordance: hand over one level's worth of XP outright. */
 	public static void grantPoint(final Player player) {
+		grantLevels(player, 1);
+	}
+
+	public static void grantLevels(final Player player, final int levels) {
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
-				bankedXp(player) + XP_PER_LEVEL);
+				bankedXp(player) + levels * XP_PER_LEVEL);
 	}
 }

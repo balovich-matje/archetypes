@@ -1118,3 +1118,31 @@ after the cast: refund = spent − elementCost(spent), so a 200-pool cast
 with a Blaze wand spends 200, hits like 200, and hands 15 back (Kindling
 and Spellweaver stack into the refund the same way they discount any
 other fire spell).
+
+**Meta round (2026-07-17): wand models fixed, creative tab, level toast,
+blocky iron greatsword.** The four new wands rendered as checkerboards —
+the item-model DEFINITIONS existed but the models/item/*.json they point
+at didn't (26.2's two-file item plumbing; magic_wand had both). While
+fixing, the wands were redrawn to the user's spec: single vanilla rods
+(blaze/breeze rods are already wand-length; shifted down-left a pixel for
+tip room) and single stick for apprentice/holy, each wearing its school
+at the tip — amethyst crystal, flame, snowflake, golden cross. Only the
+basic wand keeps the doubled-stick look.
+
+New: an "Archetypes" creative tab (FabricCreativeModeTab.builder — 26.2
+renamed the fabric item-group module) holding all 7+7 weapons, 5 wands,
+all 8 mana potion stacks (drink + splash), both skill tokens and both
+tomes. Skill Token x45 added (SkillTokenItem parameterized; instant max).
+
+Archetype level-ups now toast like Specialities skills — same advancement-
+frame layout, archetype colour and icon, "Level x -> y" — driven client-
+side by watching the synced XP attachment (no new packet; -1 sentinel so
+the join sync never toasts). Reaching 45 plays UI_TOAST_CHALLENGE_COMPLETE.
+
+Iron greatsword: the 32px hi-res sprite replaced by a 16px vanilla-derived
+one in the daggers' dialect — blade lengthened two steps up its own
+diagonal, widened one perpendicular step with highlights flattened to the
+core colour, internal seam outlines dissolved, outer outline repaired,
+grip stretched. Other materials keep hi-res until the user approves the
+look; the greatsword-based node icons (First Blood, Heavy Blows, Decimate)
+still carry the old hi-res art and will want regeneration if this lands.

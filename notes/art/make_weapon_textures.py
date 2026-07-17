@@ -55,18 +55,52 @@ def dagger(material):
 
 WAND_GLOW = (211, 160, 231, 255)
 WAND_GLOW_BRIGHT = (243, 218, 251, 255)
-# The specialist wands' sparks: amethyst, fire, frost, light.
-APPRENTICE_GLOW = ((176, 116, 217, 255), (225, 194, 247, 255))
-BLAZE_GLOW = ((255, 140, 0, 255), (255, 224, 120, 255))
-BREEZE_GLOW = ((110, 190, 235, 255), (222, 248, 255, 255))
-HOLY_GLOW = ((240, 200, 70, 255), (255, 250, 200, 255))
+
+# Tip effects as (dx, dy, color) relative to the wand's tip pixel. Negative
+# dy is up-right along the diagonal; (0, 0) paints over the tip itself.
+SPARK = ((1, -1, WAND_GLOW_BRIGHT), (1, 0, WAND_GLOW), (0, -1, WAND_GLOW))
+AMETHYST_TIP = (
+    (0, -1, (225, 194, 247, 255)),   # crystal core
+    (-1, -1, (176, 116, 217, 255)),
+    (1, -1, (176, 116, 217, 255)),
+    (0, -2, (176, 116, 217, 255)),
+    (0, 0, (140, 88, 180, 255)),     # socket over the stick's tip
+)
+FLAME_TIP = (
+    (1, -1, (255, 236, 130, 255)),   # white-hot core
+    (1, -2, (255, 170, 40, 255)),    # rising flame
+    (0, -1, (230, 80, 20, 255)),
+    (2, -1, (255, 120, 30, 255)),
+    (1, 0, (200, 60, 15, 255)),
+)
+SNOWFLAKE_TIP = (
+    (1, -1, (255, 255, 255, 255)),   # core
+    (0, -1, (190, 235, 255, 255)),   # plus arms
+    (2, -1, (190, 235, 255, 255)),
+    (1, 0, (190, 235, 255, 255)),
+    (1, -2, (190, 235, 255, 255)),
+    (0, -2, (140, 205, 240, 200)),   # diagonal arms, fainter
+    (2, 0, (140, 205, 240, 200)),
+    (0, 0, (140, 205, 240, 200)),
+    (2, -2, (140, 205, 240, 200)),
+)
+HOLY_TIP = (
+    (0, -1, (255, 252, 220, 255)),   # white-gold core
+    (-1, -1, (250, 215, 90, 255)),   # golden cross
+    (1, -1, (250, 215, 90, 255)),
+    (0, -2, (250, 215, 90, 255)),
+    (0, 0, (250, 215, 90, 255)),
+    (1, -2, (240, 190, 60, 180)),    # faint rays
+    (-1, 0, (240, 190, 60, 180)),
+)
 
 
-def wand(base="item/stick.png", glow=WAND_GLOW, glow_bright=WAND_GLOW_BRIGHT):
-    """Two rods' worth of carved material: the base item plus a copy of
-    itself one step up its own diagonal — sticks and blaze/breeze rods are
-    pure diagonals, so the copy self-aligns everywhere except the tip it
-    extends — with the school's spark continuing past the new point."""
+def wand(base="item/stick.png", tip=SPARK, double=True, shift=(0, 0)):
+    """A wand from a vanilla rod. The basic wand doubles the stick along its
+    own diagonal (rods are pure diagonals, so the copy self-aligns and only
+    the tip extends); the specialists keep the single vanilla rod — blaze
+    and breeze rods are already wand-length — optionally shifted down-left
+    to clear room, and wear their school's effect at the tip."""
     stick = vanilla(base)
     src = stick.load()
     im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
@@ -75,18 +109,89 @@ def wand(base="item/stick.png", glow=WAND_GLOW, glow_bright=WAND_GLOW_BRIGHT):
     for y in range(16):
         for x in range(16):
             if src[x, y][3]:
-                px[x, y] = src[x, y]
-                if 0 <= x + 1 < 16 and 0 <= y - 1 < 16:
-                    px[x + 1, y - 1] = src[x, y]
+                tx, ty = x + shift[0], y + shift[1]
+                if 0 <= tx < 16 and 0 <= ty < 16:
+                    px[tx, ty] = src[x, y]
+                if double:
+                    tx, ty = x + shift[0] + 1, y + shift[1] - 1
+                    if 0 <= tx < 16 and 0 <= ty < 16:
+                        px[tx, ty] = src[x, y]
 
-    # Find the tip — the highest opaque pixel — and spark just past it.
+    # Find the tip — the highest opaque pixel — and dress it.
     tx, ty = next((x, y) for y in range(16) for x in range(15, -1, -1) if px[x, y][3])
-    for dx, dy, c in ((1, -1, glow_bright), (1, 0, glow), (0, -1, glow)):
+    for dx, dy, c in tip:
         x, y = tx + dx, ty + dy
         if 0 <= x < 16 and 0 <= y < 16:
             px[x, y] = c
 
     return im
+
+
+def greatsword16(material):
+    """A greatsword in the daggers' dialect: derived from the vanilla sword,
+    not drawn. The blade is lengthened two steps up its own diagonal (the
+    blade self-maps, so only the tip extends), widened one perpendicular
+    step (highlights flattened to the core colour so the band reads as one
+    face), internal seam outlines dissolved, the outer outline repaired,
+    and the grip stretched a step toward the pommel. Replaces the 32px
+    hi-res art — iron first, the rest if the user approves."""
+    sword = vanilla(f"item/{material}_sword.png")
+    src = sword.load()
+    out = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    px = out.load()
+
+    def lum(c):
+        return sum(c[:3]) / 3
+
+    from collections import Counter
+    counts = Counter(src[x, y] for y in range(9) for x in range(16) if src[x, y][3])
+    core = max((c for c in counts if 90 < lum(c) < 235), key=counts.get)
+    dark = max((c for c in counts if lum(c) <= 90), key=counts.get)
+
+    def paint(dx, dy, rows, flatten):
+        for y in rows:
+            for x in range(16):
+                if src[x, y][3]:
+                    tx, ty = x + dx, y + dy
+                    if 0 <= tx < 16 and 0 <= ty < 16:
+                        c = src[x, y]
+                        if flatten and lum(c) > 235:
+                            c = core
+                        px[tx, ty] = c
+
+    paint(3, -1, range(9), True)    # widened copy of the extension
+    paint(1, 1, range(11), True)    # widened copy of the base blade
+    paint(2, -2, range(9), False)   # the extension itself
+    paint(0, 0, range(16), False)   # the original sword on top
+
+    def bright(x, y):
+        return 0 <= x < 16 and 0 <= y < 16 and px[x, y][3] and lum(px[x, y]) > 90
+
+    # Outlines trapped inside the widened blade are seams, not edges.
+    for _ in range(2):
+        for y in range(11):
+            for x in range(16):
+                if px[x, y][3] and lum(px[x, y]) <= 90 and any(
+                        bright(x + dx, y + dy) and bright(x - dx, y - dy)
+                        for dx, dy in ((1, 0), (0, 1), (1, 1), (1, -1))):
+                    px[x, y] = core
+
+    # And where dissolution left bare metal against air, the outline returns.
+    for y in range(16):
+        for x in range(16):
+            if not px[x, y][3] and any(bright(x + dx, y + dy)
+                    for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))):
+                px[x, y] = dark
+
+    # A step more grip toward the pommel.
+    for y in range(15, 10, -1):
+        for x in range(6):
+            if src[x, y][3]:
+                tx, ty = x - 1, y + 1
+                if 0 <= tx < 16 and 0 <= ty < 16 and not px[tx, ty][3]:
+                    px[tx, ty] = src[x, y]
+
+    return out
 
 
 def save(im, name):
@@ -96,11 +201,13 @@ def save(im, name):
 
 if __name__ == "__main__":
     images = [(f"{m}_dagger", dagger(m)) for m in MATERIALS] + [
+        # Iron only for now: the trial balloon for replacing the hi-res art.
+        ("iron_greatsword", greatsword16("iron")),
         ("magic_wand", wand()),
-        ("apprentice_wand", wand(glow=APPRENTICE_GLOW[0], glow_bright=APPRENTICE_GLOW[1])),
-        ("blaze_wand", wand("item/blaze_rod.png", *BLAZE_GLOW)),
-        ("breeze_wand", wand("item/breeze_rod.png", *BREEZE_GLOW)),
-        ("holy_wand", wand(glow=HOLY_GLOW[0], glow_bright=HOLY_GLOW[1])),
+        ("apprentice_wand", wand(tip=AMETHYST_TIP, double=False)),
+        ("blaze_wand", wand("item/blaze_rod.png", FLAME_TIP, double=False, shift=(-1, 1))),
+        ("breeze_wand", wand("item/breeze_rod.png", SNOWFLAKE_TIP, double=False, shift=(-1, 1))),
+        ("holy_wand", wand(tip=HOLY_TIP, double=False)),
     ]
 
     for name, im in images:
