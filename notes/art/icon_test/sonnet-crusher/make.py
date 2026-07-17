@@ -182,6 +182,15 @@ def fist(im, x0, y0, scale=1):
                 put(im, x0 + dx * scale + sx, y0 + dy * scale + sy, SKIN)
 
 
+def rock(im, x, y, colour=STONE, dark=STONE_DARK, light=STONE_LIGHT):
+    """A chunky 3x3 stone rubble chunk, not a single stray pixel."""
+    for dx, dy in ((0, 0), (1, 0), (0, 1), (1, 1), (-1, 1), (1, -1)):
+        put(im, x + dx, y + dy, colour)
+    put(im, x, y - 1, light)
+    put(im, x + 1, y + 1, dark)
+    put(im, x - 1, y, dark)
+
+
 def ring(im, cx, cy, r, colour):
     """A thin pixel ring (not filled) at radius r."""
     import math
@@ -204,8 +213,8 @@ def adrenaline():
     """Landing a hit grants attack speed. The mace, with the house's own
     'faster' grammar -- three speed dashes -- trailing off its swing."""
     im = canvas()
-    speed_dashes(im, 0, 6)
-    im.alpha_composite(mace_2x(), (4, 0))
+    speed_dashes(im, 1, 9)
+    im.alpha_composite(mace_2x(), (6, 0))
     save(im, "adrenaline")
 
 
@@ -216,20 +225,26 @@ def sunder():
     im = canvas()
     plate = chestplate_2x()
     px = plate.load()
-    hole = [(14, 14), (15, 14), (16, 14), (17, 14), (18, 14),
-            (14, 15), (15, 15), (16, 15), (17, 15), (18, 15), (19, 15),
-            (13, 16), (14, 16), (15, 16), (16, 16), (17, 16), (18, 16), (19, 16),
-            (14, 17), (15, 17), (16, 17), (17, 17), (18, 17),
-            (15, 18), (16, 18), (17, 18)]
+    # A bigger torn hole than the mace fragment that will sit in it, so a
+    # dark punched-through ring stays visible all around the piece.
+    hole = []
+    for y in range(11, 22):
+        for x in range(11, 22):
+            if (x - 16) ** 2 + (y - 16) ** 2 <= 38:
+                hole.append((x, y))
     for x, y in hole:
         px[x, y] = (0, 0, 0, 0)
     im.alpha_composite(plate, (0, 0))
-    # Crack lines radiating from the hole.
-    for x, y in ((12, 12), (11, 10), (20, 12), (21, 10), (12, 20), (11, 22),
-                 (20, 20), (21, 22)):
+    # Dark torn edge, then the mace's own dark-blue head fragment sitting
+    # inside it -- smaller than the hole, so the punched ring stays visible.
+    mace_head = vanilla("item/mace.png").crop((3, 1, 12, 8)).resize((18, 14), Image.NEAREST)
+    im.alpha_composite(mace_head, (7, 12))
+    # A few bright puncture-edge sparks, then crack lines running further out.
+    for x, y in ((11, 12), (20, 12), (11, 20), (20, 20)):
+        put(im, x, y, WHITE)
+    for x, y in ((9, 9), (8, 7), (23, 9), (24, 7), (9, 23), (8, 25),
+                 (23, 23), (24, 25)):
         put(im, x, y, CRACK)
-    mace_head = vanilla("item/mace.png").crop((3, 0, 13, 8)).resize((20, 16), Image.NEAREST)
-    im.alpha_composite(mace_head, (6, 9))
     save(im, "sunder")
 
 
@@ -248,33 +263,37 @@ def bare_knuckle():
 
 def iron_skin():
     """+armor/+toughness while bare-handed -- skin like plate. The intact
-    iron chestplate (no hole this time -- contrast with Sunder), a fist
-    peeking out of its collar to keep the 'bare-handed' reading honest, plus
-    the same 'more' grammar for the per-rank stacking."""
+    iron chestplate (no hole this time -- contrast with Sunder), bare fists
+    hanging at its sides where the sleeves would be to keep the
+    'bare-handed' reading honest, plus the same 'more' grammar for the
+    per-rank stacking."""
     im = canvas()
     im.alpha_composite(chestplate_2x(), (0, 0))
-    fist(im, 11, 3, scale=1)
-    plus(im, 27, 24)
+    fist(im, 0, 14, scale=1)
+    fist(im, 23, 14, scale=1)
+    plus(im, 27, 4)
     save(im, "iron_skin")
 
 
 def haymaker():
     """Capstone: one enormous punch -- 4x damage, Slowness VI, Knockback II
-    send-off. A bigger fist at impact, a starburst on contact, the house's
-    'slowed' chevrons on the target side, and a knockback streak pushing
-    away from the blow."""
+    send-off. A bigger fist driving right at a starburst impact, the
+    house's 'slowed' chevrons pinned on the struck side, and a knockback
+    streak launched onward past the impact."""
     im = canvas()
-    fist(im, 9, 8, scale=2)
-    # Impact starburst at the knuckles.
-    cx, cy = 25, 14
-    for dx, dy, c in ((0, -3, WHITE), (0, 3, WHITE), (-3, 0, WHITE), (3, 0, WHITE),
-                      (-2, -2, ARC), (2, -2, ARC), (-2, 2, ARC), (2, 2, ARC),
-                      (0, 0, WHITE)):
+    fist(im, 3, 7, scale=2)
+    # Impact starburst right at the knuckles.
+    cx, cy = 21, 12
+    for dx, dy, c in ((0, 0, WHITE), (1, 0, WHITE), (0, -1, WHITE), (0, 1, WHITE),
+                      (-1, 0, GOLD_LIGHT),
+                      (0, -4, ARC), (0, 4, ARC), (-3, -2, ARC), (-3, 2, ARC),
+                      (4, -3, ARC_DIM), (4, 3, ARC_DIM), (5, 0, ARC_DIM)):
         put(im, cx + dx, cy + dy, c)
-    down_chevrons(im, 23, 21)
-    # Knockback streak, opposite the punch.
-    for i, x in enumerate(range(2, 8)):
-        put(im, x, 25, ARC_DIM if i % 2 else ARC)
+    # Slowness chevrons, pinned on the struck target just past the impact.
+    down_chevrons(im, 22, 20)
+    # Knockback streak launched onward, past the impact point.
+    for i, x in enumerate(range(20, 31)):
+        put(im, x, 7 + i // 3, ARC if i % 2 else ARC_DIM)
     save(im, "haymaker")
 
 
@@ -298,48 +317,59 @@ def meteor():
 
 def shockwave():
     """A falling mace blow rings outward -- full damage within 2/4 blocks.
-    The mace with two concentric ground-rings under its head."""
+    The mace swung head-down into the ground, two clearly separated
+    concentric rings of the blow's reach spreading from where it lands."""
     im = canvas()
-    im.alpha_composite(mace_2x(), (0, 0))
-    ring(im, 16, 27, 6, ARC)
-    ring(im, 16, 27, 10, ARC_DIM)
+    dropped = vanilla("item/mace.png").rotate(180, resample=Image.NEAREST, expand=False)
+    im.alpha_composite(dropped.resize((26, 26), Image.NEAREST), (3, -6))
+    ring(im, 16, 27, 3, ARC)
+    ring(im, 16, 27, 7, ARC_DIM)
     save(im, "shockwave")
 
 
 def earth_shatter():
     """A missed Quake vents into the ground: cooldown refund, blocks up to
-    stone hardness shatter around you. The mace grounded in a burst of
-    shattered stone rubble."""
+    stone hardness shatter around you. The mace grounded, jagged crack
+    lines splitting the floor under it, chunky stone rubble kicked out to
+    both sides."""
     im = canvas()
     im.alpha_composite(mace_2x(), (0, 0))
-    rubble = [
-        (2, 27, STONE_LIGHT), (3, 28, STONE), (4, 27, STONE_DARK),
-        (24, 26, STONE), (26, 28, STONE_LIGHT), (27, 26, STONE_DARK),
-        (6, 30, STONE_DARK), (22, 30, STONE), (28, 30, STONE_DARK),
-        (9, 29, STONE_LIGHT), (19, 29, STONE),
-    ]
-    for x, y, c in rubble:
-        put(im, x, y, c)
-    for x, y in ((14, 29), (16, 30), (18, 29), (12, 30)):
-        put(im, x, y, CRACK)
+    for x in range(1, 31):
+        put(im, x, 29, STONE_DARK)
+    for x in (5, 10, 16, 22, 26):
+        put(im, x, 27, CRACK)
+        put(im, x, 28, CRACK)
+    rock(im, 4, 24)
+    rock(im, 27, 23)
+    rock(im, 9, 26)
+    rock(im, 23, 27)
     save(im, "earth_shatter")
 
 
 def quake():
     """Capstone: plant, raise, slam -- hostiles go skyward. The mace raised
-    high, a wide crack splitting the ground beneath it, rubble thrown
-    upward -- the house's launched-airborne read."""
+    high overhead, a wide crack splitting the ground beneath it, chunky
+    rubble thrown upward on both sides -- the house's launched-airborne
+    read, bigger and higher than Earth Shatterer's since this is the
+    capstone."""
     im = canvas()
-    raised = vanilla("item/mace.png").rotate(-25, resample=Image.NEAREST, expand=False)
-    im.alpha_composite(raised.resize((32, 32), Image.NEAREST), (0, -4))
-    for x in range(2, 30):
+    raised = vanilla("item/mace.png").rotate(-35, resample=Image.NEAREST, expand=False)
+    im.alpha_composite(raised.resize((32, 32), Image.NEAREST), (0, -6))
+    for x in range(0, 32):
         put(im, x, 29, STONE_DARK)
-    for x, y in ((5, 28), (10, 30), (16, 28), (22, 30), (27, 28)):
-        put(im, x, y, CRACK)
-    # Rubble launched skyward.
-    for x, y, c in ((4, 22, STONE_LIGHT), (7, 18, STONE), (25, 20, STONE),
-                    (28, 24, STONE_LIGHT), (3, 15, STONE_DARK)):
-        put(im, x, y, c)
+        put(im, x, 30, STONE_DARK)
+    for x in (4, 5, 10, 11, 16, 17, 22, 23, 27, 28):
+        put(im, x, 28, CRACK)
+        put(im, x, 29, CRACK)
+    # Rubble thrown up on both sides of the slam, launched skyward.
+    rock(im, 3, 21)
+    rock(im, 6, 14)
+    rock(im, 26, 19)
+    rock(im, 28, 24)
+    rock(im, 2, 9)
+    rock(im, 9, 8)
+    for x, y in ((3, 5), (5, 3), (8, 3), (24, 6), (27, 4)):
+        put(im, x, y, ARC_DIM)
     save(im, "quake")
 
 

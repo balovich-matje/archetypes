@@ -12,10 +12,11 @@ this script for a side-by-side compare against the other model's pass.
 
 Usage: python3 make.py
 """
+import math
 import os
 import zipfile
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 JAR = ("/Users/german-mac-mini/.gradle/caches/fabric-loom/minecraftMaven/net/minecraft/"
        "minecraft-clientonly-deobf/26.2/minecraft-clientonly-deobf-26.2.jar")
@@ -64,6 +65,19 @@ def put(im, x, y, c):
         im.putpixel((x, y), c)
 
 
+def line(im, x0, y0, x1, y1, c, c_shadow=None):
+    """A hand-plotted straight stroke from (x0,y0) to (x1,y1) - used for the
+    handful of effect marks (straps, speed streaks) that aren't sampled from
+    a vanilla sprite."""
+    steps = max(abs(x1 - x0), abs(y1 - y0), 1)
+    for i in range(steps + 1):
+        x = round(x0 + (x1 - x0) * i / steps)
+        y = round(y0 + (y1 - y0) * i / steps)
+        put(im, x, y, c)
+        if c_shadow is not None:
+            put(im, x, y + 1, c_shadow)
+
+
 def save(im, name):
     im.resize((im.width * 2, im.height * 2), Image.NEAREST).save(
         os.path.join(DST, f"{name}.png"))
@@ -80,6 +94,20 @@ def save(im, name):
 # glyph to build every shield-family icon on.
 def _shield_outline():
     return vanilla("gui/sprites/container/slot/shield.png")
+
+
+def shield_edges():
+    """Per-row (leftmost, rightmost) rim column of the real outline sprite -
+    lets effects (spikes) attach exactly to the shield's actual silhouette
+    instead of guessed coordinates."""
+    src = _shield_outline()
+    px = src.load()
+    edges = {}
+    for y in range(16):
+        xs = [x for x in range(16) if px[x, y][3]]
+        if xs:
+            edges[y] = (min(xs), max(xs))
+    return edges
 
 
 def shield_icon(fill=WOOD, fill_dark=WOOD_DARK, rim=IRON_DARK, rim_hi=IRON_LIGHT):
@@ -114,36 +142,6 @@ def shield_icon(fill=WOOD, fill_dark=WOOD_DARK, rim=IRON_DARK, rim_hi=IRON_LIGHT
     return im
 
 
-def shield_face_crop():
-    """The real front-plate texture (plank + iron studs), cropped from the
-    entity atlas at its native UV size - used as a small texture SAMPLE
-    (for straps / colour) rather than as the whole icon body."""
-    return vanilla("entity/shield/shield_base_nopattern.png").crop((0, 0, 13, 23))
-
-
-def iso_block(texture, size=16):
-    """A small isometric block 'item icon' from a block texture: diamond
-    top, shaded left/right faces - same trick notes/art/make_node_icons.py
-    uses for its block overlays."""
-    tex = vanilla(f"block/{texture}.png")
-    cube = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    top = tex.rotate(45, expand=True).resize((size, size // 2), Image.NEAREST)
-    cube.alpha_composite(top, (0, 0))
-    half = size // 2
-    for face, x0, shade in ((0, 0, 150), (1, half, 210)):
-        for x in range(half):
-            sx = x * (tex.width // half)
-            drop_y = (x if face == 0 else half - 1 - x) // 2
-            for y in range(half):
-                r, g, b, a = tex.getpixel((sx, y * (tex.height // half)))
-                if a:
-                    py = size // 4 + drop_y + y
-                    if py < size:
-                        cube.putpixel((x0 + x, py),
-                                (r * shade // 255, g * shade // 255, b * shade // 255, 255))
-    return cube
-
-
 def main():
     os.makedirs(DST, exist_ok=True)
     bash()
@@ -159,65 +157,99 @@ def main():
     taunt()
     omni_block()
     ground_slam()
+    contact_sheet()
+
+
+ORDER = ["bash", "slam", "cooldown", "knockback", "wide", "unbreaking", "spikes",
+         "rush", "braced", "reflect", "taunt", "omni_block", "ground_slam"]
+
+
+def contact_sheet():
+    """Every icon at 4x NEAREST, labeled, on the #2b2b2b background this
+    bake-off compares against."""
+    cols, cell = 4, 160
+    rows = (len(ORDER) + cols - 1) // cols
+    sheet = Image.new("RGBA", (cols * cell, rows * cell), (43, 43, 43, 255))
+    draw = ImageDraw.Draw(sheet)
+    for i, name in enumerate(ORDER):
+        icon = Image.open(os.path.join(DST, f"{name}.png")).convert("RGBA")
+        big = icon.resize((icon.width * 4, icon.height * 4), Image.NEAREST)
+        x, y = (i % cols) * cell, (i // cols) * cell
+        sheet.alpha_composite(big, (x + (cell - big.width) // 2, y + 10))
+        draw.text((x + 10, y + cell - 20), name, fill=(255, 255, 255, 255))
+    sheet.save(os.path.join(HERE, "contact_sheet.png"))
+    print("contact_sheet.png")
 
 
 # ---------------------------------------------------------------- icons ---
 
 def bash():
-    """Shield Bash: the shove itself - shield up, a burst where it lands,
-    two speed dashes trailing the strike."""
+    """Shield Bash: the shove itself - shield up, a bright starburst
+    landing square in front of it."""
     im = shield_icon()
-    for x, y in ((1, 7), (1, 8), (2, 4)):
-        put(im, x, y, ARC_DIM)
-    burst = ((15, 6, ARC), (15, 8, ARC), (14, 5, (255, 236, 160, 255)),
-             (14, 9, ARC_DIM), (16, 7, ARC), (13, 7, (255, 236, 160, 255)))
+    core = (255, 244, 200, 255)
+    burst = ((13, 7, core), (12, 6, ARC), (12, 8, ARC), (14, 6, ARC), (14, 8, ARC),
+             (11, 7, ARC_DIM), (15, 7, ARC_DIM), (13, 5, ARC_DIM), (13, 9, ARC_DIM))
     for x, y, c in burst:
         put(im, x, y, c)
     save(im, "bash")
 
 
 def slam():
-    """Shield Slam: the bash, but the impact is hotter/bigger and a
-    Strength badge (vanilla's own effect icon) rides the top corner - the
-    mod's own '+damage' tell."""
+    """Shield Slam: the same bash burst, hotter and wider, with a Strength
+    badge (vanilla's own effect icon) riding the corner - the mod's own
+    '+damage' tell."""
     im = shield_icon()
-    burst = ((14, 5, (255, 240, 200, 255)), (15, 5, BLOOD), (16, 6, BLOOD),
-             (15, 7, BLOOD), (16, 8, BLOOD), (15, 9, BLOOD), (14, 9, (255, 240, 200, 255)),
-             (16, 4, ARC_DIM), (16, 10, ARC_DIM))
+    hot = (255, 90, 40, 255)
+    core = (255, 220, 140, 255)
+    burst = ((13, 8, core), (12, 7, hot), (12, 9, hot), (14, 7, hot), (14, 9, hot),
+             (11, 8, hot), (15, 8, hot), (13, 6, hot), (13, 10, hot),
+             (11, 6, ARC_DIM), (15, 10, ARC_DIM), (15, 6, ARC_DIM), (11, 10, ARC_DIM))
     for x, y, c in burst:
         put(im, x, y, c)
     badge = vanilla("mob_effect/strength.png").resize((7, 7), Image.NEAREST)
-    im.alpha_composite(badge, (10, -1))
+    im.alpha_composite(badge, (9, 0))
     save(im, "slam")
 
 
 def cooldown():
     """Quick Recovery: vanilla's own resting clock, wound backwards - a
-    counter-clockwise rewind arrow so it reads as time coming BACK, not
-    forward."""
+    bold counter-clockwise rewind ring around the face so it reads as time
+    coming BACK, not forward."""
     clock = vanilla("item/clock_00.png")
     im = canvas()
     im.alpha_composite(clock, (0, 0))
-    arrow = ((2, 1), (1, 2), (1, 3), (2, 4), (3, 1))
-    for x, y in arrow:
+    cx, cy, r = 8, 8, 8
+    for deg in range(30, 300, 18):
+        a = math.radians(deg)
+        x = round(cx + r * math.cos(a))
+        y = round(cy + r * math.sin(a))
         put(im, x, y, ARC)
-    put(im, 0, 2, ARC)  # arrowhead barb, counter-clockwise
-    put(im, 1, 1, ARC_DIM)
+    # Arrowhead at the low end of the sweep, barb pointing counter-clockwise.
+    put(im, 1, 12, ARC)
+    put(im, 2, 11, ARC)
+    put(im, 1, 10, ARC)
     save(im, "cooldown")
 
 
 def knockback():
-    """Concussive Blow: the piston's own retracted face, ram punching out
-    hard - a bigger, blunter shove than Bash's, and less spark since damage
-    is traded away for it."""
-    piston = vanilla("block/piston_top.png")
+    """Concussive Blow: the piston's own crate face as the housing, an iron
+    ram shoved hard out of it - a bigger, blunter punch than Bash's spark,
+    since damage is traded away for the extra shove."""
+    housing = vanilla("block/piston_top.png").resize((11, 16), Image.NEAREST)
     im = canvas()
-    im.alpha_composite(piston, (0, 0))
-    chevrons = ((13, 6), (14, 6), (13, 7), (15, 7), (13, 8), (14, 8),
-                (13, 3), (14, 2), (13, 12), (14, 13))
+    im.alpha_composite(housing, (0, 0))
+    # The ram: a stubby grey arm punched out to the right.
+    for x in range(10, 14):
+        for y in range(6, 10):
+            put(im, x, y, IRON if 7 <= y <= 8 else IRON_DARK)
+    for y in range(6, 10):
+        put(im, 13, y, IRON_LIGHT)
+    # Impact chevrons, bigger and blunter than Bash's starburst.
+    chevrons = ((15, 5), (14, 4), (15, 9), (14, 11), (16, 7))
     for x, y in chevrons:
         put(im, x, y, ARC)
-    for x, y in ((15, 5), (16, 6), (15, 9), (16, 8)):
+    for x, y in ((13, 3), (13, 12)):
         put(im, x, y, ARC_DIM)
     save(im, "knockback")
 
@@ -226,91 +258,115 @@ def wide():
     """Wide Swings: the shield under a bash arc thrown all the way from one
     side to the other, instead of a single-target burst."""
     im = shield_icon()
-    arc = ((0, 5), (0, 4), (1, 2), (3, 1), (6, 0), (9, 0), (12, 1), (14, 2),
-           (15, 4), (15, 5))
+    arc = ((0, 6), (0, 5), (1, 3), (2, 2), (3, 1), (5, 0), (6, 0), (8, 0),
+           (9, 0), (11, 1), (12, 2), (13, 3), (14, 5), (14, 6))
     for x, y in arc:
         put(im, x, y, ARC)
+        put(im, x, y + 1, ARC_DIM)
     save(im, "wide")
 
 
 def unbreaking():
-    """Reinforced Straps: the shield with an actual leather strap (cropped
-    straight from the item's own hide texture) buckled across it, iron
-    rivets pinning it down - built-in Unbreaking, worn on the sleeve."""
+    """Reinforced Straps: the shield with a real leather-brown strap belted
+    across it corner to corner, iron rivets pinning the ends down - built-in
+    Unbreaking, worn right on the sleeve."""
     im = shield_icon()
-    hide = vanilla("item/leather.png")
-    strap = hide.resize((16, 16), Image.NEAREST).crop((1, 6, 15, 9))
-    strap = strap.rotate(-24, resample=Image.NEAREST, expand=True)
-    im.alpha_composite(strap, (0, 8))
-    for x, y in ((2, 9), (13, 6)):
+    line(im, 2, 2, 13, 11, LEATHER, LEATHER_DARK)
+    line(im, 2, 3, 13, 12, (176, 104, 64, 255), LEATHER_DARK)
+    for x, y in ((2, 2), (13, 12)):
+        put(im, x - 1, y, IRON_DARK)
         put(im, x, y, IRON_LIGHT)
         put(im, x + 1, y, IRON_DARK)
     save(im, "unbreaking")
 
 
 def spikes():
-    """Iron Spikes: the same shield, now rimmed with short iron spikes -
-    Thorns worn on the shield instead of drawn as a stray caltrop."""
+    """Iron Spikes: the same shield, now bristling with short iron spikes
+    driven straight out from its real rim - Thorns worn on the shield
+    itself instead of drawn as a stray caltrop off to one side."""
+    edges = shield_edges()
     im = shield_icon()
-    tips = ((3, 0), (7, -1), (11, 0), (0, 6), (15, 6), (2, 13), (13, 13))
-    for x, y in tips:
-        put(im, x, y, IRON_LIGHT)
-        put(im, x, y + 1 if y < 8 else y - 1, IRON_DARK)
-    put(im, 15, 6, BLOOD)
-    put(im, 16, 5, BLOOD)
+    for y in (3, 6, 9, 12):
+        lx, rx = edges[y]
+        put(im, lx - 1, y, IRON)
+        put(im, lx - 2, y, IRON_LIGHT)
+        put(im, rx + 1, y, IRON)
+        put(im, rx + 2, y, IRON_LIGHT)
+    # The one spike that just caught someone.
+    put(im, edges[6][1] + 3, 6, BLOOD)
+    put(im, edges[6][1] + 2, 5, BLOOD)
     save(im, "spikes")
 
 
 def rush():
-    """Shield Rush: the shield leaning into a sprint, a wind-charge swirl
-    (vanilla's own burst sprite, shrunk) kicked up at the heel, three speed
-    dashes trailing it."""
+    """Shield Rush: the shield leaning into a sprint, three bold speed
+    streaks crossing its face and a wind-charge swirl (vanilla's own burst
+    sprite, shrunk) kicked up at the heel."""
     im = shield_icon()
-    for i, y in enumerate((3, 7, 11)):
-        for x in range(0, 3 - i % 2):
-            put(im, x, y, ARC_DIM if x == 0 else ARC)
-    gust = vanilla("item/wind_charge.png").resize((7, 7), Image.NEAREST)
-    im.alpha_composite(faded(gust, 210), (-2, 9))
+    for sx, sy, ex, ey in ((1, 3, 6, 2), (0, 7, 6, 6), (1, 12, 6, 10)):
+        line(im, sx, sy, ex, ey, ARC)
+        put(im, sx, sy, ARC_DIM)
+    gust = vanilla("item/wind_charge.png").resize((8, 8), Image.NEAREST)
+    im.alpha_composite(gust, (-3, 8))
     save(im, "rush")
 
 
 def braced():
-    """Braced: the shield with a small gold clock riding the corner and a
-    downward tick beside it - every block shaves the second right off."""
+    """Braced: the shield with a small gold clock badge riding the corner,
+    backed by a dark disc so it pops, and a downward tick beside it - every
+    block shaves the second right off."""
     im = shield_icon()
-    clock = vanilla("item/clock_00.png").resize((8, 8), Image.NEAREST)
-    im.alpha_composite(clock, (9, 8))
-    for x, y in ((15, 7), (16, 8), (14, 8)):
+    backdrop = canvas()
+    for x in range(16):
+        for y in range(16):
+            if (x - 12) ** 2 + (y - 4) ** 2 <= 16:
+                put(backdrop, x, y, IRON_DARK)
+    im.alpha_composite(backdrop, (0, 0))
+    clock = vanilla("item/clock_00.png").resize((7, 7), Image.NEAREST)
+    im.alpha_composite(clock, (9, 1))
+    for x, y in ((14, 8), (15, 9), (13, 9)):
         put(im, x, y, GOLD)
-    put(im, 15, 9, GOLD_DARK)
+    put(im, 14, 10, GOLD_DARK)
     save(im, "braced")
 
 
 def reflect():
-    """Reflection: an arrow arriving low, the same arrow already leaving
-    high and flipped - the shield sends it back the way it came."""
+    """Reflection: an arrow arriving from below-left, the same arrow
+    already leaving above-right, flipped - the shield sends it straight
+    back the way it came."""
     im = shield_icon()
-    arrow = vanilla("item/arrow.png").resize((10, 10), Image.NEAREST)
-    incoming = faded(arrow.rotate(90, expand=True), 235)
-    im.alpha_composite(incoming, (-4, 7))
-    outgoing = arrow.rotate(-90, expand=True).transpose(Image.FLIP_TOP_BOTTOM)
-    im.alpha_composite(outgoing, (-5, -4))
-    for x, y in ((3, 3), (5, 1)):
-        put(im, x, y, ARC_DIM)
+    arrow = vanilla("item/arrow.png").resize((8, 8), Image.NEAREST)
+    # Vanilla's arrow sprite points up-right, tail at bottom-left. Flipping
+    # it end-for-end gives an arrow pointing down-left - the "incoming"
+    # shot, tip aimed at the shield's face.
+    incoming = arrow.transpose(Image.ROTATE_180)
+    im.alpha_composite(incoming, (0, 8))
+    # The real arrow (tip up-right, unflipped) is the "outgoing" shot,
+    # already leaving the way it's now headed.
+    im.alpha_composite(arrow, (8, 0))
+    # The bounce itself, right where the two paths meet on the shield face.
+    for x, y, c in ((7, 7, ARC), (8, 6, ARC), (6, 8, ARC_DIM), (9, 5, ARC_DIM)):
+        put(im, x, y, c)
     save(im, "reflect")
 
 
 def taunt():
-    """Taunt: the goat horn, mid-call - sound rings spreading from the
-    bell, one gone hostile-red to say the call is a challenge."""
+    """Taunt: the goat horn, mid-call - sound rings arcing out from the
+    bell, the outermost gone hostile-red to say the call is a challenge,
+    not a greeting."""
     horn = vanilla("item/goat_horn.png")
     im = canvas()
     im.alpha_composite(horn, (0, 0))
-    rings = (((14, 3), ARC), ((15, 4), ARC), ((14, 5), ARC),
-             ((16, 2), ARC_DIM), ((16, 6), ARC_DIM))
-    for (x, y), c in rings:
-        put(im, x, y, c)
-    for x, y in ((13, 1), (14, 0)):
+    # The bell flares open toward the top-left; fan the call out into the
+    # open top-right corner so it never overlaps the horn itself.
+    near = ((10, 2), (11, 0), (9, 4))
+    far = ((13, 1), (14, 3), (12, 5))
+    red = ((15, 2), (14, 5))
+    for x, y in near:
+        put(im, x, y, ARC)
+    for x, y in far:
+        put(im, x, y, ARC_DIM)
+    for x, y in red:
         put(im, x, y, (224, 64, 32, 255))
     save(im, "taunt")
 
@@ -320,10 +376,9 @@ def omni_block():
     copies covering the sides - blocking every direction at once - framed
     with the small gold corner ticks this set uses for capstones."""
     im = canvas()
-    ghost = faded(shield_icon(), 130)
-    small = ghost.resize((11, 11), Image.NEAREST)
-    im.alpha_composite(small, (-3, 3))
-    im.alpha_composite(small.transpose(Image.FLIP_LEFT_RIGHT), (8, 3))
+    ghost = faded(shield_icon(), 140).resize((10, 10), Image.NEAREST)
+    im.alpha_composite(ghost, (-2, 4))
+    im.alpha_composite(ghost.transpose(Image.FLIP_LEFT_RIGHT), (8, 4))
     im.alpha_composite(shield_icon(), (2, 1))
     for x, y in ((0, 0), (15, 0), (0, 15), (15, 15)):
         put(im, x, y, GOLD)
@@ -331,22 +386,37 @@ def omni_block():
 
 
 def ground_slam():
-    """Ground Slam (capstone): the anvil (built the way this set builds any
-    block item - real block texture folded into an iso cube) coming down
-    on ground that's already cracking, shockwaves kicked out both sides."""
-    im = canvas()
+    """Ground Slam (capstone): the shield's bash, but the ground under it
+    is already cracking and shockwaves are kicking out both sides - a small
+    hand-drawn anvil badge (colour-matched to the real block texture) rides
+    the corner for the capstone's own name."""
+    # No bright rim highlight here - it would fight the anvil badge for the
+    # same top row, and a duller rim reads a little heavier anyway, fitting
+    # for a capstone.
+    im = shield_icon(fill=WOOD_DARK, fill_dark=(70, 48, 24, 255), rim_hi=IRON_DARK)
     ground = ((110, 78, 46, 255), (78, 54, 30, 255))
     for x in range(16):
-        put(im, x, 13, ground[0])
-        put(im, x, 14, ground[1])
+        put(im, x, 14, ground[0])
+        put(im, x, 15, ground[1])
     crack = (46, 30, 14, 255)
-    for x, y in ((3, 13), (2, 14), (12, 13), (13, 14), (7, 13), (8, 14)):
+    for x, y in ((3, 14), (2, 15), (12, 14), (13, 15), (7, 14), (8, 15)):
         put(im, x, y, crack)
-    cube = iso_block("anvil", size=12)
-    im.alpha_composite(cube, (2, 0))
-    for x, y in ((0, 11), (15, 11), (2, 9), (13, 9)):
+    for x, y in ((0, 12), (15, 12), (2, 10), (13, 10)):
         put(im, x, y, ARC_DIM)
-    for x, y in ((0, 0), (15, 0)):
+    # A small anvil in profile - flat top, pinched waist, wide foot - is the
+    # one silhouette every player already recognises, so it's worth hand-
+    # plotting even though the block texture itself is just grey noise.
+    anvil_hi = (168, 168, 176, 255)
+    anvil_c = (120, 120, 128, 255)
+    anvil_d = (72, 72, 80, 255)
+    rows = ((0, (8, 9, 10, 11, 12, 13, 14), anvil_hi),
+            (1, (9, 10, 11, 12, 13), anvil_c),
+            (2, (10, 11, 12), anvil_c),
+            (3, (9, 10, 11, 12, 13), anvil_d))
+    for y, xs, c in rows:
+        for x in xs:
+            put(im, x, y, c)
+    for x, y in ((7, 0), (15, 0)):
         put(im, x, y, GOLD)
     save(im, "ground_slam")
 

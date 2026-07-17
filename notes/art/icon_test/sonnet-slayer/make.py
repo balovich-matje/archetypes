@@ -158,6 +158,16 @@ def minus(im, cx, cy, color, arm=2, thick=2):
         blot(im, cx - thick // 2 + i * thick, cy - thick // 2, color, thick, thick)
 
 
+def outlined_minus(im, cx, cy, color, outline, arm=1, thick=2):
+    """A '-' with a dark halo behind it, so it stays legible sat over a
+    bright or busy sprite (a clock's gold rim, say) instead of needing to
+    land on a part of the source art that happens to already be dark."""
+    for ddx in (-1, 0, 1):
+        for ddy in (-1, 0, 1):
+            minus(im, cx + ddx, cy + ddy, outline, arm=arm, thick=thick)
+    minus(im, cx, cy, color, arm=arm, thick=thick)
+
+
 def spark(im, cx, cy, color, color_dim):
     """A tiny 4-point twinkle -- "just happened" flash, for a kill snapping
     a cooldown back to ready."""
@@ -185,6 +195,21 @@ def chevron_down(im, cx, cy, color, arm=4):
         blot(im, cx + arm - i, cy - i, color, 2, 2)
 
 
+def recolor(im, color):
+    """Restamp every opaque pixel of a linework sprite to a flat colour,
+    keeping its alpha -- turns a too-dark outline (vanilla's empty heart
+    container is near-black) into one that actually shows up on a near-
+    black tree background."""
+    out = im.convert("RGBA").copy()
+    px = out.load()
+    for y in range(out.height):
+        for x in range(out.width):
+            r, g, b, a = px[x, y]
+            if a:
+                px[x, y] = (color[0], color[1], color[2], a)
+    return out
+
+
 def save(im, name):
     im.save(os.path.join(ICONS, f"{name}.png"))
     print(f"{name}.png")
@@ -203,8 +228,8 @@ def slowness():
     im.alpha_composite(badge, (1, 1))
     sword = vanilla("item/iron_sword.png").resize((14, 14), Image.NEAREST)
     im.alpha_composite(sword, (18, 18))
-    chevron_down(im, 6, 22, SLOW_DIM, arm=2)
-    chevron_down(im, 6, 27, SLOW, arm=2)
+    chevron_down(im, 6, 21, SLOW_DIM, arm=2)
+    chevron_down(im, 6, 27, SLOW, arm=3)
     save(im, "slowness")
 
 
@@ -224,31 +249,39 @@ def taste_of_blood():
 
 # ---------------------------------------------------------------------------
 # LUNGE -- while sprinting, sword swings fling you forward (and up). The
-# rabbit foot already assigned to this family (a real leap ingredient) with
-# a diagonal burst of motion dashes driving up and to the right -- forward,
-# including upward -- brightest at the front.
+# rabbit foot already assigned to this family (a real leap ingredient) --
+# its own toe already points up and to the right -- with a co-linear burst
+# of launch-chevrons continuing straight off the toe into the canvas's
+# empty top-right corner, tapering as they go: the leap continuing past the
+# frame, not a generic "faster" side-trail.
 def lunge():
     im = canvas()
     im.alpha_composite(item2x("item/rabbit_foot.png"), (0, 0))
-    for i, (x, y) in enumerate(((2, 29), (7, 24), (12, 19))):
-        blot(im, x, y, ARC if i == 2 else ARC_DIM, 3, 3)
-    blot(im, 15, 16, WHITE, 2, 2)
+    blot(im, 23, 5, WHITE, 3, 3)
+    blot(im, 25, 3, ARC, 1, 1)
+    blot(im, 27, 2, ARC, 2, 2)
+    blot(im, 29, 1, ARC_DIM, 1, 1)
+    blot(im, 30, 0, ARC_DIM, 2, 2)
     save(im, "lunge")
 
 
 # ---------------------------------------------------------------------------
 # KBRES (Immovable) -- with a greatsword in hand, 30/60% knockback
 # resistance. The greatsword itself with an obsidian mini-cube anchored in
-# its empty bottom-right corner (obsidian is the family's own assigned
-# item -- the game's own "cannot be moved" block) and a few pale impact
-# ticks bouncing off its top edge -- force arriving and going nowhere.
+# its empty bottom-right corner -- obsidian is the family's own assigned
+# item, the game's own "not moving for anything, not even TNT" block.
+# Obsidian's raw texture is nearly black; brightened hard (a stronger pass
+# than the house brighten() default) plus two manually-lifted violet flecks
+# so the cube reads as its own violet stone rather than melting into the
+# tree's own near-black background -- the same failure Assassin's blight
+# hit with an unbrightened Wither badge.
 def kbres():
     im = canvas()
     im.alpha_composite(mod_item2x("iron_greatsword"), (0, 0))
-    ob = iso_block("obsidian").resize((13, 13), Image.NEAREST)
-    im.alpha_composite(ob, (19, 19))
-    for x, y in ((17, 18), (22, 15), (26, 19)):
-        blot(im, x, y, WHITE, 1, 1)
+    ob = brighten(iso_block("obsidian"), mul=22, add=55).resize((14, 14), Image.NEAREST)
+    im.alpha_composite(ob, (18, 18))
+    for x, y in ((23, 22), (28, 27)):
+        blot(im, x, y, (176, 130, 224, 255), 1, 1)
     save(im, "kbres")
 
 
@@ -327,8 +360,8 @@ def first_blood():
 def flurry():
     im = canvas()
     im.alpha_composite(item2x("item/rabbit_foot.png"), (0, 0))
-    drop(im, 5, 2, scale=1)
-    spark(im, 25, 7, GREEN, GREEN_DIM)
+    drop(im, 4, 0, scale=2)
+    spark(im, 25, 3, GREEN, GREEN_DIM)
     save(im, "flurry")
 
 
@@ -337,16 +370,21 @@ def flurry():
 # outright. The greatsword with a heart CONTAINER (vanilla's empty-heart
 # outline) cracked and down to its last red sliver, tucked in the corner --
 # the classic "cracked thing for a bonus tied to a target's state," here a
-# death sentence instead of a damage multiplier.
+# death sentence instead of a damage multiplier. Vanilla's container sprite
+# is a near-black outline -- invisible on the tree's own near-black
+# background -- so it's restamped bone-white first (recolor(), the same
+# fix Assassin's blight needed for its too-dark Wither badge).
 def executioner():
     im = canvas()
     im.alpha_composite(mod_item2x("iron_greatsword"), (0, 0))
-    heart = vanilla("gui/sprites/hud/heart/container.png").resize((14, 14), Image.NEAREST)
-    im.alpha_composite(heart, (18, 18))
-    for x, y in ((22, 27), (23, 28)):
-        blot(im, x, y, BLOOD, 1, 1)
-    for x, y in ((20, 21), (22, 23), (24, 25)):
-        im.putpixel((x, y), (25, 25, 28, 255))
+    heart = vanilla("gui/sprites/hud/heart/container.png")
+    heart = recolor(heart, IRON_LIGHT).resize((15, 15), Image.NEAREST)
+    im.alpha_composite(heart, (17, 17))
+    # the crack, splitting the outline in two
+    for x, y in ((22, 18), (21, 21), (23, 24), (22, 27)):
+        blot(im, x, y, (24, 24, 26, 255), 2, 2)
+    # its last sliver of red, pooled at the bottom point
+    blot(im, 22, 27, BLOOD, 3, 3)
     save(im, "executioner")
 
 
@@ -368,13 +406,18 @@ def bloodlust():
 # RELENTLESS -- the point: your capstone comes back 15 seconds sooner,
 # whichever one you run. Vanilla's own clock (the house's established
 # cooldown glyph -- see make_node_icons.py's braced_overlay) with two
-# "less" marks at opposite corners: the cooldown shrinking, whichever
-# capstone it lands on.
+# "less" marks at opposite corners. (A first pass dropped a plain white
+# minus straight onto the clock's gold rim -- it vanished. Sitting it over
+# the clock's own dark closed-eye band fixed the contrast but turned the
+# clock into a startled cartoon face instead of reading as "shorter." A
+# dark-outlined minus -- the same stroke-for-legibility trick as a black-
+# bordered UI icon -- lands cleanly on the rim without touching the face.)
 def relentless():
     im = canvas()
     im.alpha_composite(item2x("item/clock_00.png"), (0, 0))
-    minus(im, 6, 25, WHITE, arm=1, thick=2)
-    minus(im, 26, 7, WHITE, arm=1, thick=2)
+    outline = (60, 34, 6, 255)
+    outlined_minus(im, 6, 25, WHITE, outline, arm=1, thick=2)
+    outlined_minus(im, 26, 7, WHITE, outline, arm=1, thick=2)
     save(im, "relentless")
 
 
@@ -396,13 +439,17 @@ def bladestorm():
 # ---------------------------------------------------------------------------
 # DECIMATE -- capstone: one massive tilted cleave, double damage, sweeping
 # clutter from its path. Vanilla's own sweep-attack flash behind the
-# greatsword, the blade itself rotated off-axis for the "tilted" cleave the
-# tooltip promises -- the family's original composition, given the tilt.
+# greatsword, blown up past the canvas edge for a bigger, more violent arc
+# than Heavy Blows' own restrained echo -- the family's original
+# composition, scaled up for the capstone. (A rotated blade was tried for
+# the "tilted" cleave; at 32px NEAREST it broke the weapon's own silhouette
+# into a diagonal smear that stopped reading as a sword at all -- the
+# oversized sweep alone carries "massive," and the greatsword stays intact.)
 def decimate():
     im = canvas()
-    im.alpha_composite(faded(vanilla("particle/sweep_2.png").resize((32, 32), Image.NEAREST), 230), (0, 0))
-    gs = mod_item2x("iron_greatsword").rotate(-16, resample=Image.NEAREST, expand=False)
-    im.alpha_composite(gs, (0, 0))
+    sweep = vanilla("particle/sweep_2.png").resize((38, 38), Image.NEAREST)
+    im.alpha_composite(faded(sweep, 235), (-3, -3))
+    im.alpha_composite(mod_item2x("iron_greatsword"), (0, 0))
     save(im, "decimate")
 
 

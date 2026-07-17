@@ -394,8 +394,8 @@ def omni_block():
     im = canvas()
     # Blue warded ghost shields left and right (vanilla resistance sprite).
     res = vanilla("mob_effect/resistance.png").resize((13, 13), Image.NEAREST)
-    im.alpha_composite(faded(res, 150), (0, 9))
-    im.alpha_composite(faded(res, 150), (19, 9))
+    im.alpha_composite(faded(res, 200), (0, 9))
+    im.alpha_composite(faded(res, 200), (19, 9))
     place_plate(im, 10, 5)
     # Aura ring — dots all the way round the guard.
     ring = [(16, 0), (22, 1), (27, 4), (30, 9), (31, 16), (30, 23),

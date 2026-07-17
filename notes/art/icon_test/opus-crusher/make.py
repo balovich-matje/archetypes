@@ -247,13 +247,14 @@ def bare_knuckle():
 
 
 def iron_skin():
-    """Skin like plate: the same fist cast in iron, a defensive armor emblem
-    tucked behind it — +armor, +toughness while unarmed."""
+    """Skin like plate: the bare fist cast in iron, standing beside an armor
+    plate — bare hands that armor you (+armor, +toughness)."""
     im = canvas()
-    emblem = vanilla("gui/sprites/hud/armor_full.png").resize((8, 8), Image.NEAREST)
-    im.alpha_composite(emblem, (8, 0))
-    im.alpha_composite(fist("iron"))
-    plus(im, 13, 11, IRON_LIGHT, arm=1, edge=IRON_OUT)
+    f = fist("iron").resize((13, 13), Image.NEAREST)
+    im.alpha_composite(f, (-3, 2))
+    emblem = vanilla("gui/sprites/hud/armor_full.png").resize((9, 9), Image.NEAREST)
+    im.alpha_composite(emblem, (7, 1))
+    plus(im, 12, 4, IRON_LIGHT, arm=1, edge=IRON_OUT)
     return save(im, "iron_skin")
 
 
@@ -290,15 +291,17 @@ def meteor():
 
 
 def shockwave():
-    """A falling blow rings outward: the mace head, concentric shock rings
-    spreading from the point of impact."""
+    """A falling blow rings outward: the mace, concentric shock rings
+    spreading from the point of impact on the ground."""
     im = canvas()
-    ring(im, 8, 9, 6.2, DIM)
-    ring(im, 8, 9, 4.2, WHITE)
-    mace = vanilla("item/mace.png")
-    im.alpha_composite(mace)
-    # bright impact where the head lands
-    put(im, 11, 4, FLASH)
+    # rings on the ground, centred below the fall
+    ring(im, 8, 12, 6.0, DIM)
+    ring(im, 8, 12, 3.6, WHITE)
+    put(im, 8, 12, FLASH)
+    put(im, 7, 12, FLASH)
+    put(im, 9, 12, FLASH)
+    mace = vanilla("item/mace.png").resize((13, 13), Image.NEAREST)
+    im.alpha_composite(mace, (1, -2))
     return save(im, "shockwave")
 
 
