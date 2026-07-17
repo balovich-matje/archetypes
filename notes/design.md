@@ -1309,3 +1309,11 @@ the hitbox) — the AOE reads as a travelling circle drilling a faint
 helix. Holy Light's particles (trail AND burst) follow the build: gold
 dust by default, the old green GLOW kept for Renewal, orange dust for
 Benediction — the capstones are exclusive so the colors never fight.
+
+**Bake-off icons wired for in-game A/B (2026-07-17).** Both rendered
+sets ship under textures/node/test/{sonnet,opus}/{tree}/ and the three
+intellect trees draw them through a new TreeNodes.testSprite path.
+TreeNodes.TEST_ICON_SET ("sonnet" first) is the one-string switch for
+the swap between the user's two screenshot passes. Parked for later,
+user idea: remake the OTHER trees' default item icons too — Crusher's
+fists branch literally uses BRICKS.

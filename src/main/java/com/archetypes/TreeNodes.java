@@ -56,6 +56,21 @@ public final class TreeNodes {
 		};
 	}
 
+	/**
+	 * Which bake-off icon set the intellect trees wear while the in-game
+	 * comparison runs: "sonnet" or "opus" (rendered sets both live under
+	 * textures/node/test/, sources in notes/art/icon_test). Flip the
+	 * string and rebuild to swap all fifty icons at once.
+	 */
+	private static final String TEST_ICON_SET = "sonnet";
+
+	private static net.minecraft.resources.@Nullable Identifier testSprite(final SubTree tree,
+			final Enum<?> family) {
+		return "MINOR".equals(family.name()) ? null
+				: Archetypes.id("textures/node/test/" + TEST_ICON_SET + "/" + tree.id()
+						+ "/" + family.name().toLowerCase(java.util.Locale.ROOT) + ".png");
+	}
+
 	/** Texture-based icon (effect sprites and the like), or null if the
 	 * family's icon is an item. */
 	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
@@ -64,6 +79,9 @@ public final class TreeNodes {
 			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().sprite();
 			case SHADOW -> ShadowNodes.def(tree, index).family().sprite();
+			case WIZARD -> testSprite(tree, WizardNodes.def(tree, index).family());
+			case PRIEST -> testSprite(tree, PriestNodes.def(tree, index).family());
+			case ELEMENTALIST -> testSprite(tree, ElementalistNodes.def(tree, index).family());
 			default -> null;
 		};
 	}
@@ -75,6 +93,7 @@ public final class TreeNodes {
 			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().spriteSize();
 			case SHADOW -> ShadowNodes.def(tree, index).family().spriteSize();
+			case WIZARD, PRIEST, ELEMENTALIST -> 32;
 			default -> 0;
 		};
 	}
