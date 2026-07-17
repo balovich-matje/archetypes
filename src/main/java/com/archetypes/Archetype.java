@@ -68,6 +68,11 @@ public enum Archetype {
 		return Component.translatable("archetype." + Archetypes.MOD_ID + "." + this.id + ".blurb");
 	}
 
+	/** The picker card's role line: what you'll be doing, in five words. */
+	public Component role() {
+		return Component.translatable("archetype." + Archetypes.MOD_ID + "." + this.id + ".role");
+	}
+
 	/**
 	 * Class-fantasy backdrop for the skill tree. The dim and vignette are baked
 	 * into the texture, so it can be drawn flat with the nodes straight on top.

@@ -353,37 +353,11 @@ public class ArchetypeScreen extends Screen {
 					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
 				}
 
-				// The skill's icon, when the node is big enough to hold a sprite.
-				Item icon = TreeNodes.icon(tree, i);
-				var iconSprite = TreeNodes.iconSprite(tree, i);
-
-				if (iconSprite != null && size >= 16) {
-					// Full texture scaled into the item slot, whatever its size.
-					int tex = TreeNodes.iconSpriteSize(tree, i);
-					graphics.blit(RenderPipelines.GUI_TEXTURED, iconSprite,
-							x + (size - 16) / 2, y + (size - 16) / 2,
-							0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
-				} else if (icon != null && size >= 16) {
-					// The skill's effect layer, over the real item render —
-					// or under it, for icons that peek out from behind.
-					var overlay = TreeNodes.iconOverlay(tree, i);
-					boolean behind = overlay != null && TreeNodes.iconOverlayBehind(tree, i);
-					int ox = x + (size - 16) / 2;
-					int oy = y + (size - 16) / 2;
-
-					if (behind) {
-						int tex = TreeNodes.iconOverlaySize(tree, i);
-						graphics.blit(RenderPipelines.GUI_TEXTURED, overlay,
-								ox, oy, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
-					}
-
-					graphics.fakeItem(new ItemStack(icon), ox, oy);
-
-					if (overlay != null && !behind) {
-						int tex = TreeNodes.iconOverlaySize(tree, i);
-						graphics.blit(RenderPipelines.GUI_TEXTURED, overlay,
-								ox, oy, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
-					}
+				// The skill's icon, when the node is big enough to hold a
+				// sprite — the exact resolution the picker previews reuse.
+				if (size >= 16) {
+					VanillaUi.nodeIcon(graphics, tree, i,
+							x + (size - 16) / 2, y + (size - 16) / 2);
 				}
 
 				// Unreachable nodes dim, icon included — drawn over it on purpose.
@@ -414,8 +388,6 @@ public class ArchetypeScreen extends Screen {
 		}
 	}
 
-	private static final int TOOLTIP_WIDTH = 180;
-
 	private List<FormattedCharSequence> nodeTooltip(final SubTree tree, final int index,
 			final NodePurchases.Verdict verdict) {
 		List<FormattedCharSequence> lines = new java.util.ArrayList<>();
@@ -431,7 +403,7 @@ public class ArchetypeScreen extends Screen {
 		// The actual effect, wrapped — this is what the hover is for.
 		lines.addAll(this.font.split(
 				Component.translatable(TreeNodes.descriptionKey(tree, index)).withStyle(ChatFormatting.GRAY),
-				TOOLTIP_WIDTH));
+				VanillaUi.TOOLTIP_WIDTH));
 
 		ChatFormatting statusColor = switch (verdict) {
 			case OWNED -> ChatFormatting.GOLD;

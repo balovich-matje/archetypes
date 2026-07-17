@@ -245,9 +245,59 @@ public final class TreeNodes {
 					ElementalistNodes.Family.GLACIAL_SPIKE, ElementalistNodes.Family.BLIZZARD);
 
 	/**
+	 * The picker's preview actives per tree, as node indices in display
+	 * order. Explicit rather than derived from kind(): the fork pairs are
+	 * pinned left/right (Decimate|Bladestorm, Quake|Haymaker,
+	 * Fireball|Ice Blast) and can't drift with the constellations.
+	 */
+	public static java.util.List<Integer> pickerActives(final SubTree tree) {
+		return switch (tree) {
+			case PROTECTOR -> indicesOf(tree, ProtectorNodes.Family.BASH);
+			case SLAYER -> indicesOf(tree, SlayerNodes.Family.DECIMATE, SlayerNodes.Family.BLADESTORM);
+			case CRUSHER -> indicesOf(tree, CrusherNodes.Family.QUAKE, CrusherNodes.Family.HAYMAKER);
+			case MARKSMAN -> indicesOf(tree, MarksmanNodes.Family.TRUE_SHOT);
+			case ASSASSIN -> indicesOf(tree, AssassinNodes.Family.SHADOW_STEP);
+			case SHADOW -> indicesOf(tree, ShadowNodes.Family.INVISIBILITY);
+			case ELEMENTALIST -> indicesOf(tree, ElementalistNodes.Family.FIREBALL,
+					ElementalistNodes.Family.ICE_BLAST);
+			case WIZARD -> indicesOf(tree, WizardNodes.Family.MAGIC_MISSILE);
+			case PRIEST -> indicesOf(tree, PriestNodes.Family.HOLY_LIGHT);
+		};
+	}
+
+	private static Enum<?> familyOf(final SubTree tree, final int index) {
+		return switch (tree) {
+			case PROTECTOR -> ProtectorNodes.def(tree, index).family();
+			case SLAYER -> SlayerNodes.def(tree, index).family();
+			case CRUSHER -> CrusherNodes.def(tree, index).family();
+			case MARKSMAN -> MarksmanNodes.def(tree, index).family();
+			case ASSASSIN -> AssassinNodes.def(tree, index).family();
+			case SHADOW -> ShadowNodes.def(tree, index).family();
+			case ELEMENTALIST -> ElementalistNodes.def(tree, index).family();
+			case WIZARD -> WizardNodes.def(tree, index).family();
+			case PRIEST -> PriestNodes.def(tree, index).family();
+		};
+	}
+
+	private static java.util.List<Integer> indicesOf(final SubTree tree, final Enum<?>... families) {
+		java.util.List<Integer> out = new java.util.ArrayList<>();
+
+		for (Enum<?> family : families) {
+			for (int i = 0; i < tree.constellation().nodes().size(); i++) {
+				if (familyOf(tree, i) == family) {
+					out.add(i);
+					break;
+				}
+			}
+		}
+
+		return out;
+	}
+
+	/**
 	 * Capstones come in mutually exclusive pairs: owning one locks the other.
-	 * Protector: Bulwark vs Ground Slam. Slayer: Bladestorm vs Decimate. The
-	 * Crusher's mace capstone joins Haymaker's lockout when it lands.
+	 * Protector: Bulwark vs Ground Slam. Slayer: Bladestorm vs Decimate.
+	 * Crusher: Quake vs Haymaker.
 	 */
 	public static boolean exclusiveTaken(final SubTree tree, final Set<Integer> owned, final int index) {
 		if (tree == SubTree.SLAYER) {
@@ -265,6 +315,16 @@ public final class TreeNodes {
 		}
 
 		if (tree == SubTree.CRUSHER) {
+			CrusherNodes.Family family = CrusherNodes.def(tree, index).family();
+
+			if (family == CrusherNodes.Family.QUAKE) {
+				return CrusherNodes.rank(tree, owned, CrusherNodes.Family.HAYMAKER) > 0;
+			}
+
+			if (family == CrusherNodes.Family.HAYMAKER) {
+				return CrusherNodes.rank(tree, owned, CrusherNodes.Family.QUAKE) > 0;
+			}
+
 			return false;
 		}
 

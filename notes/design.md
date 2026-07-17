@@ -1511,3 +1511,26 @@ verified, implemented).** The flat 160/level died. New system:
 Constants XP_PER_ADVANCEMENT/MAX_XP_MULTIPLIER/curve coefficients all
 in SkillPoints for retuning; cap is vanilla-tuned (datapacks grow the
 advancement pool — revisit per modpack).
+
+**Picker rework (2026-07-18 overnight, part 4 — agent-designed, judge-
+synthesized, implemented).** The cards grew from 96 to 140 tall
+(panel 253): name / five-word ROLE line / crest band / an always-
+visible ABILITY ROW of the archetype's three actives. Ability slots are
+real vanilla slots (18px single, 36px fork pair — Decimate|Bladestorm,
+Quake|Haymaker, Fireball|Ice Blast, fork order pinned by
+TreeNodes.pickerActives, not constellation order); hover previews the
+REAL node tooltip (name + desc) via the new shared VanillaUi.nodeIcon /
+TOOLTIP_WIDTH, so picker icons are pixel-identical to the tree screen,
+bake-off sets included. Fork tooltips stack both actives divided by a
+"Pick one path — the other locks." hint. Copy: prompt/confirm now warn
+the choice is deliberate-until-Amnesia-II (not "permanent"); blurbs are
+playstyle-descriptive, plus new role lines. The agility/intellect cards
+get a code-built three-item mini-collage of their sub-tree symbols
+(pose-scaled fakeItems blooming with the same hover ease as real art) —
+enabled by SubTree icon fixes: Assassin now IRON_DAGGER (the stale "no
+dagger in vanilla" comment predated our own daggers), Shadow
+PHANTOM_MEMBRANE, Wizard MAGIC_WAND (these also improve tree-screen
+section labels). AND the fork hint forced an honesty fix: the
+Quake<->Haymaker lockout the TreeNodes doc promised "when it lands" was
+never wired — Crusher's capstones are now genuinely exclusive like
+every other pair, with "Locks out X." lines in both descs.

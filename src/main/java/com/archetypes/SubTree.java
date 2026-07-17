@@ -18,14 +18,13 @@ public enum SubTree {
 	CRUSHER(Archetype.STRENGTH, "crusher", () -> Items.MACE, Constellations.CRUSHER_MACE),
 
 	MARKSMAN(Archetype.AGILITY, "marksman", () -> Items.BOW, Constellations.MARKSMAN_BOW),
-	// No dagger in vanilla; the sword stands in for the label icon.
-	ASSASSIN(Archetype.AGILITY, "assassin", () -> Items.IRON_SWORD, Constellations.ASSASSIN_DAGGER),
-	SHADOW(Archetype.AGILITY, "shadow", () -> Items.LEATHER_CHESTPLATE, Constellations.SHADOW_MOON),
+	ASSASSIN(Archetype.AGILITY, "assassin", () -> ModItems.IRON_DAGGER, Constellations.ASSASSIN_DAGGER),
+	SHADOW(Archetype.AGILITY, "shadow", () -> Items.PHANTOM_MEMBRANE, Constellations.SHADOW_MOON),
 
 	// Was Fire Mage; the rename widened it to every element, so the fire
 	// charge gave way to a neutral shard of raw magic.
 	ELEMENTALIST(Archetype.INTELLECT, "elementalist", () -> Items.AMETHYST_SHARD, Constellations.ELEMENTALIST_FLAME),
-	WIZARD(Archetype.INTELLECT, "wizard", () -> Items.BLAZE_ROD, Constellations.WIZARD_STAFF),
+	WIZARD(Archetype.INTELLECT, "wizard", () -> ModItems.MAGIC_WAND, Constellations.WIZARD_STAFF),
 	// Was Healer, then briefly Apothecary; the holy-light kit is a priest's.
 	PRIEST(Archetype.INTELLECT, "priest", () -> Items.TOTEM_OF_UNDYING, Constellations.PRIEST_ANKH);
 

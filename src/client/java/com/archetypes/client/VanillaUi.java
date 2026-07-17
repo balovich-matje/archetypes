@@ -10,6 +10,8 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
  */
 public final class VanillaUi {
 	public static final int LABEL = 0xFF404040;
+	/** Wrap width for node tooltips, shared by the tree and the picker. */
+	public static final int TOOLTIP_WIDTH = 180;
 	public static final int LABEL_FAINT = 0xFF6B6B6B;
 	/** Section headers: washed out so they sit back into the canvas. */
 	public static final int SECTION_TITLE = 0xFF787878;
@@ -45,6 +47,47 @@ public final class VanillaUi {
 			final int w, final int h) {
 		graphics.fill(x, y, x + w, y + h, INSET_BODY);
 		insetBorder(graphics, x, y, w, h);
+	}
+
+	/**
+	 * A node's 16x16 icon exactly as the tree screen resolves it — sprite
+	 * first (bake-off test sets included), else the item render with its
+	 * effect layer over or under. Shared with the picker's ability previews
+	 * so they stay pixel-identical to the tree.
+	 */
+	public static void nodeIcon(final GuiGraphicsExtractor graphics, final com.archetypes.SubTree tree,
+			final int index, final int x, final int y) {
+		var sprite = com.archetypes.TreeNodes.iconSprite(tree, index);
+
+		if (sprite != null) {
+			int tex = com.archetypes.TreeNodes.iconSpriteSize(tree, index);
+			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, sprite,
+					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+			return;
+		}
+
+		var icon = com.archetypes.TreeNodes.icon(tree, index);
+
+		if (icon == null) {
+			return;
+		}
+
+		var overlay = com.archetypes.TreeNodes.iconOverlay(tree, index);
+		boolean behind = overlay != null && com.archetypes.TreeNodes.iconOverlayBehind(tree, index);
+
+		if (behind) {
+			int tex = com.archetypes.TreeNodes.iconOverlaySize(tree, index);
+			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, overlay,
+					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+		}
+
+		graphics.fakeItem(new net.minecraft.world.item.ItemStack(icon), x, y);
+
+		if (overlay != null && !behind) {
+			int tex = com.archetypes.TreeNodes.iconOverlaySize(tree, index);
+			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, overlay,
+					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+		}
 	}
 
 	/** The inset bevel alone — for sinking artwork into the page without hiding it. */

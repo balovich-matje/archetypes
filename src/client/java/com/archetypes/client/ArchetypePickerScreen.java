@@ -2,8 +2,11 @@ package com.archetypes.client;
 
 import com.archetypes.Archetype;
 import com.archetypes.PickArchetypePayload;
+import com.archetypes.SubTree;
+import com.archetypes.TreeNodes;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
@@ -21,26 +24,38 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * Pick your archetype. A vanilla-style window (see {@link VanillaUi}) holding
- * three frames, one per archetype, each titled with the start name and filled
- * with the archetype's crest — a collage of its three sub-archetype weapons
- * ({@link Archetype#portrait}). Hovering a frame grows the crest.
+ * three cards, one per archetype: the start name, a five-word role line, the
+ * crest (painted collage where one exists, a three-item mini-collage of the
+ * sub-tree symbols otherwise), and an always-visible row of the archetype's
+ * three active abilities. Hovering a card grows the crest and shows the
+ * playstyle blurb; hovering an ability slot previews the real node tooltip —
+ * the same icon and description the tree screen will show after the pick.
  */
 public class ArchetypePickerScreen extends Screen {
 	private static final int FRAME_W = 112;
-	private static final int FRAME_H = 96;
+	private static final int FRAME_H = 140;
 	private static final int GAP = 12;
 	private static final int PAD = 10;
 	private static final int PANEL_WIDTH = FRAME_W * 3 + GAP * 2 + PAD * 2;
-	private static final int PANEL_HEIGHT = 184;
+	private static final int PANEL_HEIGHT = 253;
 	private static final int FRAMES_TOP = 36;
-	private static final int BUTTON_TOP = 156;
+	private static final int BUTTON_TOP = 225;
+
+	/** Per-card vertical rhythm, offsets from the card's own top. */
+	private static final int ROLE_TOP = 16;
+	private static final int PORTRAIT_CENTER_Y = 74;
+	private static final int ABILITY_ROW_TOP = 116;
+	private static final int ABILITY_ROW_H = 18;
+	private static final int SLOT_SINGLE = 18;
+	private static final int SLOT_FORK = 36;
+	private static final int ICON_GAP = 6;
 
 	/**
 	 * Crest size at rest. Sized against the hover state, not the resting one:
-	 * grown by {@link #HOVER_SCALE} it comes to 87px, just inside the frame's
-	 * 94px interior.
+	 * grown by {@link #HOVER_SCALE} it comes to 75px, just inside the 76px
+	 * band between the role line and the ability row.
 	 */
-	private static final int PORTRAIT = 70;
+	private static final int PORTRAIT = 60;
 	private static final float HOVER_SCALE = 1.25F;
 	/** Quick to bloom, quicker to settle back. */
 	private static final float GROW_MILLIS = 400.0F;
@@ -102,6 +117,51 @@ public class ArchetypePickerScreen extends Screen {
 		return null;
 	}
 
+	/** One ability-preview slot: an 18px single or a 36px fork pair. */
+	private record Slot(int x, int width, SubTree tree, java.util.List<Integer> actives) {
+	}
+
+	/** The three slots of one card, geometry shared by draw and hit-test. */
+	private java.util.List<Slot> abilitySlots(final int frameIndex, final Archetype archetype) {
+		var trees = SubTree.of(archetype);
+		int[] widths = new int[3];
+		int rowWidth = ICON_GAP * 2;
+
+		for (int i = 0; i < 3; i++) {
+			widths[i] = TreeNodes.pickerActives(trees.get(i)).size() > 1 ? SLOT_FORK : SLOT_SINGLE;
+			rowWidth += widths[i];
+		}
+
+		java.util.List<Slot> slots = new java.util.ArrayList<>(3);
+		int x = this.frameLeft(frameIndex) + (FRAME_W - rowWidth) / 2;
+
+		for (int i = 0; i < 3; i++) {
+			SubTree tree = trees.get(i);
+			slots.add(new Slot(x, widths[i], tree, TreeNodes.pickerActives(tree)));
+			x += widths[i] + ICON_GAP;
+		}
+
+		return slots;
+	}
+
+	private @Nullable Slot abilitySlotAt(final double mouseX, final double mouseY) {
+		int y = this.framesTop() + ABILITY_ROW_TOP;
+
+		if (mouseY < y || mouseY >= y + ABILITY_ROW_H) {
+			return null;
+		}
+
+		for (int i = 0; i < Archetype.values().length; i++) {
+			for (Slot slot : this.abilitySlots(i, Archetype.values()[i])) {
+				if (mouseX >= slot.x() && mouseX < slot.x() + slot.width()) {
+					return slot;
+				}
+			}
+		}
+
+		return null;
+	}
+
 	@Override
 	public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
 		if (super.mouseClicked(event, doubleClick)) {
@@ -114,7 +174,8 @@ public class ArchetypePickerScreen extends Screen {
 			return false;
 		}
 
-		// Confirm: the choice is permanent for now, so make them say yes.
+		// Confirm: the choice can't be undone until Amnesia II is brewable,
+		// so make them say yes.
 		this.minecraft.gui.setScreen(new ConfirmScreen(
 				confirmed -> {
 					if (confirmed) {
@@ -193,6 +254,15 @@ public class ArchetypePickerScreen extends Screen {
 			Component name = archetype.tierName(0);
 			graphics.text(this.font, name, left + (FRAME_W - this.font.width(name)) / 2, top + 6,
 					archetype.color(), true);
+
+			// The role line: what you'll be doing, always visible.
+			int roleY = top + ROLE_TOP;
+
+			for (FormattedCharSequence line : this.font.split(archetype.role(), FRAME_W - 8)) {
+				graphics.text(this.font, line, left + (FRAME_W - this.font.width(line)) / 2, roleY,
+						VanillaUi.LABEL_FAINT, false);
+				roleY += 9;
+			}
 		}
 
 		// Then anything mid-animation, on top of every frame.
@@ -200,6 +270,12 @@ public class ArchetypePickerScreen extends Screen {
 			if (this.hover[i] > 0.0F) {
 				this.figure(graphics, Archetype.values()[i], i, this.hover[i]);
 			}
+		}
+
+		// The ability rows last of the card content, so a grown crest can
+		// never paint over the icons.
+		for (int i = 0; i < Archetype.values().length; i++) {
+			this.abilityRow(graphics, i, Archetype.values()[i], mouseX, mouseY);
 		}
 
 		// Blurb for whatever is hovered, between the frames and the button —
@@ -217,24 +293,91 @@ public class ArchetypePickerScreen extends Screen {
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
 		// anything drawn after it covers the buttons.
 		super.extractRenderState(graphics, mouseX, mouseY, a);
+
+		// The ability preview floats over everything, Cancel included.
+		Slot slot = this.abilitySlotAt(mouseX, mouseY);
+
+		if (slot != null) {
+			graphics.setTooltipForNextFrame(this.font, this.abilityTooltip(slot), mouseX, mouseY);
+		}
+	}
+
+	/** One card's row of active-ability previews. */
+	private void abilityRow(final GuiGraphicsExtractor graphics, final int frameIndex,
+			final Archetype archetype, final int mouseX, final int mouseY) {
+		int y = this.framesTop() + ABILITY_ROW_TOP;
+
+		for (Slot slot : this.abilitySlots(frameIndex, archetype)) {
+			if (slot.width() == SLOT_SINGLE) {
+				VanillaUi.slot(graphics, slot.x(), y);
+			} else {
+				VanillaUi.inset(graphics, slot.x(), y, SLOT_FORK, ABILITY_ROW_H);
+			}
+
+			boolean hoveredSlot = mouseX >= slot.x() && mouseX < slot.x() + slot.width()
+					&& mouseY >= y && mouseY < y + ABILITY_ROW_H;
+
+			if (hoveredSlot) {
+				graphics.fill(slot.x() + 1, y + 1, slot.x() + slot.width() - 1, y + ABILITY_ROW_H - 1,
+						VanillaUi.INSET_BODY_HOVERED);
+			}
+
+			// Native 16x16, never scaled — the tree screen's own resolution.
+			for (int i = 0; i < slot.actives().size(); i++) {
+				VanillaUi.nodeIcon(graphics, slot.tree(), slot.actives().get(i),
+						slot.x() + 1 + i * 18, y + 1);
+			}
+		}
+	}
+
+	/** The real node tooltip(s); a fork stacks both with a pick-one hint. */
+	private java.util.List<FormattedCharSequence> abilityTooltip(final Slot slot) {
+		java.util.List<FormattedCharSequence> lines = new java.util.ArrayList<>();
+
+		for (int i = 0; i < slot.actives().size(); i++) {
+			if (i > 0) {
+				lines.add(Component.translatable("screen.archetypes.picker.fork_hint")
+						.withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText());
+			}
+
+			int index = slot.actives().get(i);
+			lines.add(Component.translatable(TreeNodes.nameKey(slot.tree(), index))
+					.withStyle(ChatFormatting.WHITE).getVisualOrderText());
+			lines.addAll(this.font.split(
+					Component.translatable(TreeNodes.descriptionKey(slot.tree(), index))
+							.withStyle(ChatFormatting.GRAY),
+					VanillaUi.TOOLTIP_WIDTH));
+		}
+
+		return lines;
 	}
 
 	/**
 	 * One frame's crest, grown by {@code progress} (0 at rest, 1 fully hovered),
-	 * centered in the frame below the name label.
+	 * centered in the crest band between the role line and the ability row.
 	 */
 	private void figure(final GuiGraphicsExtractor graphics, final Archetype archetype,
 			final int index, final float progress) {
 		float eased = progress * progress * (3.0F - 2.0F * progress);
 		int size = Math.round(PORTRAIT * Mth.lerp(eased, 1.0F, HOVER_SCALE));
 		int centerX = this.frameLeft(index) + FRAME_W / 2;
-		int centerY = this.framesTop() + FRAME_H / 2 + 4;
+		int centerY = this.framesTop() + PORTRAIT_CENTER_Y;
 
 		Identifier portrait = archetype.portrait();
 
 		if (portrait == null) {
-			// No art for this archetype yet: the item icon stands in, at its own size.
-			graphics.fakeItem(new ItemStack(archetype.icon()), centerX - 8, centerY - 8);
+			// No painted crest yet: the three sub-tree symbols stand in as a
+			// mini-collage, blooming with the same ease as the real art.
+			float scale = Mth.lerp(eased, 2.0F, 2.5F);
+			var trees = SubTree.of(archetype);
+			var pose = graphics.pose();
+			pose.pushMatrix();
+			pose.translate(centerX, centerY);
+			pose.scale(scale, scale);
+			graphics.fakeItem(new ItemStack(trees.get(0).icon()), -8, -14);
+			graphics.fakeItem(new ItemStack(trees.get(1).icon()), -18, -2);
+			graphics.fakeItem(new ItemStack(trees.get(2).icon()), 2, -2);
+			pose.popMatrix();
 			return;
 		}
 
