@@ -192,6 +192,14 @@ public final class ModAttachments {
 			Archetypes.id("crossbow_primed"),
 			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.targetOnly()));
 
+	/** Magic Missile bookkeeping: the last cast tick (the 200ms breath) and
+	 * the running cast count Mind Well empowers every Nth of. */
+	public static final AttachmentType<Long> MISSILE_CAST_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("missile_cast_at"));
+
+	public static final AttachmentType<Integer> MISSILE_CAST_COUNT =
+			AttachmentRegistry.<Integer>create(Archetypes.id("missile_cast_count"));
+
 	/** Flamethrower channel: the last tick a channel payload arrived. */
 	public static final AttachmentType<Long> FLAME_LAST_TICK =
 			AttachmentRegistry.<Long>create(Archetypes.id("flame_last_tick"));

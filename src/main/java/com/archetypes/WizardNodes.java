@@ -11,15 +11,14 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What each node of the Wizard constellation is. The staff reads bottom to
- * top as one cast: the butt cap holds the active and Mana Shield, the shaft
- * climbs through Force's damage ranks to the crossbar (Clarity, Siphon,
- * Echo — the economy of casting), the neck extends Range, and the diamond
- * head splits over the Arcane Orb: the left face finishes wounded prey
- * (Concussion's weakening shove, Overwhelm, up to Seeker Missile), the
- * right face opens fights fast (Velocity, Shatterpoint, up to Lance). The diamond's upper arc is the
- * crown — Mind Wells, Flow, the Archmage's tip — reachable from either
- * capstone.
+ * What each node of the Wizard constellation is (user sketch,
+ * Wizard-redisign-20260717). The long haft carries the active, Force and
+ * Range; the two-row grip block is the casting economy (Clarity, Arcane
+ * Orb, Echo / Concussion, Mana Shield, Velocity); the Mana Shield tower
+ * rises to Siphon inside the diamond head; the head's faces split into
+ * finisher (Overwhelm → Seeker Missile) and opener (Shatterpoint → Lance);
+ * and the crown arc — Mind Wells' empowered casts, Flow, the Archmage's
+ * tip — closes over the top, fed by either capstone.
  */
 public final class WizardNodes {
 	public enum Family {
@@ -42,14 +41,14 @@ public final class WizardNodes {
 		VELOCITY(() -> Items.FEATHER),
 		/** +20% missile damage to anything already wounded. */
 		OVERWHELM(() -> Items.SPECTRAL_ARROW),
-		/** Missiles shove their target and leave it weakened. */
+		/** Missiles leave their target weakened. */
 		CONCUSSION(() -> Items.PISTON),
 		/** +30% missile damage to targets at full health. */
 		SHATTERPOINT(() -> Items.TARGET),
 		/** Capstones: the hunt and the lance. */
 		SEEKER_MISSILE(() -> Items.ENDER_EYE),
 		LANCE(() -> Items.END_ROD),
-		/** The crown: deeper wells, faster flow, the Archmage's fifth. */
+		/** Every 8th, then 4th, missile leaves empowered. */
 		MIND_WELL(() -> Items.LAPIS_LAZULI),
 		FLOW(() -> Items.HEART_OF_THE_SEA),
 		ARCHMAGE(() -> Items.NETHER_STAR),
@@ -85,39 +84,35 @@ public final class WizardNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// The butt cap: the active flanked by the shield's two ranks.
+		// The haft, bottom-up: the active, then raw force, then reach.
 		byCell.put(cell(3, 0), new Def(Family.MAGIC_MISSILE, 1));
-		byCell.put(cell(2, 0), new Def(Family.MANA_SHIELD, 1));
-		byCell.put(cell(4, 0), new Def(Family.MANA_SHIELD, 2));
-
-		// The shaft: raw force, rank over rank.
 		byCell.put(cell(3, 1), new Def(Family.FORCE, 1));
 		byCell.put(cell(3, 2), new Def(Family.FORCE, 2));
 		byCell.put(cell(3, 3), new Def(Family.FORCE, 3));
+		byCell.put(cell(3, 4), new Def(Family.RANGE, 1));
+		byCell.put(cell(3, 5), new Def(Family.RANGE, 2));
 
-		// The crossbar: the economy of casting.
-		byCell.put(cell(2, 4), new Def(Family.CLARITY, 1));
-		byCell.put(cell(3, 4), new Def(Family.SIPHON, 1));
-		byCell.put(cell(4, 4), new Def(Family.ECHO, 1));
-
-		// The neck: reach.
-		byCell.put(cell(3, 5), new Def(Family.RANGE, 1));
-		byCell.put(cell(3, 6), new Def(Family.RANGE, 2));
-
-		// The diamond: the orb in the cradle, a face per build, a capstone
-		// at each side point.
-		byCell.put(cell(3, 8), new Def(Family.ARCANE_ORB, 1));
+		// The grip block: the casting economy in two rows.
+		byCell.put(cell(2, 6), new Def(Family.CLARITY, 1));
+		byCell.put(cell(3, 6), new Def(Family.ARCANE_ORB, 1));
+		byCell.put(cell(4, 6), new Def(Family.ECHO, 1));
 		byCell.put(cell(2, 7), new Def(Family.CONCUSSION, 1));
-		byCell.put(cell(1, 8), new Def(Family.OVERWHELM, 1));
-		byCell.put(cell(0, 9), new Def(Family.SEEKER_MISSILE, 1));
+		byCell.put(cell(3, 7), new Def(Family.MANA_SHIELD, 1));
 		byCell.put(cell(4, 7), new Def(Family.VELOCITY, 1));
+
+		// The diamond: the shield tower rising to Siphon in the centre, a
+		// conditional-damage face per side, capstones at the points.
+		byCell.put(cell(1, 8), new Def(Family.OVERWHELM, 1));
+		byCell.put(cell(3, 8), new Def(Family.MANA_SHIELD, 2));
 		byCell.put(cell(5, 8), new Def(Family.SHATTERPOINT, 1));
+		byCell.put(cell(0, 9), new Def(Family.SEEKER_MISSILE, 1));
+		byCell.put(cell(3, 9), new Def(Family.SIPHON, 1));
 		byCell.put(cell(6, 9), new Def(Family.LANCE, 1));
 
 		// The crown arc over the head, fed by either capstone.
 		byCell.put(cell(1, 10), new Def(Family.MIND_WELL, 1));
-		byCell.put(cell(5, 10), new Def(Family.MIND_WELL, 2));
-		byCell.put(cell(2, 11), new Def(Family.FLOW, 1));
+		byCell.put(cell(5, 10), new Def(Family.FLOW, 1));
+		byCell.put(cell(2, 11), new Def(Family.MIND_WELL, 2));
 		byCell.put(cell(4, 11), new Def(Family.FLOW, 2));
 		byCell.put(cell(3, 12), new Def(Family.ARCHMAGE, 1));
 

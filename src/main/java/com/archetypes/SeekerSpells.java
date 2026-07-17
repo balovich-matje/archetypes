@@ -318,15 +318,35 @@ public final class SeekerSpells {
 	 * Echo's free twin, and the Archmage's fifth on top. */
 	public static void castMissile(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.WIZARD);
+		var target = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player;
+		ServerLevel level = (ServerLevel) player.level();
+		long now = level.getGameTime();
+		Long lastCast = target.getAttached(ModAttachments.MISSILE_CAST_AT);
 
+		// The 200ms breath between casts, checked before any mana leaves.
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.MAGIC_MISSILE) <= 0
 				|| !ModItems.isWand(player.getMainHandItem())
+				|| (lastCast != null && now - lastCast < Tuning.MISSILE_CAST_GAP_TICKS)
 				|| !Mana.spend(player, missileCost(player))) {
 			return;
 		}
 
-		ServerLevel level = (ServerLevel) player.level();
-		SpellProjectile missile = buildMissile(player, level, owned);
+		target.setAttached(ModAttachments.MISSILE_CAST_AT, now);
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+
+		// Mind Well: every Nth cast leaves empowered, half again harder.
+		int mindWell = WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.MIND_WELL);
+		boolean empowered = false;
+
+		if (mindWell > 0) {
+			int every = mindWell >= 2 ? Tuning.MIND_WELL_EVERY_RANK_2 : Tuning.MIND_WELL_EVERY_RANK_1;
+			Integer count = target.getAttached(ModAttachments.MISSILE_CAST_COUNT);
+			int next = (count == null ? 0 : count) + 1;
+			empowered = next >= every;
+			target.setAttached(ModAttachments.MISSILE_CAST_COUNT, empowered ? 0 : next);
+		}
+
+		SpellProjectile missile = buildMissile(player, level, owned, empowered);
 		missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				missileSpeed(owned), 0.0F);
 		level.addFreshEntity(missile);
@@ -334,14 +354,15 @@ public final class SeekerSpells {
 		// Echo: sometimes the shard leaves with a free twin, a hair wide.
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.ECHO) > 0
 				&& player.getRandom().nextFloat() < Tuning.ECHO_CHANCE) {
-			SpellProjectile twin = buildMissile(player, level, owned);
+			SpellProjectile twin = buildMissile(player, level, owned, false);
 			twin.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 					missileSpeed(owned), 2.0F);
 			level.addFreshEntity(twin);
 		}
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 0.5F);
+				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F,
+				empowered ? 1.2F : 0.5F);
 	}
 
 	private static float missileSpeed(final Set<Integer> owned) {
@@ -352,9 +373,10 @@ public final class SeekerSpells {
 	}
 
 	private static SpellProjectile buildMissile(final ServerPlayer player, final ServerLevel level,
-			final Set<Integer> owned) {
+			final Set<Integer> owned, final boolean empowered) {
 		float damage = Tuning.MISSILE_DAMAGE
-				+ Tuning.FORCE_PER_RANK * WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.FORCE);
+				+ Tuning.FORCE_PER_RANK * WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.FORCE)
+				+ (empowered ? Tuning.MIND_WELL_EMPOWER_BONUS : 0.0F);
 
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.ARCHMAGE) > 0) {
 			damage *= Tuning.ARCHMAGE_FACTOR;
@@ -383,7 +405,7 @@ public final class SeekerSpells {
 		}
 
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.CONCUSSION) > 0) {
-			missile.withKnockback(Tuning.CONCUSSION_PUSH);
+			missile.withWeakness(Tuning.CONCUSSION_WEAKNESS_TICKS);
 		}
 
 		return missile;

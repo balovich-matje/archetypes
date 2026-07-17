@@ -376,15 +376,19 @@ public final class Tuning {
 	public static final float FORCE_PER_RANK = 1.0F;
 	public static final float CLARITY_DISCOUNT = 5.0F;
 	public static final float SIPHON_REFUND = 15.0F;
-	public static final float ECHO_CHANCE = 0.2F;
+	public static final float ECHO_CHANCE = 0.25F;
 	public static final double RANGE_PER_RANK = 8.0;
 	public static final float ARCANE_ORB_MANA = 25.0F;
 	public static final float VELOCITY_FACTOR = 1.3F;
 	public static final float OVERWHELM_BONUS = 0.2F;
-	public static final float CONCUSSION_PUSH = 0.5F;
 	public static final int CONCUSSION_WEAKNESS_TICKS = 60;
 	public static final float SHATTERPOINT_BONUS = 0.3F;
-	public static final float MIND_WELL_MANA_PER_RANK = 20.0F;
+	/** Mind Well: every Nth missile leaves empowered, +1.5 hearts. */
+	public static final int MIND_WELL_EVERY_RANK_1 = 8;
+	public static final int MIND_WELL_EVERY_RANK_2 = 4;
+	public static final float MIND_WELL_EMPOWER_BONUS = 3.0F;
+	/** The 200ms breath between missile casts. */
+	public static final int MISSILE_CAST_GAP_TICKS = 4;
 	public static final float FLOW_REGEN_PER_RANK = 0.5F;
 	public static final float ARCHMAGE_FACTOR = 1.2F;
 

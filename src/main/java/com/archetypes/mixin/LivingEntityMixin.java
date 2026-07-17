@@ -283,7 +283,18 @@ public abstract class LivingEntityMixin {
 	private double archetypes$daggerKnockback(final double strength, final double strengthArg,
 			final double x, final double z, final DamageSource source, final float yStrength,
 			final boolean spinAttack) {
-		return source != null && source.getEntity() instanceof ServerPlayer player
+		if (source == null) {
+			return strength;
+		}
+
+		// Magic Missiles shove half as hard too — a spam spell that juggles
+		// its target out of its own range was self-defeating (user call).
+		if (source.getDirectEntity() instanceof com.archetypes.SpellProjectile spell
+				&& spell.mode() == com.archetypes.SpellProjectile.Mode.MISSILE) {
+			return strength * Tuning.DAGGER_KNOCKBACK_FACTOR;
+		}
+
+		return source.getEntity() instanceof ServerPlayer player
 				&& ModItems.isDagger(player.getMainHandItem())
 				? strength * Tuning.DAGGER_KNOCKBACK_FACTOR : strength;
 	}

@@ -21,8 +21,6 @@ public final class Mana {
 		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
 		float nodes = Tuning.ARCANE_ORB_MANA
 				* WizardNodes.rank(SubTree.WIZARD, wizard, WizardNodes.Family.ARCANE_ORB)
-				+ Tuning.MIND_WELL_MANA_PER_RANK
-				* WizardNodes.rank(SubTree.WIZARD, wizard, WizardNodes.Family.MIND_WELL)
 				+ Tuning.BEACON_MANA
 				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
 						PriestNodes.Family.BEACON);

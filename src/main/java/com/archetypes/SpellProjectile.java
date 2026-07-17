@@ -62,7 +62,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private float harmOverride;
 	private double rangeOverride;
 	private double radiusOverride;
-	private float knockbackPush;
+	private int weaknessTicks;
 	private float overwhelmBonus;
 	private float shatterBonus;
 	private boolean flatArc;
@@ -157,8 +157,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return this;
 	}
 
-	public SpellProjectile withKnockback(final float push) {
-		this.knockbackPush = push;
+	public SpellProjectile withWeakness(final int ticks) {
+		this.weaknessTicks = ticks;
 		return this;
 	}
 
@@ -515,8 +515,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 	/**
 	 * One missile landing: Overwhelm rewards finishing the wounded,
-	 * Shatterpoint rewards opening on the whole, Concussion shoves along
-	 * the missile's own line of flight.
+	 * Shatterpoint rewards opening on the whole, Concussion saps the
+	 * target's arm.
 	 */
 	private void missileHit(final ServerLevel level, final LivingEntity victim) {
 		float damage = this.damageOverride > 0.0F ? this.damageOverride : Tuning.MISSILE_DAMAGE;
@@ -529,13 +529,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
 
-		if (this.knockbackPush > 0.0F && victim.isAlive()) {
-			Vec3 push = this.getDeltaMovement().multiply(1.0, 0.0, 1.0).normalize()
-					.scale(this.knockbackPush);
-			victim.setDeltaMovement(victim.getDeltaMovement().add(push.x, 0.15, push.z));
-			victim.hurtMarked = true;
-			victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
-					Tuning.CONCUSSION_WEAKNESS_TICKS));
+		if (this.weaknessTicks > 0 && victim.isAlive()) {
+			victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, this.weaknessTicks));
 		}
 	}
 

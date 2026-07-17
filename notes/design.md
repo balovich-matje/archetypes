@@ -1230,3 +1230,22 @@ Sketchpad: node descriptions are now shown and EDITABLE while recording
 (separate box from the Claude-comment; saved as desc/descChanged per node
 and echoed in the .txt), and an Edits… manager lists saved sketches with
 Load (continue editing) and Delete.
+
+**Wizard redesign ported from the Sketchpad (2026-07-17,
+Wizard-redisign sketch — the first edit to use description editing).**
+New staff: a long haft (root, Force x3, Range x2), a two-row grip block
+holding the whole casting economy (Clarity/Arcane Orb/Echo over
+Concussion/Mana Shield 1/Velocity), the Mana Shield tower rising to
+Siphon INSIDE the diamond, conditional-damage faces to the capstones,
+crown arc unchanged on top. Mechanics from the sketch comments:
+- Magic Missile: 4-tick (200ms) gap between casts, a hand-swing
+  animation per cast, and its knockback halved dagger-style (the
+  knockback mixin now also catches MISSILE-mode projectiles).
+- Concussion: the shove is gone — pure Weakness I for 3s.
+- Echo: 20% -> 25%.
+- MIND WELL REBORN: no more +max mana — every 8th (rank 1) then every
+  4th (rank 2) missile cast leaves EMPOWERED at +1.5 hearts (cast
+  counter attachment; the empowered cast chimes high; Echo twins are
+  never empowered so the counter stays honest).
+- Seeker Missile: confirmed at -33% speed, desc updated.
+All six sketch-edited descriptions ported into lang.
