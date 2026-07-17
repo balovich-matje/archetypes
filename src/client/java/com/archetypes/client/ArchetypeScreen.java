@@ -320,6 +320,16 @@ public class ArchetypeScreen extends Screen {
 				int y = nodeY(node, layout);
 				boolean hovered = mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
 
+				// Actives wear a blue halo, capstones a purple one — a 1px
+				// ring left showing under the inset frame.
+				TreeNodes.NodeKind kind = TreeNodes.kind(tree, i);
+
+				if (kind == TreeNodes.NodeKind.ACTIVE) {
+					graphics.fill(x - 1, y - 1, x + size + 1, y + size + 1, 0xFF3B82F6);
+				} else if (kind == TreeNodes.NodeKind.CAPSTONE) {
+					graphics.fill(x - 1, y - 1, x + size + 1, y + size + 1, 0xFFA855F7);
+				}
+
 				VanillaUi.inset(graphics, x, y, size, size);
 
 				NodePurchases.Verdict verdict = this.minecraft.player == null

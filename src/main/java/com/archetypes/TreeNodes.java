@@ -147,6 +147,64 @@ public final class TreeNodes {
 		return count;
 	}
 
+	/** How a node should be dressed on screen. */
+	public enum NodeKind {
+		ACTIVE, CAPSTONE, NORMAL
+	}
+
+	/**
+	 * Actives are the castable roots (blue on screen); capstones the
+	 * exclusive-pair choices (purple). Slayer's and Crusher's actives ARE
+	 * their capstones, so they read as capstones.
+	 */
+	public static NodeKind kind(final SubTree tree, final int index) {
+		return switch (tree) {
+			case PROTECTOR -> switch (ProtectorNodes.def(tree, index).family()) {
+				case BASH -> NodeKind.ACTIVE;
+				case OMNI_BLOCK, GROUND_SLAM -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case SLAYER -> switch (SlayerNodes.def(tree, index).family()) {
+				case BLADESTORM, DECIMATE -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case CRUSHER -> switch (CrusherNodes.def(tree, index).family()) {
+				case HAYMAKER, QUAKE -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case MARKSMAN -> switch (MarksmanNodes.def(tree, index).family()) {
+				case TRUE_SHOT -> NodeKind.ACTIVE;
+				case SEEKER_ARROW, SNAP_SHOT -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case ASSASSIN -> switch (AssassinNodes.def(tree, index).family()) {
+				case SHADOW_STEP -> NodeKind.ACTIVE;
+				case SHADOW_FLURRY, MOMENTUM -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case SHADOW -> switch (ShadowNodes.def(tree, index).family()) {
+				case INVISIBILITY -> NodeKind.ACTIVE;
+				case LAST_SHADOW, PREDATOR -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case ELEMENTALIST -> switch (ElementalistNodes.def(tree, index).family()) {
+				case FIREBALL, ICE_BLAST -> NodeKind.ACTIVE;
+				case METEORITE, FLAMETHROWER, GLACIAL_SPIKE, BLIZZARD -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case WIZARD -> switch (WizardNodes.def(tree, index).family()) {
+				case MAGIC_MISSILE -> NodeKind.ACTIVE;
+				case SEEKER_MISSILE, LANCE -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case PRIEST -> switch (PriestNodes.def(tree, index).family()) {
+				case HOLY_LIGHT -> NodeKind.ACTIVE;
+				case RENEWAL, BENEDICTION -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+		};
+	}
+
 	/**
 	 * Capstones come in mutually exclusive pairs: owning one locks the other.
 	 * Protector: Bulwark vs Ground Slam. Slayer: Bladestorm vs Decimate. The

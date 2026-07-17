@@ -38,6 +38,13 @@ public final class ManaHud {
 	private ManaHud() {
 	}
 
+	/** Whether the bar is on screen — the air-bar shift keys off this. */
+	static boolean visible() {
+		Minecraft client = Minecraft.getInstance();
+		return client.player != null && client.level != null
+				&& ModAttachments.get(client.player) == Archetype.INTELLECT;
+	}
+
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
@@ -46,6 +53,10 @@ public final class ManaHud {
 				|| ModAttachments.get(player) != Archetype.INTELLECT) {
 			return;
 		}
+
+		// A drawn weapon stops the flow: the whole bar turns grey so the WHY
+		// of "my mana isn't coming back" is on screen, not in a wiki.
+		boolean blocked = com.archetypes.ModItems.holdingCombatWeapon(player);
 
 		float current = Mana.current(player);
 		float max = Mana.max(player);
@@ -62,7 +73,8 @@ public final class ManaHud {
 			Identifier sprite = i < full ? FULL : EMPTY;
 			int x = right - SPRITE - i * STEP;
 			graphics.blit(RenderPipelines.GUI_TEXTURED, sprite, x, y,
-					0.0F, 0.0F, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE);
+					0.0F, 0.0F, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE,
+					blocked ? 0xFF666666 : 0xFFFFFFFF);
 		}
 
 		// The exact count over the row's middle, outlined the way the XP bar
@@ -76,12 +88,6 @@ public final class ManaHud {
 		graphics.text(client.font, label, textX - 1, textY, 0xFF000000, false);
 		graphics.text(client.font, label, textX, textY + 1, 0xFF000000, false);
 		graphics.text(client.font, label, textX, textY - 1, 0xFF000000, false);
-		graphics.text(client.font, label, textX, textY, 0xFF7FB2FF, false);
-
-		// A drawn weapon stops the flow — grey the whole bar so the WHY of
-		// "my mana isn't coming back" is on screen, not in a wiki.
-		if (com.archetypes.ModItems.holdingCombatWeapon(player)) {
-			graphics.fill(right - rowWidth - 1, y - 1, right + 1, y + SPRITE + 1, 0x99000000);
-		}
+		graphics.text(client.font, label, textX, textY, blocked ? 0xFF999999 : 0xFF7FB2FF, false);
 	}
 }

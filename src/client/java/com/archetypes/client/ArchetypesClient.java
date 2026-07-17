@@ -138,6 +138,20 @@ public class ArchetypesClient implements ClientModInitializer {
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("mana_bar"), ManaHud::render);
 
+		// The mana row sits where vanilla draws air bubbles; for a Seeker the
+		// bubbles step up one row instead of hiding the orbs underwater.
+		HudElementRegistry.replaceElement(VanillaHudElements.AIR_BAR, original ->
+				(graphics, tickCounter) -> {
+					if (ManaHud.visible()) {
+						graphics.pose().pushMatrix();
+						graphics.pose().translate(0.0F, -10.0F);
+						original.extractRenderState(graphics, tickCounter);
+						graphics.pose().popMatrix();
+					} else {
+						original.extractRenderState(graphics, tickCounter);
+					}
+				});
+
 		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.PassiveProcPayload.TYPE,
 				(payload, context) -> context.client().execute(() -> ProcIndicatorHud.push(payload)));
 

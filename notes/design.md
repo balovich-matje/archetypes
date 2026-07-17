@@ -1214,3 +1214,19 @@ dual-wielding never doubles. Mana bar now greys out entirely (dark
 overlay) while a regen-blocking weapon is held in either hand — the "why
 is my mana stuck" answer on screen. Greatswords: durability = 3x their
 material's sword (three ingots, three lives); vanilla-matching before.
+
+**Naming, HUD and highlight round (2026-07-17, late).** Wand ladder
+renamed (display only, ids untouched): the starter is now the APPRENTICE
+WAND, its amethyst upgrade the ADEPT WAND — the old names read backwards
+as a progression. The Adept's sprite was rebuilt mounted ON the
+unshifted stick's tip (the shifted version dropped the stick's base off
+the canvas). Mana bar: the grey OVERLAY died; blocked regen now greys the
+orbs (blit tint) and the number instead — and the vanilla air bar is
+wrapped via HudElementRegistry.replaceElement to step up one row whenever
+the mana bar is visible, so underwater no longer hides the orbs. Tree
+screens: actives wear a blue 1px halo, capstones purple, via a new
+TreeNodes.kind() (Slayer/Crusher's capstone-actives count as capstones).
+Sketchpad: node descriptions are now shown and EDITABLE while recording
+(separate box from the Claude-comment; saved as desc/descChanged per node
+and echoed in the .txt), and an Edits… manager lists saved sketches with
+Load (continue editing) and Delete.

@@ -69,22 +69,19 @@ AMETHYST_TIP = (
 # The big ornaments (the stick shifts down-left to make the room): a
 # faceted amethyst crystal and a golden starburst, each ~4x the small tip.
 BIG_AMETHYST_TIP = (
-    (0, 0, (110, 70, 150, 255)),     # socket, on the stick's very tip
-    (1, -1, (140, 88, 180, 255)),    # taper
-    (0, -2, (150, 96, 190, 255)),    # crystal body, four facets wide
-    (1, -2, (176, 116, 217, 255)),
-    (2, -2, (150, 96, 190, 255)),
-    (0, -3, (176, 116, 217, 255)),
-    (1, -3, (225, 194, 247, 255)),   # bright face
-    (2, -3, (200, 156, 235, 255)),
-    (3, -3, (150, 96, 190, 255)),
-    (0, -4, (150, 96, 190, 255)),
-    (1, -4, (200, 156, 235, 255)),
-    (2, -4, (225, 194, 247, 255)),   # glint
-    (3, -4, (176, 116, 217, 255)),
-    (1, -5, (176, 116, 217, 255)),   # narrowing
-    (2, -5, (200, 156, 235, 255)),
-    (2, -6, (225, 194, 247, 255)),   # the point
+    # Mounted ON the stick's end — the gem's lower half swallows the tip,
+    # so the stick keeps its full length and nothing floats.
+    (0, -2, (200, 156, 235, 255)),   # the point
+    (-1, -1, (150, 96, 190, 255)),   # upper facets
+    (0, -1, (225, 194, 247, 255)),   # bright face
+    (1, -1, (176, 116, 217, 255)),
+    (-1, 0, (176, 116, 217, 255)),   # waist, over the tip pixel
+    (0, 0, (225, 194, 247, 255)),
+    (1, 0, (200, 156, 235, 255)),
+    (-1, 1, (110, 70, 150, 255)),    # lower facets, onto the stick
+    (0, 1, (176, 116, 217, 255)),
+    (1, 1, (150, 96, 190, 255)),
+    (0, 2, (110, 70, 150, 255)),     # socket
 )
 BIG_HOLY_TIP = (
     (0, 0, (200, 160, 60, 255)),     # mount, on the stick's very tip
@@ -240,7 +237,7 @@ if __name__ == "__main__":
         # The basic wand wears the small crystal now; apprentice and holy
         # carry the big ornaments on a shifted stick.
         ("magic_wand", wand(tip=AMETHYST_TIP, double=False)),
-        ("apprentice_wand", wand(tip=BIG_AMETHYST_TIP, double=False, shift=(-2, 3))),
+        ("apprentice_wand", wand(tip=BIG_AMETHYST_TIP, double=False)),
         ("blaze_wand", wand("item/blaze_rod.png", FLAME_TIP, double=False, shift=(-1, 1))),
         ("breeze_wand", wand("item/breeze_rod.png", SNOWFLAKE_TIP, double=False, shift=(-1, 1))),
         ("holy_wand", wand(tip=BIG_HOLY_TIP, double=False, shift=(-2, 2))),
