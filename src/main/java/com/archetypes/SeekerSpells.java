@@ -414,7 +414,8 @@ public final class SeekerSpells {
 	/** Holy Light: a lobbed burst that heals the living and burns the
 	 * undead, ministered by the whole ankh — Lumen both ways, Mercy the
 	 * heal, Wrath the harm, Radiance the reach, Fervent Cast the flight,
-	 * Miracle sometimes free, Aegis and the Cleansing Light riding along. */
+	 * Aegis and Sanctuary shelling caster and friends, Vitality's fire
+	 * and Miracle's weakness riding the harm side. */
 	public static void castHolyLight(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.PRIEST);
 
@@ -423,11 +424,7 @@ public final class SeekerSpells {
 			return;
 		}
 
-		// Miracle: sometimes the light asks nothing.
-		boolean free = player.getRandom().nextFloat() < Tuning.MIRACLE_CHANCE_PER_RANK
-				* PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.MIRACLE);
-
-		if (!free && !Mana.spend(player, holyCost(player))) {
+		if (!Mana.spend(player, holyCost(player))) {
 			return;
 		}
 
@@ -450,7 +447,9 @@ public final class SeekerSpells {
 				.withRadius(Tuning.HOLY_RADIUS + Tuning.RADIANCE_BONUS
 						* PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.RADIANCE))
 				.withAegis(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.AEGIS))
-				.withCleansing(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.CLEANSING_LIGHT))
+				.withSanctuary(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.SANCTUARY))
+				.withVitality(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.VITALITY))
+				.withMiracle(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.MIRACLE))
 				.withBlessing(
 						PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.RENEWAL) > 0,
 						PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.BENEDICTION) > 0);

@@ -67,7 +67,9 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private float shatterBonus;
 	private boolean flatArc;
 	private int aegisRank;
-	private int cleanseRank;
+	private int sanctuaryRank;
+	private int vitalityRank;
+	private int miracleRank;
 	private final Set<Integer> pierced = new HashSet<>();
 	private double traveled;
 
@@ -182,8 +184,18 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return this;
 	}
 
-	public SpellProjectile withCleansing(final int rank) {
-		this.cleanseRank = rank;
+	public SpellProjectile withSanctuary(final int rank) {
+		this.sanctuaryRank = rank;
+		return this;
+	}
+
+	public SpellProjectile withVitality(final int rank) {
+		this.vitalityRank = rank;
+		return this;
+	}
+
+	public SpellProjectile withMiracle(final int rank) {
+		this.miracleRank = rank;
 		return this;
 	}
 
@@ -450,8 +462,9 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 	/**
 	 * Holy Light's burst, splash-potion shaped: the living are healed, the
-	 * undead take the same number as damage (their own rules, inverted), and
-	 * the capstone blessings land on anything that isn't hostile.
+	 * undead take the same number as damage (their own rules, inverted) plus
+	 * Vitality's fire and Miracle's weakness, and Sanctuary's shell and the
+	 * capstone blessings land on anything that isn't hostile.
 	 */
 	private void burst(final ServerLevel level) {
 		double radius = this.radiusOverride > 0.0 ? this.radiusOverride : Tuning.HOLY_RADIUS;
@@ -461,32 +474,31 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				living -> living.isAlive()
 						&& living.distanceToSqr(this) <= radius * radius)) {
 			if (creature.isInvertedHealAndHarm()) {
+				// Vitality: lit before the hit, so even a killing blow burns.
+				if (this.vitalityRank > 0) {
+					creature.igniteForSeconds(Tuning.VITALITY_FIRE_SECONDS_PER_RANK * this.vitalityRank);
+				}
+
 				creature.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
 						this.harmOverride > 0.0F ? this.harmOverride : Tuning.HOLY_AMOUNT);
+
+				// Miracle: the light saps the undead arm.
+				if (this.miracleRank > 0 && creature.isAlive()) {
+					creature.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
+							Tuning.MIRACLE_WEAKNESS_TICKS, this.miracleRank - 1));
+				}
 			} else {
 				creature.heal(this.healOverride > 0.0F ? this.healOverride : Tuning.HOLY_AMOUNT);
-
-				// Cleansing Light: rank one lifts the rots, rank two lifts
-				// everything harmful off the healed.
-				if (this.cleanseRank >= 2) {
-					java.util.List<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> harmful =
-							new java.util.ArrayList<>();
-
-					for (var active : creature.getActiveEffectsMap().keySet()) {
-						if (active.value().getCategory()
-								== net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
-							harmful.add(active);
-						}
-					}
-
-					harmful.forEach(creature::removeEffect);
-				} else if (this.cleanseRank == 1) {
-					creature.removeEffect(MobEffects.POISON);
-					creature.removeEffect(MobEffects.WITHER);
-				}
 			}
 
 			if (!(creature instanceof Enemy)) {
+				// Sanctuary: friends get the same shell Aegis gives the
+				// caster (whose own comes from Aegis, below).
+				if (this.sanctuaryRank > 0 && creature != this.getOwner()) {
+					creature.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+							Tuning.AEGIS_TICKS, this.sanctuaryRank - 1));
+				}
+
 				if (this.blessRegen) {
 					creature.addEffect(new MobEffectInstance(MobEffects.REGENERATION,
 							Tuning.HOLY_EFFECT_TICKS));

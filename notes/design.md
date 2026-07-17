@@ -1249,3 +1249,26 @@ crown arc unchanged on top. Mechanics from the sketch comments:
   never empowered so the counter stays honest).
 - Seeker Missile: confirmed at -33% speed, desc updated.
 All six sketch-edited descriptions ported into lang.
+
+**Priest halo rework ported from the Sketchpad (2026-07-17,
+priest-edits sketch), plus a Wizard tower flip.** The ankh's grid didn't
+move — only what lives on it. The halo now splits by intent: protection
+climbs the LEFT arc (Aegis 1-2 into Sanctuary 1-2), wrath climbs the
+RIGHT (Vitality 1-2 into Miracle 1-2), Ascendant still at the top.
+- SANCTUARY (was Cleansing Light — the user found full-cleanse too
+  strong AND the old name stale): casting shells FRIENDLY targets in
+  1/2 absorption hearts, the same AEGIS_TICKS shell Aegis puts on the
+  caster. The cleanse mechanic is gone entirely.
+- VITALITY repurposed: no more +max hearts (the SeekerTicker attribute
+  block died with it) — holy light now sets undead ablaze 3/6 seconds,
+  lit BEFORE the hit so killing blows still burn.
+- MIRACLE repurposed: no more free-cast roll — holy light lays
+  Weakness I/II on the undead for 6 seconds.
+- New icons: Sanctuary = enchanted golden apple, Vitality = soul torch,
+  Miracle = fermented spider eye.
+- Desc-only sketch edits ported: Fervent Cast, Mercy, Wrath, Aegis all
+  read plainly now ("Holy light flies faster and farther.").
+Wizard: the user reconsidered the tower — Mana Shield should be CHEAP,
+not deep. New climb bottom-up: MS1 -> MS2 (grip rows) -> Siphon ->
+Arcane Orb (diamond), so the defensive shells sit two steps off the
+haft and the mana engine is what costs the climb.

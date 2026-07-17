@@ -13,9 +13,10 @@ import org.jspecify.annotations.Nullable;
 /**
  * What each node of the Wizard constellation is (user sketch,
  * Wizard-redisign-20260717). The long haft carries the active, Force and
- * Range; the two-row grip block is the casting economy (Clarity, Arcane
- * Orb, Echo / Concussion, Mana Shield, Velocity); the Mana Shield tower
- * rises to Siphon inside the diamond head; the head's faces split into
+ * Range; the two-row grip block is the casting economy (Clarity and both
+ * Mana Shields up the centre, Echo / Concussion, Velocity); the tower
+ * rises through Siphon to the Arcane Orb inside the diamond head, so the
+ * shields come cheap and the mana engine costs the climb; the faces split into
  * finisher (Overwhelm → Seeker Missile) and opener (Shatterpoint → Lance);
  * and the crown arc — Mind Wells' empowered casts, Flow, the Archmage's
  * tip — closes over the top, fed by either capstone.
@@ -94,19 +95,19 @@ public final class WizardNodes {
 
 		// The grip block: the casting economy in two rows.
 		byCell.put(cell(2, 6), new Def(Family.CLARITY, 1));
-		byCell.put(cell(3, 6), new Def(Family.ARCANE_ORB, 1));
+		byCell.put(cell(3, 6), new Def(Family.MANA_SHIELD, 1));
 		byCell.put(cell(4, 6), new Def(Family.ECHO, 1));
 		byCell.put(cell(2, 7), new Def(Family.CONCUSSION, 1));
-		byCell.put(cell(3, 7), new Def(Family.MANA_SHIELD, 1));
+		byCell.put(cell(3, 7), new Def(Family.MANA_SHIELD, 2));
 		byCell.put(cell(4, 7), new Def(Family.VELOCITY, 1));
 
-		// The diamond: the shield tower rising to Siphon in the centre, a
-		// conditional-damage face per side, capstones at the points.
+		// The diamond: the tower topping out through Siphon at the Arcane
+		// Orb, a conditional-damage face per side, capstones at the points.
 		byCell.put(cell(1, 8), new Def(Family.OVERWHELM, 1));
-		byCell.put(cell(3, 8), new Def(Family.MANA_SHIELD, 2));
+		byCell.put(cell(3, 8), new Def(Family.SIPHON, 1));
 		byCell.put(cell(5, 8), new Def(Family.SHATTERPOINT, 1));
 		byCell.put(cell(0, 9), new Def(Family.SEEKER_MISSILE, 1));
-		byCell.put(cell(3, 9), new Def(Family.SIPHON, 1));
+		byCell.put(cell(3, 9), new Def(Family.ARCANE_ORB, 1));
 		byCell.put(cell(6, 9), new Def(Family.LANCE, 1));
 
 		// The crown arc over the head, fed by either capstone.

@@ -16,9 +16,9 @@ import org.jspecify.annotations.Nullable;
  * Devotion's flow — meeting the crossbar at Fervent Cast. The arms are the
  * two ministries: Mercy heals harder toward Renewal on the left, Wrath
  * burns the undead toward Benediction on the right. The loop above is the
- * halo, open to both builds through the junction: Beacon's mana, Vitality's
- * hearts, Aegis' shield-of-self, the Cleansing Light, Miracle's free casts,
- * and the Ascendant at the top of the circle.
+ * halo (per the user's sketch): protection up the left arc — Aegis for the
+ * caster, Sanctuary for friends — wrath up the right — Vitality's fire and
+ * Miracle's weakness on the undead — with the Ascendant at the circle's top.
  */
 public final class PriestNodes {
 	public enum Family {
@@ -40,12 +40,17 @@ public final class PriestNodes {
 		/** Capstones: the two ministries' crowns. */
 		RENEWAL(() -> Items.GHAST_TEAR),
 		BENEDICTION(() -> Items.GOLDEN_APPLE),
-		/** The halo: reachable through the junction, capstone or not. */
+		/** The halo: reachable through the junction, capstone or not — the
+		 * protective arm on the left, the wrathful on the right. */
 		BEACON(() -> Items.CONDUIT),
-		VITALITY(() -> Items.APPLE),
+		/** Holy Light sets undead ablaze, 3/6 seconds. */
+		VITALITY(() -> Items.SOUL_TORCH),
+		/** Casting shells YOU in 1/2 absorption hearts. */
 		AEGIS(() -> Items.SHIELD),
-		CLEANSING_LIGHT(() -> Items.MILK_BUCKET),
-		MIRACLE(() -> Items.NETHER_STAR),
+		/** Casting shells friendly targets in 1/2 absorption hearts. */
+		SANCTUARY(() -> Items.ENCHANTED_GOLDEN_APPLE),
+		/** Holy Light lays Weakness I/II on the undead. */
+		MIRACLE(() -> Items.FERMENTED_SPIDER_EYE),
 		ASCENDANT(() -> Items.END_CRYSTAL),
 		MINOR((Supplier<Item>) null);
 
@@ -97,15 +102,16 @@ public final class PriestNodes {
 		byCell.put(cell(5, 6), new Def(Family.WRATH, 2));
 		byCell.put(cell(6, 6), new Def(Family.BENEDICTION, 1));
 
-		// The halo.
+		// The halo (user sketch, priest-edits-20260717): protection climbs
+		// the left arc, wrath the right, the Ascendant at the circle's top.
 		byCell.put(cell(3, 7), new Def(Family.BEACON, 1));
-		byCell.put(cell(2, 8), new Def(Family.VITALITY, 1));
-		byCell.put(cell(4, 8), new Def(Family.VITALITY, 2));
-		byCell.put(cell(1, 9), new Def(Family.AEGIS, 1));
-		byCell.put(cell(5, 9), new Def(Family.AEGIS, 2));
-		byCell.put(cell(1, 10), new Def(Family.CLEANSING_LIGHT, 1));
-		byCell.put(cell(5, 10), new Def(Family.CLEANSING_LIGHT, 2));
-		byCell.put(cell(2, 11), new Def(Family.MIRACLE, 1));
+		byCell.put(cell(2, 8), new Def(Family.AEGIS, 1));
+		byCell.put(cell(1, 9), new Def(Family.AEGIS, 2));
+		byCell.put(cell(1, 10), new Def(Family.SANCTUARY, 1));
+		byCell.put(cell(2, 11), new Def(Family.SANCTUARY, 2));
+		byCell.put(cell(4, 8), new Def(Family.VITALITY, 1));
+		byCell.put(cell(5, 9), new Def(Family.VITALITY, 2));
+		byCell.put(cell(5, 10), new Def(Family.MIRACLE, 1));
 		byCell.put(cell(4, 11), new Def(Family.MIRACLE, 2));
 		byCell.put(cell(3, 11), new Def(Family.ASCENDANT, 1));
 

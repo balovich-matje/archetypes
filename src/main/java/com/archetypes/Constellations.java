@@ -165,9 +165,10 @@ public final class Constellations {
 	/**
 	 * The wizard's staff (user sketch, Wizard-redisign-20260717): a long
 	 * plain haft (root, Force, Range), a two-row grip block where the
-	 * casting economy lives, a central tower rising through the Mana
-	 * Shields to Siphon inside the diamond head, capstones at the head's
-	 * side points and the crown arc closing over the top.
+	 * casting economy lives — the Mana Shields up its centre — a tower
+	 * rising through Siphon to the Arcane Orb inside the diamond head,
+	 * capstones at the head's side points and the crown arc closing over
+	 * the top.
 	 */
 	public static final Constellation WIZARD_STAFF = Constellation.of(
 			"...#...",

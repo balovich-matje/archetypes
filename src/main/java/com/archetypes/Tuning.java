@@ -402,9 +402,11 @@ public final class Tuning {
 	public static final float DEVOTION_REGEN = 0.5F;
 	public static final float FERVENT_FACTOR = 1.5F;
 	public static final float BEACON_MANA = 25.0F;
-	public static final float VITALITY_HEALTH_PER_RANK = 2.0F;
+	/** Aegis shells the caster, Sanctuary the friends nearby — same shell. */
 	public static final int AEGIS_TICKS = 600;
-	public static final float MIRACLE_CHANCE_PER_RANK = 0.10F;
+	/** Vitality's fire and Miracle's weakness, laid on the undead only. */
+	public static final int VITALITY_FIRE_SECONDS_PER_RANK = 3;
+	public static final int MIRACLE_WEAKNESS_TICKS = 120;
 	public static final float ASCENDANT_FACTOR = 1.25F;
 
 	// --- Seeker: Holy Light ---
