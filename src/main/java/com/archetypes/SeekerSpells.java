@@ -21,10 +21,11 @@ public final class SeekerSpells {
 	private SeekerSpells() {
 	}
 
-	/** How Elementalist passives discount a cast. Client-safe: the cooldown
-	 * bar prices its tiles with the same arithmetic. */
+	/** How Elementalist passives and the held wand discount a cast.
+	 * Client-safe: the cooldown bar prices its tiles with the same
+	 * arithmetic. */
 	public static float elementCost(final net.minecraft.world.entity.player.Player player,
-			final float base, final boolean fire, final boolean ice) {
+			final float base, final boolean fire, final boolean ice, final boolean holy) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
 		float cost = base;
 
@@ -38,11 +39,36 @@ public final class SeekerSpells {
 					* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.CHILL);
 		}
 
+		// The wand in hand: the apprentice's discounts everything a little,
+		// the specialists their own school a lot.
+		ItemStack wand = player.getMainHandItem();
+
+		if (wand.is(ModItems.APPRENTICE_WAND)) {
+			cost -= Tuning.WAND_APPRENTICE_DISCOUNT;
+		} else if (fire && wand.is(ModItems.BLAZE_WAND)) {
+			cost -= Tuning.WAND_SPECIALIST_DISCOUNT;
+		} else if (ice && wand.is(ModItems.BREEZE_WAND)) {
+			cost -= Tuning.WAND_SPECIALIST_DISCOUNT;
+		} else if (holy && wand.is(ModItems.HOLY_WAND)) {
+			cost -= Tuning.WAND_SPECIALIST_DISCOUNT;
+		}
+
 		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SPELLWEAVER) > 0) {
 			cost *= Tuning.SPELLWEAVER_FACTOR;
 		}
 
 		return Math.max(1.0F, cost);
+	}
+
+	/** The specialist wands' x1.5 on their own school's damage. */
+	private static float wandPower(final ServerPlayer player, final boolean fire, final boolean ice) {
+		ItemStack wand = player.getMainHandItem();
+
+		if ((fire && wand.is(ModItems.BLAZE_WAND)) || (ice && wand.is(ModItems.BREEZE_WAND))) {
+			return Tuning.WAND_SPECIALIST_POWER;
+		}
+
+		return 1.0F;
 	}
 
 	private static float arcane(final Set<Integer> owned, final float damage) {
@@ -54,6 +80,10 @@ public final class SeekerSpells {
 	 * whatever you've learned since. Channel capstones cast via the channel
 	 * payload stream instead; a single press from them does nothing. */
 	public static void castElementalist(final ServerPlayer player) {
+		if (!ModItems.isWand(player.getMainHandItem())) {
+			return;
+		}
+
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
 
 		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ICE_BLAST) > 0) {
@@ -79,14 +109,14 @@ public final class SeekerSpells {
 			return;
 		}
 
-		if (!Mana.spend(player, elementCost(player, Tuning.FIREBALL_COST, true, false))) {
+		if (!Mana.spend(player, elementCost(player, Tuning.FIREBALL_COST, true, false, false))) {
 			return;
 		}
 
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile fireball = new SpellProjectile(player, level,
 				SpellProjectile.Mode.FIREBALL, new ItemStack(Items.FIRE_CHARGE))
-				.withDamage(arcane(owned, Tuning.FIREBALL_DAMAGE + Tuning.SCORCH_PER_RANK
+				.withDamage(wandPower(player, true, false) * arcane(owned, Tuning.FIREBALL_DAMAGE + Tuning.SCORCH_PER_RANK
 						* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SCORCH)))
 				.withIgnite(Tuning.FIREBALL_FIRE_SECONDS + Tuning.IGNITION_SECONDS_PER_RANK
 						* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.IGNITION))
@@ -110,12 +140,13 @@ public final class SeekerSpells {
 	 * hits like winter itself, leaving the target freezing in place.
 	 */
 	private static void iceBlast(final ServerPlayer player, final Set<Integer> owned, final boolean glacial) {
-		if (!Mana.spend(player, elementCost(player, Tuning.ICE_BLAST_COST, false, true))) {
+		if (!Mana.spend(player, elementCost(player, Tuning.ICE_BLAST_COST, false, true, false))) {
 			return;
 		}
 
 		int frostbite = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FROSTBITE);
-		float damage = arcane(owned, Tuning.ICE_BLAST_DAMAGE * (glacial ? Tuning.GLACIAL_MULTIPLIER : 1.0F));
+		float damage = wandPower(player, false, true)
+				* arcane(owned, Tuning.ICE_BLAST_DAMAGE * (glacial ? Tuning.GLACIAL_MULTIPLIER : 1.0F));
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile blast = new SpellProjectile(player, level, SpellProjectile.Mode.ICE_BLAST,
 				new ItemStack(glacial ? Items.BLUE_ICE : Items.ICE))
@@ -169,7 +200,8 @@ public final class SeekerSpells {
 
 		SpellProjectile meteor = new SpellProjectile(player, level,
 				SpellProjectile.Mode.METEOR, new ItemStack(Items.MAGMA_BLOCK))
-				.withPower(arcane(NodePurchases.owned(player, SubTree.ELEMENTALIST), spent));
+				.withPower(wandPower(player, true, false)
+						* arcane(NodePurchases.owned(player, SubTree.ELEMENTALIST), spent));
 		meteor.setPos(targetPos.getX() + 0.5, targetPos.getY() + 1 + Tuning.METEOR_HEIGHT,
 				targetPos.getZ() + 0.5);
 		meteor.setDeltaMovement(0.0, -Tuning.METEOR_SPEED, 0.0);
@@ -184,6 +216,10 @@ public final class SeekerSpells {
 	 * base cost and the stream itself pays the per-second drain.
 	 */
 	public static void channelFlame(final ServerPlayer player) {
+		if (!ModItems.isWand(player.getMainHandItem())) {
+			return;
+		}
+
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
 		boolean flame = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
 				ElementalistNodes.Family.FLAMETHROWER) > 0
@@ -203,7 +239,7 @@ public final class SeekerSpells {
 		boolean fresh = last == null || now - last > 3;
 
 		if (!Mana.spend(player, fresh
-				? elementCost(player, Tuning.FLAME_START_COST, flame, blizzard)
+				? elementCost(player, Tuning.FLAME_START_COST, flame, blizzard, false)
 				: Tuning.FLAME_COST_PER_TICK)) {
 			return;
 		}
@@ -220,7 +256,7 @@ public final class SeekerSpells {
 		if (flame) {
 			bolt = new SpellProjectile(player, level,
 					SpellProjectile.Mode.FLAME_BOLT, new ItemStack(Items.BLAZE_POWDER))
-					.withDamage(arcane(owned, Tuning.FLAME_BOLT_DAMAGE + 0.5F * Tuning.SCORCH_PER_RANK
+					.withDamage(wandPower(player, true, false) * arcane(owned, Tuning.FLAME_BOLT_DAMAGE + 0.5F * Tuning.SCORCH_PER_RANK
 							* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SCORCH)))
 					.withIgnite(Tuning.FLAME_BOLT_FIRE_SECONDS + Tuning.IGNITION_SECONDS_PER_RANK
 							* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.IGNITION))
@@ -232,7 +268,7 @@ public final class SeekerSpells {
 		} else {
 			bolt = new SpellProjectile(player, level,
 					SpellProjectile.Mode.SNOW_BOLT, new ItemStack(Items.SNOWBALL))
-					.withDamage(arcane(owned, Tuning.SNOW_BOLT_DAMAGE))
+					.withDamage(wandPower(player, false, true) * arcane(owned, Tuning.SNOW_BOLT_DAMAGE))
 					.withSlow(1, Tuning.SNOW_BOLT_SLOW_TICKS)
 					.withShatter(shatter);
 
@@ -255,7 +291,7 @@ public final class SeekerSpells {
 
 		if (!PlaceholderNodes.owns(SubTree.WIZARD, owned, PlaceholderNodes.Kind.ACTIVE)
 				|| !ModItems.isWand(player.getMainHandItem())
-				|| !Mana.spend(player, elementCost(player, Tuning.MISSILE_COST, false, false))) {
+				|| !Mana.spend(player, elementCost(player, Tuning.MISSILE_COST, false, false, false))) {
 			return;
 		}
 
@@ -282,16 +318,22 @@ public final class SeekerSpells {
 
 	/** Holy Light: a lobbed burst that heals the living and burns the undead. */
 	public static void castHolyLight(final ServerPlayer player) {
+		if (!ModItems.isWand(player.getMainHandItem())) {
+			return;
+		}
+
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.PRIEST);
 
 		if (!PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.ACTIVE)
-				|| !Mana.spend(player, elementCost(player, Tuning.HOLY_COST, false, false))) {
+				|| !Mana.spend(player, elementCost(player, Tuning.HOLY_COST, false, false, true))) {
 			return;
 		}
 
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile light = new SpellProjectile(player, level,
 				SpellProjectile.Mode.HOLY_LIGHT, new ItemStack(Items.GLOWSTONE_DUST))
+				.withHeal(Tuning.HOLY_AMOUNT * (player.getMainHandItem().is(ModItems.HOLY_WAND)
+						? Tuning.WAND_HOLY_HEAL_FACTOR : 1.0F))
 				.withBlessing(
 						PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.CAPSTONE_A),
 						PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.CAPSTONE_B));

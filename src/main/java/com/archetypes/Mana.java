@@ -23,6 +23,13 @@ public final class Mana {
 	}
 
 	public static float regenPerSecond(final Player player) {
+		// A hand full of steel is a mind empty of magic: any weapon or
+		// shield in either hand stops regeneration entirely — the guard
+		// against sword-and-sorcery double-dipping.
+		if (ModItems.holdingCombatWeapon(player)) {
+			return 0.0F;
+		}
+
 		float focused = Tuning.FOCUSED_MIND_REGEN * ElementalistNodes.rank(SubTree.ELEMENTALIST,
 				NodePurchases.owned(player, SubTree.ELEMENTALIST),
 				ElementalistNodes.Family.FOCUSED_MIND);

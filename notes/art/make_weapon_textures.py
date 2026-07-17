@@ -55,14 +55,19 @@ def dagger(material):
 
 WAND_GLOW = (211, 160, 231, 255)
 WAND_GLOW_BRIGHT = (243, 218, 251, 255)
+# The specialist wands' sparks: amethyst, fire, frost, light.
+APPRENTICE_GLOW = ((176, 116, 217, 255), (225, 194, 247, 255))
+BLAZE_GLOW = ((255, 140, 0, 255), (255, 224, 120, 255))
+BREEZE_GLOW = ((110, 190, 235, 255), (222, 248, 255, 255))
+HOLY_GLOW = ((240, 200, 70, 255), (255, 250, 200, 255))
 
 
-def wand():
-    """Two sticks' worth of carved wood: the stick plus a copy of itself one
-    step up its own diagonal — the stick is a pure diagonal, so the copy
-    self-aligns everywhere except the tip it extends — with an arcane spark
-    continuing the diagonal past the new point."""
-    stick = vanilla("item/stick.png")
+def wand(base="item/stick.png", glow=WAND_GLOW, glow_bright=WAND_GLOW_BRIGHT):
+    """Two rods' worth of carved material: the base item plus a copy of
+    itself one step up its own diagonal — sticks and blaze/breeze rods are
+    pure diagonals, so the copy self-aligns everywhere except the tip it
+    extends — with the school's spark continuing past the new point."""
+    stick = vanilla(base)
     src = stick.load()
     im = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
     px = im.load()
@@ -76,7 +81,7 @@ def wand():
 
     # Find the tip — the highest opaque pixel — and spark just past it.
     tx, ty = next((x, y) for y in range(16) for x in range(15, -1, -1) if px[x, y][3])
-    for dx, dy, c in ((1, -1, WAND_GLOW_BRIGHT), (1, 0, WAND_GLOW), (0, -1, WAND_GLOW)):
+    for dx, dy, c in ((1, -1, glow_bright), (1, 0, glow), (0, -1, glow)):
         x, y = tx + dx, ty + dy
         if 0 <= x < 16 and 0 <= y < 16:
             px[x, y] = c
@@ -90,7 +95,13 @@ def save(im, name):
 
 
 if __name__ == "__main__":
-    images = [(f"{m}_dagger", dagger(m)) for m in MATERIALS] + [("magic_wand", wand())]
+    images = [(f"{m}_dagger", dagger(m)) for m in MATERIALS] + [
+        ("magic_wand", wand()),
+        ("apprentice_wand", wand(glow=APPRENTICE_GLOW[0], glow_bright=APPRENTICE_GLOW[1])),
+        ("blaze_wand", wand("item/blaze_rod.png", *BLAZE_GLOW)),
+        ("breeze_wand", wand("item/breeze_rod.png", *BREEZE_GLOW)),
+        ("holy_wand", wand(glow=HOLY_GLOW[0], glow_bright=HOLY_GLOW[1])),
+    ]
 
     for name, im in images:
         save(im, name)

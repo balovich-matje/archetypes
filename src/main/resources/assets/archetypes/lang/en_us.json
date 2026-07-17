@@ -159,7 +159,7 @@
 	"node.archetypes.shadow.last_shadow": "Last Shadow",
 	"node.archetypes.shadow.last_shadow.desc": "Fatal damage instead cleanses your ailments, grants 2 seconds of immunity and casts Invisibility. Both then share a 180s cooldown.",
 	"node.archetypes.elementalist.fireball": "Fireball",
-	"node.archetypes.elementalist.fireball.desc": "50 mana. Hurl a fireball that deals 2.5 hearts and sets the target ablaze. Cannot be deflected. Choosing fire locks away ice.",
+	"node.archetypes.elementalist.fireball.desc": "50 mana, wand in hand. Hurl a fireball that deals 2.5 hearts and sets the target ablaze. Cannot be deflected. Choosing fire locks away ice.",
 	"node.archetypes.elementalist.meteorite": "Meteorite",
 	"node.archetypes.elementalist.meteorite.desc": "Fireball becomes a meteor: all your mana (100 minimum) calls it down 16 blocks above the targeted spot. More mana, bigger crater. Needs open sky above the target.",
 	"node.archetypes.elementalist.flamethrower": "Flamethrower",
@@ -173,7 +173,7 @@
 	"node.archetypes.wizard.minor": "Unnamed Star",
 	"node.archetypes.wizard.minor.desc": "A placeholder — this passive is still being written.",
 	"node.archetypes.priest.holy_light": "Holy Light",
-	"node.archetypes.priest.holy_light.desc": "50 mana. Lob a burst of light that shatters on impact: 2.5 hearts healed to the living, the same dealt to the undead.",
+	"node.archetypes.priest.holy_light.desc": "50 mana, wand in hand. Lob a burst of light that shatters on impact: 2.5 hearts healed to the living, the same dealt to the undead.",
 	"node.archetypes.priest.renewal": "Renewal",
 	"node.archetypes.priest.renewal.desc": "Holy Light also grants Regeneration for 10 seconds to non-hostiles.",
 	"node.archetypes.priest.benediction": "Benediction",
@@ -257,7 +257,7 @@
 	"node.archetypes.assassin.deathblow": "Deathblow",
 	"node.archetypes.assassin.deathblow.desc": "Shadow Step's strikes — all of them, flurry included — deal +50% damage.",
 	"node.archetypes.elementalist.ice_blast": "Ice Blast",
-	"node.archetypes.elementalist.ice_blast.desc": "50 mana. Hurl a freezing bolt: 2 hearts and Slowness III for 4 seconds. Choosing ice locks away fire.",
+	"node.archetypes.elementalist.ice_blast.desc": "50 mana, wand in hand. Hurl a freezing bolt: 2 hearts and Slowness III for 4 seconds. Choosing ice locks away fire.",
 	"node.archetypes.elementalist.focused_mind": "Focused Mind",
 	"node.archetypes.elementalist.focused_mind.desc": "+0.5 mana regeneration per second, per rank.",
 	"node.archetypes.elementalist.kindling": "Kindling",
@@ -283,5 +283,9 @@
 	"node.archetypes.elementalist.spellweaver": "Spellweaver",
 	"node.archetypes.elementalist.spellweaver.desc": "All your spells cost 10% less mana.",
 	"node.archetypes.elementalist.arcane_power": "Arcane Power",
-	"node.archetypes.elementalist.arcane_power.desc": "All your spells deal 20% more damage."
+	"node.archetypes.elementalist.arcane_power.desc": "All your spells deal 20% more damage.",
+	"item.archetypes.apprentice_wand": "Apprentice Wand",
+	"item.archetypes.blaze_wand": "Blaze Wand",
+	"item.archetypes.breeze_wand": "Breeze Wand",
+	"item.archetypes.holy_wand": "Holy Wand"
 }

@@ -334,6 +334,12 @@ public final class Tuning {
 	public static final float FLAME_BOLT_SPEED = 1.2F;
 	public static final int FLAME_BOLT_PERIOD_TICKS = 2;
 
+	// --- Wands (see ModItems; every spell needs one in the main hand) ---
+	public static final float WAND_APPRENTICE_DISCOUNT = 10.0F;
+	public static final float WAND_SPECIALIST_DISCOUNT = 15.0F;
+	public static final float WAND_SPECIALIST_POWER = 1.5F;
+	public static final float WAND_HOLY_HEAL_FACTOR = 1.5F;
+
 	// --- Elementalist: ice + element passives ---
 	public static final float ICE_BLAST_COST = 50.0F;
 	public static final float ICE_BLAST_DAMAGE = 4.0F;

@@ -1,5 +1,9 @@
 {
   "values": [
-    "archetypes:magic_wand"
+    "archetypes:magic_wand",
+    "archetypes:apprentice_wand",
+    "archetypes:blaze_wand",
+    "archetypes:breeze_wand",
+    "archetypes:holy_wand"
   ]
 }

@@ -66,6 +66,22 @@ public final class ModItems {
 		return stack.is(WANDS);
 	}
 
+	/** Anything martial enough to disqualify a Seeker from regenerating
+	 * mana: real weapons and shields, in either hand. */
+	public static boolean isCombatWeapon(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(ItemTags.SWORDS) // greatswords and daggers live in this tag too
+				|| stack.is(ItemTags.SPEARS)
+				|| stack.is(net.minecraft.world.item.Items.MACE)
+				|| stack.is(net.minecraft.world.item.Items.BOW)
+				|| stack.is(net.minecraft.world.item.Items.CROSSBOW)
+				|| stack.is(net.minecraft.world.item.Items.SHIELD)
+				|| stack.is(net.minecraft.world.item.Items.TRIDENT);
+	}
+
+	public static boolean holdingCombatWeapon(final net.minecraft.world.entity.player.Player player) {
+		return isCombatWeapon(player.getMainHandItem()) || isCombatWeapon(player.getOffhandItem());
+	}
+
 	/** A one-handed sword: the vanilla tag minus our own blades in it. */
 	public static boolean isSword(final net.minecraft.world.item.ItemStack stack) {
 		return stack.is(ItemTags.SWORDS) && !stack.is(GREATSWORDS) && !stack.is(DAGGERS);
@@ -94,9 +110,15 @@ public final class ModItems {
 	public static final Item DIAMOND_DAGGER = dagger("diamond", ToolMaterial.DIAMOND);
 	public static final Item NETHERITE_DAGGER = dagger("netherite", ToolMaterial.NETHERITE);
 
-	/** The Seeker's casting focus. No melee stats: a wand casts, it does not
-	 * club — whacking with it is exactly as effective as an empty fist. */
-	public static final Item MAGIC_WAND = registerWand();
+	/** The Seeker's casting foci. No melee stats: a wand casts, it does not
+	 * club — whacking with one is exactly as effective as an empty fist.
+	 * Every spell requires SOME wand in the main hand; the specialist wands
+	 * discount and empower their school (see SeekerSpells). */
+	public static final Item MAGIC_WAND = registerWand("magic_wand");
+	public static final Item APPRENTICE_WAND = registerWand("apprentice_wand");
+	public static final Item BLAZE_WAND = registerWand("blaze_wand");
+	public static final Item BREEZE_WAND = registerWand("breeze_wand");
+	public static final Item HOLY_WAND = registerWand("holy_wand");
 
 	private ModItems() {
 	}
@@ -140,8 +162,8 @@ public final class ModItems {
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
 
-	private static Item registerWand() {
-		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_wand"));
+	private static Item registerWand(final String path) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new Item(new Item.Properties().setId(key).stacksTo(1)));
 	}
@@ -170,6 +192,10 @@ public final class ModItems {
 			output.accept(DIAMOND_DAGGER);
 			output.accept(NETHERITE_DAGGER);
 			output.accept(MAGIC_WAND);
+			output.accept(APPRENTICE_WAND);
+			output.accept(BLAZE_WAND);
+			output.accept(BREEZE_WAND);
+			output.accept(HOLY_WAND);
 		});
 	}
 }

@@ -1090,3 +1090,21 @@ ends (ours is the ambient instance; potion night vision untouched), and
 Invisibility wears a drawn icon — the bad-omen face with its glare
 recolored to two glowing orange eyes — which needed the sprite-icon path
 wired through ShadowNodes/TreeNodes and onto the cooldown bar tile.
+
+**The wand economy (2026-07-17).** The Seeker had a battle-mage hole: a
+sword-or-bow build could take spells as free bonus DPS. Two closures, per
+the user's design: (1) mana regeneration is ZERO while any weapon or
+shield sits in either hand — swords tag (greatswords and daggers
+included), spears, mace, bow, crossbow, shield, trident; (2) every spell
+now requires a wand in the main hand — any wand casts anything, but the
+specialist wands pay bonuses. Four new craftables join the basic wand:
+Apprentice (amethyst + 2 sticks; -10 all spell costs), Blaze (2 blaze
+rods; -15 fire costs, x1.5 fire damage), Breeze (2 breeze rods; -15 frost
+costs, x1.5 frost damage), Holy (glowstone + 2 sticks; -15 Priest costs,
+x1.5 HEALING — the undead-harm side stays base). Discounts apply as flats
+before Spellweaver's multiplier; meteor power, both channels' bolts and
+Glacial Spike all inherit their school's wand power. Textures ride the
+double-rod diagonal trick with per-school sparks (blaze/breeze wands are
+literally two rods of their material). Spell tiles on the cooldown bar
+now also dim when no wand is held and price with the held wand's
+discount live.

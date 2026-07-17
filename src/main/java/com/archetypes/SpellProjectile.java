@@ -56,6 +56,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private int slowAmp = -1;
 	private int slowTicks;
 	private int freezeTicks;
+	/** Holy Light: the heal side of the burst (the harm side stays base). */
+	private float healOverride;
 	private final Set<Integer> pierced = new HashSet<>();
 	private double traveled;
 
@@ -122,6 +124,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 	public SpellProjectile withFreeze(final int ticks) {
 		this.freezeTicks = ticks;
+		return this;
+	}
+
+	public SpellProjectile withHeal(final float amount) {
+		this.healOverride = amount;
 		return this;
 	}
 
@@ -397,7 +404,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				creature.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
 						Tuning.HOLY_AMOUNT);
 			} else {
-				creature.heal(Tuning.HOLY_AMOUNT);
+				creature.heal(this.healOverride > 0.0F ? this.healOverride : Tuning.HOLY_AMOUNT);
 			}
 
 			if (!(creature instanceof Enemy)) {

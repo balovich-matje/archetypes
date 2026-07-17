@@ -113,7 +113,10 @@ public final class CooldownBarHud {
 			if (ability.manaCost() > 0.0F) {
 				float current = com.archetypes.Mana.current(player);
 
-				if (current < ability.manaCost()) {
+				// Dim when the pool can't pay — or when no wand is in hand,
+				// since every spell now requires one.
+				if (current < ability.manaCost()
+						|| !com.archetypes.ModItems.isWand(player.getMainHandItem())) {
 					graphics.fill(iconX, iconY, iconX + ICON, iconY + ICON, 0xB3000000);
 				}
 
@@ -263,7 +266,7 @@ public final class CooldownBarHud {
 					: com.archetypes.SeekerSpells.elementCost(player,
 							flame || blizzard ? Tuning.FLAME_START_COST
 									: ice ? Tuning.ICE_BLAST_COST : Tuning.FIREBALL_COST,
-							fire, ice);
+							fire, ice, false);
 			abilities.add(new Ability(new ItemStack(icon), ArchetypesClient.ABILITY_KEYS[0], cost, meteor));
 		}
 
@@ -272,7 +275,9 @@ public final class CooldownBarHud {
 		if (com.archetypes.PlaceholderNodes.owns(SubTree.WIZARD, wizard,
 				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
 			abilities.add(new Ability(new ItemStack(Items.AMETHYST_SHARD),
-					ArchetypesClient.ABILITY_KEYS[1], Tuning.MISSILE_COST, false));
+					ArchetypesClient.ABILITY_KEYS[1],
+					com.archetypes.SeekerSpells.elementCost(player, Tuning.MISSILE_COST, false, false, false),
+					false));
 		}
 
 		var priest = NodePurchases.owned(player, SubTree.PRIEST);
@@ -280,7 +285,9 @@ public final class CooldownBarHud {
 		if (com.archetypes.PlaceholderNodes.owns(SubTree.PRIEST, priest,
 				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
 			abilities.add(new Ability(new ItemStack(Items.GLOWSTONE_DUST),
-					ArchetypesClient.ABILITY_KEYS[2], Tuning.HOLY_COST, false));
+					ArchetypesClient.ABILITY_KEYS[2],
+					com.archetypes.SeekerSpells.elementCost(player, Tuning.HOLY_COST, false, false, true),
+					false));
 		}
 
 		return abilities;
