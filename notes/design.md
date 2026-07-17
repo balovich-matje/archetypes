@@ -1430,3 +1430,15 @@ the beacon/leaping-potion buff, which only returned ~4s later). Fixed by
 NOT removing — the effects now use a 5-tick duration re-asserted each
 tick and simply lapse when the hunt ends, so vanilla restores any buried
 effect on expiry. Teardown stays ~immediate (0.25s).
+
+**Readable ink on the grey panel (2026-07-17, user screenshots).** The
+archetype pastels are tuned for dark grounds (node fills, the progress
+bar trough) but washed out as TEXT on the C6C6C6 window — Nemesis green
+was near-invisible. New VanillaUi.ink(): darkens a color 10% at a time
+until it clears 5:1 WCAG contrast on WINDOW_BODY (vanilla's own LABEL
+grey sits at ~6:1), keeping the hue; cached per color. Applied to the
+tree screen's four colored-text sites (constructor title, per-frame
+header, mastery line, points-unspent). Results: strength E06C4A->753825
+(5.2:1), agility 7FCF9F->2D4E3A (5.4:1), intellect 7A9CEE->38486F
+(5.3:1). Node fills and bar fills keep the bright pastels — they sit on
+dark grounds where the pastels are right.

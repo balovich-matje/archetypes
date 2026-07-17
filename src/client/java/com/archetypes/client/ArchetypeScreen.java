@@ -79,7 +79,8 @@ public class ArchetypeScreen extends Screen {
 
 	public ArchetypeScreen(final @Nullable Screen parent, final Archetype archetype) {
 		super(Component.translatable("screen.archetypes.tree.title",
-				archetype.tierName(0).copy().withStyle(style -> style.withColor(archetype.color() & 0xFFFFFF))));
+				archetype.tierName(0).copy()
+						.withStyle(style -> style.withColor(VanillaUi.ink(archetype.color()) & 0xFFFFFF))));
 		this.parent = parent;
 		this.archetype = archetype;
 		this.subTrees = SubTree.of(archetype);
@@ -270,7 +271,7 @@ public class ArchetypeScreen extends Screen {
 		int tier = this.minecraft.player == null ? 0 : SkillPoints.tier(this.minecraft.player);
 		Component header = Component.translatable("screen.archetypes.tree.title",
 				this.archetype.tierName(tier).copy()
-						.withStyle(style -> style.withColor(this.archetype.color() & 0xFFFFFF)));
+						.withStyle(style -> style.withColor(VanillaUi.ink(this.archetype.color()) & 0xFFFFFF)));
 		graphics.text(this.font, header, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, false);
 
 		int canvasWidth = this.canvasWidth();
@@ -472,7 +473,7 @@ public class ArchetypeScreen extends Screen {
 					this.archetype.tierName(1));
 			graphics.text(this.font, mastered,
 					left + (width - this.font.width(mastered)) / 2, top + 14,
-					this.archetype.color(), false);
+					VanillaUi.ink(this.archetype.color()), false);
 			return;
 		}
 
@@ -496,7 +497,7 @@ public class ArchetypeScreen extends Screen {
 		if (unspent > 0) {
 			Component spare = Component.translatable("screen.archetypes.tree.points", unspent);
 			graphics.text(this.font, spare, left + width - this.font.width(spare), top + 18,
-					this.archetype.color(), false);
+					VanillaUi.ink(this.archetype.color()), false);
 		}
 
 		VanillaUi.progressBar(graphics, left, top + 28, width, BAR_HEIGHT,
