@@ -23,7 +23,6 @@ import net.minecraft.world.entity.monster.Monster;
  */
 public final class ShadowTicker {
 	private static final Identifier SWIFT_ID = Archetypes.id("swift_shadow");
-	private static final Identifier BLOODRUSH_ID = Archetypes.id("bloodrush");
 
 	private ShadowTicker() {
 	}
@@ -42,18 +41,12 @@ public final class ShadowTicker {
 		boolean invisible = player.hasEffect(MobEffects.INVISIBILITY);
 		long now = player.level().getGameTime();
 
-		// Swift Shadow: +20% a rank while unseen.
-		apply(player.getAttribute(Attributes.MOVEMENT_SPEED), SWIFT_ID,
-				invisible && ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.SWIFT_SHADOW) > 0,
-				Tuning.SWIFT_SHADOW_PER_RANK
+		// Swift Shadow: the sneak penalty refunded — half, then all of it.
+		// A flat add onto SNEAKING_SPEED's 0.3 base, active whenever owned.
+		apply(player.getAttribute(Attributes.SNEAKING_SPEED), SWIFT_ID,
+				ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.SWIFT_SHADOW) > 0,
+				Tuning.SWIFT_SHADOW_SNEAK_REFUND_PER_RANK
 						* ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.SWIFT_SHADOW));
-
-		// Bloodrush: the kill-window attack speed (stamped in AgilityCombat).
-		Long rushUntil = target.getAttached(ModAttachments.BLOODRUSH_UNTIL);
-		apply(player.getAttribute(Attributes.ATTACK_SPEED), BLOODRUSH_ID,
-				rushUntil != null && now < rushUntil,
-				Tuning.BLOODRUSH_PER_RANK
-						* ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.BLOODRUSH));
 
 		// Dark Mending: a heart every 8/6/4/2 seconds of invisibility.
 		int mending = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.DARK_MENDING);
@@ -63,19 +56,6 @@ public final class ShadowTicker {
 
 			if (now % interval == 0) {
 				player.heal(Tuning.DARK_MENDING_HEAL);
-			}
-		}
-
-		// Stillness: an unmoving shadow decays slower — or not at all.
-		int stillness = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.STILLNESS);
-
-		if (invisible && stillness > 0 && stationary(player)
-				&& (stillness >= 2 || now % 2 == 0)) {
-			MobEffectInstance invis = player.getEffect(MobEffects.INVISIBILITY);
-
-			if (invis != null && invis.getDuration() > 1 && !invis.isInfiniteDuration()) {
-				player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,
-						invis.getDuration() + 1, invis.getAmplifier()));
 			}
 		}
 
@@ -111,13 +91,6 @@ public final class ShadowTicker {
 		}
 	}
 
-	private static boolean stationary(final ServerPlayer player) {
-		double dx = player.getX() - player.xOld;
-		double dy = player.getY() - player.yOld;
-		double dz = player.getZ() - player.zOld;
-		return dx * dx + dy * dy + dz * dz < 1.0E-5;
-	}
-
 	/** Keep a transient modifier in step with whether it should exist. */
 	private static void apply(final AttributeInstance attribute, final Identifier id,
 			final boolean should, final double value) {
@@ -145,12 +118,11 @@ public final class ShadowTicker {
 	}
 
 	/** Shared by Invisibility, Predator's renewals and Last Shadow: how long
-	 * this player's dark lasts. */
+	 * this player's dark lasts. Stillness stretches it 50% a rank. */
 	public static int invisDuration(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.SHADOW);
-		return Tuning.INVIS_TICKS
-				+ (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.UMBRAL_MASTERY) > 0
-						? Tuning.UMBRAL_MASTERY_BONUS_TICKS : 0);
+		return Math.round(Tuning.INVIS_TICKS * (1.0F + Tuning.STILLNESS_DURATION_PER_RANK
+				* ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.STILLNESS)));
 	}
 
 	/** Cleansing Veil and Last Shadow both scrub the harmful effects off. */
@@ -166,21 +138,31 @@ public final class ShadowTicker {
 		harmful.forEach(player::removeEffect);
 	}
 
-	/** Reaper + Bloodrush, called from the kill hook. */
+	/** Bloodrush, Reaper and Umbral Mastery, all keyed on killing from
+	 * inside the dark; called from the kill hook. */
 	public static void onKill(final ServerPlayer player) {
-		Set<Integer> owned = NodePurchases.owned(player, SubTree.SHADOW);
-
-		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.BLOODRUSH) > 0) {
-			((AttachmentTarget) player).setAttached(ModAttachments.BLOODRUSH_UNTIL,
-					player.level().getGameTime() + Tuning.BLOODRUSH_TICKS);
+		if (!player.hasEffect(MobEffects.INVISIBILITY)) {
+			return;
 		}
 
-		if (player.hasEffect(MobEffects.INVISIBILITY)
-				&& ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.REAPER) > 0) {
+		Set<Integer> owned = NodePurchases.owned(player, SubTree.SHADOW);
+		int bloodrush = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.BLOODRUSH);
+
+		if (bloodrush > 0) {
+			player.addEffect(new MobEffectInstance(
+					MobEffects.STRENGTH, Tuning.BLOODRUSH_TICKS, bloodrush - 1));
+		}
+
+		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.REAPER) > 0) {
 			player.heal(Tuning.REAPER_HEAL);
 			((ServerLevel) player.level()).sendParticles(
 					net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
 					player.getX(), player.getY() + 1.0, player.getZ(), 5, 0.3, 0.4, 0.3, 0.0);
+		}
+
+		// Umbral Mastery: a kill from the dark hands the active straight back.
+		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.UMBRAL_MASTERY) > 0) {
+			((AttachmentTarget) player).removeAttached(ModAttachments.INVIS_READY_AT);
 		}
 	}
 }

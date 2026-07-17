@@ -266,14 +266,16 @@ public final class Tuning {
 	public static final int CHEAT_DEATH_COOLDOWN_TICKS = 3600;
 
 	// --- Shadow passives ---
-	public static final float SWIFT_SHADOW_PER_RANK = 0.20F;
+	/** Swift Shadow: vanilla sneaking moves at 0.3x; each rank refunds half
+	 * the penalty (0.65x, then full speed). */
+	public static final float SWIFT_SHADOW_SNEAK_REFUND_PER_RANK = 0.35F;
 	public static final float DARK_MENDING_HEAL = 2.0F;
 	public static final float DIM_PRESENCE_PER_RANK = 0.15F;
 	public static final float FIRST_STRIKE_PER_RANK = 0.30F;
-	public static final float BLOODRUSH_PER_RANK = 0.20F;
+	/** Bloodrush: Strength I/II for this long, on kills while invisible. */
 	public static final int BLOODRUSH_TICKS = 80;
 	public static final float REAPER_HEAL = 4.0F;
-	public static final int UMBRAL_MASTERY_BONUS_TICKS = 80;
+	public static final float STILLNESS_DURATION_PER_RANK = 0.5F;
 	public static final double UMBRAL_SIGHT_RADIUS = 8.0;
 	/** Kept above 210 so vanilla's low-timer flicker never shows. */
 	public static final int NIGHT_EYES_TICKS = 250;
@@ -282,10 +284,10 @@ public final class Tuning {
 	public static final double SHADOW_STEP_RANGE = 16.0;
 	public static final int SHADOW_STEP_COOLDOWN_TICKS = 300;
 	public static final int SHADOW_STEP_FLURRY_COOLDOWN_TICKS = 600;
-	/** The flurry capstone: the step's strike plus these, one every period. */
-	public static final int FLURRY_EXTRA_STRIKES = 3;
-	public static final int FLURRY_STRIKE_PERIOD_TICKS = 3;
-	public static final double FLURRY_REACH = 5.0;
+	/** The flurry capstone: one strike, three daggers' worth. */
+	public static final float SHADOW_FLURRY_MULTIPLIER = 3.0F;
+	/** Daggers shove half as hard as a sword would. */
+	public static final float DAGGER_KNOCKBACK_FACTOR = 0.5F;
 
 	// --- Assassin passives ---
 	public static final float LIGHTFOOT_PER_RANK = 0.10F;
@@ -293,8 +295,7 @@ public final class Tuning {
 	public static final int ADRENALINE_RUSH_TICKS = 60;
 	public static final int OPPORTUNIST_REFUND_TICKS = 60;
 	public static final float RAZOR_EDGE_PER_RANK = 0.08F;
-	public static final float FRENZY_PER_RANK = 0.10F;
-	public static final float EXPOSE_BONUS = 0.15F;
+	public static final float EXPOSE_PER_RANK = 0.10F;
 	public static final int VENOM_TICKS = 80;
 	public static final int BLIGHT_TICKS = 60;
 	/** Fraction of armor's absorption clawed back per rank; rank 2 = all. */

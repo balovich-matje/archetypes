@@ -125,8 +125,8 @@ public final class AgilityActives {
 	/**
 	 * Shadow Step: blink behind whatever the crosshair rests on within 16
 	 * blocks and land one full-strength dagger strike. The Shadow Flurry
-	 * capstone turns the one strike into four (the ticker delivers the rest)
-	 * for a doubled cooldown.
+	 * capstone makes that strike land with three daggers' weight (the x3 is
+	 * applied in the damage shaping) for a doubled cooldown.
 	 */
 	public static void shadowStep(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ASSASSIN);
@@ -186,12 +186,6 @@ public final class AgilityActives {
 
 		AttachmentTarget target = (AttachmentTarget) player;
 		boolean flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_FLURRY) > 0;
-
-		if (flurry) {
-			target.setAttached(ModAttachments.STEP_STRIKES_LEFT, Tuning.FLURRY_EXTRA_STRIKES);
-			target.setAttached(ModAttachments.STEP_TARGET, victim.getId());
-		}
-
 		int cooldown = flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS;
 
 		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.OPPORTUNIST) > 0) {

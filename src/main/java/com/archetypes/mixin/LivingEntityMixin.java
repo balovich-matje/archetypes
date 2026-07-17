@@ -219,10 +219,10 @@ public abstract class LivingEntityMixin {
 				* com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
 						com.archetypes.AssassinNodes.Family.RAZOR_EDGE);
 
-		if (victim.getHealth() < victim.getMaxHealth() * 0.5F
-				&& com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-						com.archetypes.AssassinNodes.Family.EXPOSE) > 0) {
-			result *= 1.0F + Tuning.EXPOSE_BONUS;
+		if (victim.getHealth() < victim.getMaxHealth() * 0.5F) {
+			result *= 1.0F + Tuning.EXPOSE_PER_RANK
+					* com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+							com.archetypes.AssassinNodes.Family.EXPOSE);
 		}
 
 		int flense = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
@@ -239,10 +239,18 @@ public abstract class LivingEntityMixin {
 
 		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
 
-		if (stepStrike != null && stepStrike == level.getGameTime()
-				&& com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-						com.archetypes.AssassinNodes.Family.DEATHBLOW) > 0) {
-			result *= Tuning.DEATHBLOW_MULTIPLIER;
+		if (stepStrike != null && stepStrike == level.getGameTime()) {
+			// A Shadow Step strike: Shadow Flurry lands it with three
+			// daggers' weight, Deathblow adds half again on top.
+			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0) {
+				result *= Tuning.SHADOW_FLURRY_MULTIPLIER;
+			}
+
+			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+					com.archetypes.AssassinNodes.Family.DEATHBLOW) > 0) {
+				result *= Tuning.DEATHBLOW_MULTIPLIER;
+			}
 		}
 
 		int venom = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
@@ -262,6 +270,22 @@ public abstract class LivingEntityMixin {
 		}
 
 		return result;
+	}
+
+	/**
+	 * Daggers shove half as hard: a knife fighter wants the target IN reach,
+	 * and the flurry was pushing its own victim away. All knockback funnels
+	 * through this one overload (the five-arg delegates here).
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private double archetypes$daggerKnockback(final double strength, final double strengthArg,
+			final double x, final double z, final DamageSource source, final float yStrength,
+			final boolean spinAttack) {
+		return source != null && source.getEntity() instanceof ServerPlayer player
+				&& ModItems.isDagger(player.getMainHandItem())
+				? strength * Tuning.DAGGER_KNOCKBACK_FACTOR : strength;
 	}
 
 	/**

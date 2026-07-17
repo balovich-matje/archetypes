@@ -1024,3 +1024,24 @@ Shatter/water meddling/slow/freeze) rides builder flags set at cast time.
 Cooldown-bar tile follows the element and build: fireball/magma/blaze rod
 vs ice/blue ice/snow block, priced through the same elementCost() the
 server charges.
+
+**Balance round from the first Shadow/Assassin playtest (2026-07-17).**
+Stillness was accidentally infinite invisibility (the +1-duration-per-tick
+trick cancelled decay entirely while standing still) — now it's simply
++50%/100% invisibility duration, folded into invisDuration(). That freed
+Umbral Mastery to become the loop-closer: kills while invisible refresh
+Invisibility's COOLDOWN (Predator refreshes the duration, Mastery hands
+the active back — together they chain darkness between fights). Shadow
+Flurry stopped being a strike train — knockback shoved the target out of
+reach of strikes 2-4 — and is now ONE strike at x3.0, stacking
+multiplicatively with Deathblow's x1.5 (a stealth-opener build peaks at
+x4.5 with First Strike on top). Root cause treated too: daggers now
+knock back at HALF strength (ModifyVariable on the 6-arg knockback
+overload — the 5-arg delegates into it, one hook covers all).
+Attack speed on daggers is unreadable (they're already faster than the
+click), so: Frenzy died, its two cells became Expose ranks 2-3 (Expose is
+now 10/20/30% under half health), and Bloodrush became Strength I/II for
+4s on kills while invisible. Swift Shadow (invisible movement speed —
+underpowered per playtest) became a sneak-penalty refund: 50%/100% of
+sneaking's speed loss back, via a flat ADD on the SNEAKING_SPEED
+attribute (0.3 base → 0.65 → 1.0), invisibility not required.

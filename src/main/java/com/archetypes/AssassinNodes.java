@@ -15,7 +15,7 @@ import org.jspecify.annotations.Nullable;
  * top: the pommel and grip carry the shared body-work (Lightfoot, Sidestep),
  * the centre line up the blade improves the active itself (Adrenaline Rush,
  * Opportunist), and the two edges are the two ways to kill with a knife —
- * the left edge raw speed-and-steel (Razor Edge, Frenzy, Expose, up to
+ * the left edge raw steel (Razor Edge, then Expose's finishing ranks, up to
  * Shadow Flurry), the right edge what's ON the steel (Venom, Blight, Flense,
  * up to Momentum) — with Deathblow at the point, improving either capstone.
  */
@@ -32,9 +32,7 @@ public final class AssassinNodes {
 		OPPORTUNIST(() -> Items.CLOCK),
 		/** +8% dagger damage per rank. */
 		RAZOR_EDGE(() -> ModItems.IRON_DAGGER),
-		/** +10% attack speed per rank while a dagger is in hand. */
-		FRENZY(() -> Items.REDSTONE),
-		/** +15% dagger damage against targets below half health. */
+		/** +10% per rank against targets below half health. */
 		EXPOSE(() -> Items.TARGET),
 		/** Dagger hits poison, I then II. */
 		VENOM(() -> Items.SPIDER_EYE),
@@ -98,9 +96,9 @@ public final class AssassinNodes {
 		byCell.put(cell(1, 4), new Def(Family.RAZOR_EDGE, 1));
 		byCell.put(cell(2, 4), new Def(Family.RAZOR_EDGE, 2));
 		byCell.put(cell(2, 5), new Def(Family.RAZOR_EDGE, 3));
-		byCell.put(cell(2, 6), new Def(Family.FRENZY, 1));
-		byCell.put(cell(2, 7), new Def(Family.FRENZY, 2));
-		byCell.put(cell(2, 8), new Def(Family.EXPOSE, 1));
+		byCell.put(cell(2, 6), new Def(Family.EXPOSE, 1));
+		byCell.put(cell(2, 7), new Def(Family.EXPOSE, 2));
+		byCell.put(cell(2, 8), new Def(Family.EXPOSE, 3));
 		byCell.put(cell(2, 9), new Def(Family.SHADOW_FLURRY, 1));
 
 		// Right edge: what's on the steel, up to the spree.

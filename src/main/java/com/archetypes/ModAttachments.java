@@ -176,22 +176,11 @@ public final class ModAttachments {
 	public static final AttachmentType<Long> STEP_STRIKE_AT =
 			AttachmentRegistry.<Long>create(Archetypes.id("step_strike_at"));
 
-	/** Shadow Flurry bookkeeping: strikes still owed, and to whom. */
-	public static final AttachmentType<Integer> STEP_STRIKES_LEFT =
-			AttachmentRegistry.<Integer>create(Archetypes.id("step_strikes_left"));
-
-	public static final AttachmentType<Integer> STEP_TARGET =
-			AttachmentRegistry.<Integer>create(Archetypes.id("step_target"));
-
 	/** Ghost Armor: armor hides with its invisible wearer. Synced to every
 	 * client — it's the OTHER players' renderers that need to know. */
 	public static final AttachmentType<Boolean> ARMOR_HIDDEN = AttachmentRegistry.create(
 			Archetypes.id("armor_hidden"),
 			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
-
-	/** Bloodrush: the killing-spree window's end tick. Server bookkeeping. */
-	public static final AttachmentType<Long> BLOODRUSH_UNTIL =
-			AttachmentRegistry.<Long>create(Archetypes.id("bloodrush_until"));
 
 	/** Disengage's short anti-spam clock. Server-side only. */
 	public static final AttachmentType<Long> DISENGAGE_READY_AT =
