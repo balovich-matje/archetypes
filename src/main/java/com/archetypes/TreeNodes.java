@@ -22,8 +22,9 @@ public final class TreeNodes {
 			case SHADOW -> ShadowNodes.def(tree, index).family().nameKey();
 			case ASSASSIN -> AssassinNodes.def(tree, index).family().nameKey();
 			case ELEMENTALIST -> ElementalistNodes.def(tree, index).family().nameKey();
+			case WIZARD -> WizardNodes.def(tree, index).family().nameKey();
+			case PRIEST -> PriestNodes.def(tree, index).family().nameKey();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().nameKey();
-			default -> PlaceholderNodes.nameKey(tree, index);
 		};
 	}
 
@@ -35,8 +36,9 @@ public final class TreeNodes {
 			case SHADOW -> ShadowNodes.def(tree, index).family().descriptionKey();
 			case ASSASSIN -> AssassinNodes.def(tree, index).family().descriptionKey();
 			case ELEMENTALIST -> ElementalistNodes.def(tree, index).family().descriptionKey();
+			case WIZARD -> WizardNodes.def(tree, index).family().descriptionKey();
+			case PRIEST -> PriestNodes.def(tree, index).family().descriptionKey();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().descriptionKey();
-			default -> PlaceholderNodes.descriptionKey(tree, index);
 		};
 	}
 
@@ -48,8 +50,9 @@ public final class TreeNodes {
 			case SHADOW -> ShadowNodes.def(tree, index).family().icon();
 			case ASSASSIN -> AssassinNodes.def(tree, index).family().icon();
 			case ELEMENTALIST -> ElementalistNodes.def(tree, index).family().icon();
+			case WIZARD -> WizardNodes.def(tree, index).family().icon();
+			case PRIEST -> PriestNodes.def(tree, index).family().icon();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().icon();
-			default -> PlaceholderNodes.icon(tree, index);
 		};
 	}
 
@@ -111,8 +114,9 @@ public final class TreeNodes {
 			case SHADOW -> ShadowNodes.def(tree, index).family() == ShadowNodes.Family.MINOR;
 			case ASSASSIN -> AssassinNodes.def(tree, index).family() == AssassinNodes.Family.MINOR;
 			case ELEMENTALIST -> ElementalistNodes.def(tree, index).family() == ElementalistNodes.Family.MINOR;
+			case WIZARD -> WizardNodes.def(tree, index).family() == WizardNodes.Family.MINOR;
+			case PRIEST -> PriestNodes.def(tree, index).family() == PriestNodes.Family.MINOR;
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family() == ProtectorNodes.Family.MINOR;
-			default -> PlaceholderNodes.kind(tree, index) == PlaceholderNodes.Kind.MINOR;
 		};
 	}
 
@@ -124,8 +128,9 @@ public final class TreeNodes {
 			case SHADOW -> ShadowNodes.def(tree, index).rank();
 			case ASSASSIN -> AssassinNodes.def(tree, index).rank();
 			case ELEMENTALIST -> ElementalistNodes.def(tree, index).rank();
+			case WIZARD -> WizardNodes.def(tree, index).rank();
+			case PRIEST -> PriestNodes.def(tree, index).rank();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).rank();
-			default -> 1;
 		};
 	}
 
@@ -180,6 +185,34 @@ public final class TreeNodes {
 			return false;
 		}
 
+		if (tree == SubTree.WIZARD) {
+			WizardNodes.Family family = WizardNodes.def(tree, index).family();
+
+			if (family == WizardNodes.Family.SEEKER_MISSILE) {
+				return WizardNodes.rank(tree, owned, WizardNodes.Family.LANCE) > 0;
+			}
+
+			if (family == WizardNodes.Family.LANCE) {
+				return WizardNodes.rank(tree, owned, WizardNodes.Family.SEEKER_MISSILE) > 0;
+			}
+
+			return false;
+		}
+
+		if (tree == SubTree.PRIEST) {
+			PriestNodes.Family family = PriestNodes.def(tree, index).family();
+
+			if (family == PriestNodes.Family.RENEWAL) {
+				return PriestNodes.rank(tree, owned, PriestNodes.Family.BENEDICTION) > 0;
+			}
+
+			if (family == PriestNodes.Family.BENEDICTION) {
+				return PriestNodes.rank(tree, owned, PriestNodes.Family.RENEWAL) > 0;
+			}
+
+			return false;
+		}
+
 		if (tree == SubTree.ELEMENTALIST) {
 			ElementalistNodes.Family family = ElementalistNodes.def(tree, index).family();
 
@@ -220,10 +253,6 @@ public final class TreeNodes {
 			}
 
 			return false;
-		}
-
-		if (tree != SubTree.PROTECTOR) {
-			return PlaceholderNodes.exclusiveTaken(tree, owned, index);
 		}
 
 		ProtectorNodes.Family family = ProtectorNodes.def(tree, index).family();

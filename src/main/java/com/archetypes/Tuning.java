@@ -369,6 +369,39 @@ public final class Tuning {
 	public static final double MISSILE_HOMING_RADIUS = 12.0;
 	public static final double MISSILE_PIERCE_INFLATE = 0.75;
 
+	// --- Wizard tree ---
+	/** Fraction of incoming damage per rank the shield converts to mana. */
+	public static final float MANA_SHIELD_ABSORB_PER_RANK = 0.25F;
+	public static final float MANA_SHIELD_MANA_PER_DAMAGE = 2.0F;
+	public static final float FORCE_PER_RANK = 1.0F;
+	public static final float CLARITY_DISCOUNT = 5.0F;
+	public static final float SIPHON_REFUND = 15.0F;
+	public static final float ECHO_CHANCE = 0.2F;
+	public static final double RANGE_PER_RANK = 8.0;
+	public static final float ARCANE_ORB_MANA = 25.0F;
+	public static final float VELOCITY_FACTOR = 1.3F;
+	public static final float OVERWHELM_BONUS = 0.2F;
+	public static final float CONCUSSION_PUSH = 0.5F;
+	public static final float SHATTERPOINT_BONUS = 0.3F;
+	public static final float MIND_WELL_MANA_PER_RANK = 20.0F;
+	public static final float FLOW_REGEN_PER_RANK = 0.5F;
+	public static final float ARCHMAGE_FACTOR = 1.2F;
+
+	// --- Priest tree ---
+	/** Lumen raises both sides of the burst; Mercy/Wrath one side each. */
+	public static final float LUMEN_PER_RANK = 1.0F;
+	public static final float MERCY_PER_RANK = 2.0F;
+	public static final float WRATH_PER_RANK = 2.0F;
+	public static final float GRACE_DISCOUNT = 10.0F;
+	public static final double RADIANCE_BONUS = 1.5;
+	public static final float DEVOTION_REGEN = 0.5F;
+	public static final float FERVENT_FACTOR = 1.5F;
+	public static final float BEACON_MANA = 25.0F;
+	public static final float VITALITY_HEALTH_PER_RANK = 2.0F;
+	public static final int AEGIS_TICKS = 600;
+	public static final float MIRACLE_CHANCE_PER_RANK = 0.10F;
+	public static final float ASCENDANT_FACTOR = 1.25F;
+
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;
 	public static final float HOLY_AMOUNT = 5.0F;

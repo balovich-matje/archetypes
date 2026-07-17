@@ -58,6 +58,16 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private int freezeTicks;
 	/** Holy Light: the heal side of the burst (the harm side stays base). */
 	private float healOverride;
+	/** Wizard/Priest shaping, decided at cast. */
+	private float harmOverride;
+	private double rangeOverride;
+	private double radiusOverride;
+	private float knockbackPush;
+	private float overwhelmBonus;
+	private float shatterBonus;
+	private boolean flatArc;
+	private int aegisRank;
+	private int cleanseRank;
 	private final Set<Integer> pierced = new HashSet<>();
 	private double traveled;
 
@@ -132,6 +142,55 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return this;
 	}
 
+	public SpellProjectile withHarm(final float amount) {
+		this.harmOverride = amount;
+		return this;
+	}
+
+	public SpellProjectile withRange(final double range) {
+		this.rangeOverride = range;
+		return this;
+	}
+
+	public SpellProjectile withRadius(final double radius) {
+		this.radiusOverride = radius;
+		return this;
+	}
+
+	public SpellProjectile withKnockback(final float push) {
+		this.knockbackPush = push;
+		return this;
+	}
+
+	public SpellProjectile withOverwhelm(final float bonus) {
+		this.overwhelmBonus = bonus;
+		return this;
+	}
+
+	public SpellProjectile withShatterpoint(final float bonus) {
+		this.shatterBonus = bonus;
+		return this;
+	}
+
+	public SpellProjectile withFlatArc() {
+		this.flatArc = true;
+		return this;
+	}
+
+	public SpellProjectile withAegis(final int rank) {
+		this.aegisRank = rank;
+		return this;
+	}
+
+	public SpellProjectile withCleansing(final int rank) {
+		this.cleanseRank = rank;
+		return this;
+	}
+
+	public @Nullable Mode mode() {
+		return this.mode;
+	}
+
 	@Override
 	protected Item getDefaultItem() {
 		return Items.FIRE_CHARGE;
@@ -139,7 +198,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 	@Override
 	protected double getDefaultGravity() {
-		return this.mode == Mode.HOLY_LIGHT ? 0.05 : 0.0;
+		return this.mode == Mode.HOLY_LIGHT ? (this.flatArc ? 0.02 : 0.05) : 0.0;
 	}
 
 	@Override
@@ -162,7 +221,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		this.traveled += this.getDeltaMovement().length();
 
-		if (this.mode == Mode.MISSILE && this.traveled > Tuning.MISSILE_RANGE) {
+		if (this.mode == Mode.MISSILE && this.traveled
+				> (this.rangeOverride > 0.0 ? this.rangeOverride : Tuning.MISSILE_RANGE)) {
 			this.discard();
 			return;
 		}
@@ -199,8 +259,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				this.getBoundingBox().inflate(Tuning.MISSILE_PIERCE_INFLATE),
 				living -> living.isAlive() && living != this.getOwner())) {
 			if (this.pierced.add(victim.getId())) {
-				victim.hurtServer((ServerLevel) this.level(),
-						this.damageSources().indirectMagic(this, this.getOwner()), Tuning.MISSILE_DAMAGE);
+				this.missileHit((ServerLevel) this.level(), victim);
 			}
 		}
 	}
@@ -292,8 +351,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 						this.shattered(victim, this.damageOverride > 0.0F
 								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
 			}
-			case MISSILE -> victim.hurtServer(level,
-					this.damageSources().indirectMagic(this, this.getOwner()), Tuning.MISSILE_DAMAGE);
+			case MISSILE -> this.missileHit(level, victim);
 			case ICE_BLAST, SNOW_BOLT -> {
 				// Shatter reads the slow/freeze the victim ALREADY has, so a
 				// volley ramps: the first bolt tags, the next ones profit.
@@ -396,15 +454,36 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	 * the capstone blessings land on anything that isn't hostile.
 	 */
 	private void burst(final ServerLevel level) {
+		double radius = this.radiusOverride > 0.0 ? this.radiusOverride : Tuning.HOLY_RADIUS;
+
 		for (LivingEntity creature : level.getEntitiesOfClass(LivingEntity.class,
-				this.getBoundingBox().inflate(Tuning.HOLY_RADIUS),
+				this.getBoundingBox().inflate(radius),
 				living -> living.isAlive()
-						&& living.distanceToSqr(this) <= Tuning.HOLY_RADIUS * Tuning.HOLY_RADIUS)) {
+						&& living.distanceToSqr(this) <= radius * radius)) {
 			if (creature.isInvertedHealAndHarm()) {
 				creature.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
-						Tuning.HOLY_AMOUNT);
+						this.harmOverride > 0.0F ? this.harmOverride : Tuning.HOLY_AMOUNT);
 			} else {
 				creature.heal(this.healOverride > 0.0F ? this.healOverride : Tuning.HOLY_AMOUNT);
+
+				// Cleansing Light: rank one lifts the rots, rank two lifts
+				// everything harmful off the healed.
+				if (this.cleanseRank >= 2) {
+					java.util.List<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> harmful =
+							new java.util.ArrayList<>();
+
+					for (var active : creature.getActiveEffectsMap().keySet()) {
+						if (active.value().getCategory()
+								== net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
+							harmful.add(active);
+						}
+					}
+
+					harmful.forEach(creature::removeEffect);
+				} else if (this.cleanseRank == 1) {
+					creature.removeEffect(MobEffects.POISON);
+					creature.removeEffect(MobEffects.WITHER);
+				}
 			}
 
 			if (!(creature instanceof Enemy)) {
@@ -420,12 +499,42 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			}
 		}
 
+		// Aegis: the light leaves a shell on its caster.
+		if (this.aegisRank > 0 && this.getOwner() instanceof net.minecraft.server.level.ServerPlayer owner) {
+			owner.addEffect(new MobEffectInstance(MobEffects.ABSORPTION,
+					Tuning.AEGIS_TICKS, this.aegisRank - 1));
+		}
+
 		level.sendParticles(ParticleTypes.GLOW, this.getX(), this.getY(), this.getZ(),
-				40, Tuning.HOLY_RADIUS * 0.4, 0.6, Tuning.HOLY_RADIUS * 0.4, 0.5);
+				40, radius * 0.4, 0.6, radius * 0.4, 0.5);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
 				SoundEvents.SPLASH_POTION_BREAK, SoundSource.PLAYERS, 1.0F, 1.3F);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
 				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 0.7F);
+	}
+
+	/**
+	 * One missile landing: Overwhelm rewards finishing the wounded,
+	 * Shatterpoint rewards opening on the whole, Concussion shoves along
+	 * the missile's own line of flight.
+	 */
+	private void missileHit(final ServerLevel level, final LivingEntity victim) {
+		float damage = this.damageOverride > 0.0F ? this.damageOverride : Tuning.MISSILE_DAMAGE;
+
+		if (victim.getHealth() >= victim.getMaxHealth() - 0.01F) {
+			damage *= 1.0F + this.shatterBonus;
+		} else {
+			damage *= 1.0F + this.overwhelmBonus;
+		}
+
+		victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+
+		if (this.knockbackPush > 0.0F && victim.isAlive()) {
+			Vec3 push = this.getDeltaMovement().multiply(1.0, 0.0, 1.0).normalize()
+					.scale(this.knockbackPush);
+			victim.setDeltaMovement(victim.getDeltaMovement().add(push.x, 0.15, push.z));
+			victim.hurtMarked = true;
+		}
 	}
 
 	/** Shatter: the cold-cracked take more from every one of your spells. */

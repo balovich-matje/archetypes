@@ -60,6 +60,22 @@ public final class SeekerSpells {
 		return Math.max(1.0F, cost);
 	}
 
+	/** Missile price with Clarity and the held wand; the HUD uses it too. */
+	public static float missileCost(final net.minecraft.world.entity.player.Player player) {
+		float base = Tuning.MISSILE_COST - Tuning.CLARITY_DISCOUNT
+				* WizardNodes.rank(SubTree.WIZARD, NodePurchases.owned(player, SubTree.WIZARD),
+						WizardNodes.Family.CLARITY);
+		return elementCost(player, base, false, false, false);
+	}
+
+	/** Holy Light's price with Grace and the held wand; the HUD uses it too. */
+	public static float holyCost(final net.minecraft.world.entity.player.Player player) {
+		float base = Tuning.HOLY_COST - Tuning.GRACE_DISCOUNT
+				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
+						PriestNodes.Family.GRACE);
+		return elementCost(player, base, false, false, true);
+	}
+
 	/** The specialist wands' x1.5 on their own school's damage. */
 	private static float wandPower(final ServerPlayer player, final boolean fire, final boolean ice) {
 		ItemStack wand = player.getMainHandItem();
@@ -296,60 +312,135 @@ public final class SeekerSpells {
 				SoundSource.PLAYERS, 0.4F, flame ? 1.4F : 1.2F);
 	}
 
-	/** Magic Missile: straight line, sixteen blocks, wand in hand. */
+	/** Magic Missile: straight line, wand in hand — sharpened by the whole
+	 * staff: Force damage, Clarity's price, Range's reach, Velocity, the
+	 * two-sided Overwhelm/Shatterpoint conditionals, Concussion's shove,
+	 * Echo's free twin, and the Archmage's fifth on top. */
 	public static void castMissile(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.WIZARD);
 
-		if (!PlaceholderNodes.owns(SubTree.WIZARD, owned, PlaceholderNodes.Kind.ACTIVE)
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.MAGIC_MISSILE) <= 0
 				|| !ModItems.isWand(player.getMainHandItem())
-				|| !Mana.spend(player, elementCost(player, Tuning.MISSILE_COST, false, false, false))) {
+				|| !Mana.spend(player, missileCost(player))) {
 			return;
 		}
 
-		boolean homing = PlaceholderNodes.owns(SubTree.WIZARD, owned, PlaceholderNodes.Kind.CAPSTONE_A);
-		boolean pierce = PlaceholderNodes.owns(SubTree.WIZARD, owned, PlaceholderNodes.Kind.CAPSTONE_B);
 		ServerLevel level = (ServerLevel) player.level();
-		SpellProjectile missile = new SpellProjectile(player, level,
-				SpellProjectile.Mode.MISSILE, new ItemStack(Items.AMETHYST_SHARD));
-
-		if (homing) {
-			missile.withHoming();
-		}
-
-		if (pierce) {
-			missile.withPierce();
-		}
-
+		SpellProjectile missile = buildMissile(player, level, owned);
 		missile.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
-				Tuning.MISSILE_SPEED * (homing ? Tuning.MISSILE_HOMING_SPEED_FACTOR : 1.0F), 0.0F);
+				missileSpeed(owned), 0.0F);
 		level.addFreshEntity(missile);
+
+		// Echo: sometimes the shard leaves with a free twin, a hair wide.
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.ECHO) > 0
+				&& player.getRandom().nextFloat() < Tuning.ECHO_CHANCE) {
+			SpellProjectile twin = buildMissile(player, level, owned);
+			twin.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
+					missileSpeed(owned), 2.0F);
+			level.addFreshEntity(twin);
+		}
+
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 0.5F);
 	}
 
-	/** Holy Light: a lobbed burst that heals the living and burns the undead. */
-	public static void castHolyLight(final ServerPlayer player) {
-		if (!ModItems.isWand(player.getMainHandItem())) {
-			return;
+	private static float missileSpeed(final Set<Integer> owned) {
+		boolean homing = WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.SEEKER_MISSILE) > 0;
+		float speed = Tuning.MISSILE_SPEED * (homing ? Tuning.MISSILE_HOMING_SPEED_FACTOR : 1.0F);
+		return WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.VELOCITY) > 0
+				? speed * Tuning.VELOCITY_FACTOR : speed;
+	}
+
+	private static SpellProjectile buildMissile(final ServerPlayer player, final ServerLevel level,
+			final Set<Integer> owned) {
+		float damage = Tuning.MISSILE_DAMAGE
+				+ Tuning.FORCE_PER_RANK * WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.FORCE);
+
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.ARCHMAGE) > 0) {
+			damage *= Tuning.ARCHMAGE_FACTOR;
 		}
 
+		SpellProjectile missile = new SpellProjectile(player, level,
+				SpellProjectile.Mode.MISSILE, new ItemStack(Items.AMETHYST_SHARD))
+				.withDamage(damage)
+				.withRange(Tuning.MISSILE_RANGE + Tuning.RANGE_PER_RANK
+						* WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.RANGE));
+
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.SEEKER_MISSILE) > 0) {
+			missile.withHoming();
+		}
+
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.LANCE) > 0) {
+			missile.withPierce();
+		}
+
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.OVERWHELM) > 0) {
+			missile.withOverwhelm(Tuning.OVERWHELM_BONUS);
+		}
+
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.SHATTERPOINT) > 0) {
+			missile.withShatterpoint(Tuning.SHATTERPOINT_BONUS);
+		}
+
+		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.CONCUSSION) > 0) {
+			missile.withKnockback(Tuning.CONCUSSION_PUSH);
+		}
+
+		return missile;
+	}
+
+	/** Holy Light: a lobbed burst that heals the living and burns the
+	 * undead, ministered by the whole ankh — Lumen both ways, Mercy the
+	 * heal, Wrath the harm, Radiance the reach, Fervent Cast the flight,
+	 * Miracle sometimes free, Aegis and the Cleansing Light riding along. */
+	public static void castHolyLight(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.PRIEST);
 
-		if (!PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.ACTIVE)
-				|| !Mana.spend(player, elementCost(player, Tuning.HOLY_COST, false, false, true))) {
+		if (PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.HOLY_LIGHT) <= 0
+				|| !ModItems.isWand(player.getMainHandItem())) {
 			return;
 		}
+
+		// Miracle: sometimes the light asks nothing.
+		boolean free = player.getRandom().nextFloat() < Tuning.MIRACLE_CHANCE_PER_RANK
+				* PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.MIRACLE);
+
+		if (!free && !Mana.spend(player, holyCost(player))) {
+			return;
+		}
+
+		float ascend = PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.ASCENDANT) > 0
+				? Tuning.ASCENDANT_FACTOR : 1.0F;
+		int lumen = PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.LUMEN);
+		float heal = (Tuning.HOLY_AMOUNT + Tuning.LUMEN_PER_RANK * lumen
+				+ Tuning.MERCY_PER_RANK * PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.MERCY))
+				* ascend
+				* (player.getMainHandItem().is(ModItems.HOLY_WAND) ? Tuning.WAND_HOLY_HEAL_FACTOR : 1.0F);
+		float harm = (Tuning.HOLY_AMOUNT + Tuning.LUMEN_PER_RANK * lumen
+				+ Tuning.WRATH_PER_RANK * PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.WRATH))
+				* ascend;
 
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile light = new SpellProjectile(player, level,
 				SpellProjectile.Mode.HOLY_LIGHT, new ItemStack(Items.GLOWSTONE_DUST))
-				.withHeal(Tuning.HOLY_AMOUNT * (player.getMainHandItem().is(ModItems.HOLY_WAND)
-						? Tuning.WAND_HOLY_HEAL_FACTOR : 1.0F))
+				.withHeal(heal)
+				.withHarm(harm)
+				.withRadius(Tuning.HOLY_RADIUS + Tuning.RADIANCE_BONUS
+						* PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.RADIANCE))
+				.withAegis(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.AEGIS))
+				.withCleansing(PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.CLEANSING_LIGHT))
 				.withBlessing(
-						PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.CAPSTONE_A),
-						PlaceholderNodes.owns(SubTree.PRIEST, owned, PlaceholderNodes.Kind.CAPSTONE_B));
+						PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.RENEWAL) > 0,
+						PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.BENEDICTION) > 0);
+
+		boolean fervent = PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.FERVENT_CAST) > 0;
+
+		if (fervent) {
+			light.withFlatArc();
+		}
+
 		light.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
-				Tuning.HOLY_SPEED, 0.5F);
+				Tuning.HOLY_SPEED * (fervent ? Tuning.FERVENT_FACTOR : 1.0F), 0.5F);
 		level.addFreshEntity(light);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.SPLASH_POTION_THROW, SoundSource.PLAYERS, 1.0F, 1.2F);

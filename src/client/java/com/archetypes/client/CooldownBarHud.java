@@ -272,22 +272,20 @@ public final class CooldownBarHud {
 
 		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
 
-		if (com.archetypes.PlaceholderNodes.owns(SubTree.WIZARD, wizard,
-				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+		if (com.archetypes.WizardNodes.rank(SubTree.WIZARD, wizard,
+				com.archetypes.WizardNodes.Family.MAGIC_MISSILE) > 0) {
 			abilities.add(new Ability(new ItemStack(Items.AMETHYST_SHARD),
 					ArchetypesClient.ABILITY_KEYS[1],
-					com.archetypes.SeekerSpells.elementCost(player, Tuning.MISSILE_COST, false, false, false),
-					false));
+					com.archetypes.SeekerSpells.missileCost(player), false));
 		}
 
 		var priest = NodePurchases.owned(player, SubTree.PRIEST);
 
-		if (com.archetypes.PlaceholderNodes.owns(SubTree.PRIEST, priest,
-				com.archetypes.PlaceholderNodes.Kind.ACTIVE)) {
+		if (com.archetypes.PriestNodes.rank(SubTree.PRIEST, priest,
+				com.archetypes.PriestNodes.Family.HOLY_LIGHT) > 0) {
 			abilities.add(new Ability(new ItemStack(Items.GLOWSTONE_DUST),
 					ArchetypesClient.ABILITY_KEYS[2],
-					com.archetypes.SeekerSpells.elementCost(player, Tuning.HOLY_COST, false, false, true),
-					false));
+					com.archetypes.SeekerSpells.holyCost(player), false));
 		}
 
 		return abilities;

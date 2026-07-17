@@ -5,7 +5,6 @@ import com.archetypes.Archetype;
 import com.archetypes.ModAttachments;
 import com.archetypes.ModEntities;
 import com.archetypes.NodePurchases;
-import com.archetypes.PlaceholderNodes;
 import com.archetypes.SpellChannelPayload;
 import com.archetypes.SubTree;
 import com.archetypes.client.mixin.AbstractContainerScreenAccessor;

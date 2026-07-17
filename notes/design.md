@@ -1146,3 +1146,41 @@ core colour, internal seam outlines dissolved, outer outline repaired,
 grip stretched. Other materials keep hi-res until the user approves the
 look; the greatsword-based node icons (First Blood, Heavy Blows, Decimate)
 still carry the old hi-res art and will want regeneration if this lands.
+
+**Wizard and Priest trees built (2026-07-17, while the user was away).**
+The last two placeholder trees are real; PlaceholderNodes is deleted. All
+numbers are DRAFTS for the balance pass.
+
+WIZARD — the arcane artillerist, 23 nodes. The staff reads as one cast,
+bottom to top. Butt cap: Magic Missile flanked by MANA SHIELD 2 (25%/rank
+of damage taken drains mana instead of health, 2 mana per point — wand in
+hand only, same rule as regen). Shaft: FORCE 3 (+0.5 heart missile damage
+per rank). Crossbar: CLARITY (-5 cost), SIPHON (missile kills refund 15),
+ECHO (20% free twin missile). Neck: RANGE 2 (+8 blocks each, 16→32).
+Diamond: ARCANE ORB (+25 max mana) cradled between the two faces — left
+finishes the wounded (VELOCITY +30% speed, OVERWHELM +20% vs hurt →
+Seeker Missile), right opens fights (CONCUSSION shove, SHATTERPOINT +30%
+vs full → Lance). Crown arc over the head, fed by either capstone:
+MIND WELL 2 (+20 mana each), FLOW 2 (+0.5 regen each), ARCHMAGE (+20%
+missile damage) at the tip. Full path = exactly 15 without the crown, so
+finishing costs shared-spine cuts — deliberate.
+
+PRIEST — mercy or wrath, 23 nodes. Shaft: LUMEN 2 (+0.5 heart to BOTH
+sides), GRACE (-10 cost), RADIANCE (+1.5 burst radius), DEVOTION (+0.5
+regen), FERVENT CAST at the junction (x1.5 speed, flatter arc — the lob's
+QoL). Arms: MERCY 2 (+1 heart heal each) to Renewal; WRATH 2 (+1 heart
+undead damage each) to Benediction. The halo loop is open through the
+junction WITHOUT a capstone: BEACON (+25 mana), VITALITY 2 (+1 max heart
+each, transient MAX_HEALTH modifier in SeekerTicker), AEGIS 2 (casting
+shells the caster in absorption via the vanilla EFFECT — the Crusher's
+MAX_ABSORPTION lesson dodged entirely), CLEANSING LIGHT 2 (healed targets
+lose poison/wither, then everything harmful), MIRACLE 2 (10%/rank free
+cast), ASCENDANT (+25% both sides) at the circle's top.
+
+Implementation notes: missile/holy costs moved into missileCost()/
+holyCost() helpers shared by casts and HUD tiles; missile conditional
+damage (Overwhelm/Shatterpoint are mutually exclusive per hit — full
+health takes one, wounded the other), knockback as a deltaMovement push
+(the proven Haymaker pattern, not the knockback() overload); Siphon rides
+a new SeekerCombat AFTER_DEATH hook keyed on the projectile's mode; Echo
+twins are free and slightly inaccurate; Miracle rolls before the spend.

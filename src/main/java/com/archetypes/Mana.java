@@ -18,7 +18,15 @@ public final class Mana {
 	}
 
 	public static float max(final Player player) {
-		return Tuning.MANA_BASE
+		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
+		float nodes = Tuning.ARCANE_ORB_MANA
+				* WizardNodes.rank(SubTree.WIZARD, wizard, WizardNodes.Family.ARCANE_ORB)
+				+ Tuning.MIND_WELL_MANA_PER_RANK
+				* WizardNodes.rank(SubTree.WIZARD, wizard, WizardNodes.Family.MIND_WELL)
+				+ Tuning.BEACON_MANA
+				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
+						PriestNodes.Family.BEACON);
+		return Tuning.MANA_BASE + nodes
 				+ Tuning.MANA_PER_SPELLCASTING_LEVEL * SpecialitiesBridge.spellcastingLevel(player);
 	}
 
@@ -30,10 +38,16 @@ public final class Mana {
 			return 0.0F;
 		}
 
-		float focused = Tuning.FOCUSED_MIND_REGEN * ElementalistNodes.rank(SubTree.ELEMENTALIST,
+		float nodes = Tuning.FOCUSED_MIND_REGEN * ElementalistNodes.rank(SubTree.ELEMENTALIST,
 				NodePurchases.owned(player, SubTree.ELEMENTALIST),
-				ElementalistNodes.Family.FOCUSED_MIND);
-		return Tuning.MANA_REGEN_BASE_PER_SECOND + focused
+				ElementalistNodes.Family.FOCUSED_MIND)
+				+ Tuning.FLOW_REGEN_PER_RANK
+				* WizardNodes.rank(SubTree.WIZARD, NodePurchases.owned(player, SubTree.WIZARD),
+						WizardNodes.Family.FLOW)
+				+ Tuning.DEVOTION_REGEN
+				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
+						PriestNodes.Family.DEVOTION);
+		return Tuning.MANA_REGEN_BASE_PER_SECOND + nodes
 				+ SpecialitiesBridge.spellcastingLevel(player) / Tuning.MANA_REGEN_LEVELS_PER_POINT;
 	}
 
@@ -78,6 +92,17 @@ public final class Mana {
 			((AttachmentTarget) player).setAttached(ModAttachments.MANA,
 					Math.min(max(player), current(player) + amount));
 		}
+	}
+
+	/**
+	 * Mana Shield's toll: pure drain, no XP — tanking a hit is not casting.
+	 * Returns how much was actually taken.
+	 */
+	public static float drain(final ServerPlayer player, final float amount) {
+		float current = current(player);
+		float drained = Math.min(current, amount);
+		((AttachmentTarget) player).setAttached(ModAttachments.MANA, current - drained);
+		return drained;
 	}
 
 	/**

@@ -316,6 +316,40 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * Mana Shield: part of every hit drains the pool instead of the blood —
+	 * but only while a wand is actually in hand; a Seeker gone sword-mode
+	 * gave up the ward with the regen.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$manaShield(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!((Object) this instanceof ServerPlayer player)
+				|| !ModItems.isWand(player.getMainHandItem())) {
+			return amount;
+		}
+
+		int rank = com.archetypes.WizardNodes.rank(SubTree.WIZARD,
+				NodePurchases.owned(player, SubTree.WIZARD), com.archetypes.WizardNodes.Family.MANA_SHIELD);
+
+		if (rank <= 0) {
+			return amount;
+		}
+
+		float absorbable = amount * Tuning.MANA_SHIELD_ABSORB_PER_RANK * rank;
+		float drained = com.archetypes.Mana.drain(player,
+				absorbable * Tuning.MANA_SHIELD_MANA_PER_DAMAGE);
+		float absorbed = drained / Tuning.MANA_SHIELD_MANA_PER_DAMAGE;
+
+		if (absorbed > 0.0F) {
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.ENCHANT,
+					player.getX(), player.getY() + 1.0, player.getZ(), 8, 0.3, 0.5, 0.3, 0.1);
+		}
+
+		return amount - absorbed;
+	}
+
+	/**
 	 * First Strike: melee out of invisibility opens +30% per rank harder.
 	 * Vanilla breaks the invisibility right after the hit lands, so this
 	 * naturally pays once per vanishing.
