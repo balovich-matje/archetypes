@@ -1396,3 +1396,37 @@ strike() — but shadowStep() then re-armed the cooldown on the line after
 strike(). Fix: arm the cooldown BEFORE strike(), so a kill's Momentum
 reset always writes last and wins. Non-kill and non-Momentum cases
 unchanged.
+
+**Shadow rework ported from Sketchpad (2026-07-17, shadow-new-edits).**
+Crescent grid reshaped (still 23 nodes) — outer arc pushed to the frame,
+inner arc's gap still bridged by the explicit (4,4)-(4,6) edge.
+- NIGHT_EYES DELETED (night vision at the start felt too strong). Its
+  node became UMBRAL_SIGHT rank 2, so Umbral Sight is now 2 ranks:
+  hostiles highlighted within 8 (r1) / 16 (r2) blocks, gated on
+  sneaking only (was "sneak or hide"). Radius = UMBRAL_SIGHT_RADIUS *
+  rank. NIGHT_EYES_TICKS removed.
+- UMBRAL_MASTERY (the last placeholder) renamed to NIGHT_STALKER, icon
+  kept (ENDER_EYE; sprite files renamed umbral_mastery.png ->
+  night_stalker.png in both test sets). New effect: while invisible AND
+  night (overworld clock 13000-23000, any dimension), Jump Boost II +
+  Slow Falling I, dropped within 1 tick when invis/night ends.
+  dropOurAmbient() guards on isAmbient && duration<=NIGHT_STALKER_TICKS
+  (40) so a beacon's longer ambient Jump Boost / a potion isn't
+  clobbered.
+- SWIFT_SHADOW BUG FIX: it was using ADD_MULTIPLIED_TOTAL on
+  SNEAKING_SPEED (0.3 base), so rank 2 only reached ~0.51 — user noticed
+  it didn't fully negate the sneak penalty. Both apply() branches now use
+  ADD_VALUE, so 0.35/rank lands rank 1 at 0.65 and rank 2 at 1.0 = full
+  walking speed (matches "equal to just running around, not sprinting").
+- DIM_PRESENCE: 15%->20% per rank AND now gated on sneaking (was
+  always-on). FIRST_STRIKE: 30%->25% per rank. STILLNESS/BLOODRUSH/
+  INVISIBILITY/PREDATOR/LAST_SHADOW/CLEANSING_VEIL: desc-only reword to
+  the sketch text (mechanics already matched).
+All descs ported verbatim from the sketch.
+Verify pass caught a Night Stalker teardown bug: granting Jump Boost II
+over a beacon's Jump Boost I buries the beacon effect as a vanilla
+hidden-effect, and removeEffect() then discards the whole chain (nuking
+the beacon/leaping-potion buff, which only returned ~4s later). Fixed by
+NOT removing — the effects now use a 5-tick duration re-asserted each
+tick and simply lapse when the hunt ends, so vanilla restores any buried
+effect on expiry. Teardown stays ~immediate (0.25s).

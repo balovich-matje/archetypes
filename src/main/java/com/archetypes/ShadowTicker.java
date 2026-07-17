@@ -41,8 +41,9 @@ public final class ShadowTicker {
 		boolean invisible = player.hasEffect(MobEffects.INVISIBILITY);
 		long now = player.level().getGameTime();
 
-		// Swift Shadow: the sneak penalty refunded — half, then all of it.
-		// A flat add onto SNEAKING_SPEED's 0.3 base, active whenever owned.
+		// Swift Shadow: the sneak penalty refunded — half, then all of it. A
+		// flat ADD_VALUE onto SNEAKING_SPEED's 0.3 base, so rank 2 (+0.7) lands
+		// at 1.0 — sneaking at full walking speed, active whenever owned.
 		apply(player.getAttribute(Attributes.SNEAKING_SPEED), SWIFT_ID,
 				ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.SWIFT_SHADOW) > 0,
 				Tuning.SWIFT_SHADOW_SNEAK_REFUND_PER_RANK
@@ -59,29 +60,31 @@ public final class ShadowTicker {
 			}
 		}
 
-		// Night Eyes: held far above the 10-second mark, where vanilla's
-		// night vision starts flickering — and snuffed out the instant the
-		// sneak ends (per playtest). Ours is the ambient one; a potion's
-		// non-ambient night vision is left alone.
-		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.NIGHT_EYES) > 0) {
-			MobEffectInstance vision = player.getEffect(MobEffects.NIGHT_VISION);
+		// Umbral Sight: prey nearby is outlined while you sneak — 8 blocks at
+		// rank one, 16 at rank two.
+		int sight = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.UMBRAL_SIGHT);
 
-			if (player.isCrouching()) {
-				player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
-						Tuning.NIGHT_EYES_TICKS, 0, true, false));
-			} else if (vision != null && vision.isAmbient()) {
-				player.removeEffect(MobEffects.NIGHT_VISION);
-			}
-		}
-
-		// Umbral Sight: prey nearby is outlined while you sneak or hide.
-		if ((player.isCrouching() || invisible) && now % 10 == 0
-				&& ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.UMBRAL_SIGHT) > 0) {
+		if (sight > 0 && player.isCrouching() && now % 10 == 0) {
 			for (LivingEntity hostile : player.level().getEntitiesOfClass(LivingEntity.class,
-					player.getBoundingBox().inflate(Tuning.UMBRAL_SIGHT_RADIUS),
+					player.getBoundingBox().inflate(Tuning.UMBRAL_SIGHT_RADIUS * sight),
 					living -> living instanceof Monster && living.isAlive())) {
 				hostile.addEffect(new MobEffectInstance(MobEffects.GLOWING, 25, 0, true, false));
 			}
+		}
+
+		// Night Stalker: invisible under a night sky, you move like a hunter —
+		// Jump Boost II and Slow Falling. Re-asserted each tick while the hunt
+		// holds, then simply left to lapse (never removeEffect): the short
+		// duration makes teardown near-instant, and letting it EXPIRE lets
+		// vanilla restore any beacon/potion effect ours was layered over — an
+		// explicit remove would discard that buried effect with it.
+		boolean nightStalker = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.NIGHT_STALKER) > 0
+				&& invisible && isNight(player.level());
+
+		if (nightStalker) {
+			player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, Tuning.NIGHT_STALKER_TICKS, 1, true, false));
+			player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,
+					Tuning.NIGHT_STALKER_TICKS, 0, true, false));
 		}
 
 		// Ghost Armor: a flag every client's renderer reads (see the avatar
@@ -98,6 +101,12 @@ public final class ShadowTicker {
 		}
 	}
 
+	/** Overworld clock says it's night — monsters-spawn range, any dimension. */
+	private static boolean isNight(final net.minecraft.world.level.Level level) {
+		long t = level.getOverworldClockTime() % 24000L;
+		return t >= 13000L && t < 23000L;
+	}
+
 	/** Keep a transient modifier in step with whether it should exist. */
 	private static void apply(final AttributeInstance attribute, final Identifier id,
 			final boolean should, final double value) {
@@ -109,7 +118,7 @@ public final class ShadowTicker {
 
 		if (should && !has) {
 			attribute.addTransientModifier(new AttributeModifier(id, value,
-					AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+					AttributeModifier.Operation.ADD_VALUE));
 		} else if (!should && has) {
 			attribute.removeModifier(id);
 		} else if (should) {
@@ -119,7 +128,7 @@ public final class ShadowTicker {
 			if (current == null || current.amount() != value) {
 				attribute.removeModifier(id);
 				attribute.addTransientModifier(new AttributeModifier(id, value,
-						AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+						AttributeModifier.Operation.ADD_VALUE));
 			}
 		}
 	}
@@ -145,8 +154,8 @@ public final class ShadowTicker {
 		harmful.forEach(player::removeEffect);
 	}
 
-	/** Bloodrush, Reaper and Umbral Mastery, all keyed on killing from
-	 * inside the dark; called from the kill hook. */
+	/** Bloodrush and Reaper, both keyed on killing from inside the dark;
+	 * called from the kill hook. */
 	public static void onKill(final ServerPlayer player) {
 		if (!player.hasEffect(MobEffects.INVISIBILITY)) {
 			return;
@@ -166,9 +175,5 @@ public final class ShadowTicker {
 					net.minecraft.core.particles.ParticleTypes.HAPPY_VILLAGER,
 					player.getX(), player.getY() + 1.0, player.getZ(), 5, 0.3, 0.4, 0.3, 0.0);
 		}
-
-		// Umbral Mastery is a placeholder for now: the cooldown-refresh idea
-		// duplicated Predator and trivialised Last Shadow's 180s clock. Its
-		// next effect is being decided.
 	}
 }

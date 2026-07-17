@@ -119,23 +119,23 @@ public final class Constellations {
 			".###.");
 
 	/**
-	 * A crescent moon opening right (user sketch, new-shadow-20260717):
+	 * A crescent moon opening right (user sketch, shadow-new-edits-20260717):
 	 * three shared cells at each tip — the senses row at the bottom with
 	 * the active, the crown row at the top with both capstones flanking
-	 * Umbral Mastery — the outer arc sweeping wide, the inner hugging the
+	 * Night Stalker — the outer arc sweeping wide, the inner hugging the
 	 * hollow.
 	 */
 	public static final Constellation SHADOW_MOON = Constellation.of(
 			"....###",
-			"...#.#.",
-			"..#.#..",
+			"...#..#",
+			"..#..#.",
 			".#..#..",
-			".#..#..",
+			"#...#..",
 			"#......",
+			"#...#..",
 			".#..#..",
-			".#..#..",
-			"..#.#..",
-			"...#.#.",
+			"..#..#.",
+			"...#..#",
 			"....###")
 			// The inner arc skips a row where the outer bows deepest — the
 			// explicit edge keeps the curve buyable across the gap.

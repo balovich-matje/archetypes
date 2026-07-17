@@ -391,7 +391,7 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * First Strike: melee out of invisibility opens +30% per rank harder.
+	 * First Strike: melee out of invisibility opens +25% per rank harder.
 	 * Vanilla breaks the invisibility right after the hit lands, so this
 	 * naturally pays once per vanishing.
 	 */
@@ -411,15 +411,15 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * Dim Presence: mobs simply notice this player less, hidden or not —
-	 * the same channel sneaking and invisibility already use, so it stacks
+	 * Dim Presence: while sneaking, mobs notice this player 20% per rank less
+	 * — the same channel sneaking and invisibility already use, so it stacks
 	 * multiplicatively with both (and with Specialities' Sneaking, which
 	 * modifies the same return).
 	 */
 	@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent",
 			at = @At("RETURN"))
 	private double archetypes$dimPresence(final double original) {
-		if ((Object) this instanceof ServerPlayer player) {
+		if ((Object) this instanceof ServerPlayer player && player.isCrouching()) {
 			int rank = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
 					NodePurchases.owned(player, SubTree.SHADOW), com.archetypes.ShadowNodes.Family.DIM_PRESENCE);
 

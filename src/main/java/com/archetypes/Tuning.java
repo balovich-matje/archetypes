@@ -270,15 +270,20 @@ public final class Tuning {
 	 * the penalty (0.65x, then full speed). */
 	public static final float SWIFT_SHADOW_SNEAK_REFUND_PER_RANK = 0.35F;
 	public static final float DARK_MENDING_HEAL = 2.0F;
-	public static final float DIM_PRESENCE_PER_RANK = 0.15F;
-	public static final float FIRST_STRIKE_PER_RANK = 0.30F;
+	public static final float DIM_PRESENCE_PER_RANK = 0.20F;
+	public static final float FIRST_STRIKE_PER_RANK = 0.25F;
 	/** Bloodrush: Strength I/II for this long, on kills while invisible. */
 	public static final int BLOODRUSH_TICKS = 80;
 	public static final float REAPER_HEAL = 4.0F;
 	public static final float STILLNESS_DURATION_PER_RANK = 0.5F;
+	/** Umbral Sight's highlight reach, per rank: 8 blocks then 16. */
 	public static final double UMBRAL_SIGHT_RADIUS = 8.0;
+	/** Night Stalker's effects, re-asserted each tick and left to lapse when
+	 * the hunt ends — short so teardown reads as immediate, and expiring
+	 * (never removeEffect) lets vanilla restore any beacon/potion buff ours
+	 * was layered over instead of discarding it. */
+	public static final int NIGHT_STALKER_TICKS = 5;
 	/** Kept above 210 so vanilla's low-timer flicker never shows. */
-	public static final int NIGHT_EYES_TICKS = 250;
 
 	// --- Agility: Shadow Step ---
 	public static final double SHADOW_STEP_RANGE = 16.0;
