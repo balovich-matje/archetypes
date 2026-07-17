@@ -1483,3 +1483,31 @@ follow code):
   mechanic needs a custom absorption amount, not amplifiers.
 - CODE FIX: EARTH_SHATTER_REFUND_PER_RANK 0.33F -> exact third, so rank
   3 refunds 100% of Quake's cooldown as designed instead of 99%.
+
+**XP curve 1-45 (2026-07-18 overnight, part 3 — agent-designed, judge-
+verified, implemented).** The flat 160/level died. New system:
+- COST(L) = 15 + round(1.2 L^2), exact integer math, precomputed tables
+  with a boot assertion (cum(45)=38,349, cum(15)=1,713 — 5.3x the old
+  7,200 total). Level 15 ~ a few in-game days of normal play; levels
+  31-45 are 69% of the whole road; one raw dragon kill ~ cum(31).
+- ADVANCEMENT RATE: banking is scaled by 1 + 0.025 x (completed
+  non-recipe advancements), capped x3.0 at 80 (~63% of vanilla's 126
+  display-bearing advancements — thorough, not completionist). Counted
+  via ServerAdvancementManager.getAllAdvancements() filtered on
+  display().isPresent(); cached in the new synced ADVANCEMENT_COUNT
+  attachment, recounted on join and in PlayerAdvancementsMixin at
+  award/revoke RETURN (recipe unlocks skipped) — bank() stays O(1).
+- Applied AT BANKING TIME: ARCHETYPE_XP is an append-only ledger of
+  already-scaled XP; past XP keeps its historical rate, revokes never
+  deflate. Judge-simulated: normal progressing player hits 45 in
+  ~14-18h real time, landing at/near the first dragon kill (12,000 raw
+  x rate closes the last gap in one event); frozen-stage farm grinder
+  ~18-34h; manual mob-hunting ~100h. Grinding legal, progression wins.
+- ensureBankCoversSpent() on join: any future retune can never strand
+  committed points. grantLevels() jumps by CUM (tokens bypass the
+  multiplier deliberately).
+- Tree screen short bar: "1850/2445 XP (x2.40)" with a hover tooltip
+  explaining the rate. Long bar unchanged.
+Constants XP_PER_ADVANCEMENT/MAX_XP_MULTIPLIER/curve coefficients all
+in SkillPoints for retuning; cap is vanilla-tuned (datapacks grow the
+advancement pool — revisit per modpack).

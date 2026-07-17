@@ -403,7 +403,7 @@ public class ArchetypeScreen extends Screen {
 			}
 		}
 
-		this.progressBars(graphics);
+		this.progressBars(graphics, mouseX, mouseY);
 
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
 		// anything drawn after it covers the buttons.
@@ -455,7 +455,7 @@ public class ArchetypeScreen extends Screen {
 	 * <p>Read straight off the attachment, which syncs to its owning client, so
 	 * there is no separate packet to keep in step.
 	 */
-	private void progressBars(final GuiGraphicsExtractor graphics) {
+	private void progressBars(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY) {
 		if (this.minecraft.player == null) {
 			return;
 		}
@@ -490,11 +490,26 @@ public class ArchetypeScreen extends Screen {
 		VanillaUi.progressBar(graphics, left, top + 10, width, BAR_HEIGHT,
 				SkillPoints.archetypeProgress(player), this.archetype.color());
 
-		// Short bar: XP into the current level. Points you have not committed are
-		// worth surfacing here — it is the only place they are visible.
+		// Short bar: XP into the current level, over what the NEXT level
+		// costs (quadratic curve), with the live advancement rate beside it.
+		int advancements = SkillPoints.advancementCount(player);
+		float rate = SkillPoints.xpMultiplier(advancements);
 		Component next = Component.literal(SkillPoints.xpIntoLevel(player)
-				+ "/" + SkillPoints.XP_PER_LEVEL + " XP");
+				+ "/" + SkillPoints.costForNextLevel(player) + " XP  (x"
+				+ String.format(java.util.Locale.ROOT, "%.2f", rate) + ")");
 		graphics.text(this.font, next, left, top + 18, VanillaUi.LABEL_FAINT, false);
+
+		// The rate earns an explanation on hover.
+		if (mouseY >= top + 16 && mouseY < top + 28 && mouseX >= left
+				&& mouseX < left + this.font.width(next)) {
+			graphics.setTooltipForNextFrame(this.font, java.util.List.of(
+					Component.translatable("screen.archetypes.tree.rate.tooltip")
+							.withStyle(ChatFormatting.GRAY).getVisualOrderText(),
+					Component.translatable("screen.archetypes.tree.rate.tooltip.count",
+							advancements, String.format(java.util.Locale.ROOT, "%.2f", rate))
+							.withStyle(ChatFormatting.WHITE).getVisualOrderText()),
+					mouseX, mouseY);
+		}
 
 		if (unspent > 0) {
 			Component spare = Component.translatable("screen.archetypes.tree.points", unspent);

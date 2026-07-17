@@ -1,31 +1,32 @@
 package com.archetypes;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.server.PlayerAdvancements;
+import net.minecraft.server.ServerAdvancementManager;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
 /**
  * Archetype progression, banked out of the player's own experience.
  *
- * <p>A level costs {@link #XP_PER_LEVEL} XP — exactly vanilla levels 0 to 10 —
- * and each level is one skill point. The XP is <em>mirrored</em>, not spent:
- * earning experience feeds levels in parallel, so archetype progress never
- * competes with enchanting.
+ * <p>The XP is <em>mirrored</em>, not spent: earning experience feeds levels
+ * in parallel, so archetype progress never competes with enchanting. Each
+ * level is one skill point, but the price climbs a quadratic curve —
+ * {@code cost(L) = round(1.2 L² + 15)} — so the first fifteen levels are a
+ * few in-game days of normal play while the last fifteen are 69% of the
+ * whole 38,349-XP road. Level 45 is a milestone on the order of slaying the
+ * dragon.
  *
- * <p>{@link #MAX_LEVEL} levels carry you from Brawler to Colossus, and each of
- * the three sub-trees accepts at most {@link #MAX_POINTS_PER_SUB_TREE} — so a
- * fully-levelled archetype has exactly enough points to fill every sub-tree's
- * budget, but no sub-tree's budget covers all of its nodes. You specialise
- * inside each tree; you never buy one out.
- *
- * <p>Because the cost is flat while vanilla's per-level cost is not, a level is
- * ~23 vanilla levels of work at level 0 and about half a level at 50. That means
- * <strong>the caps, not the XP price, are what balance the tree</strong> — an XP
- * farm changes how quickly you reach the ceiling, never how high it is.
+ * <p>The mirror also runs faster the further the player has actually gotten
+ * in the game: every completed non-recipe advancement adds
+ * {@link #XP_PER_ADVANCEMENT} to the banking rate, tripling it at 80. The
+ * multiplier applies at banking time, so past XP keeps its historical rate
+ * and a grinder parked at a frozen game stage levels legally, just slowly.
+ * The three sub-tree caps still bound how much of a tree one build can own;
+ * the curve now paces how fast it gets there.
  */
 public final class SkillPoints {
-	/** Vanilla levels 0 to 10: sum of (7 + 2L) for L in 0..9. */
-	public static final int XP_PER_LEVEL = 160;
-
 	/** Brawler at 0, Colossus at 45. One point per level. */
 	public static final int MAX_LEVEL = 45;
 
@@ -34,6 +35,36 @@ public final class SkillPoints {
 	 * the Protector picks utility, defence, or a compromise — never all of it.
 	 */
 	public static final int MAX_POINTS_PER_SUB_TREE = 15;
+
+	/**
+	 * The curve, in exact integer math: {@code 15 + round(6L²/5)}, where
+	 * {@code 6L² mod 5} is only ever 0, 1 or 4, so adding 2 before the
+	 * integer divide rounds half-up correctly. COST[L] is the price of level
+	 * L; CUM[L] the total banked XP to reach it.
+	 */
+	private static final int[] COST = new int[MAX_LEVEL + 1];
+	private static final int[] CUM = new int[MAX_LEVEL + 1];
+
+	static {
+		for (int level = 1; level <= MAX_LEVEL; level++) {
+			COST[level] = 15 + (6 * level * level + 2) / 5;
+			CUM[level] = CUM[level - 1] + COST[level];
+		}
+
+		// Anchors from the design doc; a drifted curve should fail loudly.
+		if (CUM[MAX_LEVEL] != 38_349 || CUM[15] != 1_713 || COST[1] != 16 || COST[45] != 2_445) {
+			throw new IllegalStateException("XP curve drifted: cum(45)=" + CUM[MAX_LEVEL]);
+		}
+	}
+
+	/**
+	 * The advancement rate: +2.5% per completed non-recipe advancement,
+	 * capped at triple speed (80 advancements of vanilla's ~126 — a thorough
+	 * playthrough, not a completionist one). Vanilla-tuned: datapacks and
+	 * mods grow the pool, so revisit per-modpack.
+	 */
+	public static final float XP_PER_ADVANCEMENT = 0.025F;
+	public static final float MAX_XP_MULTIPLIER = 3.0F;
 
 	private SkillPoints() {
 	}
@@ -51,12 +82,30 @@ public final class SkillPoints {
 
 	/** Archetype level, 0 to {@link #MAX_LEVEL}. Also the total points earned. */
 	public static int level(final Player player) {
-		return Math.min(bankedXp(player) / XP_PER_LEVEL, MAX_LEVEL);
+		int xp = bankedXp(player);
+		int level = 0;
+
+		while (level < MAX_LEVEL && xp >= CUM[level + 1]) {
+			level++;
+		}
+
+		return level;
 	}
 
 	/** Points available to commit right now. */
 	public static int available(final Player player) {
 		return Math.max(level(player) - spent(player), 0);
+	}
+
+	/** XP banked into the current level. */
+	public static int xpIntoLevel(final Player player) {
+		int level = level(player);
+		return level >= MAX_LEVEL ? COST[MAX_LEVEL] : bankedXp(player) - CUM[level];
+	}
+
+	/** What the next level costs — the short bar's denominator. */
+	public static int costForNextLevel(final Player player) {
+		return COST[Math.min(level(player) + 1, MAX_LEVEL)];
 	}
 
 	/** Progress toward the next level, 0..1. Flat 1 once maxed. */
@@ -65,12 +114,7 @@ public final class SkillPoints {
 			return 1.0F;
 		}
 
-		return (bankedXp(player) % XP_PER_LEVEL) / (float) XP_PER_LEVEL;
-	}
-
-	/** XP banked into the current level, and what it needs. */
-	public static int xpIntoLevel(final Player player) {
-		return level(player) >= MAX_LEVEL ? XP_PER_LEVEL : bankedXp(player) % XP_PER_LEVEL;
+		return xpIntoLevel(player) / (float) costForNextLevel(player);
 	}
 
 	/** Progress from start tier to peak tier, 0..1. */
@@ -83,25 +127,85 @@ public final class SkillPoints {
 		return level(player) >= MAX_LEVEL ? 1 : 0;
 	}
 
+	/** The banking rate for a given advancement count. Pure — the client
+	 * runs the same formula on the synced count. */
+	public static float xpMultiplier(final int advancementCount) {
+		return Math.min(1.0F + XP_PER_ADVANCEMENT * advancementCount, MAX_XP_MULTIPLIER);
+	}
+
+	/** The synced cached count; absent means not yet computed. */
+	public static int advancementCount(final Player player) {
+		Integer count = ((AttachmentTarget) player).getAttached(ModAttachments.ADVANCEMENT_COUNT);
+
+		if (count != null) {
+			return count;
+		}
+
+		// Lazy fallback (server only): the join hook normally beat us here.
+		if (player instanceof ServerPlayer serverPlayer) {
+			return refreshAdvancementCount(serverPlayer);
+		}
+
+		return 0;
+	}
+
 	/**
-	 * Bank experience toward levels. Called with the same amount vanilla awards,
-	 * so the player keeps their XP; this only shadows it.
+	 * Recount completed non-recipe advancements (the ones with a display
+	 * block; hidden-ness is UI-only and still counts) and cache the result
+	 * on the synced attachment. Called on join and from the award/revoke
+	 * mixin, so {@link #bank} stays O(1) on the hot path.
+	 */
+	public static int refreshAdvancementCount(final ServerPlayer player) {
+		ServerAdvancementManager manager = player.level().getServer().getAdvancements();
+		PlayerAdvancements progress = player.getAdvancements();
+		int count = 0;
+
+		for (AdvancementHolder holder : manager.getAllAdvancements()) {
+			if (holder.value().display().isPresent() && progress.getOrStartProgress(holder).isDone()) {
+				count++;
+			}
+		}
+
+		((AttachmentTarget) player).setAttached(ModAttachments.ADVANCEMENT_COUNT, count);
+		return count;
+	}
+
+	/**
+	 * Bank experience toward levels, scaled by the advancement rate at this
+	 * moment. Banking-time scaling keeps ARCHETYPE_XP an append-only ledger:
+	 * raising the rate later never inflates XP already earned, and a revoked
+	 * advancement never deflates it.
 	 */
 	public static void bank(final Player player, final int amount) {
-		if (amount <= 0 || level(player) >= MAX_LEVEL) {
+		if (amount <= 0 || level(player) >= MAX_LEVEL || !(player instanceof ServerPlayer serverPlayer)) {
 			return;
 		}
 
-		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, bankedXp(player) + amount);
+		int scaled = Math.round(amount * xpMultiplier(advancementCount(serverPlayer)));
+		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, bankedXp(player) + scaled);
 	}
 
-	/** Testing affordance: hand over one level's worth of XP outright. */
+	/**
+	 * Join-time guard: if a retune ever leaves a player with more committed
+	 * points than their banked XP now justifies, raise the bank to exactly
+	 * cover them. Only raises, never lowers; a no-op once satisfied.
+	 */
+	public static void ensureBankCoversSpent(final Player player) {
+		int needed = CUM[Math.min(spent(player), MAX_LEVEL)];
+
+		if (bankedXp(player) < needed) {
+			((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, needed);
+		}
+	}
+
+	/** Testing affordance: hand over one level outright. Bypasses the
+	 * multiplier on purpose — a token is a token. */
 	public static void grantPoint(final Player player) {
 		grantLevels(player, 1);
 	}
 
 	public static void grantLevels(final Player player, final int levels) {
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
-				bankedXp(player) + levels * XP_PER_LEVEL);
+				CUM[Math.min(level(player) + levels, MAX_LEVEL)]);
 	}
 }

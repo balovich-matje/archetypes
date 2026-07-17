@@ -40,6 +40,15 @@ public final class ModAttachments {
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
 
+	/** Cached count of completed non-recipe advancements — the XP-rate
+	 * multiplier's input. Transient (recounted on join and on every real
+	 * advancement) but synced, so the tree screen can show the live rate. */
+	public static final AttachmentType<Integer> ADVANCEMENT_COUNT = AttachmentRegistry.create(
+			Archetypes.id("advancement_count"),
+			builder -> builder
+					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
 	/** Points already committed to nodes. Earned minus this is what's spendable. */
 	public static final AttachmentType<Integer> SPENT_POINTS = AttachmentRegistry.create(
 			Archetypes.id("spent_points"),

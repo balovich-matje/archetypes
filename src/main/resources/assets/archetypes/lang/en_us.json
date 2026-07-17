@@ -47,6 +47,8 @@
 	"screen.archetypes.tree.bar.archetype": "%s → %s",
 	"screen.archetypes.tree.bar.level": "Level %s",
 	"screen.archetypes.tree.points": "%s points unspent",
+	"screen.archetypes.tree.rate.tooltip": "Advancements make you level faster: each one you earn permanently boosts the XP this bar collects by 2.5%, up to triple speed at 80 advancements.",
+	"screen.archetypes.tree.rate.tooltip.count": "You have earned %s — that is x%s right now.",
 	"screen.archetypes.tree.mastered": "Full potential unlocked — you are now a true %s.",
 	"node.archetypes.crusher.adrenaline": "Adrenaline",
 	"node.archetypes.crusher.adrenaline.desc": "Landing a mace or fist hit grants attack speed for 3 seconds — 5%/10% for the mace, doubled for bare fists.",

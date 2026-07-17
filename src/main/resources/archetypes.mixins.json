@@ -9,6 +9,7 @@
 		"CrossbowItemMixin",
 		"LivingEntityAccessor",
 		"LivingEntityMixin",
+		"PlayerAdvancementsMixin",
 		"PlayerMixin",
 		"ProjectileMixin"
 	],

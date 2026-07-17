@@ -143,6 +143,14 @@ public class Archetypes implements ModInitializer {
 			});
 		});
 
+		// Fresh advancement count each login (self-heals staleness), and the
+		// bank-covers-spent guard that makes any future curve retune safe.
+		net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register(
+				(handler, sender, server) -> {
+					SkillPoints.refreshAdvancementCount(handler.player);
+					SkillPoints.ensureBankCoversSpent(handler.player);
+				});
+
 		ServerPlayNetworking.registerGlobalReceiver(ResetArchetypePayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
 					// The client only shows this button in creative, but the client
