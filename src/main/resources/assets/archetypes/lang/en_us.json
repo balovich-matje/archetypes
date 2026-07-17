@@ -161,7 +161,7 @@
 	"node.archetypes.elementalist.fireball": "Fireball",
 	"node.archetypes.elementalist.fireball.desc": "50 mana, wand in hand. Hurl a fireball that deals 2.5 hearts and sets the target ablaze. Cannot be deflected. Choosing fire locks away ice.",
 	"node.archetypes.elementalist.meteorite": "Meteorite",
-	"node.archetypes.elementalist.meteorite.desc": "Fireball becomes a meteor: all your mana (100 minimum) calls it down 16 blocks above the targeted spot. More mana, bigger crater. Needs open sky above the target.",
+	"node.archetypes.elementalist.meteorite.desc": "Fireball becomes a meteor: your whole mana pool (100 minimum) calls it down 16 blocks above the targeted spot. More mana, bigger crater — and your cost reducers refund their share after the blast. Needs open sky above the target.",
 	"node.archetypes.elementalist.flamethrower": "Flamethrower",
 	"node.archetypes.elementalist.flamethrower.desc": "Fireball becomes a channel: hold the key to spray fire — 50 mana to ignite, 25 per second held.",
 	"node.archetypes.wizard.magic_missile": "Magic Missile",

@@ -1108,3 +1108,13 @@ double-rod diagonal trick with per-school sparks (blaze/breeze wands are
 literally two rods of their material). Spell tiles on the cooldown bar
 now also dim when no wand is held and price with the held wand's
 discount live.
+
+**Meteorite refund + rod economics verdict (2026-07-17).** User ruling on
+the Blaze/Breeze recipes: staying cheap-by-materials — blaze rods gate on
+a nether fortress, breeze rods on a cartographer-grind trial chamber; the
+acquisition IS the cost. Meteorite now always drains the ENTIRE pool
+(impact math keeps the full number) and refunds the cost-modifiers' share
+after the cast: refund = spent − elementCost(spent), so a 200-pool cast
+with a Blaze wand spends 200, hits like 200, and hands 15 back (Kindling
+and Spellweaver stack into the refund the same way they discount any
+other fire spell).

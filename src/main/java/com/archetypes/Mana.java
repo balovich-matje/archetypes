@@ -80,6 +80,17 @@ public final class Mana {
 		}
 	}
 
+	/**
+	 * Meteorite's modifier refund: the pool always empties in full — the
+	 * impact math keeps the whole number — and the cost modifiers hand
+	 * their share back once the rock is away. No XP here: the full spend
+	 * already paid it.
+	 */
+	public static void refund(final ServerPlayer player, final float amount) {
+		((AttachmentTarget) player).setAttached(ModAttachments.MANA,
+				Math.min(max(player), current(player) + amount));
+	}
+
 	/** Once per tick from the Seeker ticker. */
 	public static void regenTick(final ServerPlayer player) {
 		float current = current(player);

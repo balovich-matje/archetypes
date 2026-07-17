@@ -170,9 +170,10 @@ public final class SeekerSpells {
 	}
 
 	/**
-	 * Meteorite: all current mana (100 minimum) buys a rock over the targeted
-	 * block, sixteen up, coming down fast. Won't cast into a ceiling — the
-	 * whole column above the target must be air.
+	 * Meteorite: the WHOLE pool (100 minimum) buys a rock over the targeted
+	 * block, sixteen up, coming down fast — and the cost modifiers refund
+	 * their share after the cast, so discounts never shrink the impact.
+	 * Won't cast into a ceiling — the column above the target must be air.
 	 */
 	private static void meteorite(final ServerPlayer player) {
 		ServerLevel level = (ServerLevel) player.level();
@@ -208,6 +209,16 @@ public final class SeekerSpells {
 		level.addFreshEntity(meteor);
 		level.playSound(null, targetPos.getX(), targetPos.getY(), targetPos.getZ(),
 				SoundEvents.GHAST_WARN, SoundSource.PLAYERS, 1.2F, 0.7F);
+
+		// The whole pool went into the rock; the cost modifiers (Kindling,
+		// the held wand, Spellweaver) refund their share now that it's away.
+		// elementCost over the full spend is exactly "what this SHOULD have
+		// cost", so the refund is the difference.
+		float refund = spent - elementCost(player, spent, true, false, false);
+
+		if (refund > 0.0F) {
+			Mana.refund(player, refund);
+		}
 	}
 
 	/**
