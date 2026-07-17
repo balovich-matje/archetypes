@@ -22,48 +22,7 @@ public final class VanillaUi {
 	private static final int HIGHLIGHT = 0xFFFFFFFF;
 	private static final int SHADOW = 0xFF555555;
 
-	/** Text on the window body should read at least this crisply — the
-	 * vanilla LABEL grey itself sits at about 6:1. */
-	private static final double INK_CONTRAST = 5.0;
-
-	private static final java.util.Map<Integer, Integer> INK_CACHE = new java.util.HashMap<>();
-
 	private VanillaUi() {
-	}
-
-	/**
-	 * The archetype colors are pastels tuned for dark grounds (node fills,
-	 * the progress bar's near-black trough); as TEXT on the grey window they
-	 * wash out (user report). This darkens a color just until it clears
-	 * readable contrast on WINDOW_BODY, keeping the hue — each color pays
-	 * only the darkening it actually needs.
-	 */
-	public static int ink(final int argb) {
-		return INK_CACHE.computeIfAbsent(argb, color -> {
-			int r = (color >> 16) & 0xFF;
-			int g = (color >> 8) & 0xFF;
-			int b = color & 0xFF;
-
-			while (contrastOnBody(r, g, b) < INK_CONTRAST && (r | g | b) != 0) {
-				r = r * 9 / 10;
-				g = g * 9 / 10;
-				b = b * 9 / 10;
-			}
-
-			return 0xFF000000 | r << 16 | g << 8 | b;
-		});
-	}
-
-	/** WCAG-style contrast of a text color against the window body. */
-	private static double contrastOnBody(final int r, final int g, final int b) {
-		double text = 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
-		double body = 0.2126 * channel(0xC6) + 0.7152 * channel(0xC6) + 0.0722 * channel(0xC6);
-		return (Math.max(text, body) + 0.05) / (Math.min(text, body) + 0.05);
-	}
-
-	private static double channel(final int c) {
-		double s = c / 255.0;
-		return s <= 0.04045 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4);
 	}
 
 	public static void window(final GuiGraphicsExtractor graphics, final int x, final int y,

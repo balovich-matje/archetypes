@@ -89,13 +89,13 @@ public final class MarksmanNodes {
 		byCell.put(cell(4, 9), new Def(Family.SNAP_SHOT, 1));
 
 		// The stave, arcing left (the bow branch).
-		byCell.put(cell(3, 1), new Def(Family.ACROBATICS, 1));
-		byCell.put(cell(2, 2), new Def(Family.ACROBATICS, 2));
-		byCell.put(cell(1, 3), new Def(Family.NIMBLE_DRAW, 1));
-		byCell.put(cell(0, 4), new Def(Family.NIMBLE_DRAW, 2));
-		byCell.put(cell(0, 6), new Def(Family.NIMBLE_DRAW, 3));
-		byCell.put(cell(1, 7), new Def(Family.SWIFT_FLIGHT, 1));
-		byCell.put(cell(2, 8), new Def(Family.SWIFT_FLIGHT, 2));
+		byCell.put(cell(3, 1), new Def(Family.SWIFT_FLIGHT, 1));
+		byCell.put(cell(2, 2), new Def(Family.SWIFT_FLIGHT, 2));
+		byCell.put(cell(1, 3), new Def(Family.ACROBATICS, 1));
+		byCell.put(cell(0, 4), new Def(Family.ACROBATICS, 2));
+		byCell.put(cell(0, 6), new Def(Family.NIMBLE_DRAW, 1));
+		byCell.put(cell(1, 7), new Def(Family.NIMBLE_DRAW, 2));
+		byCell.put(cell(2, 8), new Def(Family.NIMBLE_DRAW, 3));
 		byCell.put(cell(3, 9), new Def(Family.SEEKER_ARROW, 1));
 
 		// The arrow: the shared Conservation shaft crossing at the bulge.

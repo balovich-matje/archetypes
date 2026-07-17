@@ -46,6 +46,10 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * observed this session, so the join-time sync never toasts. */
 	private static int lastLevel = -1;
 
+	/** Whether last tick had a bow mid-draw — the edge lets Disengage drain
+	 * stale sprint presses the moment a draw begins. */
+	private static boolean wasDrawingBow;
+
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
@@ -111,14 +115,24 @@ public class ArchetypesClient implements ClientModInitializer {
 				}
 			}
 
-			// Disengage: the same sprint press while a bow is drawn. You can't
-			// sprint mid-draw anyway, so consuming the click costs nothing.
-			if (client.player != null && client.player.isUsingItem()
-					&& client.player.getUseItem().is(net.minecraft.world.item.Items.BOW)) {
+			// Disengage: a sprint press made while a bow is drawn. Vanilla
+			// reads the sprint key via isDown and never consumes its CLICKS,
+			// so presses pile up during normal running — and the moment a
+			// draw began, those stale presses fired the roll instantly (user
+			// bug). Drain the backlog on the draw's first tick; only presses
+			// made during the draw itself count.
+			boolean drawingBow = client.player != null && client.player.isUsingItem()
+					&& client.player.getUseItem().is(net.minecraft.world.item.Items.BOW);
+
+			if (drawingBow) {
 				while (client.options.keySprint.consumeClick()) {
-					ClientPlayNetworking.send(new com.archetypes.DisengagePayload());
+					if (wasDrawingBow) {
+						ClientPlayNetworking.send(new com.archetypes.DisengagePayload());
+					}
 				}
 			}
+
+			wasDrawingBow = drawingBow;
 
 		});
 

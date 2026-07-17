@@ -1442,3 +1442,18 @@ header, mastery line, points-unspent). Results: strength E06C4A->753825
 (5.2:1), agility 7FCF9F->2D4E3A (5.4:1), intellect 7A9CEE->38486F
 (5.3:1). Node fills and bar fills keep the bright pastels — they sit on
 dark grounds where the pastels are right.
+
+**Marksman port + Acrobatics trigger + color revert (2026-07-18
+overnight batch, part 1).** Marksman sketch: bow-branch reshuffle
+(Swift Flight to the base, Acrobatics mid, Nimble Draw high), all descs
+to the user's plain per-rank style — every mechanic already matched the
+sketch numbers, so no Tuning changes. ACROBATICS BUG: vanilla reads the
+sprint key via isDown and never consumes clicks, so presses piled up
+during normal running and the moment a draw began our consumeClick loop
+ate the backlog — roll fired instantly. Now the backlog is drained on
+the draw's first tick and only presses made DURING the draw count.
+(Same staleness pattern exists on Shield Rush's sprint-while-blocking —
+unflagged, unfixed, watch for it.) Colors: the ink() darkening read as
+plain black in-game (user); reverted to the bright archetype colors
+drawn WITH the picker's drop shadow (header, mastery line, points line).
+VanillaUi.ink() deleted.
