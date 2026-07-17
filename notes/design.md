@@ -1534,3 +1534,17 @@ section labels). AND the fork hint forced an honesty fix: the
 Quake<->Haymaker lockout the TreeNodes doc promised "when it lands" was
 never wired — Crusher's capstones are now genuinely exclusive like
 every other pair, with "Locks out X." lines in both descs.
+
+**Brawler icon bake-off, round 3 (2026-07-18 overnight, part 5).** Six
+agents rendered Protector/Slayer/Crusher against the fresh descriptions
+with the Opus Cutpurse sheets + the original hand-made icons as
+references. NOT wired in-game — unlike rounds 1-2 the Brawler trees
+already wear hand-made canon, so the choice is three-way (keep original
+/ sonnet / opus) and waits for the user. Sheet-read: Opus edges all
+three (durability-bar straps, cracked-chestplate Sunder, clock+down-
+arrow Recovery), Sonnet found THE shield-shaped vanilla sprite (empty
+shield-slot placeholder) that Opus's door-like plate lacks — a
+Protector merge (Sonnet's glyph + Opus's overlays) is the likely
+endgame. Both models independently chose a golden heart for Battle
+Trance. sonnet-slayer's two filenames were normalized to the enum
+(first_blood->firstblood, heavy_blows->heavy).
