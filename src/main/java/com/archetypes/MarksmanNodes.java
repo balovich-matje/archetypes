@@ -75,40 +75,37 @@ public final class MarksmanNodes {
 		Map<Long, Def> byCell = new HashMap<>();
 
 		// The bottom tip, where stave meets string.
-		byCell.put(cell(7, 0), new Def(Family.TRUE_SHOT, 1));
+		byCell.put(cell(4, 0), new Def(Family.TRUE_SHOT, 1));
 
-		// The string, bottom-up (the crossbow branch): Piercing Tips at the
-		// nock, the Pinning barbs, then the Rapid Reload climb to Snap Shot.
-		byCell.put(cell(7, 1), new Def(Family.PIERCING_TIPS, 1));
-		byCell.put(cell(7, 2), new Def(Family.PINNING, 1));
-		byCell.put(cell(7, 3), new Def(Family.PINNING, 2));
-		byCell.put(cell(7, 4), new Def(Family.RAPID_RELOAD, 1));
-		byCell.put(cell(7, 5), new Def(Family.RAPID_RELOAD, 2));
-		byCell.put(cell(7, 6), new Def(Family.RAPID_RELOAD, 3));
-		byCell.put(cell(7, 7), new Def(Family.RAPID_RELOAD, 4));
-		byCell.put(cell(7, 8), new Def(Family.SNAP_SHOT, 1));
+		// The string, dead straight up the right (the crossbow branch).
+		byCell.put(cell(4, 1), new Def(Family.PIERCING_TIPS, 1));
+		byCell.put(cell(4, 2), new Def(Family.RAPID_RELOAD, 1));
+		byCell.put(cell(4, 3), new Def(Family.RAPID_RELOAD, 2));
+		byCell.put(cell(4, 4), new Def(Family.RAPID_RELOAD, 3));
+		byCell.put(cell(4, 5), new Def(Family.RAPID_RELOAD, 4));
+		byCell.put(cell(4, 6), new Def(Family.PINNING, 1));
+		byCell.put(cell(4, 7), new Def(Family.PINNING, 2));
+		byCell.put(cell(4, 8), new Def(Family.COMBUSTION, 1));
+		byCell.put(cell(4, 9), new Def(Family.SNAP_SHOT, 1));
 
-		// The stave, bottom-up (the bow branch): footwork, the draw at the
-		// grip, Swift Flight up the springy upper limb to Seeker Arrow.
-		byCell.put(cell(6, 1), new Def(Family.ACROBATICS, 1));
-		byCell.put(cell(5, 2), new Def(Family.ACROBATICS, 2));
-		byCell.put(cell(4, 3), new Def(Family.NIMBLE_DRAW, 1));
-		byCell.put(cell(3, 4), new Def(Family.NIMBLE_DRAW, 2));
-		byCell.put(cell(3, 5), new Def(Family.NIMBLE_DRAW, 3));
-		byCell.put(cell(4, 6), new Def(Family.SWIFT_FLIGHT, 1));
-		byCell.put(cell(5, 7), new Def(Family.SWIFT_FLIGHT, 2));
-		byCell.put(cell(6, 8), new Def(Family.SEEKER_ARROW, 1));
+		// The stave, arcing left (the bow branch).
+		byCell.put(cell(3, 1), new Def(Family.ACROBATICS, 1));
+		byCell.put(cell(2, 2), new Def(Family.ACROBATICS, 2));
+		byCell.put(cell(1, 3), new Def(Family.NIMBLE_DRAW, 1));
+		byCell.put(cell(0, 4), new Def(Family.NIMBLE_DRAW, 2));
+		byCell.put(cell(0, 6), new Def(Family.NIMBLE_DRAW, 3));
+		byCell.put(cell(1, 7), new Def(Family.SWIFT_FLIGHT, 1));
+		byCell.put(cell(2, 8), new Def(Family.SWIFT_FLIGHT, 2));
+		byCell.put(cell(3, 9), new Def(Family.SEEKER_ARROW, 1));
 
-		// The arrow at the bulge: burning head out past the stave, the
-		// shared Conservation shaft running through to the string.
-		byCell.put(cell(1, 5), new Def(Family.COMBUSTION, 1));
-		byCell.put(cell(2, 5), new Def(Family.CONSERVATION, 1));
-		byCell.put(cell(4, 5), new Def(Family.CONSERVATION, 2));
-		byCell.put(cell(5, 5), new Def(Family.CONSERVATION, 3));
-		byCell.put(cell(6, 5), new Def(Family.CONSERVATION, 4));
+		// The arrow: the shared Conservation shaft crossing at the bulge.
+		byCell.put(cell(0, 5), new Def(Family.CONSERVATION, 1));
+		byCell.put(cell(1, 5), new Def(Family.CONSERVATION, 2));
+		byCell.put(cell(2, 5), new Def(Family.CONSERVATION, 3));
+		byCell.put(cell(3, 5), new Def(Family.CONSERVATION, 4));
 
 		// The top tip: Focus, adjacent to both capstones below it.
-		byCell.put(cell(7, 9), new Def(Family.FOCUS, 1));
+		byCell.put(cell(4, 10), new Def(Family.FOCUS, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.MARKSMAN_BOW.nodes();

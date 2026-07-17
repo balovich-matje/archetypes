@@ -92,7 +92,7 @@ public final class ElementalistNodes {
 		byCell.put(cell(4, 0), new Def(Family.FOCUSED_MIND, 1));
 		byCell.put(cell(4, 1), new Def(Family.FOCUSED_MIND, 2));
 		byCell.put(cell(4, 2), new Def(Family.FOCUSED_MIND, 3));
-		byCell.put(cell(4, 3), new Def(Family.FOCUSED_MIND, 4));
+		byCell.put(cell(5, 3), new Def(Family.FOCUSED_MIND, 4));
 
 		// Fire, up the left edge.
 		byCell.put(cell(2, 1), new Def(Family.KINDLING, 1));
@@ -100,8 +100,8 @@ public final class ElementalistNodes {
 		byCell.put(cell(0, 3), new Def(Family.SCORCH, 1));
 		byCell.put(cell(0, 4), new Def(Family.SCORCH, 2));
 		byCell.put(cell(1, 5), new Def(Family.IGNITION, 1));
-		byCell.put(cell(1, 6), new Def(Family.IGNITION, 2));
-		byCell.put(cell(2, 7), new Def(Family.VAPORIZE, 1));
+		byCell.put(cell(2, 6), new Def(Family.IGNITION, 2));
+		byCell.put(cell(3, 7), new Def(Family.VAPORIZE, 1));
 
 		// Ice, up the right edge.
 		byCell.put(cell(6, 1), new Def(Family.CHILL, 1));
@@ -114,12 +114,12 @@ public final class ElementalistNodes {
 
 		// The four capstone tongues, and the crown above — every tongue
 		// touches a crown cell, so any choice still finishes the tree.
-		byCell.put(cell(2, 8), new Def(Family.FLAMETHROWER, 1));
-		byCell.put(cell(3, 8), new Def(Family.METEORITE, 1));
-		byCell.put(cell(4, 8), new Def(Family.GLACIAL_SPIKE, 1));
-		byCell.put(cell(5, 8), new Def(Family.BLIZZARD, 1));
-		byCell.put(cell(3, 9), new Def(Family.ARCANE_POWER, 1));
-		byCell.put(cell(4, 9), new Def(Family.SPELLWEAVER, 1));
+		byCell.put(cell(3, 8), new Def(Family.FLAMETHROWER, 1));
+		byCell.put(cell(4, 8), new Def(Family.METEORITE, 1));
+		byCell.put(cell(5, 8), new Def(Family.GLACIAL_SPIKE, 1));
+		byCell.put(cell(6, 8), new Def(Family.BLIZZARD, 1));
+		byCell.put(cell(4, 9), new Def(Family.ARCANE_POWER, 1));
+		byCell.put(cell(5, 9), new Def(Family.SPELLWEAVER, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.ELEMENTALIST_FLAME.nodes();

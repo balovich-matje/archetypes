@@ -60,11 +60,18 @@ public final class ShadowTicker {
 		}
 
 		// Night Eyes: held far above the 10-second mark, where vanilla's
-		// night vision starts flickering; it fades out after the sneak.
-		if (player.isCrouching()
-				&& ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.NIGHT_EYES) > 0) {
-			player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
-					Tuning.NIGHT_EYES_TICKS, 0, true, false));
+		// night vision starts flickering — and snuffed out the instant the
+		// sneak ends (per playtest). Ours is the ambient one; a potion's
+		// non-ambient night vision is left alone.
+		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.NIGHT_EYES) > 0) {
+			MobEffectInstance vision = player.getEffect(MobEffects.NIGHT_VISION);
+
+			if (player.isCrouching()) {
+				player.addEffect(new MobEffectInstance(MobEffects.NIGHT_VISION,
+						Tuning.NIGHT_EYES_TICKS, 0, true, false));
+			} else if (vision != null && vision.isAmbient()) {
+				player.removeEffect(MobEffects.NIGHT_VISION);
+			}
 		}
 
 		// Umbral Sight: prey nearby is outlined while you sneak or hide.

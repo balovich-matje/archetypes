@@ -1069,3 +1069,24 @@ the ice capstones was Blizzard (the same exclusivity deadlock, one level
 down). Focused Mind grew to 4 ranks (+0.5 regen/s each) rising up the
 flame's core, making a pure-element path exactly 15 points: root 1 +
 passives 7 + capstone 1 + crown 2 + mind 4.
+
+**First three Sketchpad edits ported (2026-07-17).** The user redrew three
+constellations in tools/ (the new local sketch tool) and the edits ported
+mechanically from tools/edits/:
+- elementalist-new: the capstone tongue row shifted right one, so Vaporize
+  and Permafrost each touch both of their element's capstones naturally —
+  the explicit Permafrost→Glacial edge (the "weird line") is gone. FM4
+  tucks diagonally at (5,3).
+- markman-new: the bow slimmed to 5 wide — string perfectly straight up
+  the right (root, Piercing Tips, Reload x4, Pinning x2, Combustion, Snap
+  Shot, Focus at the tip), stave arcing left (Acrobatics, Nimble, Swift,
+  Seeker Arrow), Conservation as the arrow crossing at the bulge.
+- new-shadow: the moon compacted to 11 tall with three-cell tips — senses
+  flank the active at the bottom, Umbral Mastery sits between the
+  capstones at the crown, touching both. The inner arc's one-row gap kept
+  its explicit bridge (now First Strike II → Bloodrush I).
+Also from sketch comments: Night Eyes now snuffs out the moment the sneak
+ends (ours is the ambient instance; potion night vision untouched), and
+Invisibility wears a drawn icon — the bad-omen face with its glare
+recolored to two glowing orange eyes — which needed the sprite-icon path
+wired through ShadowNodes/TreeNodes and onto the cooldown bar tile.

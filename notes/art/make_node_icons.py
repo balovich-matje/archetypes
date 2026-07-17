@@ -383,8 +383,24 @@ def quake_overlay():
     save(im, "quake_overlay")
 
 
+def invisibility():
+    """The Shadow's active: the bad-omen face, its red glare turned to two
+    glowing orange eyes in the dark (user concept)."""
+    im = vanilla("mob_effect/bad_omen.png")
+    px = im.load()
+    for y in range(im.height):
+        for x in range(im.width):
+            r, g, b, a = px[x, y]
+            if a and r > 100 and r > g + 40 and r > b + 40:
+                # Red glare -> orange glow, brightness preserved.
+                k = r / 255
+                px[x, y] = (int(255 * k), int(150 * k), 0, a)
+    save(im, "invisibility")
+
+
 def main():
     os.makedirs(DST, exist_ok=True)
+    invisibility()
     bladestorm()
     blade_dance()
     rend()

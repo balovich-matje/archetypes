@@ -60,6 +60,7 @@ public final class TreeNodes {
 			case SLAYER -> SlayerNodes.def(tree, index).family().sprite();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().sprite();
+			case SHADOW -> ShadowNodes.def(tree, index).family().sprite();
 			default -> null;
 		};
 	}
@@ -70,6 +71,7 @@ public final class TreeNodes {
 			case SLAYER -> SlayerNodes.def(tree, index).family().spriteSize();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().spriteSize();
+			case SHADOW -> ShadowNodes.def(tree, index).family().spriteSize();
 			default -> 0;
 		};
 	}

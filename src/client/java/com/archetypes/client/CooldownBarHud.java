@@ -230,7 +230,8 @@ public final class CooldownBarHud {
 
 		if (com.archetypes.ShadowNodes.rank(SubTree.SHADOW, shadow,
 				com.archetypes.ShadowNodes.Family.INVISIBILITY) > 0) {
-			abilities.add(new Ability(null, 0, new ItemStack(Items.FERMENTED_SPIDER_EYE),
+			var family = com.archetypes.ShadowNodes.Family.INVISIBILITY;
+			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
 					null, 0, ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
 		}

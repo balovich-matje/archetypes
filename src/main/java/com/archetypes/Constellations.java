@@ -80,24 +80,24 @@ public final class Constellations {
 			"....#....");
 
 	/**
-	 * A bow at rest, tall as it should be: the string a straight column down
-	 * the right (the crossbow branch), the stave arcing out left (the bow
-	 * branch), tips shared top and bottom — Focus at the top tip, fed by
-	 * either capstone; True Shot the root at the bottom — and the nocked
-	 * arrow as a horizontal row at the bulge, head poking out past the
-	 * stave, bridging the branches through the shared Conservation shaft.
+	 * A bow at rest (user sketch, markman-new-20260717): the string dead
+	 * straight down the right — the crossbow branch, root to Snap Shot —
+	 * the stave arcing left as the bow branch up to Seeker Arrow, tips
+	 * shared (True Shot bottom, Focus top, touching both capstones), and
+	 * the Conservation arrow crossing at the bulge, bridging the branches.
 	 */
 	public static final Constellation MARKSMAN_BOW = Constellation.of(
-			".......#",
-			"......##",
-			".....#.#",
-			"....#..#",
-			".#######",
-			"...#...#",
-			"....#..#",
-			".....#.#",
-			"......##",
-			".......#");
+			"....#",
+			"...##",
+			"..#.#",
+			".#..#",
+			"#...#",
+			"#####",
+			"#...#",
+			".#..#",
+			"..#.#",
+			"...##",
+			"....#");
 
 	/**
 	 * A single dagger, point up: a broad blade tapering to the tip, a guard a
@@ -119,51 +119,48 @@ public final class Constellations {
 			"..###..");
 
 	/**
-	 * A crescent moon opening right: the outer arc sweeps wide, the inner arc
-	 * hugs the hollow, and the two share their tips. The inner arc skips the
-	 * row where the outer bows deepest — the explicit edge bridges it so the
-	 * curve still draws unbroken.
+	 * A crescent moon opening right (user sketch, new-shadow-20260717):
+	 * three shared cells at each tip — the senses row at the bottom with
+	 * the active, the crown row at the top with both capstones flanking
+	 * Umbral Mastery — the outer arc sweeping wide, the inner hugging the
+	 * hollow.
 	 */
 	public static final Constellation SHADOW_MOON = Constellation.of(
-			"......#",
-			".....##",
-			"....#.#",
+			"....###",
 			"...#.#.",
-			"..#..#.",
-			"..#..#.",
-			".#.....",
-			"..#..#.",
-			"..#..#.",
+			"..#.#..",
+			".#..#..",
+			".#..#..",
+			"#......",
+			".#..#..",
+			".#..#..",
+			"..#.#..",
 			"...#.#.",
-			"....#.#",
-			".....##",
-			"......#")
-			.withEdge(5, 5, 5, 7);
+			"....###")
+			// The inner arc skips a row where the outer bows deepest — the
+			// explicit edge keeps the curve buyable across the gap.
+			.withEdge(4, 4, 4, 6);
 
 	/**
-	 * A flame with a forked crown, 26 nodes (the two-element tree outgrows
-	 * the 23 standard the way Protector outgrew it): fire up the left edge,
-	 * ice up the right, both starting spells side by side at the base with
-	 * Focused Mind between them — its four ranks rising as the flame's core
-	 * into the hollow — and the top split into four capstone tongues under
-	 * the two crown nodes, each capstone touching the crown so no choice
-	 * ever walls off the finish.
+	 * A flame with a forked crown, 26 nodes (user sketch,
+	 * elementalist-new-20260717): fire up the left edge, ice up the right,
+	 * the two starting spells at the base with Focused Mind's four ranks
+	 * rising as the flame's core. The capstone tongue row sits shifted so
+	 * each branch top touches both of its own capstones naturally — the
+	 * explicit Permafrost edge died here — and every capstone touches the
+	 * crown pair.
 	 */
 	public static final Constellation ELEMENTALIST_FLAME = Constellation.of(
-			"...##....",
-			"..####...",
-			"..#...#..",
-			".#.....#.",
+			"....##...",
+			"...####..",
+			"...#..#..",
+			"..#....#.",
 			".#.....#.",
 			"#.......#",
-			"#...#...#",
+			"#....#..#",
 			".#..#..#.",
 			"..#.#.#..",
-			"...###...")
-			// Permafrost reaches Glacial Spike directly: its only grid
-			// neighbour among the ice capstones is Blizzard, and exclusivity
-			// would otherwise wall the Spike off for every ice build.
-			.withEdge(6, 7, 4, 8);
+			"...###...");
 
 	/**
 	 * A wizard's staff: a diamond headpiece cradling a loose orb low in its
