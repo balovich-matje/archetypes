@@ -307,7 +307,7 @@
 	"node.archetypes.wizard.overwhelm": "Overwhelm",
 	"node.archetypes.wizard.overwhelm.desc": "+20% missile damage against anything already wounded.",
 	"node.archetypes.wizard.concussion": "Concussion",
-	"node.archetypes.wizard.concussion.desc": "Missiles shove their target along the line of flight.",
+	"node.archetypes.wizard.concussion.desc": "Missiles shove their target along the line of flight and apply Weakness I for 3 seconds.",
 	"node.archetypes.wizard.shatterpoint": "Shatterpoint",
 	"node.archetypes.wizard.shatterpoint.desc": "+30% missile damage against targets at full health.",
 	"node.archetypes.wizard.mind_well": "Mind Well",

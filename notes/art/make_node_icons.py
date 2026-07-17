@@ -48,10 +48,12 @@ def canvas(size=16):
 
 
 def greatsword_item():
-    """The actual 32px slab greatsword item texture — icons that feature the
-    weapon compose it at native resolution so they match the item in hand."""
-    return Image.open(os.path.join(
+    """The greatsword item texture, upscaled 2x NEAREST to the icons' 32px
+    canvas — the item art went vanilla-blocky at 16px, and the crisp double
+    keeps these icons matching the weapon in hand."""
+    im = Image.open(os.path.join(
         ASSETS, "archetypes/textures/item/iron_greatsword.png")).convert("RGBA")
+    return im.resize((32, 32), Image.NEAREST)
 
 
 def shield_face():
@@ -181,29 +183,14 @@ def decimate():
 
 
 def heavy_blows():
-    """The slab brought down: greatsword tip-first into the ground, debris
-    flying off the impact."""
+    """The greatsword mid-heavy-swing: a semi-transparent echo of the blade
+    hanging behind the real one, bladestorm-style — weight read as motion."""
+    gs = greatsword_item()
     im = canvas(32)
-    ground = ((110, 78, 46, 255), (78, 54, 30, 255))
-    for x in range(0, 32):
-        im.putpixel((x, 29), ground[0])
-        im.putpixel((x, 30), ground[1])
-        im.putpixel((x, 31), ground[1])
-
-    # Flip the item vertically: handle up-left, tip buried bottom-right.
-    im.alpha_composite(greatsword_item().transpose(Image.FLIP_TOP_BOTTOM), (0, -2))
-
-    for i, (x, y) in enumerate(((20, 24), (17, 21), (15, 18), (30, 23), (31, 19))):
-        im.putpixel((x, y), ARC if i % 2 else ARC_DIM)
-    crack = (48, 32, 16, 255)
-    for x, y in ((23, 29), (21, 30), (19, 31), (30, 29), (31, 30)):
-        im.putpixel((x, y), crack)
+    echo = gs.rotate(-28, resample=Image.NEAREST, expand=False)
+    im.alpha_composite(faded(echo, 120), (0, 0))
+    im.alpha_composite(gs, (0, 0))
     save(im, "heavy_blows")
-
-
-# --- Protector: transparent overlays drawn ON TOP of the real item render ---
-# The tree draws the vanilla shield/anvil item first (the icon players know),
-# then one of these 32px effect layers over it.
 
 
 def bash_overlay():

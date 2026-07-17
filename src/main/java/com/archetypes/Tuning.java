@@ -382,6 +382,7 @@ public final class Tuning {
 	public static final float VELOCITY_FACTOR = 1.3F;
 	public static final float OVERWHELM_BONUS = 0.2F;
 	public static final float CONCUSSION_PUSH = 0.5F;
+	public static final int CONCUSSION_WEAKNESS_TICKS = 60;
 	public static final float SHATTERPOINT_BONUS = 0.3F;
 	public static final float MIND_WELL_MANA_PER_RANK = 20.0F;
 	public static final float FLOW_REGEN_PER_RANK = 0.5F;

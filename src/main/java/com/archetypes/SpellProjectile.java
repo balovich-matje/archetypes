@@ -534,6 +534,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					.scale(this.knockbackPush);
 			victim.setDeltaMovement(victim.getDeltaMovement().add(push.x, 0.15, push.z));
 			victim.hurtMarked = true;
+			victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
+					Tuning.CONCUSSION_WEAKNESS_TICKS));
 		}
 	}
 

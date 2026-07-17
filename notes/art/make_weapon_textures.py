@@ -66,6 +66,36 @@ AMETHYST_TIP = (
     (0, -2, (176, 116, 217, 255)),
     (0, 0, (140, 88, 180, 255)),     # socket over the stick's tip
 )
+# The big ornaments (the stick shifts down-left to make the room): a
+# faceted amethyst crystal and a golden starburst, each ~4x the small tip.
+BIG_AMETHYST_TIP = (
+    (1, -1, (140, 88, 180, 255)),    # socket
+    (1, -2, (176, 116, 217, 255)),   # lower facets
+    (0, -2, (150, 96, 190, 255)),
+    (2, -2, (150, 96, 190, 255)),
+    (0, -3, (176, 116, 217, 255)),   # waist
+    (1, -3, (225, 194, 247, 255)),   # bright face
+    (2, -3, (176, 116, 217, 255)),
+    (0, -4, (150, 96, 190, 255)),    # upper facets
+    (1, -4, (200, 156, 235, 255)),
+    (2, -4, (176, 116, 217, 255)),
+    (1, -5, (225, 194, 247, 255)),   # the point
+)
+BIG_HOLY_TIP = (
+    (1, -1, (250, 215, 90, 255)),    # mount
+    (1, -3, (255, 252, 220, 255)),   # blazing core
+    (0, -3, (250, 215, 90, 255)),    # long cross arms
+    (-1, -3, (240, 190, 60, 255)),
+    (2, -3, (250, 215, 90, 255)),
+    (3, -3, (240, 190, 60, 255)),
+    (1, -2, (250, 215, 90, 255)),
+    (1, -4, (250, 215, 90, 255)),
+    (1, -5, (240, 190, 60, 255)),
+    (0, -4, (240, 190, 60, 180)),    # faint diagonals
+    (2, -4, (240, 190, 60, 180)),
+    (0, -2, (240, 190, 60, 180)),
+    (2, -2, (240, 190, 60, 180)),
+)
 FLAME_TIP = (
     (1, -1, (255, 236, 130, 255)),   # white-hot core
     (1, -2, (255, 170, 40, 255)),    # rising flame
@@ -201,13 +231,14 @@ def save(im, name):
 
 if __name__ == "__main__":
     images = [(f"{m}_dagger", dagger(m)) for m in MATERIALS] + [
-        # Iron only for now: the trial balloon for replacing the hi-res art.
-        ("iron_greatsword", greatsword16("iron")),
-        ("magic_wand", wand()),
-        ("apprentice_wand", wand(tip=AMETHYST_TIP, double=False)),
+    ] + [(f"{m}_greatsword", greatsword16(m)) for m in MATERIALS] + [
+        # The basic wand wears the small crystal now; apprentice and holy
+        # carry the big ornaments on a shifted stick.
+        ("magic_wand", wand(tip=AMETHYST_TIP, double=False)),
+        ("apprentice_wand", wand(tip=BIG_AMETHYST_TIP, double=False, shift=(-2, 2))),
         ("blaze_wand", wand("item/blaze_rod.png", FLAME_TIP, double=False, shift=(-1, 1))),
         ("breeze_wand", wand("item/breeze_rod.png", SNOWFLAKE_TIP, double=False, shift=(-1, 1))),
-        ("holy_wand", wand(tip=HOLY_TIP, double=False)),
+        ("holy_wand", wand(tip=BIG_HOLY_TIP, double=False, shift=(-2, 2))),
     ]
 
     for name, im in images:

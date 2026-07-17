@@ -1184,3 +1184,17 @@ health takes one, wounded the other), knockback as a deltaMovement push
 (the proven Haymaker pattern, not the knockback() overload); Siphon rides
 a new SeekerCombat AFTER_DEATH hook keyed on the projectile's mode; Echo
 twins are free and slightly inaccurate; Miracle rolls before the spend.
+
+**Art + wizard polish from playtest (2026-07-17).** All seven greatswords
+now use the vanilla-derived blocky sprite (the iron trial approved); the
+three Slayer icons that composed the old 32px art regenerate from the new
+16px sprite doubled NEAREST — and Heavy Blows was redrawn per request as
+the greatsword with a semi-transparent rotated echo behind it,
+bladestorm-style. Wands: the basic wand takes the small amethyst-crystal
+look, and Apprentice/Holy carry ~4x ornaments (a faceted crystal, a
+golden starburst) on a stick shifted down-left for room. Wizard balance:
+Velocity swapped into the Lance/opener face (it made no sense beside the
+deliberately-slower Seeker Missile) with Concussion taking its place on
+the finisher face — and Concussion now also applies Weakness I for 3s on
+hit. Sketchpad TREES table now reads WizardNodes/PriestNodes, so the tool
+renders the real trees for the user's upcoming edits.

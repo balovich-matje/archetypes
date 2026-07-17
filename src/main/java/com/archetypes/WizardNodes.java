@@ -16,8 +16,8 @@ import org.jspecify.annotations.Nullable;
  * climbs through Force's damage ranks to the crossbar (Clarity, Siphon,
  * Echo — the economy of casting), the neck extends Range, and the diamond
  * head splits over the Arcane Orb: the left face finishes wounded prey
- * (Velocity, Overwhelm, up to Seeker Missile), the right face opens fights
- * (Concussion, Shatterpoint, up to Lance). The diamond's upper arc is the
+ * (Concussion's weakening shove, Overwhelm, up to Seeker Missile), the
+ * right face opens fights fast (Velocity, Shatterpoint, up to Lance). The diamond's upper arc is the
  * crown — Mind Wells, Flow, the Archmage's tip — reachable from either
  * capstone.
  */
@@ -42,7 +42,7 @@ public final class WizardNodes {
 		VELOCITY(() -> Items.FEATHER),
 		/** +20% missile damage to anything already wounded. */
 		OVERWHELM(() -> Items.SPECTRAL_ARROW),
-		/** Missiles shove their target. */
+		/** Missiles shove their target and leave it weakened. */
 		CONCUSSION(() -> Items.PISTON),
 		/** +30% missile damage to targets at full health. */
 		SHATTERPOINT(() -> Items.TARGET),
@@ -107,10 +107,10 @@ public final class WizardNodes {
 		// The diamond: the orb in the cradle, a face per build, a capstone
 		// at each side point.
 		byCell.put(cell(3, 8), new Def(Family.ARCANE_ORB, 1));
-		byCell.put(cell(2, 7), new Def(Family.VELOCITY, 1));
+		byCell.put(cell(2, 7), new Def(Family.CONCUSSION, 1));
 		byCell.put(cell(1, 8), new Def(Family.OVERWHELM, 1));
 		byCell.put(cell(0, 9), new Def(Family.SEEKER_MISSILE, 1));
-		byCell.put(cell(4, 7), new Def(Family.CONCUSSION, 1));
+		byCell.put(cell(4, 7), new Def(Family.VELOCITY, 1));
 		byCell.put(cell(5, 8), new Def(Family.SHATTERPOINT, 1));
 		byCell.put(cell(6, 9), new Def(Family.LANCE, 1));
 
