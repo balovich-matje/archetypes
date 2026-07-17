@@ -38,6 +38,15 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST, SNOW_BOLT
 	}
 
+	/** Holy Light's palette: gold by default; Benediction burns orange;
+	 * Renewal keeps vanilla's green glow (see holyParticle). */
+	private static final net.minecraft.core.particles.DustParticleOptions HOLY_DUST =
+			new net.minecraft.core.particles.DustParticleOptions(0xFFD75E, 1.0F);
+	private static final net.minecraft.core.particles.DustParticleOptions BENEDICTION_DUST =
+			new net.minecraft.core.particles.DustParticleOptions(0xF07818, 1.0F);
+	/** Lance's travelling ring: how many sparks trace the sweep's width. */
+	private static final int LANCE_RING_POINTS = 6;
+
 	/** Mind Well's empowered missile — synced, because the client renders it
 	 * half again bigger; it's also the only missile that keeps the trail. */
 	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_EMPOWERED =
@@ -342,14 +351,20 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			case FLAME_BOLT -> level.sendParticles(ParticleTypes.FLAME,
 					this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.005);
 			// Only the empowered missile wears the white trail; the rank and
-			// file fly clean (user sketch, new-edits-for-wizard).
+			// file fly clean (user sketch, new-edits-for-wizard). Lance adds
+			// a spinning ring the width of its sweep, so the AOE reads as a
+			// circle instead of a lone shard.
 			case MISSILE -> {
+				if (this.pierce) {
+					this.lanceRing(level);
+				}
+
 				if (this.isEmpowered()) {
 					level.sendParticles(ParticleTypes.END_ROD,
 							this.getX(), this.getY(), this.getZ(), 2, 0.05, 0.05, 0.05, 0.0);
 				}
 			}
-			case HOLY_LIGHT -> level.sendParticles(ParticleTypes.GLOW,
+			case HOLY_LIGHT -> level.sendParticles(this.holyParticle(),
 					this.getX(), this.getY(), this.getZ(), 2, 0.1, 0.1, 0.1, 0.0);
 			case ICE_BLAST -> level.sendParticles(ParticleTypes.SNOWFLAKE,
 					this.getX(), this.getY(), this.getZ(), 3, 0.15, 0.15, 0.15, 0.01);
@@ -358,6 +373,46 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			case null -> {
 			}
 		}
+	}
+
+	/**
+	 * Lance: a ring of sparks perpendicular to the flight path, at the radius
+	 * pierceSweep actually damages — it spins a little each tick, so the
+	 * missile drills forward leaving a faint helix.
+	 */
+	private void lanceRing(final ServerLevel level) {
+		Vec3 dir = this.getDeltaMovement();
+
+		if (dir.lengthSqr() < 1.0E-4) {
+			return;
+		}
+
+		dir = dir.normalize();
+		Vec3 side = Math.abs(dir.y) > 0.99 ? new Vec3(1.0, 0.0, 0.0) : new Vec3(0.0, 1.0, 0.0);
+		Vec3 u = dir.cross(side).normalize();
+		Vec3 w = dir.cross(u);
+		double radius = Tuning.MISSILE_PIERCE_INFLATE + this.getBbWidth() / 2.0;
+		double spin = this.tickCount * 0.5;
+
+		for (int i = 0; i < LANCE_RING_POINTS; i++) {
+			double angle = spin + i * (Math.PI * 2.0 / LANCE_RING_POINTS);
+			Vec3 point = this.position()
+					.add(u.scale(Math.cos(angle) * radius))
+					.add(w.scale(Math.sin(angle) * radius));
+			level.sendParticles(ParticleTypes.END_ROD, point.x, point.y, point.z,
+					1, 0.0, 0.0, 0.0, 0.0);
+		}
+	}
+
+	/** Gold for the plain light; Renewal stays the green glow the spell
+	 * always had; Benediction burns orange. The capstones are exclusive,
+	 * so the two flags never collide. */
+	private net.minecraft.core.particles.ParticleOptions holyParticle() {
+		if (this.blessRegen) {
+			return ParticleTypes.GLOW;
+		}
+
+		return this.blessRandom ? BENEDICTION_DUST : HOLY_DUST;
 	}
 
 	@Override
@@ -544,7 +599,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					Tuning.AEGIS_TICKS, this.aegisRank - 1));
 		}
 
-		level.sendParticles(ParticleTypes.GLOW, this.getX(), this.getY(), this.getZ(),
+		level.sendParticles(this.holyParticle(), this.getX(), this.getY(), this.getZ(),
 				40, radius * 0.4, 0.6, radius * 0.4, 0.5);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
 				SoundEvents.SPLASH_POTION_BREAK, SoundSource.PLAYERS, 1.0F, 1.3F);

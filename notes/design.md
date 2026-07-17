@@ -1301,3 +1301,11 @@ source == target, which only the drink path produces — the splash/
 lingering/arrow forms vanilla brewing derives are inert, so no thrown-
 bottle griefing. Sketch .json files are deleted after porting from now
 on (.txt kept as archive).
+
+**Lance ring + Holy Light palette (2026-07-17).** Lance missiles now
+trace a spinning 6-spark END_ROD ring perpendicular to flight, at
+exactly the radius pierceSweep damages (MISSILE_PIERCE_INFLATE + half
+the hitbox) — the AOE reads as a travelling circle drilling a faint
+helix. Holy Light's particles (trail AND burst) follow the build: gold
+dust by default, the old green GLOW kept for Renewal, orange dust for
+Benediction — the capstones are exclusive so the colors never fight.
