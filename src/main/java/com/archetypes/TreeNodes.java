@@ -57,13 +57,19 @@ public final class TreeNodes {
 	}
 
 	/**
-	 * The bake-off verdict, per tree (in-game A/B, 2026-07-17): Sonnet's
-	 * vanilla-anchored Wizard and Priest, Opus' mechanic-grammar
-	 * Elementalist. Sets live under textures/node/test/, sources in
+	 * Bake-off sets, per tree. Intellect is the locked verdict from the
+	 * 2026-07-17 in-game A/B (Sonnet's vanilla-anchored Wizard and Priest,
+	 * Opus' Elementalist); agility is round two, still under comparison —
+	 * flip its entry between "sonnet" and "opus" for the screenshot
+	 * passes. Sets live under textures/node/test/, sources in
 	 * notes/art/icon_test.
 	 */
 	private static String iconSet(final SubTree tree) {
-		return tree == SubTree.ELEMENTALIST ? "opus" : "sonnet";
+		return switch (tree) {
+			case ELEMENTALIST -> "opus";
+			case MARKSMAN, SHADOW, ASSASSIN -> "sonnet";
+			default -> "sonnet";
+		};
 	}
 
 	/** Public so the proc HUD's crosshair flash follows the verdict too. */
@@ -81,11 +87,16 @@ public final class TreeNodes {
 			case SLAYER -> SlayerNodes.def(tree, index).family().sprite();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().sprite();
-			case SHADOW -> ShadowNodes.def(tree, index).family().sprite();
+			// Shadow's hand-made sprites (Invisibility) outrank the test set.
+			case SHADOW -> {
+				ShadowNodes.Family family = ShadowNodes.def(tree, index).family();
+				yield family.sprite() != null ? family.sprite() : testSprite(tree, family);
+			}
+			case MARKSMAN -> testSprite(tree, MarksmanNodes.def(tree, index).family());
+			case ASSASSIN -> testSprite(tree, AssassinNodes.def(tree, index).family());
 			case WIZARD -> testSprite(tree, WizardNodes.def(tree, index).family());
 			case PRIEST -> testSprite(tree, PriestNodes.def(tree, index).family());
 			case ELEMENTALIST -> testSprite(tree, ElementalistNodes.def(tree, index).family());
-			default -> null;
 		};
 	}
 
@@ -95,9 +106,11 @@ public final class TreeNodes {
 			case SLAYER -> SlayerNodes.def(tree, index).family().spriteSize();
 			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().spriteSize();
-			case SHADOW -> ShadowNodes.def(tree, index).family().spriteSize();
-			case WIZARD, PRIEST, ELEMENTALIST -> 32;
-			default -> 0;
+			case SHADOW -> {
+				ShadowNodes.Family family = ShadowNodes.def(tree, index).family();
+				yield family.sprite() != null ? family.spriteSize() : 32;
+			}
+			case MARKSMAN, ASSASSIN, WIZARD, PRIEST, ELEMENTALIST -> 32;
 		};
 	}
 

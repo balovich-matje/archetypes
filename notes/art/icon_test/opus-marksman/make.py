@@ -102,9 +102,11 @@ def true_shot():
     at the tip for the x2 hit."""
     arrow = vanilla("item/spectral_arrow.png")
     im = canvas()
-    # Straight trail behind the fletch, on the arrow's own axis (down-left).
-    for i, (x, y) in enumerate(((3, 12), (2, 13), (1, 14))):
-        plot(im, [(x, y)], GOLD if i == 0 else DIM)
+    # A dead-straight flight line running the arrow's whole axis and past both
+    # ends — the shot that gravity doesn't bend.
+    line = ((0, 15), (1, 14), (2, 13), (14, 1), (15, 0))
+    for x, y in line:
+        plot(im, [(x, y)], GOLD)
     im.alpha_composite(arrow, (0, 0))
     # x2 power-spark at the tip (top-right).
     plot(im, [(13, 2), (14, 2), (13, 1), (12, 2), (14, 3)], GOLD_HI)
@@ -117,12 +119,12 @@ def conservation():
     spare you didn't spend — with a couple of refund sparkles."""
     arrow = vanilla("item/arrow.png")
     im = canvas()
-    ghost = faded(tint(arrow, GREEN, keep=0.30), 150)
-    im.alpha_composite(ghost, (-3, 3))       # the kept spare, offset back
-    im.alpha_composite(arrow, (1, -1))       # the one you fired
-    plot(im, [(2, 6), (1, 5), (3, 5), (2, 4)], GREEN)   # refund sparkle
-    plot(im, [(2, 5)], GREEN_D)
-    plot(im, [(6, 11), (7, 12)], GREEN)
+    ghost = faded(tint(arrow, GREEN, keep=0.28), 175)
+    im.alpha_composite(ghost, (-4, 4))       # the kept spare, held back
+    im.alpha_composite(arrow, (2, -2))       # the one you fired
+    # A green gleam on the spare: saved, not spent (an X sparkle, not a plus).
+    plot(im, [(2, 5), (0, 3), (4, 3), (0, 7), (4, 7)], GREEN)
+    plot(im, [(1, 4), (3, 4), (1, 6), (3, 6)], GREEN_D)
     save(im, "conservation")
 
 
@@ -142,13 +144,16 @@ def pinning():
 def swift_flight():
     """An arrow laid flat and flying fast — three speed-dashes streaming off
     the fletch. Same arrow, just quicker."""
-    arrow = vanilla("item/arrow.png").rotate(-45, resample=Image.NEAREST, expand=False)
+    arrow = vanilla("item/arrow.png")
     im = canvas()
-    im.alpha_composite(arrow, (1, 0))
-    # Speed dashes trailing the fletch (left), staggered.
-    for y, x0, x1 in ((6, 0, 3), (8, 1, 5), (10, 0, 3)):
-        for x in range(x0, x1 + 1):
-            plot(im, [(x, y)], WHITE if x >= x1 - 1 else DIM)
+    # Two fading motion-echoes streaking off the fletch — the crisp diagonal
+    # arrow itself, blurred by speed (never a rotated, mangled sprite).
+    im.alpha_composite(faded(arrow, 70), (-4, 4))
+    im.alpha_composite(faded(arrow, 130), (-2, 2))
+    im.alpha_composite(arrow, (1, -1))
+    # A couple of bright speed ticks in the trail.
+    plot(im, [(0, 13), (1, 14)], WHITE)
+    plot(im, [(0, 10), (1, 11)], DIM)
     save(im, "swift_flight")
 
 
