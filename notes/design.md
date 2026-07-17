@@ -1317,3 +1317,27 @@ TreeNodes.TEST_ICON_SET ("sonnet" first) is the one-string switch for
 the swap between the user's two screenshot passes. Parked for later,
 user idea: remake the OTHER trees' default item icons too — Crusher's
 fists branch literally uses BRICKS.
+
+**Icon verdict locked + spell feel pass (2026-07-17 evening).** The
+bake-off verdict is now per-tree in TreeNodes.iconSet(): Sonnet's
+Wizard and Priest (vanilla-anchored won; Opus-Priest "looks good, just
+not in Minecraft"), Opus' Elementalist (best of all six, great
+in-game). Spell feel round, all user calls:
+- Flamethrower: knockback GONE (the stream was pushing victims out of
+  the stream — FLAME_BOLT joins the knockback mixin at x0) and the flat
+  BLAZE_SHOOT screech became a pitch-jittered FIRECHARGE_USE whoosh per
+  bolt.
+- BLIZZARD REWORKED (WoW-mage style, "the Meteorite's AOE opposite"):
+  no longer a channel. Press-cast at the targeted block (meteor-style
+  pick, 32 blocks): a BlizzardZones storm rakes the 3x3 for
+  BLIZZARD_TOTAL_DAMAGE 20 over 8 seconds in 1-second pulses of 2.5,
+  Enemy-only, wandPower x arcane scaling baked at cast. One storm per
+  caster, recasting moves it; zones are transient (restart/logout/
+  dimension-hop clears). Cost: NEW BLIZZARD_COST 75 flat through
+  elementCost (user never specced a price — flagged for playtest).
+  Visuals: fast-falling ICE block-crumb "icicles" + snowflake haze;
+  cast = BREEZE_SHOOT, pulse = POINTED_DRIPSTONE_LAND (a literal
+  falling-icicle impact). SNOW_BOLT mode deleted with the channel.
+- Holy Light's burst: glass shatter -> BELL_RESONATE + brighter chime.
+Kept for the record: Shatter does NOT amplify blizzard pulses (zone
+damage isn't a SpellProjectile); mention if the ice build feels flat.

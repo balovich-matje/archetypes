@@ -93,8 +93,9 @@ public final class SeekerSpells {
 	}
 
 	/** The elementalist key: whichever element you opened with, upgraded by
-	 * whatever you've learned since. Channel capstones cast via the channel
-	 * payload stream instead; a single press from them does nothing. */
+	 * whatever you've learned since. The Flamethrower casts via the channel
+	 * payload stream instead, so a single press from it does nothing;
+	 * Blizzard is a press-cast again — it calls a storm. */
 	public static void castElementalist(final ServerPlayer player) {
 		if (!ModItems.isWand(player.getMainHandItem())) {
 			return;
@@ -104,6 +105,7 @@ public final class SeekerSpells {
 
 		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ICE_BLAST) > 0) {
 			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.BLIZZARD) > 0) {
+				blizzard(player, owned);
 				return;
 			}
 
@@ -240,7 +242,8 @@ public final class SeekerSpells {
 	/**
 	 * Flamethrower: fed by one payload per client tick while the key is held.
 	 * A gap in the stream means the channel ended, so a fresh press pays the
-	 * base cost and the stream itself pays the per-second drain.
+	 * base cost and the stream itself pays the per-second drain. (Blizzard
+	 * left the channel — it's a called storm now, see blizzard().)
 	 */
 	public static void channelFlame(final ServerPlayer player) {
 		if (!ModItems.isWand(player.getMainHandItem())) {
@@ -248,14 +251,9 @@ public final class SeekerSpells {
 		}
 
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
-		boolean flame = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
-				ElementalistNodes.Family.FLAMETHROWER) > 0
-				&& ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FIREBALL) > 0;
-		boolean blizzard = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
-				ElementalistNodes.Family.BLIZZARD) > 0
-				&& ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ICE_BLAST) > 0;
 
-		if (!flame && !blizzard) {
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FLAMETHROWER) <= 0
+				|| ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FIREBALL) <= 0) {
 			return;
 		}
 
@@ -266,7 +264,7 @@ public final class SeekerSpells {
 		boolean fresh = last == null || now - last > 3;
 
 		if (!Mana.spend(player, fresh
-				? elementCost(player, Tuning.FLAME_START_COST, flame, blizzard, false)
+				? elementCost(player, Tuning.FLAME_START_COST, true, false, false)
 				: Tuning.FLAME_COST_PER_TICK)) {
 			return;
 		}
@@ -277,39 +275,53 @@ public final class SeekerSpells {
 			return;
 		}
 
-		int shatter = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SHATTER);
-		SpellProjectile bolt;
+		SpellProjectile bolt = new SpellProjectile(player, level,
+				SpellProjectile.Mode.FLAME_BOLT, new ItemStack(Items.BLAZE_POWDER))
+				.withDamage(wandPower(player, true, false) * arcane(owned, Tuning.FLAME_BOLT_DAMAGE + 0.5F * Tuning.SCORCH_PER_RANK
+						* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SCORCH)))
+				.withIgnite(Tuning.FLAME_BOLT_FIRE_SECONDS + Tuning.IGNITION_SECONDS_PER_RANK
+						* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.IGNITION))
+				.withShatter(ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SHATTER));
 
-		if (flame) {
-			bolt = new SpellProjectile(player, level,
-					SpellProjectile.Mode.FLAME_BOLT, new ItemStack(Items.BLAZE_POWDER))
-					.withDamage(wandPower(player, true, false) * arcane(owned, Tuning.FLAME_BOLT_DAMAGE + 0.5F * Tuning.SCORCH_PER_RANK
-							* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SCORCH)))
-					.withIgnite(Tuning.FLAME_BOLT_FIRE_SECONDS + Tuning.IGNITION_SECONDS_PER_RANK
-							* ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.IGNITION))
-					.withShatter(shatter);
-
-			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.VAPORIZE) > 0) {
-				bolt.withVaporize();
-			}
-		} else {
-			bolt = new SpellProjectile(player, level,
-					SpellProjectile.Mode.SNOW_BOLT, new ItemStack(Items.SNOWBALL))
-					.withDamage(wandPower(player, false, true) * arcane(owned, Tuning.SNOW_BOLT_DAMAGE))
-					.withSlow(1, Tuning.SNOW_BOLT_SLOW_TICKS)
-					.withShatter(shatter);
-
-			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.PERMAFROST) > 0) {
-				bolt.withPermafrost();
-			}
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.VAPORIZE) > 0) {
+			bolt.withVaporize();
 		}
 
 		bolt.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.FLAME_BOLT_SPEED, 4.0F);
 		level.addFreshEntity(bolt);
+		// A pitch-jittered whoosh per bolt reads as a roaring stream; the
+		// old flat blaze screech got tiring in combat (user call).
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				flame ? SoundEvents.BLAZE_SHOOT : SoundEvents.SNOW_HIT,
-				SoundSource.PLAYERS, 0.4F, flame ? 1.4F : 1.2F);
+				SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.3F,
+				0.85F + player.getRandom().nextFloat() * 0.3F);
+	}
+
+	/**
+	 * Blizzard: the Meteorite's AOE opposite — not a channel but a storm
+	 * called over the targeted ground, raking its 3x3 with icicles for
+	 * eight seconds while the caster does something else. One storm per
+	 * caster; recasting moves it (see BlizzardZones).
+	 */
+	private static void blizzard(final ServerPlayer player, final Set<Integer> owned) {
+		ServerLevel level = (ServerLevel) player.level();
+		HitResult hit = player.pick(Tuning.METEOR_TARGET_RANGE, 1.0F, false);
+
+		if (hit.getType() != HitResult.Type.BLOCK) {
+			return;
+		}
+
+		if (!Mana.spend(player, elementCost(player, Tuning.BLIZZARD_COST, false, true, false))) {
+			return;
+		}
+
+		BlockPos targetPos = ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos();
+		BlizzardZones.place(player, level,
+				new net.minecraft.world.phys.Vec3(targetPos.getX() + 0.5, targetPos.getY() + 1.0,
+						targetPos.getZ() + 0.5),
+				wandPower(player, false, true) * arcane(owned, Tuning.BLIZZARD_TOTAL_DAMAGE));
+		level.playSound(null, targetPos.getX(), targetPos.getY(), targetPos.getZ(),
+				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 1.2F, 0.7F);
 	}
 
 	/** Magic Missile: straight line, wand in hand — sharpened by the whole

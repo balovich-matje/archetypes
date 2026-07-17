@@ -281,7 +281,7 @@
 	"node.archetypes.elementalist.glacial_spike": "Glacial Spike",
 	"node.archetypes.elementalist.glacial_spike.desc": "Ice Blast becomes a lance of winter: 2.5x damage, and the target freezes where it stands.",
 	"node.archetypes.elementalist.blizzard": "Blizzard",
-	"node.archetypes.elementalist.blizzard.desc": "Ice Blast becomes a channeled storm: hold the key to spray freezing bolts — 50 mana to raise, 25 per second held.",
+	"node.archetypes.elementalist.blizzard.desc": "Ice Blast becomes a called storm: icicles rake the targeted 3x3 ground for 10 hearts over 8 seconds. Recasting moves the storm. 75 mana.",
 	"node.archetypes.elementalist.spellweaver": "Spellweaver",
 	"node.archetypes.elementalist.spellweaver.desc": "All your spells cost 10% less mana.",
 	"node.archetypes.elementalist.arcane_power": "Arcane Power",

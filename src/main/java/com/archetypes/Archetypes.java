@@ -29,6 +29,7 @@ public class Archetypes implements ModInitializer {
 		ShadowTicker.initialize();
 		SeekerTicker.initialize();
 		SeekerCombat.initialize();
+		BlizzardZones.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);

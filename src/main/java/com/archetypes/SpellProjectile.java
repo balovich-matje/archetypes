@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class SpellProjectile extends ThrowableItemProjectile {
 	public enum Mode {
-		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST, SNOW_BOLT
+		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST
 	}
 
 	/** Holy Light's palette: gold by default; Benediction burns orange;
@@ -368,8 +368,6 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					this.getX(), this.getY(), this.getZ(), 2, 0.1, 0.1, 0.1, 0.0);
 			case ICE_BLAST -> level.sendParticles(ParticleTypes.SNOWFLAKE,
 					this.getX(), this.getY(), this.getZ(), 3, 0.15, 0.15, 0.15, 0.01);
-			case SNOW_BOLT -> level.sendParticles(ParticleTypes.SNOWFLAKE,
-					this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.005);
 			case null -> {
 			}
 		}
@@ -446,12 +444,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
 			}
 			case MISSILE -> this.missileHit(level, victim);
-			case ICE_BLAST, SNOW_BOLT -> {
+			case ICE_BLAST -> {
 				// Shatter reads the slow/freeze the victim ALREADY has, so a
 				// volley ramps: the first bolt tags, the next ones profit.
 				float damage = this.shattered(victim, this.damageOverride > 0.0F
-						? this.damageOverride
-						: this.mode == Mode.ICE_BLAST ? Tuning.ICE_BLAST_DAMAGE : Tuning.SNOW_BOLT_DAMAGE);
+						? this.damageOverride : Tuning.ICE_BLAST_DAMAGE);
 
 				if (this.slowAmp >= 0) {
 					victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
@@ -601,10 +598,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		level.sendParticles(this.holyParticle(), this.getX(), this.getY(), this.getZ(),
 				40, radius * 0.4, 0.6, radius * 0.4, 0.5);
+		// A bell's shimmer, not shattering glass: the light lands holy.
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.SPLASH_POTION_BREAK, SoundSource.PLAYERS, 1.0F, 1.3F);
+				SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 0.7F, 1.6F);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F, 0.7F);
+				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.9F, 1.1F);
 	}
 
 	/**

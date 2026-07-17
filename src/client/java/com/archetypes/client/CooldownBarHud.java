@@ -264,7 +264,8 @@ public final class CooldownBarHud {
 					: ice ? Items.ICE : Items.FIRE_CHARGE;
 			float cost = meteor ? Tuning.METEOR_MIN_MANA
 					: com.archetypes.SeekerSpells.elementCost(player,
-							flame || blizzard ? Tuning.FLAME_START_COST
+							flame ? Tuning.FLAME_START_COST
+									: blizzard ? Tuning.BLIZZARD_COST
 									: ice ? Tuning.ICE_BLAST_COST : Tuning.FIREBALL_COST,
 							fire, ice, false);
 			abilities.add(new Ability(new ItemStack(icon), ArchetypesClient.ABILITY_KEYS[0], cost, meteor));

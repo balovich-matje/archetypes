@@ -288,10 +288,17 @@ public abstract class LivingEntityMixin {
 		}
 
 		// Magic Missiles shove half as hard too — a spam spell that juggles
-		// its target out of its own range was self-defeating (user call).
-		if (source.getDirectEntity() instanceof com.archetypes.SpellProjectile spell
-				&& spell.mode() == com.archetypes.SpellProjectile.Mode.MISSILE) {
-			return strength * Tuning.DAGGER_KNOCKBACK_FACTOR;
+		// its target out of its own range was self-defeating (user call) —
+		// and the Flamethrower doesn't shove at all: its stream was pushing
+		// victims out of the stream (user call too).
+		if (source.getDirectEntity() instanceof com.archetypes.SpellProjectile spell) {
+			if (spell.mode() == com.archetypes.SpellProjectile.Mode.MISSILE) {
+				return strength * Tuning.DAGGER_KNOCKBACK_FACTOR;
+			}
+
+			if (spell.mode() == com.archetypes.SpellProjectile.Mode.FLAME_BOLT) {
+				return 0.0;
+			}
 		}
 
 		return source.getEntity() instanceof ServerPlayer player

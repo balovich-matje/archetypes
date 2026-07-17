@@ -57,18 +57,20 @@ public final class TreeNodes {
 	}
 
 	/**
-	 * Which bake-off icon set the intellect trees wear while the in-game
-	 * comparison runs: "sonnet" or "opus" (rendered sets both live under
-	 * textures/node/test/, sources in notes/art/icon_test). Flip the
-	 * string and rebuild to swap all fifty icons at once.
+	 * The bake-off verdict, per tree (in-game A/B, 2026-07-17): Sonnet's
+	 * vanilla-anchored Wizard and Priest, Opus' mechanic-grammar
+	 * Elementalist. Sets live under textures/node/test/, sources in
+	 * notes/art/icon_test.
 	 */
-	private static final String TEST_ICON_SET = "opus";
+	private static String iconSet(final SubTree tree) {
+		return tree == SubTree.ELEMENTALIST ? "opus" : "sonnet";
+	}
 
-	/** Public so the proc HUD's crosshair flash follows the switch too. */
+	/** Public so the proc HUD's crosshair flash follows the verdict too. */
 	public static net.minecraft.resources.@Nullable Identifier testSprite(final SubTree tree,
 			final Enum<?> family) {
 		return "MINOR".equals(family.name()) ? null
-				: Archetypes.id("textures/node/test/" + TEST_ICON_SET + "/" + tree.id()
+				: Archetypes.id("textures/node/test/" + iconSet(tree) + "/" + tree.id()
 						+ "/" + family.name().toLowerCase(java.util.Locale.ROOT) + ".png");
 	}
 
