@@ -178,11 +178,15 @@ public final class AgilityActives {
 		level.playSound(null, dest.x, dest.y, dest.z,
 				SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.2F);
 
-		strike(player, victim);
-
+		// Arm the cooldown BEFORE the strike. If the strike is a kill, its
+		// death event fires synchronously inside attack() and Momentum wipes
+		// the cooldown there — so this write has to happen first, or a
+		// one-shot re-arms the very cooldown Momentum just cleared (user bug).
 		boolean flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_FLURRY) > 0;
 		((AttachmentTarget) player).setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime()
 				+ (flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS));
+
+		strike(player, victim);
 	}
 
 	/**

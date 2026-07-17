@@ -1387,3 +1387,12 @@ verdict for Assassin is opus; both opus AND sonnet fallback sets updated
 (stale adrenaline_rush/opportunist/deathblow removed) so no flip can
 miss a texture. Crusher's own ADRENALINE_* Tuning constants are
 unrelated and untouched.
+
+**Momentum one-shot cooldown fix (2026-07-17).** Bug: Shadow Step that
+one-shot its target didn't reset the cooldown despite Momentum. Cause:
+strike()'s attack() applies lethal damage synchronously, so AFTER_DEATH
+(and Momentum's removeAttached(SHADOW_STEP_READY_AT)) fired INSIDE
+strike() — but shadowStep() then re-armed the cooldown on the line after
+strike(). Fix: arm the cooldown BEFORE strike(), so a kill's Momentum
+reset always writes last and wins. Non-kill and non-Momentum cases
+unchanged.
