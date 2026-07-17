@@ -348,13 +348,15 @@ public final class Tuning {
 	public static final int ICE_SLOW_AMP = 2;
 	public static final int ICE_SLOW_TICKS = 80;
 	/** Blizzard, the Meteorite's AOE opposite: a called storm raking its
-	 * 3x3 ground for the full damage over the full duration, one pulse a
+	 * 5x5 ground for the full damage over the full duration, one pulse a
 	 * second. Cost is a guess pending playtest. */
 	public static final float BLIZZARD_COST = 75.0F;
 	public static final float BLIZZARD_TOTAL_DAMAGE = 20.0F;
 	public static final int BLIZZARD_DURATION_TICKS = 160;
 	public static final int BLIZZARD_PULSE_TICKS = 20;
-	public static final double BLIZZARD_HALF_WIDTH = 1.5;
+	/** An icicle-impact sound lands this often — twice per damage pulse. */
+	public static final int BLIZZARD_SOUND_TICKS = 10;
+	public static final double BLIZZARD_HALF_WIDTH = 2.5;
 	public static final float GLACIAL_MULTIPLIER = 2.5F;
 	public static final int GLACIAL_FREEZE_TICKS = 240;
 	public static final float KINDLING_DISCOUNT_PER_RANK = 5.0F;

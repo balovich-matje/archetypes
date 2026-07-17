@@ -67,7 +67,7 @@ public final class TreeNodes {
 	private static String iconSet(final SubTree tree) {
 		return switch (tree) {
 			case ELEMENTALIST -> "opus";
-			case MARKSMAN, SHADOW, ASSASSIN -> "sonnet";
+			case MARKSMAN, SHADOW, ASSASSIN -> "opus";
 			default -> "sonnet";
 		};
 	}
@@ -240,6 +240,10 @@ public final class TreeNodes {
 		};
 	}
 
+	private static final java.util.List<ElementalistNodes.Family> ELEMENTALIST_CAPSTONES =
+			java.util.List.of(ElementalistNodes.Family.METEORITE, ElementalistNodes.Family.FLAMETHROWER,
+					ElementalistNodes.Family.GLACIAL_SPIKE, ElementalistNodes.Family.BLIZZARD);
+
 	/**
 	 * Capstones come in mutually exclusive pairs: owning one locks the other.
 	 * Protector: Bulwark vs Ground Slam. Slayer: Bladestorm vs Decimate. The
@@ -309,13 +313,21 @@ public final class TreeNodes {
 		if (tree == SubTree.ELEMENTALIST) {
 			ElementalistNodes.Family family = ElementalistNodes.def(tree, index).family();
 
+			// The two openers exclude each other; the four capstones are ONE
+			// choice total — a fire pick was leaving the ice pair open (user
+			// bug report), so any owned capstone locks the other three.
 			return switch (family) {
 				case FIREBALL -> ElementalistNodes.rank(tree, owned, ElementalistNodes.Family.ICE_BLAST) > 0;
 				case ICE_BLAST -> ElementalistNodes.rank(tree, owned, ElementalistNodes.Family.FIREBALL) > 0;
-				case METEORITE -> ElementalistNodes.rank(tree, owned, ElementalistNodes.Family.FLAMETHROWER) > 0;
-				case FLAMETHROWER -> ElementalistNodes.rank(tree, owned, ElementalistNodes.Family.METEORITE) > 0;
-				case GLACIAL_SPIKE -> ElementalistNodes.rank(tree, owned, ElementalistNodes.Family.BLIZZARD) > 0;
-				case BLIZZARD -> ElementalistNodes.rank(tree, owned, ElementalistNodes.Family.GLACIAL_SPIKE) > 0;
+				case METEORITE, FLAMETHROWER, GLACIAL_SPIKE, BLIZZARD -> {
+					for (ElementalistNodes.Family capstone : ELEMENTALIST_CAPSTONES) {
+						if (capstone != family && ElementalistNodes.rank(tree, owned, capstone) > 0) {
+							yield true;
+						}
+					}
+
+					yield false;
+				}
 				default -> false;
 			};
 		}

@@ -299,7 +299,7 @@ public final class SeekerSpells {
 
 	/**
 	 * Blizzard: the Meteorite's AOE opposite — not a channel but a storm
-	 * called over the targeted ground, raking its 3x3 with icicles for
+	 * called over the targeted ground, raking its 5x5 with icicles for
 	 * eight seconds while the caster does something else. One storm per
 	 * caster; recasting moves it (see BlizzardZones).
 	 */

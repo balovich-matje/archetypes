@@ -1341,3 +1341,23 @@ in-game). Spell feel round, all user calls:
 - Holy Light's burst: glass shatter -> BELL_RESONATE + brighter chime.
 Kept for the record: Shatter does NOT amplify blizzard pulses (zone
 damage isn't a SpellProjectile); mention if the ice build feels flat.
+
+**Round-2 flip + Blizzard buffs + capstone lockout (2026-07-17 late).**
+Cutpurse A/B flipped to Opus (user: "from the preview Opus made much
+better job, it seems" — Sonnet pass screenshotted first). Blizzard,
+after the user's power-level read vs Meteorite: 5x5 (HALF_WIDTH 2.5),
+ZERO knockback on pulses (a static pulsing flag around the hurtServer
+loop, read by the knockback mixin — the storm was juggling mobs out of
+its own square), and an audible icicle impact every 10 ticks instead of
+20 (off-beat impacts between damage pulses, lighter crumb burst).
+BUG FIX, Elementalist capstones: the four capstones were exclusive only
+within their element pair, so a fire pick left both ice capstones
+buyable. Now any owned capstone locks the other three (openers stay a
+separate pair).
+Verify pass on this chunk caught a real one: the cast runs from the
+packet queue, so the first observed tick-end already has game time
+advanced — the head pulse (remaining == 160) could never fire and the
+storm delivered 7/8 of its damage with a dead second up front. Fixed
+with a +1 tick pad on endTick. Known cosmetic edge, deliberately left:
+thorns retaliation landing DURING a pulse also has its knockback
+suppressed (the flag window covers the whole hurtServer chain).

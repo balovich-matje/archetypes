@@ -287,6 +287,12 @@ public abstract class LivingEntityMixin {
 			return strength;
 		}
 
+		// A blizzard pulse doesn't shove at all: the storm was pushing its
+		// victims out of its own square every second (user call).
+		if (com.archetypes.BlizzardZones.isPulsing()) {
+			return 0.0;
+		}
+
 		// Magic Missiles shove half as hard too — a spam spell that juggles
 		// its target out of its own range was self-defeating (user call) —
 		// and the Flamethrower doesn't shove at all: its stream was pushing
