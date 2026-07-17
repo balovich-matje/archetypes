@@ -160,9 +160,8 @@ public final class ShadowTicker {
 					player.getX(), player.getY() + 1.0, player.getZ(), 5, 0.3, 0.4, 0.3, 0.0);
 		}
 
-		// Umbral Mastery: a kill from the dark hands the active straight back.
-		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.UMBRAL_MASTERY) > 0) {
-			((AttachmentTarget) player).removeAttached(ModAttachments.INVIS_READY_AT);
-		}
+		// Umbral Mastery is a placeholder for now: the cooldown-refresh idea
+		// duplicated Predator and trivialised Last Shadow's 180s clock. Its
+		// next effect is being decided.
 	}
 }

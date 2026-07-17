@@ -47,7 +47,9 @@ public final class ShadowNodes {
 		/** Capstones: the escape and the hunt. */
 		LAST_SHADOW(() -> Items.TOTEM_OF_UNDYING),
 		PREDATOR(() -> Items.SKELETON_SKULL),
-		/** The crown: the dark lasts longer, whichever way you use it. */
+		/** The crown. Currently a pickable placeholder — its first two ideas
+		 * (longer invisibility; kill-refreshes-cooldown) fell to Stillness
+		 * and to Predator-overlap/Last Shadow abuse respectively. */
 		UMBRAL_MASTERY(() -> Items.ENDER_EYE),
 		MINOR((Supplier<Item>) null);
 

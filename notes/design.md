@@ -1045,3 +1045,14 @@ now 10/20/30% under half health), and Bloodrush became Strength I/II for
 underpowered per playtest) became a sneak-penalty refund: 50%/100% of
 sneaking's speed loss back, via a flat ADD on the SNEAKING_SPEED
 attribute (0.3 base → 0.65 → 1.0), invisibility not required.
+
+**Umbral Mastery shelved (2026-07-17).** Its second idea (kills while
+invisible refresh the invis cooldown) duplicated Predator's fantasy and,
+worse, would have refreshed Last Shadow's deliberately long 180s clock —
+the user flagged both before it ever shipped to a real playtest. The node
+is now a pickable placeholder at the crown while a distinct effect is
+designed. Candidate directions parked here: (a) Shadow Step/other-tree
+synergy (crown = cross-tree), (b) invisibility grants absorption on cast,
+(c) breaking invisibility by attacking leaves a 2s afterimage that mobs
+target instead. Last Shadow's own cooldown may also want to grow past
+180s once the tree settles.

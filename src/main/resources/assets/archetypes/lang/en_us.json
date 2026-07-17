@@ -235,7 +235,7 @@
 	"node.archetypes.shadow.ghost_armor": "Ghost Armor",
 	"node.archetypes.shadow.ghost_armor.desc": "Your armor turns invisible with you.",
 	"node.archetypes.shadow.umbral_mastery": "Umbral Mastery",
-	"node.archetypes.shadow.umbral_mastery.desc": "Kills while invisible refresh Invisibility's cooldown — chain the dark from body to body.",
+	"node.archetypes.shadow.umbral_mastery.desc": "Placeholder — this crown's effect is being rethought. It can be picked, but does nothing yet.",
 	"node.archetypes.assassin.lightfoot": "Lightfoot",
 	"node.archetypes.assassin.lightfoot.desc": "+10% movement speed per rank while a dagger is in your main hand.",
 	"node.archetypes.assassin.sidestep": "Sidestep",
