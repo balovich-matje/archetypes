@@ -61,7 +61,17 @@ public class Archetypes implements ModInitializer {
 					var player = context.player();
 					Archetype archetype = ModAttachments.get(player);
 
-					if (archetype == null || payload.slot() < 0 || payload.slot() >= 3) {
+					if (archetype == null || payload.slot() < 0 || payload.slot() >= 4) {
+						return;
+					}
+
+					// Slot 3 is the capstone key — Elementalist-only for now,
+					// with room for more trees in later versions.
+					if (payload.slot() == 3) {
+						if (archetype == Archetype.INTELLECT) {
+							SeekerSpells.castElementalistCapstone(player);
+						}
+
 						return;
 					}
 

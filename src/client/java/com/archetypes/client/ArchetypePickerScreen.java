@@ -366,17 +366,35 @@ public class ArchetypePickerScreen extends Screen {
 		Identifier portrait = archetype.portrait();
 
 		if (portrait == null) {
-			// No painted crest yet: the three sub-tree symbols stand in as a
-			// mini-collage, blooming with the same ease as the real art.
+			// Hand-composed crests (user layout), blooming with the same
+			// ease as the painted art.
 			float scale = Mth.lerp(eased, 2.0F, 2.5F);
-			var trees = SubTree.of(archetype);
 			var pose = graphics.pose();
 			pose.pushMatrix();
 			pose.translate(centerX, centerY);
 			pose.scale(scale, scale);
-			graphics.fakeItem(new ItemStack(trees.get(0).icon()), -8, -14);
-			graphics.fakeItem(new ItemStack(trees.get(1).icon()), -18, -2);
-			graphics.fakeItem(new ItemStack(trees.get(2).icon()), 2, -2);
+
+			if (archetype == Archetype.AGILITY) {
+				// Crossbow aiming upper-left (mirrored), drawn bow upper-right,
+				// two daggers crossed in front at the bottom.
+				mirrored(graphics, VANILLA_CROSSBOW, -17, -15, 16);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, VANILLA_BOW_DRAWN,
+						1, -15, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER,
+						-12, -3, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+				mirrored(graphics, DAGGER, -4, -3, 16);
+			} else {
+				// Glacial spike upper-left (mirrored), flamethrower upper-right
+				// (both wear their node icons), a mana regeneration potion in
+				// front.
+				mirrored(graphics, SPIKE_ICON, -17, -15, 32);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_ICON,
+						1, -15, 0.0F, 0.0F, 16, 16, 32, 32, 32, 32);
+				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+						net.minecraft.world.item.Items.POTION,
+						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -2);
+			}
+
 			pose.popMatrix();
 			return;
 		}
@@ -388,4 +406,28 @@ public class ArchetypePickerScreen extends Screen {
 
 	/** Native size of the portrait textures. */
 	private static final int PORTRAIT_TEXTURE = 256;
+
+	/** The collage materials: vanilla weapons, our dagger, two node icons. */
+	private static final Identifier VANILLA_CROSSBOW =
+			Identifier.fromNamespaceAndPath("minecraft", "textures/item/crossbow_standby.png");
+	private static final Identifier VANILLA_BOW_DRAWN =
+			Identifier.fromNamespaceAndPath("minecraft", "textures/item/bow_pulling_2.png");
+	private static final Identifier DAGGER =
+			com.archetypes.Archetypes.id("textures/item/iron_dagger.png");
+	private static final Identifier FLAME_ICON =
+			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/flamethrower.png");
+	private static final Identifier SPIKE_ICON =
+			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/glacial_spike.png");
+
+	/** Blit a square sprite horizontally mirrored, drawn 16x16 at (x, y). */
+	private static void mirrored(final GuiGraphicsExtractor graphics, final Identifier texture,
+			final int x, final int y, final int textureSize) {
+		var pose = graphics.pose();
+		pose.pushMatrix();
+		pose.translate(x + 16, y);
+		pose.scale(-1.0F, 1.0F);
+		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16,
+				textureSize, textureSize, textureSize, textureSize);
+		pose.popMatrix();
+	}
 }

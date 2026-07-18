@@ -38,9 +38,10 @@ public class ArchetypesClient implements ClientModInitializer {
 	 */
 	private static final String SPECIALITIES = "specialities";
 
-	/** The ability binds, one per sub-tree slot (0 left, 1 middle, 2 right),
-	 * exposed so the cooldown bar can label its slots. */
-	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[3];
+	/** The ability binds: slots 0-2 are the sub-trees left to right, slot 3
+	 * is the Elementalist's capstone (room for more in later versions).
+	 * Exposed so the cooldown bar can label its slots. */
+	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[4];
 
 	/** Our own section in the controls screen, not vanilla's Gameplay. */
 	private static final KeyMapping.Category KEY_CATEGORY =
@@ -61,19 +62,19 @@ public class ArchetypesClient implements ClientModInitializer {
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
 
-		// Three rebindable slot keys under Gameplay — what a slot casts depends
-		// on the archetype, and the server resolves that; the cooldown bar
-		// shows each slot's current bind. The keys only report the press.
-		int[] defaults = { GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H, GLFW.GLFW_KEY_B };
+		// Rebindable slot keys — what a slot casts depends on the archetype,
+		// and the server resolves that; the cooldown bar shows each slot's
+		// current bind. The keys only report the press. V is vanilla-free.
+		int[] defaults = { GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H, GLFW.GLFW_KEY_B, GLFW.GLFW_KEY_V };
 
-		for (int slot = 0; slot < 3; slot++) {
+		for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
 			ABILITY_KEYS[slot] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 					"key.archetypes.ability_" + (slot + 1), InputConstants.Type.KEYSYM, defaults[slot],
 					KEY_CATEGORY));
 		}
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
-			for (int slot = 0; slot < 3; slot++) {
+			for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
 				while (ABILITY_KEYS[slot].consumeClick()) {
 					if (client.player != null) {
 						ClientPlayNetworking.send(new ActiveAbilityPayload(slot));
@@ -96,12 +97,11 @@ public class ArchetypesClient implements ClientModInitializer {
 				lastLevel = level;
 			}
 
-			// The Flamethrower is a channel, not a press: while the
-			// elementalist key is held, one payload per tick keeps the
-			// stream alive. The press payload above still goes out; the
-			// server ignores it for the channel holder. (Blizzard used to
-			// stream too — it's a press-cast storm now.)
-			if (client.player != null && ABILITY_KEYS[0].isDown()
+			// The Flamethrower is a channel, not a press: while the CAPSTONE
+			// key is held, one payload per tick keeps the stream alive. The
+			// press payload above still goes out; the server ignores it for
+			// the channel holder.
+			if (client.player != null && ABILITY_KEYS[3].isDown()
 					&& ModAttachments.get(client.player) == Archetype.INTELLECT) {
 				var owned = NodePurchases.owned(client.player, SubTree.ELEMENTALIST);
 

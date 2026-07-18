@@ -35,7 +35,7 @@ import org.jspecify.annotations.Nullable;
  */
 public class SpellProjectile extends ThrowableItemProjectile {
 	public enum Mode {
-		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST
+		FIREBALL, METEOR, FLAME_BOLT, MISSILE, HOLY_LIGHT, ICE_BLAST, GLACIAL_SPIKE
 	}
 
 	/** Holy Light's palette: gold by default; Benediction burns orange;
@@ -383,6 +383,17 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					this.lanceRing(level);
 				}
 
+				// The glint sings from the missile itself, looping until it
+				// hits or expires (user direction) — a chime tick every 3
+				// flight ticks, pitched down and louder when empowered.
+				if (this.tickCount % 3 == 0) {
+					level.playSound(null, this.getX(), this.getY(), this.getZ(),
+							SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS,
+							this.isEmpowered() ? 0.7F : 0.5F,
+							(this.isEmpowered() ? 1.0F : 1.45F)
+									+ (this.random.nextFloat() - 0.5F) * 0.2F);
+				}
+
 				if (this.isEmpowered()) {
 					level.sendParticles(MISSILE_DUST_BRIGHT,
 							this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.0);
@@ -403,6 +414,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					this.getX(), this.getY(), this.getZ(), 2, 0.1, 0.1, 0.1, 0.0);
 			case ICE_BLAST -> level.sendParticles(ParticleTypes.SNOWFLAKE,
 					this.getX(), this.getY(), this.getZ(), 3, 0.15, 0.15, 0.15, 0.01);
+			case GLACIAL_SPIKE -> level.sendParticles(ParticleTypes.SNOWFLAKE,
+					this.getX(), this.getY(), this.getZ(), 5, 0.1, 0.1, 0.1, 0.02);
 			case null -> {
 			}
 		}
@@ -472,6 +485,22 @@ public class SpellProjectile extends ThrowableItemProjectile {
 								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
 			}
 			case MISSILE -> this.missileHit(level, victim);
+			case GLACIAL_SPIKE -> {
+				// The ice synergy's finisher: x10 against anything already
+				// slowed or freezing, x2 cold. Deliberately NOT run through
+				// shattered() — the multiplier IS the chill payoff, and
+				// stacking the passive on top would double-count it.
+				boolean chilled = victim.hasEffect(MobEffects.SLOWNESS)
+						|| victim.getTicksFrozen() > 0;
+				float base = this.damageOverride > 0.0F ? this.damageOverride : Tuning.ICE_BLAST_DAMAGE;
+
+				if (this.freezeTicks > 0) {
+					victim.setTicksFrozen(Math.max(victim.getTicksFrozen(), this.freezeTicks));
+				}
+
+				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
+						base * (chilled ? Tuning.GLACIAL_CHILLED_MULTIPLIER : Tuning.GLACIAL_BASE_MULTIPLIER));
+			}
 			case null, default -> {
 				// Fireball, Ice Blast, Meteor and Holy Light all area-effect
 				// from onHit — ground or flesh alike.
@@ -505,6 +534,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 						15, 0.3, 0.3, 0.3, 0.05);
 				level.playSound(null, this.getX(), this.getY(), this.getZ(),
 						SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.8F, 1.4F);
+			}
+			case GLACIAL_SPIKE -> {
+				level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
+						20, 0.2, 0.2, 0.2, 0.08);
+				level.playSound(null, this.getX(), this.getY(), this.getZ(),
+						SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.0F, 0.9F);
 			}
 			case null, default -> {
 			}
@@ -561,12 +596,24 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		float damage = Tuning.METEOR_BASE_DAMAGE * m;
 		float fx = Math.min(m, Tuning.METEOR_FX_SCALE_CAP);
 
+		// Knockback level = ceil(m): Knockback I at 100 mana, III at 250 —
+		// the crowd is thrown violently from the crater (user spec).
+		int knockback = (int) Math.ceil(m);
+
 		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
 				this.getBoundingBox().inflate(radius),
 				living -> living.isAlive() && living != this.getOwner()
 						&& living.distanceToSqr(this) <= radius * radius)) {
 			victim.igniteForSeconds(3);
 			victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+
+			if (victim.isAlive()) {
+				Vec3 away = new Vec3(victim.getX() - this.getX(), 0.0, victim.getZ() - this.getZ());
+				Vec3 dir = away.lengthSqr() < 1.0E-4 ? new Vec3(1.0, 0.0, 0.0) : away.normalize();
+				victim.push(dir.x * (0.4 + 0.5 * knockback), 0.3 + 0.1 * knockback,
+						dir.z * (0.4 + 0.5 * knockback));
+				victim.hurtMarked = true;
+			}
 		}
 
 		BlockPos center = this.blockPosition();
@@ -650,11 +697,13 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		level.sendParticles(this.holyParticle(), this.getX(), this.getY(), this.getZ(),
 				40, radius * 0.4, 0.6, radius * 0.4, 0.5);
-		// A bell's shimmer, not shattering glass: the light lands holy.
+		// Bright and immediate on impact — the bell's slow bloom read as a
+		// delayed ring (user call), so the light lands as a blessing pling
+		// with a high chime on top.
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.BELL_RESONATE, SoundSource.PLAYERS, 0.7F, 1.6F);
+				SoundEvents.EXPERIENCE_ORB_PICKUP, SoundSource.PLAYERS, 0.9F, 1.3F);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.9F, 1.1F);
+				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 0.7F, 1.5F);
 	}
 
 	/**

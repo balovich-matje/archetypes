@@ -1666,3 +1666,33 @@ PENDING USER DECISIONS: (a) missile FX B/C review before sound edits
 until hit/expiry); (b) whether Elementalist keeps BOTH base spell and
 capstone once the capstone is picked, capstone on a 4th keybind — my
 recommendation delivered: yes, split them (see chat).
+
+**The 4th ability key + capstone split, FX round (2026-07-18 midday).**
+CAPSTONE SPLIT SHIPPED (user approved the recommendation): ABILITY_KEYS
+is 4 slots now (defaults G/H/B/V, lang "Ability 1-4", room to grow);
+slot 3 = the Elementalist capstone. castElementalist casts the BASE
+element spell always (fireball/ice blast keep their AOE role after the
+capstone); new castElementalistCapstone dispatches Meteorite / Glacial
+Spike / Blizzard, and the Flamethrower channel streams on key 4. The
+cooldown tracker shows base + capstone tiles for Elementalists.
+GLACIAL SPIKE = THE ICE FINISHER (user synergy spec): its own
+single-target GLACIAL_SPIKE mode, no burst — x2.0 Ice Blast damage
+cold, x10.0 against slowed/freezing targets (SLOWNESS effect or frozen
+ticks), still freezes 12s. Deliberately NOT run through shattered() —
+the multiplier IS the chill payoff. Prime with AOE blast on G, execute
+with spike on V.
+METEORITE: violent radial knockback, level = ceil(mana/100) (I at 100,
+III at 250), push impulse 0.4+0.5/level horizontal + rising vertical.
+MISSILE FX: switched to variant B's sprites; per user direction the
+cast is now a subtle jittered BREEZE_SHOOT whoosh and the chime GLINT
+sings from the projectile itself (every 3 flight ticks, 0.5 vol
+normal / 0.7 lower-pitched empowered) until hit/expiry; resonate bloom
+still marks empowered casts; hit tick kept.
+HOLY LIGHT: cast = whoosh (BREEZE_SHOOT, replacing the bowstring-like
+splash throw), burst = immediate XP-orb pling + high chime (the bell
+resonate's slow bloom read as a delayed ring — user).
+PICKER COLLAGES (user layouts): Cutpurse = crossed daggers front,
+mirrored crossbow upper-left + drawn bow (bow_pulling_2) upper-right;
+Seeker = mirrored glacial-spike node icon upper-left x flamethrower
+node icon upper-right, mana regeneration potion in front. Orientations
+are best-guess from vanilla sprite directions — EYEBALL IN GAME.

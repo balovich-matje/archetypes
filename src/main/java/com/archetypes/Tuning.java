@@ -375,7 +375,10 @@ public final class Tuning {
 	/** An icicle-impact sound lands this often — twice per damage pulse. */
 	public static final int BLIZZARD_SOUND_TICKS = 10;
 	public static final double BLIZZARD_HALF_WIDTH = 2.5;
-	public static final float GLACIAL_MULTIPLIER = 2.5F;
+	/** Glacial Spike, the ice finisher: x2 cold, x10 against the chilled —
+	 * prime with the AOE blast, execute with the spike. */
+	public static final float GLACIAL_BASE_MULTIPLIER = 2.0F;
+	public static final float GLACIAL_CHILLED_MULTIPLIER = 10.0F;
 	public static final int GLACIAL_FREEZE_TICKS = 240;
 	public static final float KINDLING_DISCOUNT_PER_RANK = 5.0F;
 	public static final float CHILL_DISCOUNT_PER_RANK = 5.0F;

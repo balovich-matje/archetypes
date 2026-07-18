@@ -92,10 +92,9 @@ public final class SeekerSpells {
 				? damage * Tuning.ARCANE_POWER_FACTOR : damage;
 	}
 
-	/** The elementalist key: whichever element you opened with, upgraded by
-	 * whatever you've learned since. The Flamethrower casts via the channel
-	 * payload stream instead, so a single press from it does nothing;
-	 * Blizzard is a press-cast again — it calls a storm. */
+	/** The elementalist key: the BASE element spell, always — capstones
+	 * live on their own key now (castElementalistCapstone), so the AOE
+	 * opener stays in hand after the capstone is picked. */
 	public static void castElementalist(final ServerPlayer player) {
 		if (!ModItems.isWand(player.getMainHandItem())) {
 			return;
@@ -104,26 +103,11 @@ public final class SeekerSpells {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
 
 		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.ICE_BLAST) > 0) {
-			if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.BLIZZARD) > 0) {
-				blizzard(player, owned);
-				return;
-			}
-
-			iceBlast(player, owned,
-					ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.GLACIAL_SPIKE) > 0);
+			iceBlast(player, owned);
 			return;
 		}
 
 		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FIREBALL) <= 0) {
-			return;
-		}
-
-		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.METEORITE) > 0) {
-			meteorite(player);
-			return;
-		}
-
-		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FLAMETHROWER) > 0) {
 			return;
 		}
 
@@ -152,30 +136,43 @@ public final class SeekerSpells {
 				SoundEvents.GHAST_SHOOT, SoundSource.PLAYERS, 0.7F, 1.3F);
 	}
 
+	/** The capstone key: whichever crown the Elementalist took. A press
+	 * does nothing for the Flamethrower — its channel streams on the same
+	 * key from the client. */
+	public static void castElementalistCapstone(final ServerPlayer player) {
+		if (!ModItems.isWand(player.getMainHandItem())) {
+			return;
+		}
+
+		Set<Integer> owned = NodePurchases.owned(player, SubTree.ELEMENTALIST);
+
+		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.METEORITE) > 0) {
+			meteorite(player);
+		} else if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.GLACIAL_SPIKE) > 0) {
+			glacialSpike(player, owned);
+		} else if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.BLIZZARD) > 0) {
+			blizzard(player, owned);
+		}
+	}
+
 	/**
-	 * Ice Blast, and its Glacial Spike transformation: the other opening
-	 * element — a freezing bolt that slows what it hits (harder and longer
-	 * with Frostbite), glazes water with Permafrost, and as the Spike simply
-	 * hits like winter itself, leaving the target freezing in place.
+	 * Ice Blast: the freezing opener — a bolt that bursts in a 3x3, slowing
+	 * what it catches (harder and longer with Frostbite) and glazing water
+	 * with Permafrost. The chill it leaves is Glacial Spike's setup.
 	 */
-	private static void iceBlast(final ServerPlayer player, final Set<Integer> owned, final boolean glacial) {
+	private static void iceBlast(final ServerPlayer player, final Set<Integer> owned) {
 		if (!Mana.spend(player, elementCost(player, Tuning.ICE_BLAST_COST, false, true, false))) {
 			return;
 		}
 
 		int frostbite = ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.FROSTBITE);
-		float damage = wandPower(player, false, true)
-				* arcane(owned, Tuning.ICE_BLAST_DAMAGE * (glacial ? Tuning.GLACIAL_MULTIPLIER : 1.0F));
+		float damage = wandPower(player, false, true) * arcane(owned, Tuning.ICE_BLAST_DAMAGE);
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile blast = new SpellProjectile(player, level, SpellProjectile.Mode.ICE_BLAST,
-				new ItemStack(glacial ? Items.BLUE_ICE : Items.ICE))
+				new ItemStack(Items.ICE))
 				.withDamage(damage)
 				.withSlow(Tuning.ICE_SLOW_AMP + frostbite, Tuning.ICE_SLOW_TICKS + 20 * frostbite)
 				.withShatter(ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.SHATTER));
-
-		if (glacial) {
-			blast.withFreeze(Tuning.GLACIAL_FREEZE_TICKS);
-		}
 
 		if (ElementalistNodes.rank(SubTree.ELEMENTALIST, owned, ElementalistNodes.Family.PERMAFROST) > 0) {
 			blast.withPermafrost();
@@ -187,6 +184,30 @@ public final class SeekerSpells {
 		level.addFreshEntity(blast);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_HURT_FREEZE, SoundSource.PLAYERS, 1.0F, 1.4F);
+	}
+
+	/**
+	 * Glacial Spike: the finisher half of the ice synergy — one target, no
+	 * burst, x2.0 Ice Blast damage cold and x10.0 against anything already
+	 * slowed or freezing. Prime with the AOE blast, execute with the spike.
+	 */
+	private static void glacialSpike(final ServerPlayer player, final Set<Integer> owned) {
+		if (!Mana.spend(player, elementCost(player, Tuning.ICE_BLAST_COST, false, true, false))) {
+			return;
+		}
+
+		ServerLevel level = (ServerLevel) player.level();
+		SpellProjectile spike = new SpellProjectile(player, level, SpellProjectile.Mode.GLACIAL_SPIKE,
+				new ItemStack(Items.BLUE_ICE))
+				.withDamage(wandPower(player, false, true) * arcane(owned, Tuning.ICE_BLAST_DAMAGE))
+				.withFreeze(Tuning.GLACIAL_FREEZE_TICKS);
+
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+		spike.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
+				Tuning.ICE_BLAST_SPEED, 0.5F);
+		level.addFreshEntity(spike);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.PLAYER_HURT_FREEZE, SoundSource.PLAYERS, 1.0F, 0.8F);
 	}
 
 	/**
@@ -392,14 +413,14 @@ public final class SeekerSpells {
 			ProcIndicators.send(player, SubTree.WIZARD, WizardNodes.Family.ECHO);
 		}
 
-		// Missile FX variant A: a light jittered chime (a fixed pitch heard
-		// four times a second turns into a drone), with a deep resonate
-		// bloom underneath only when the cast is empowered — the
+		// Variant B + user direction: the CAST is a subtle jittered whoosh
+		// (the chime moved onto the projectile itself — see trail()), with
+		// the deep resonate bloom under empowered casts as the
 		// eyes-closed tell.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS,
-				empowered ? 0.55F : 0.4F,
-				1.35F + (player.getRandom().nextFloat() - 0.5F) * (empowered ? 0.2F : 0.3F));
+				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS,
+				empowered ? 0.45F : 0.3F,
+				1.3F + (player.getRandom().nextFloat() - 0.5F) * 0.2F);
 
 		if (empowered) {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -512,7 +533,9 @@ public final class SeekerSpells {
 		light.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.HOLY_SPEED * (fervent ? Tuning.FERVENT_FACTOR : 1.0F), 0.5F);
 		level.addFreshEntity(light);
+		// A whoosh on release, not a bowstring (user call).
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.SPLASH_POTION_THROW, SoundSource.PLAYERS, 1.0F, 1.2F);
+				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 0.6F,
+				1.1F + (player.getRandom().nextFloat() - 0.5F) * 0.15F);
 	}
 }

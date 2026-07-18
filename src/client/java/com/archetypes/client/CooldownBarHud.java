@@ -235,20 +235,29 @@ public final class CooldownBarHud {
 			boolean blizzard = ice && com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST,
 					elementalist, com.archetypes.ElementalistNodes.Family.BLIZZARD) > 0;
 
-			var family = meteor ? com.archetypes.ElementalistNodes.Family.METEORITE
-					: flame ? com.archetypes.ElementalistNodes.Family.FLAMETHROWER
-					: glacial ? com.archetypes.ElementalistNodes.Family.GLACIAL_SPIKE
-					: blizzard ? com.archetypes.ElementalistNodes.Family.BLIZZARD
-					: ice ? com.archetypes.ElementalistNodes.Family.ICE_BLAST
-					: com.archetypes.ElementalistNodes.Family.FIREBALL;
-			float cost = meteor ? Tuning.METEOR_MIN_MANA
-					: com.archetypes.SeekerSpells.elementCost(player,
-							flame ? Tuning.FLAME_START_COST
-									: blizzard ? Tuning.BLIZZARD_COST
-									: ice ? Tuning.ICE_BLAST_COST : Tuning.FIREBALL_COST,
-							fire, ice, false);
-			abilities.add(new Ability(SubTree.ELEMENTALIST, family,
-					ArchetypesClient.ABILITY_KEYS[0], cost, meteor));
+			// The base spell always sits on the element key; the capstone,
+			// when owned, gets its own tile on the capstone key.
+			abilities.add(new Ability(SubTree.ELEMENTALIST,
+					ice ? com.archetypes.ElementalistNodes.Family.ICE_BLAST
+							: com.archetypes.ElementalistNodes.Family.FIREBALL,
+					ArchetypesClient.ABILITY_KEYS[0],
+					com.archetypes.SeekerSpells.elementCost(player,
+							ice ? Tuning.ICE_BLAST_COST : Tuning.FIREBALL_COST, fire, ice, false),
+					false));
+
+			if (meteor || flame || glacial || blizzard) {
+				var capstone = meteor ? com.archetypes.ElementalistNodes.Family.METEORITE
+						: flame ? com.archetypes.ElementalistNodes.Family.FLAMETHROWER
+						: glacial ? com.archetypes.ElementalistNodes.Family.GLACIAL_SPIKE
+						: com.archetypes.ElementalistNodes.Family.BLIZZARD;
+				float cost = meteor ? Tuning.METEOR_MIN_MANA
+						: com.archetypes.SeekerSpells.elementCost(player,
+								flame ? Tuning.FLAME_START_COST
+										: blizzard ? Tuning.BLIZZARD_COST : Tuning.ICE_BLAST_COST,
+								fire, ice, false);
+				abilities.add(new Ability(SubTree.ELEMENTALIST, capstone,
+						ArchetypesClient.ABILITY_KEYS[3], cost, meteor));
+			}
 		}
 
 		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
