@@ -206,12 +206,6 @@ public final class SkillPoints {
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, CUM[kept]);
 	}
 
-	/** Testing affordance: hand over one level outright. Bypasses the
-	 * multiplier on purpose — a token is a token. */
-	public static void grantPoint(final Player player) {
-		grantLevels(player, 1);
-	}
-
 	public static void grantLevels(final Player player, final int levels) {
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
 				CUM[Math.min(level(player) + levels, MAX_LEVEL)]);

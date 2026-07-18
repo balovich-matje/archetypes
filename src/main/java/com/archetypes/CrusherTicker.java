@@ -11,8 +11,7 @@ import net.minecraft.server.level.ServerPlayer;
 /**
  * The Crusher's stances, mirroring SlayerTicker's pattern: attribute
  * modifiers that exist exactly while their condition holds. Bare-Knuckle and
- * Iron Skin while the hands are bare; Adrenaline's attack speed while its
- * window (kept open by landing hits) lasts; Battle Trance's absorption drains
+ * Iron Skin while the hands are bare; Battle Trance's absorption drains
  * once the fight goes quiet.
  */
 public final class CrusherTicker {

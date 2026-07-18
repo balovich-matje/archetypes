@@ -53,7 +53,7 @@ public final class ProcIndicatorHud {
 		// item render with the effect layer over it.
 		if ("slayer".equals(payload.subTreeId())) {
 			var family = SlayerNodes.Family.valueOf(payload.family());
-			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.SLAYER, family);
+			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.SLAYER, family);
 			size = 32;
 
 			if (sprite == null) {
@@ -62,7 +62,7 @@ public final class ProcIndicatorHud {
 			}
 		} else if ("crusher".equals(payload.subTreeId())) {
 			var family = com.archetypes.CrusherNodes.Family.valueOf(payload.family());
-			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.CRUSHER, family);
+			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.CRUSHER, family);
 			size = 32;
 
 			if (sprite == null && family.sprite() != null) {
@@ -78,7 +78,7 @@ public final class ProcIndicatorHud {
 			// The wizard flash wears the same bake-off sprite the tree
 			// screen shows, so the proc display follows TEST_ICON_SET.
 			var family = com.archetypes.WizardNodes.Family.valueOf(payload.family());
-			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.WIZARD, family);
+			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.WIZARD, family);
 			size = 32;
 
 			if (sprite == null) {
@@ -87,7 +87,7 @@ public final class ProcIndicatorHud {
 			}
 		} else {
 			var family = ProtectorNodes.Family.valueOf(payload.family());
-			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.PROTECTOR, family);
+			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.PROTECTOR, family);
 			size = 32;
 
 			if (sprite == null && family.sprite() != null) {

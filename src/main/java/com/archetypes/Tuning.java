@@ -285,7 +285,6 @@ public final class Tuning {
 	 * (never removeEffect) lets vanilla restore any beacon/potion buff ours
 	 * was layered over instead of discarding it. */
 	public static final int NIGHT_STALKER_TICKS = 5;
-	/** Kept above 210 so vanilla's low-timer flicker never shows. */
 
 	// --- Agility: Shadow Step ---
 	public static final double SHADOW_STEP_RANGE = 16.0;

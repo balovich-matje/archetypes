@@ -419,5 +419,5 @@ public class ArchetypePickerScreen extends Screen {
 	private static final Identifier SPIKE_LEFT =
 			com.archetypes.Archetypes.id("textures/gui/collage/spike_left.png");
 	private static final Identifier FLAME_ICON =
-			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/flamethrower.png");
+			com.archetypes.Archetypes.id("textures/node/elementalist/flamethrower.png");
 }

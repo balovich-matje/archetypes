@@ -57,29 +57,15 @@ public final class TreeNodes {
 	}
 
 	/**
-	 * Bake-off sets, per tree. Intellect is the locked verdict from the
-	 * 2026-07-17 in-game A/B (Sonnet's vanilla-anchored Wizard and Priest,
-	 * Opus' Elementalist); agility is round two, still under comparison —
-	 * flip its entry between "sonnet" and "opus" for the screenshot
-	 * passes. Sets live under textures/node/test/, sources in
-	 * notes/art/icon_test.
+	 * A family's 32px node sprite under textures/node/&lt;tree&gt;/ — one
+	 * complete set per tree. MINOR families have no sprite and fall back to
+	 * their item icon. Public so the proc HUD's crosshair flash and the
+	 * picker share the tree screen's exact art.
 	 */
-	private static String iconSet(final SubTree tree) {
-		return switch (tree) {
-			case ELEMENTALIST -> "opus";
-			case MARKSMAN, SHADOW, ASSASSIN -> "opus";
-			// Brawler round three: Opus under in-game comparison against the
-			// original hand-made canon (user screenshotted the originals).
-			case PROTECTOR, SLAYER, CRUSHER -> "opus";
-			default -> "sonnet";
-		};
-	}
-
-	/** Public so the proc HUD's crosshair flash follows the verdict too. */
-	public static net.minecraft.resources.@Nullable Identifier testSprite(final SubTree tree,
+	public static net.minecraft.resources.@Nullable Identifier familySprite(final SubTree tree,
 			final Enum<?> family) {
 		return "MINOR".equals(family.name()) ? null
-				: Archetypes.id("textures/node/test/" + iconSet(tree) + "/" + tree.id()
+				: Archetypes.id("textures/node/" + tree.id()
 						+ "/" + family.name().toLowerCase(java.util.Locale.ROOT) + ".png");
 	}
 
@@ -87,44 +73,44 @@ public final class TreeNodes {
 	 * family's icon is an item. */
 	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
 		return switch (tree) {
-			// Brawler A/B: the test set outranks the hand-made sprites while
-			// the comparison runs; MINOR (null test) falls back.
+			// Strength trees: family sprite first; MINOR (null sprite) falls
+			// back to the hand-made overlays some families carry.
 			case SLAYER -> {
 				SlayerNodes.Family family = SlayerNodes.def(tree, index).family();
-				var test = testSprite(tree, family);
-				yield test != null ? test : family.sprite();
+				var sprite = familySprite(tree, family);
+				yield sprite != null ? sprite : family.sprite();
 			}
 			case CRUSHER -> {
 				CrusherNodes.Family family = CrusherNodes.def(tree, index).family();
-				var test = testSprite(tree, family);
-				yield test != null ? test : family.sprite();
+				var sprite = familySprite(tree, family);
+				yield sprite != null ? sprite : family.sprite();
 			}
 			case PROTECTOR -> {
 				ProtectorNodes.Family family = ProtectorNodes.def(tree, index).family();
-				var test = testSprite(tree, family);
-				yield test != null ? test : family.sprite();
+				var sprite = familySprite(tree, family);
+				yield sprite != null ? sprite : family.sprite();
 			}
-			// Shadow's hand-made sprites (Invisibility) outrank the test set.
+			// Shadow's hand-made sprites (Invisibility) outrank the set.
 			case SHADOW -> {
 				ShadowNodes.Family family = ShadowNodes.def(tree, index).family();
-				yield family.sprite() != null ? family.sprite() : testSprite(tree, family);
+				yield family.sprite() != null ? family.sprite() : familySprite(tree, family);
 			}
-			case MARKSMAN -> testSprite(tree, MarksmanNodes.def(tree, index).family());
-			case ASSASSIN -> testSprite(tree, AssassinNodes.def(tree, index).family());
-			case WIZARD -> testSprite(tree, WizardNodes.def(tree, index).family());
-			case PRIEST -> testSprite(tree, PriestNodes.def(tree, index).family());
-			case ELEMENTALIST -> testSprite(tree, ElementalistNodes.def(tree, index).family());
+			case MARKSMAN -> familySprite(tree, MarksmanNodes.def(tree, index).family());
+			case ASSASSIN -> familySprite(tree, AssassinNodes.def(tree, index).family());
+			case WIZARD -> familySprite(tree, WizardNodes.def(tree, index).family());
+			case PRIEST -> familySprite(tree, PriestNodes.def(tree, index).family());
+			case ELEMENTALIST -> familySprite(tree, ElementalistNodes.def(tree, index).family());
 		};
 	}
 
 	/** Pixel size of the square texture behind iconSprite. */
 	public static int iconSpriteSize(final SubTree tree, final int index) {
 		return switch (tree) {
-			case SLAYER -> testSprite(tree, SlayerNodes.def(tree, index).family()) != null
+			case SLAYER -> familySprite(tree, SlayerNodes.def(tree, index).family()) != null
 					? 32 : SlayerNodes.def(tree, index).family().spriteSize();
-			case CRUSHER -> testSprite(tree, CrusherNodes.def(tree, index).family()) != null
+			case CRUSHER -> familySprite(tree, CrusherNodes.def(tree, index).family()) != null
 					? 32 : CrusherNodes.def(tree, index).family().spriteSize();
-			case PROTECTOR -> testSprite(tree, ProtectorNodes.def(tree, index).family()) != null
+			case PROTECTOR -> familySprite(tree, ProtectorNodes.def(tree, index).family()) != null
 					? 32 : ProtectorNodes.def(tree, index).family().spriteSize();
 			case SHADOW -> {
 				ShadowNodes.Family family = ShadowNodes.def(tree, index).family();
