@@ -42,7 +42,7 @@ dependencies {
 	// engine via its entrypoint when both mods are installed. Compile-only —
 	// at runtime every touch goes through compat/SpecialitiesBridge's guard.
 	// (This Loom remaps mod jars in the plain configurations, PAL-style.)
-	compileOnly "com.specialities:specialities:1.4.0-dev"
+	compileOnly "com.specialities:specialities:1.5.0-dev"
 
 	// To change the versions see the gradle.properties file
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
