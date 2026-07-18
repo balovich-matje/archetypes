@@ -1568,3 +1568,21 @@ sprites outrank the hand-made sprite()/overlay() paths while the
 comparison vs the user's screenshots of the originals runs); proc
 display follows. Sonnet-protector ruled out by the user (wrong shield
 sprite).
+
+**Strict description pass, round 2 (2026-07-18).** The user rejected
+round 1's remnant poetry with a precise standard; agents re-ran with it
+encoded: all rank values in one run always ("50/100%", never "per
+rank"/"then"), no role announcements ("Capstone:" etc — the ring says
+it), no lockout mentions (the "?" legend owns that), no discovery
+spoilers (Decimate's torch-sweeping stays a secret), multipliers always
+x2.0-style, weapon gates as flat conditions ("With a greatsword: ...").
+35 rewrites applied. Agents also caught real content gaps now filled:
+Flamethrower never stated bolt damage (1 heart), Meteorite's crater
+had no numbers (5 hearts/3 blocks at 100 mana, +1 heart/+0.4 blocks per
+20), Glacial Spike's freeze never said 12s, Holy Light never stated its
+4-block radius, Aegis/Sanctuary never said 30s, Reinforced Straps
+actually a 50% full-skip chance (not a halving) on ANY blocking item.
+Maintainer overrides: bash says 7s (true 6.8 — Tuning's own doc calls
+it 7), Decimate keeps "in front" (the cone is real), Relentless loses
+the word "capstone", and the legend's capstone line now also covers the
+fire/ice opener lock since those descs no longer mention it.
