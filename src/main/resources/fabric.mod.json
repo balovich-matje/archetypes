@@ -12,6 +12,7 @@
 		"sources": "https://github.com/balovich-matje/archetypes"
 	},
 	"license": "MIT",
+	"icon": "assets/archetypes/icon.png",
 	"environment": "*",
 	"entrypoints": {
 		"main": [
