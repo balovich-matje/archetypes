@@ -249,15 +249,14 @@ public final class ModAttachments {
 	}
 
 	/**
-	 * Back to unpicked, so the picker opens again. Creative-only, for testing.
-	 * Progress goes with it: unlike the Amnesia respecs below, the testing
-	 * reset is a clean slate — banked levels go too.
+	 * Back to unpicked, so the picker opens again. Creative-only, for
+	 * testing — banked levels SURVIVE (user call: hopping between trees in
+	 * creative shouldn't need a x45 token every time). Amnesia II remains
+	 * the survival path that wipes levels.
 	 */
 	public static void clear(final Player player) {
+		forgetNodes(player);
 		((AttachmentTarget) player).removeAttached(ARCHETYPE);
-		((AttachmentTarget) player).removeAttached(ARCHETYPE_XP);
-		((AttachmentTarget) player).removeAttached(SPENT_POINTS);
-		((AttachmentTarget) player).removeAttached(PURCHASED);
 	}
 
 	/** Amnesia I: every node refunded, the archetype and its levels untouched. */

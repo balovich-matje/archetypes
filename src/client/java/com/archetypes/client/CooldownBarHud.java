@@ -15,43 +15,40 @@ import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 /**
- * Every owned active's cooldown in one place, centred above the whole bottom
- * HUD stack — no more swapping to a weapon just to read its timer. One slot
- * per owned active (Bash, Decimate, Bladestorm), half again the size of a
- * hotbar icon: bright when ready, dimmed with a draining overlay and a
- * seconds count while recharging. Reads the synced ready-at attachments —
- * no packets of its own.
+ * Every owned active's cooldown in one place, docked to the RIGHT of the
+ * hotbar and moving with it — one hotbar-sized slot per owned active,
+ * wearing the same icon its skill-tree node wears (via
+ * {@link VanillaUi#nodeIcon}): bright when ready, dimmed with a draining
+ * overlay and a seconds count while recharging. Reads the synced ready-at
+ * attachments — no packets of its own.
  */
 public final class CooldownBarHud {
-	/** 1.5x a hotbar icon. */
-	private static final int ICON = 24;
-	private static final int FRAME = ICON + 4;
-	private static final int GAP = 4;
-	/** Gap between the bar's bottom and the top of the hearts/armor rows. */
-	private static final int BOTTOM = 56;
+	/** Hotbar geometry: the bar is 182 wide, its slots 22 tall. */
+	private static final int HOTBAR_HALF = 91;
+	private static final int FRAME = 22;
+	private static final int ICON = 16;
+	/** Breathing room between the hotbar's edge and our first slot. */
+	private static final int MARGIN = 4;
 
-	private record Ability(Identifier sprite, int texSize, ItemStack item, Identifier overlay,
-			int overlaySize, net.minecraft.client.KeyMapping key,
+	private record Ability(SubTree tree, int node, net.minecraft.client.KeyMapping key,
 			AttachmentType<Long> readyAt, int totalTicks, float manaCost, boolean spendsAll) {
 		/** Cooldown-driven active: no mana involved. */
-		private Ability(final Identifier sprite, final int texSize, final ItemStack item,
-				final Identifier overlay, final int overlaySize, final net.minecraft.client.KeyMapping key,
+		private Ability(final SubTree tree, final Enum<?> family,
+				final net.minecraft.client.KeyMapping key,
 				final AttachmentType<Long> readyAt, final int totalTicks) {
-			this(sprite, texSize, item, overlay, overlaySize, key, readyAt, totalTicks, 0.0F, false);
+			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key, readyAt, totalTicks,
+					0.0F, false);
 		}
 
 		/** Mana-driven spell: no cooldown clock, greyed while unaffordable.
 		 * An all-mana spell (Meteorite) prices itself at the whole pool. */
-		private Ability(final ItemStack item, final net.minecraft.client.KeyMapping key,
-				final float manaCost, final boolean spendsAll) {
-			this(null, 0, item, null, 0, key, null, 0, manaCost, spendsAll);
+		private Ability(final SubTree tree, final Enum<?> family,
+				final net.minecraft.client.KeyMapping key, final float manaCost, final boolean spendsAll) {
+			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key, null, 0,
+					manaCost, spendsAll);
 		}
 	}
 
@@ -75,9 +72,10 @@ public final class CooldownBarHud {
 		long now = client.level.getGameTime();
 		int width = client.getWindow().getGuiScaledWidth();
 		int height = client.getWindow().getGuiScaledHeight();
-		int totalWidth = abilities.size() * FRAME + (abilities.size() - 1) * GAP;
-		int x = (width - totalWidth) / 2;
-		int y = height - BOTTOM - FRAME;
+		// Docked to the hotbar's right edge, bottom-aligned with it — the
+		// hotbar is centred, so this position tracks it at every GUI scale.
+		int x = width / 2 + HOTBAR_HALF + MARGIN;
+		int y = height - FRAME;
 
 		for (Ability ability : abilities) {
 			VanillaUi.inset(graphics, x, y, FRAME, FRAME);
@@ -85,24 +83,9 @@ public final class CooldownBarHud {
 			int iconX = x + (FRAME - ICON) / 2;
 			int iconY = y + (FRAME - ICON) / 2;
 
-			if (ability.sprite() != null) {
-				graphics.blit(RenderPipelines.GUI_TEXTURED, ability.sprite(), iconX, iconY,
-						0.0F, 0.0F, ICON, ICON,
-						ability.texSize(), ability.texSize(), ability.texSize(), ability.texSize());
-			} else {
-				// fakeItem always draws 16px; scale the pose up to 1.5x.
-				var pose = graphics.pose();
-				pose.pushMatrix();
-				pose.scale(1.5F, 1.5F);
-				graphics.fakeItem(ability.item(), Math.round(iconX / 1.5F), Math.round(iconY / 1.5F));
-				pose.popMatrix();
-			}
-
-			if (ability.overlay() != null) {
-				graphics.blit(RenderPipelines.GUI_TEXTURED, ability.overlay(), iconX, iconY,
-						0.0F, 0.0F, ICON, ICON, ability.overlaySize(), ability.overlaySize(),
-						ability.overlaySize(), ability.overlaySize());
-			}
+			// The node's own icon, native 16px — whatever the tree screen
+			// shows (bake-off sets included), the tracker shows.
+			VanillaUi.nodeIcon(graphics, ability.tree(), ability.node(), iconX, iconY);
 
 			Long readyAt = ability.readyAt() == null ? null
 					: ((AttachmentTarget) player).getAttached(ability.readyAt());
@@ -125,7 +108,7 @@ public final class CooldownBarHud {
 				int shown = ability.spendsAll() && current >= ability.manaCost()
 						? (int) current : Math.round(ability.manaCost());
 				graphics.text(client.font, Integer.toString(shown),
-						x + 2, y + 2, 0xFF7FB2FF, true);
+						x + 1, y + 1, 0xFF7FB2FF, true);
 			}
 
 			if (remaining > 0) {
@@ -145,10 +128,10 @@ public final class CooldownBarHud {
 
 			if (bind.length() <= 3) {
 				graphics.text(client.font, bind,
-						x + FRAME - 2 - client.font.width(bind), y + FRAME - 9, 0xFFFFFF55, true);
+						x + FRAME - 1 - client.font.width(bind), y + FRAME - 9, 0xFFFFFF55, true);
 			}
 
-			x += FRAME + GAP;
+			x += FRAME;
 		}
 	}
 
@@ -161,9 +144,8 @@ public final class CooldownBarHud {
 		if (ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.BASH) > 0) {
 			int slam = ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.SLAM);
 			int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.COOLDOWN);
-			var family = ProtectorNodes.Family.BASH;
-			abilities.add(new Ability(null, 0, new ItemStack(Items.SHIELD),
-					family.overlay(), family.overlaySize(), ArchetypesClient.ABILITY_KEYS[0],
+			abilities.add(new Ability(SubTree.PROTECTOR, ProtectorNodes.Family.BASH,
+					ArchetypesClient.ABILITY_KEYS[0],
 					ModAttachments.BASH_READY_AT, Tuning.bashCooldownTicks(slam, recovery)));
 		}
 
@@ -172,16 +154,14 @@ public final class CooldownBarHud {
 				? Tuning.RELENTLESS_REDUCTION_TICKS : 0;
 
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.DECIMATE) > 0) {
-			var family = SlayerNodes.Family.DECIMATE;
-			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
-					null, 0, ArchetypesClient.ABILITY_KEYS[1],
+			abilities.add(new Ability(SubTree.SLAYER, SlayerNodes.Family.DECIMATE,
+					ArchetypesClient.ABILITY_KEYS[1],
 					ModAttachments.DECIMATE_READY_AT, Tuning.DECIMATE_COOLDOWN_TICKS - relentless));
 		}
 
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.BLADESTORM) > 0) {
-			var family = SlayerNodes.Family.BLADESTORM;
-			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
-					null, 0, ArchetypesClient.ABILITY_KEYS[1],
+			abilities.add(new Ability(SubTree.SLAYER, SlayerNodes.Family.BLADESTORM,
+					ArchetypesClient.ABILITY_KEYS[1],
 					ModAttachments.BLADESTORM_READY_AT, Tuning.BLADESTORM_COOLDOWN_TICKS - relentless));
 		}
 
@@ -189,16 +169,15 @@ public final class CooldownBarHud {
 
 		if (com.archetypes.CrusherNodes.rank(SubTree.CRUSHER, crusher,
 				com.archetypes.CrusherNodes.Family.HAYMAKER) > 0) {
-			var icon = com.archetypes.CrusherNodes.Family.HAYMAKER.icon();
-			abilities.add(new Ability(null, 0, icon == null ? ItemStack.EMPTY : new ItemStack(icon),
-					null, 0, ArchetypesClient.ABILITY_KEYS[2],
+			abilities.add(new Ability(SubTree.CRUSHER, com.archetypes.CrusherNodes.Family.HAYMAKER,
+					ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.HAYMAKER_READY_AT, Tuning.HAYMAKER_COOLDOWN_TICKS));
 		}
 
 		if (com.archetypes.CrusherNodes.rank(SubTree.CRUSHER, crusher,
 				com.archetypes.CrusherNodes.Family.QUAKE) > 0) {
-			abilities.add(new Ability(null, 0, new ItemStack(Items.MACE),
-					null, 0, ArchetypesClient.ABILITY_KEYS[2],
+			abilities.add(new Ability(SubTree.CRUSHER, com.archetypes.CrusherNodes.Family.QUAKE,
+					ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.QUAKE_READY_AT, Tuning.QUAKE_COOLDOWN_TICKS));
 		}
 
@@ -210,8 +189,8 @@ public final class CooldownBarHud {
 				com.archetypes.MarksmanNodes.Family.TRUE_SHOT) > 0) {
 			boolean seeker = com.archetypes.MarksmanNodes.rank(SubTree.MARKSMAN, marksman,
 					com.archetypes.MarksmanNodes.Family.SEEKER_ARROW) > 0;
-			abilities.add(new Ability(null, 0, new ItemStack(Items.SPECTRAL_ARROW),
-					null, 0, ArchetypesClient.ABILITY_KEYS[0],
+			abilities.add(new Ability(SubTree.MARKSMAN, com.archetypes.MarksmanNodes.Family.TRUE_SHOT,
+					ArchetypesClient.ABILITY_KEYS[0],
 					ModAttachments.TRUE_SHOT_READY_AT, seeker
 							? Tuning.TRUE_SHOT_SEEKER_COOLDOWN_TICKS : Tuning.TRUE_SHOT_COOLDOWN_TICKS));
 		}
@@ -222,8 +201,8 @@ public final class CooldownBarHud {
 				com.archetypes.AssassinNodes.Family.SHADOW_STEP) > 0) {
 			boolean flurry = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, assassin,
 					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0;
-			abilities.add(new Ability(null, 0, new ItemStack(Items.ENDER_PEARL),
-					null, 0, ArchetypesClient.ABILITY_KEYS[1],
+			abilities.add(new Ability(SubTree.ASSASSIN, com.archetypes.AssassinNodes.Family.SHADOW_STEP,
+					ArchetypesClient.ABILITY_KEYS[1],
 					ModAttachments.SHADOW_STEP_READY_AT, flurry
 							? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS
 							: Tuning.SHADOW_STEP_COOLDOWN_TICKS));
@@ -233,9 +212,8 @@ public final class CooldownBarHud {
 
 		if (com.archetypes.ShadowNodes.rank(SubTree.SHADOW, shadow,
 				com.archetypes.ShadowNodes.Family.INVISIBILITY) > 0) {
-			var family = com.archetypes.ShadowNodes.Family.INVISIBILITY;
-			abilities.add(new Ability(family.sprite(), family.spriteSize(), ItemStack.EMPTY,
-					null, 0, ArchetypesClient.ABILITY_KEYS[2],
+			abilities.add(new Ability(SubTree.SHADOW, com.archetypes.ShadowNodes.Family.INVISIBILITY,
+					ArchetypesClient.ABILITY_KEYS[2],
 					ModAttachments.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
 		}
 
@@ -257,25 +235,27 @@ public final class CooldownBarHud {
 			boolean blizzard = ice && com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST,
 					elementalist, com.archetypes.ElementalistNodes.Family.BLIZZARD) > 0;
 
-			net.minecraft.world.item.Item icon = meteor ? Items.MAGMA_BLOCK
-					: flame ? Items.BLAZE_ROD
-					: glacial ? Items.BLUE_ICE
-					: blizzard ? Items.SNOW_BLOCK
-					: ice ? Items.ICE : Items.FIRE_CHARGE;
+			var family = meteor ? com.archetypes.ElementalistNodes.Family.METEORITE
+					: flame ? com.archetypes.ElementalistNodes.Family.FLAMETHROWER
+					: glacial ? com.archetypes.ElementalistNodes.Family.GLACIAL_SPIKE
+					: blizzard ? com.archetypes.ElementalistNodes.Family.BLIZZARD
+					: ice ? com.archetypes.ElementalistNodes.Family.ICE_BLAST
+					: com.archetypes.ElementalistNodes.Family.FIREBALL;
 			float cost = meteor ? Tuning.METEOR_MIN_MANA
 					: com.archetypes.SeekerSpells.elementCost(player,
 							flame ? Tuning.FLAME_START_COST
 									: blizzard ? Tuning.BLIZZARD_COST
 									: ice ? Tuning.ICE_BLAST_COST : Tuning.FIREBALL_COST,
 							fire, ice, false);
-			abilities.add(new Ability(new ItemStack(icon), ArchetypesClient.ABILITY_KEYS[0], cost, meteor));
+			abilities.add(new Ability(SubTree.ELEMENTALIST, family,
+					ArchetypesClient.ABILITY_KEYS[0], cost, meteor));
 		}
 
 		var wizard = NodePurchases.owned(player, SubTree.WIZARD);
 
 		if (com.archetypes.WizardNodes.rank(SubTree.WIZARD, wizard,
 				com.archetypes.WizardNodes.Family.MAGIC_MISSILE) > 0) {
-			abilities.add(new Ability(new ItemStack(Items.AMETHYST_SHARD),
+			abilities.add(new Ability(SubTree.WIZARD, com.archetypes.WizardNodes.Family.MAGIC_MISSILE,
 					ArchetypesClient.ABILITY_KEYS[1],
 					com.archetypes.SeekerSpells.missileCost(player), false));
 		}
@@ -284,7 +264,7 @@ public final class CooldownBarHud {
 
 		if (com.archetypes.PriestNodes.rank(SubTree.PRIEST, priest,
 				com.archetypes.PriestNodes.Family.HOLY_LIGHT) > 0) {
-			abilities.add(new Ability(new ItemStack(Items.GLOWSTONE_DUST),
+			abilities.add(new Ability(SubTree.PRIEST, com.archetypes.PriestNodes.Family.HOLY_LIGHT,
 					ArchetypesClient.ABILITY_KEYS[2],
 					com.archetypes.SeekerSpells.holyCost(player), false));
 		}

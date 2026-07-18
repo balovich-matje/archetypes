@@ -392,16 +392,14 @@ public class ArchetypeScreen extends Screen {
 		// anything drawn after it covers the buttons.
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 
-		// Pinned: anchored under its button. Hovered: at the cursor. Node
-		// tooltips win if one is up — you can't hover a node and the "?" at
-		// once anyway.
+		// Click-only (user call — no hover preview): the pinned legend sits
+		// anchored under its button until clicked again. Node tooltips win
+		// if one is up.
 		if (tooltip != null) {
 			graphics.setTooltipForNextFrame(this.font, tooltip, mouseX, mouseY);
 		} else if (this.legendPinned) {
 			graphics.setTooltipForNextFrame(this.font, this.legendLines(),
 					this.legendButton.getX() - 4, this.legendButton.getY() + 24);
-		} else if (this.legendButton.isHovered()) {
-			graphics.setTooltipForNextFrame(this.font, this.legendLines(), mouseX, mouseY);
 		}
 	}
 
@@ -519,8 +517,12 @@ public class ArchetypeScreen extends Screen {
 				.withStyle(style -> style.withColor(0xFF3B82F6 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
 		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.capstones")
 				.withStyle(style -> style.withColor(0xFFA855F7 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
-		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.elements")
-				.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
+
+		// The element commitment only concerns Seekers.
+		if (this.archetype == Archetype.INTELLECT) {
+			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.elements")
+					.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
+		}
 		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.reset")
 				.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
 		return lines;

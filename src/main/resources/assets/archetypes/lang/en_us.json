@@ -146,6 +146,7 @@
 	"node.archetypes.slayer.minor.desc": "Placeholder.",
 	"node.archetypes.slayer.relentless": "Relentless",
 	"node.archetypes.slayer.relentless.desc": "Decimate's cooldown drops to 15 seconds, Bladestorm's to 30.",
+	"key.category.archetypes.archetypes": "Archetypes",
 	"key.archetypes.ability_1": "Ability: First Tree",
 	"key.archetypes.ability_2": "Ability: Second Tree",
 	"key.archetypes.ability_3": "Ability: Third Tree",

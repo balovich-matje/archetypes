@@ -42,6 +42,10 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * exposed so the cooldown bar can label its slots. */
 	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[3];
 
+	/** Our own section in the controls screen, not vanilla's Gameplay. */
+	private static final KeyMapping.Category KEY_CATEGORY =
+			KeyMapping.Category.register(com.archetypes.Archetypes.id("archetypes"));
+
 	/** Last archetype level seen, for the level-up toast; -1 = not yet
 	 * observed this session, so the join-time sync never toasts. */
 	private static int lastLevel = -1;
@@ -65,7 +69,7 @@ public class ArchetypesClient implements ClientModInitializer {
 		for (int slot = 0; slot < 3; slot++) {
 			ABILITY_KEYS[slot] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 					"key.archetypes.ability_" + (slot + 1), InputConstants.Type.KEYSYM, defaults[slot],
-					KeyMapping.Category.GAMEPLAY));
+					KEY_CATEGORY));
 		}
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {

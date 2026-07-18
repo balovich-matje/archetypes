@@ -304,15 +304,25 @@ public final class TreeNodes {
 		java.util.List<Integer> out = new java.util.ArrayList<>();
 
 		for (Enum<?> family : families) {
-			for (int i = 0; i < tree.constellation().nodes().size(); i++) {
-				if (familyOf(tree, i) == family) {
-					out.add(i);
-					break;
-				}
+			int index = indexOfFamily(tree, family);
+
+			if (index >= 0) {
+				out.add(index);
 			}
 		}
 
 		return out;
+	}
+
+	/** First node index of a family, or -1 — the cooldown bar's icon lookup. */
+	public static int indexOfFamily(final SubTree tree, final Enum<?> family) {
+		for (int i = 0; i < tree.constellation().nodes().size(); i++) {
+			if (familyOf(tree, i) == family) {
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	/**

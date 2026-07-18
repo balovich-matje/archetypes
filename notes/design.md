@@ -1645,3 +1645,24 @@ one-word flip A/Bs the two. focused_mind is byte-identical to the
 unified Mana Flow (devotion) icon in both, cmp-verified. The cost-down
 grammar (mana orb + minus on kindling/chill/spellweaver) now matches
 across both candidates.
+
+**Morning feedback round 2 (2026-07-18).** Legend "?" is click-only now
+(no hover) and the element-commitment line only appears on Seeker
+trees. Keybinds moved to their own "Archetypes" controls section
+(KeyMapping.Category.register(archetypes:archetypes), lang key
+key.category.archetypes.archetypes). CREATIVE RESET keeps banked
+levels (user call: tree-hopping in creative shouldn't cost a x45 token
+each time) — clear() now forgetNodes + archetype only; Amnesia II
+remains the level wipe. COOLDOWN TRACKER reworked: docked to the RIGHT
+of the hotbar (x = width/2 + 91 + 4, bottom-aligned, tracks the
+centred hotbar at any scale), hotbar-sized 22px slots with native 16px
+icons — and the icons are now the NODE icons via VanillaUi.nodeIcon +
+new TreeNodes.indexOfFamily, so the tracker always matches the tree
+screen (bake-off sets included). Crusher early-game verdict from the
+user: fists at 9.0 damage is fine — unenchantable, no netherite path,
+"good early game, mostly irrelevant in end-game."
+PENDING USER DECISIONS: (a) missile FX B/C review before sound edits
+(user direction: cast whoosh + louder looped glint from the projectile
+until hit/expiry); (b) whether Elementalist keeps BOTH base spell and
+capstone once the capstone is picked, capstone on a 4th keybind — my
+recommendation delivered: yes, split them (see chat).
