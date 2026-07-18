@@ -1633,3 +1633,15 @@ sparse END_ROD) and for the homing capstone (curve legibility), lance
 ring tinted violet for family cohesion. Variants B and C staged in
 notes/art/missile_fx/ — flipping = swap 2 textures + retune the 3
 sound/trail sites.
+
+**Elementalist v2 icons (2026-07-18).** Two agents re-rendered the tree
+to the settled vanilla-first standard (round one's winner predated it
+and "stood out from all the other 8 trees"). OPUS V2 WIRED LIVE
+(test/opus/elementalist overwritten; old set archived in notes/):
+fire charge fireballs, real flint-and-steel/campfire/blaze sprites,
+snowfall blizzard, fire-charge-skimming-water vaporize, falling-rock
+meteorite. Sonnet v2 staged in test/sonnet/elementalist — iconSet's
+one-word flip A/Bs the two. focused_mind is byte-identical to the
+unified Mana Flow (devotion) icon in both, cmp-verified. The cost-down
+grammar (mana orb + minus on kindling/chill/spellweaver) now matches
+across both candidates.
