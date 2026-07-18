@@ -281,7 +281,7 @@
 	"node.archetypes.elementalist.permafrost": "Permafrost",
 	"node.archetypes.elementalist.permafrost.desc": "Ice projectiles glaze the water they pass over into walkable frost.",
 	"node.archetypes.elementalist.glacial_spike": "Glacial Spike",
-	"node.archetypes.elementalist.glacial_spike.desc": "Hurl a lance of winter at one target: x2.0 Ice Blast damage, x10.0 against slowed or freezing targets, freezing them in place for 12 seconds. Cast with Ability 4. Consumes 50 mana.",
+	"node.archetypes.elementalist.glacial_spike.desc": "Hurl a lance of winter at one target: x2.0 Ice Blast damage, x10.0 against slowed or freezing targets, freezing them in place for 12 seconds. Cast with Ability 4. Consumes 75 mana.",
 	"node.archetypes.elementalist.blizzard": "Blizzard",
 	"node.archetypes.elementalist.blizzard.desc": "Call a storm: icicles rake the targeted 5x5 ground for 10 hearts over 8 seconds. Recasting moves the storm. Cast with Ability 4. Consumes 75 mana.",
 	"node.archetypes.elementalist.spellweaver": "Spellweaver",

@@ -70,6 +70,9 @@ public final class Tuning {
 
 	/** Reflection: a returned projectile keeps half its bite. */
 	public static final double REFLECT_DAMAGE_FACTOR = 0.5;
+	/** Floor on the return flight — a mid-drawn-bow launch, enough to carry
+	 * the shot back to a skeleton at normal firing range. */
+	public static final double REFLECT_RETURN_SPEED = 1.6;
 
 	/** Rush: impulse per lunge block, and its own anti-exploit cooldown. */
 	public static final double RUSH_IMPULSE_PER_BLOCK = 0.45;
@@ -376,6 +379,9 @@ public final class Tuning {
 	public static final double BLIZZARD_HALF_WIDTH = 2.5;
 	/** Glacial Spike, the ice finisher: x2 cold, x10 against the chilled —
 	 * prime with the AOE blast, execute with the spike. */
+	/** Priced above Ice Blast: the x10 execute stays, but spamming it means
+	 * drinking through mana potions, not idling on regen. */
+	public static final float GLACIAL_COST = 75.0F;
 	public static final float GLACIAL_BASE_MULTIPLIER = 2.0F;
 	public static final float GLACIAL_CHILLED_MULTIPLIER = 10.0F;
 	public static final int GLACIAL_FREEZE_TICKS = 240;

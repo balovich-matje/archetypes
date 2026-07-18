@@ -73,4 +73,27 @@ public abstract class AbstractArrowMixin {
 			com.archetypes.Homing.steer(arrow, quarry);
 		}
 	}
+
+	/**
+	 * Reflection, second half (see ProjectileMixin): the blocked-arrow branch
+	 * of {@code onHitEntity} ends with a {@code scale(0.2)} drop AFTER its
+	 * deflect call, so the return-to-sender velocity stashed there is applied
+	 * only once the whole hit handler has had its say.
+	 */
+	@Inject(method = "onHitEntity", at = @At("TAIL"))
+	private void archetypes$applyReflectAim(final net.minecraft.world.phys.EntityHitResult hit,
+			final CallbackInfo ci) {
+		AbstractArrow arrow = (AbstractArrow) (Object) this;
+
+		if (arrow.level().isClientSide()) {
+			return;
+		}
+
+		Vec3 aim = ((AttachmentTarget) arrow).removeAttached(ModAttachments.REFLECT_AIM);
+
+		if (aim != null && !arrow.isRemoved()) {
+			arrow.setDeltaMovement(aim);
+			arrow.hurtMarked = true;
+		}
+	}
 }

@@ -32,6 +32,11 @@ public abstract class ProjectileMixin {
 	 * its old owner, and halve an arrow's base damage — sent back, but not a
 	 * free execute. Vanilla's {@code lastDeflectedBy} already prevents the
 	 * returned shot from clipping the player on the way out.
+	 *
+	 * <p>The velocity is NOT set here: {@code AbstractArrow.onHitEntity} follows
+	 * its deflect call with a {@code scale(0.2)} drop that would stomp it (the
+	 * arrow used to flop at the blocker's feet). The aim is stashed on the arrow
+	 * and applied by {@code AbstractArrowMixin} after the hit handler finishes.
 	 */
 	@Inject(method = "deflect", at = @At("RETURN"))
 	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
@@ -55,9 +60,12 @@ public abstract class ProjectileMixin {
 			return;
 		}
 
+		// The REVERSE deflection just halved the arrival speed, so double it
+		// back, with a floor that carries the shot to a normal skeleton range.
 		Vec3 aim = shooter.getEyePosition().subtract(self.position()).normalize();
-		double speed = Math.max(self.getDeltaMovement().length(), 0.75);
-		self.setDeltaMovement(aim.scale(speed));
+		double speed = Math.max(self.getDeltaMovement().length() * 2.0, Tuning.REFLECT_RETURN_SPEED);
+		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) self)
+				.setAttached(com.archetypes.ModAttachments.REFLECT_AIM, aim.scale(speed));
 		self.setOwner(player);
 
 		ServerLevel level = (ServerLevel) self.level();

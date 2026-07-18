@@ -218,6 +218,12 @@ public final class ModAttachments {
 	public static final AttachmentType<Boolean> TRUE_SHOT_HOMING =
 			AttachmentRegistry.<Boolean>create(Archetypes.id("true_shot_homing"));
 
+	/** On arrows, for one hit-handler call: the return-to-sender velocity a
+	 * Reflection block computed. Applied and cleared at the end of the hit —
+	 * vanilla's post-deflect drop would stomp it if set any earlier. */
+	public static final AttachmentType<net.minecraft.world.phys.Vec3> REFLECT_AIM =
+			AttachmentRegistry.<net.minecraft.world.phys.Vec3>create(Archetypes.id("reflect_aim"));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),

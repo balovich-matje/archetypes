@@ -192,7 +192,7 @@ public final class SeekerSpells {
 	 * slowed or freezing. Prime with the AOE blast, execute with the spike.
 	 */
 	private static void glacialSpike(final ServerPlayer player, final Set<Integer> owned) {
-		if (!Mana.spend(player, elementCost(player, Tuning.ICE_BLAST_COST, false, true, false))) {
+		if (!Mana.spend(player, elementCost(player, Tuning.GLACIAL_COST, false, true, false))) {
 			return;
 		}
 
