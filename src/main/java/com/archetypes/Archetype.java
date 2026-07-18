@@ -63,11 +63,6 @@ public enum Archetype {
 		return Component.translatable("archetype." + Archetypes.MOD_ID + "." + this.id + ".tier." + tier);
 	}
 
-	/** One-line pitch shown on the picker. */
-	public Component blurb() {
-		return Component.translatable("archetype." + Archetypes.MOD_ID + "." + this.id + ".blurb");
-	}
-
 	/** The picker card's role line: what you'll be doing, in five words. */
 	public Component role() {
 		return Component.translatable("archetype." + Archetypes.MOD_ID + "." + this.id + ".role");

@@ -27,9 +27,10 @@ import org.jspecify.annotations.Nullable;
  * three cards, one per archetype: the start name, a five-word role line, the
  * crest (painted collage where one exists, a three-item mini-collage of the
  * sub-tree symbols otherwise), and an always-visible row of the archetype's
- * three active abilities. Hovering a card grows the crest and shows the
- * playstyle blurb; hovering an ability slot previews the real node tooltip —
- * the same icon and description the tree screen will show after the pick.
+ * three active abilities. Hovering a card grows the crest; hovering an
+ * ability slot previews the real node tooltip — the same icon and
+ * description the tree screen will show after the pick. (There used to be a
+ * hover blurb under the cards; it read like ad copy and was cut.)
  */
 public class ArchetypePickerScreen extends Screen {
 	private static final int FRAME_W = 112;
@@ -37,9 +38,9 @@ public class ArchetypePickerScreen extends Screen {
 	private static final int GAP = 12;
 	private static final int PAD = 10;
 	private static final int PANEL_WIDTH = FRAME_W * 3 + GAP * 2 + PAD * 2;
-	private static final int PANEL_HEIGHT = 253;
+	private static final int PANEL_HEIGHT = 212;
 	private static final int FRAMES_TOP = 36;
-	private static final int BUTTON_TOP = 225;
+	private static final int BUTTON_TOP = 184;
 
 	/** Per-card vertical rhythm, offsets from the card's own top. */
 	private static final int ROLE_TOP = 16;
@@ -276,18 +277,6 @@ public class ArchetypePickerScreen extends Screen {
 		// never paint over the icons.
 		for (int i = 0; i < Archetype.values().length; i++) {
 			this.abilityRow(graphics, i, Archetype.values()[i], mouseX, mouseY);
-		}
-
-		// Blurb for whatever is hovered, between the frames and the button —
-		// word-wrapped to the panel, each line centered.
-		if (hovered != null) {
-			int y = top + FRAME_H + 5;
-
-			for (FormattedCharSequence line : this.font.split(hovered.blurb(), PANEL_WIDTH - PAD * 2)) {
-				graphics.text(this.font, line, (this.width - this.font.width(line)) / 2, y,
-						VanillaUi.LABEL, false);
-				y += 9;
-			}
 		}
 
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
