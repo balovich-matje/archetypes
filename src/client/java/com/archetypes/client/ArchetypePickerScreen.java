@@ -375,24 +375,28 @@ public class ArchetypePickerScreen extends Screen {
 			pose.scale(scale, scale);
 
 			if (archetype == Archetype.AGILITY) {
-				// Crossbow aiming upper-left (mirrored), drawn bow upper-right,
-				// two daggers crossed in front at the bottom.
-				mirrored(graphics, VANILLA_CROSSBOW, -17, -15, 16);
+				// Back rank in the corners: crossbow aiming upper-left (a
+				// pre-mirrored asset — flipped blits get culled), drawn bow
+				// upper-right. Front: the two daggers crossed at the bottom.
+				graphics.blit(RenderPipelines.GUI_TEXTURED, CROSSBOW_LEFT,
+						-18, -15, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, VANILLA_BOW_DRAWN,
-						1, -15, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						2, -15, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER,
-						-12, -3, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
-				mirrored(graphics, DAGGER, -4, -3, 16);
+						-12, -2, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER_LEFT,
+						-4, -2, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
 			} else {
-				// Glacial spike upper-left (mirrored), flamethrower upper-right
-				// (both wear their node icons), a mana regeneration potion in
-				// front.
-				mirrored(graphics, SPIKE_ICON, -17, -15, 32);
-				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_ICON,
-						1, -15, 0.0F, 0.0F, 16, 16, 32, 32, 32, 32);
+				// The two capstone icons genuinely CROSSING (user layout):
+				// spike blade to the upper-left, flamethrower to the upper-
+				// right, overlapping into an X — the potion in front.
+				graphics.blit(RenderPipelines.GUI_TEXTURED, SPIKE_ICON,
+						-15, -15, 0.0F, 0.0F, 16, 16, 32, 32, 32, 32);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_RIGHT,
+						-1, -15, 0.0F, 0.0F, 16, 16, 32, 32, 32, 32);
 				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 						net.minecraft.world.item.Items.POTION,
-						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -2);
+						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -4);
 			}
 
 			pose.popMatrix();
@@ -407,27 +411,19 @@ public class ArchetypePickerScreen extends Screen {
 	/** Native size of the portrait textures. */
 	private static final int PORTRAIT_TEXTURE = 256;
 
-	/** The collage materials: vanilla weapons, our dagger, two node icons. */
-	private static final Identifier VANILLA_CROSSBOW =
-			Identifier.fromNamespaceAndPath("minecraft", "textures/item/crossbow_standby.png");
+	/** The collage materials — mirrored variants are PRE-BAKED assets
+	 * (textures/gui/collage), because a negative-scale blit flips the
+	 * quad's winding and the GUI renderer culls it into invisibility. */
+	private static final Identifier CROSSBOW_LEFT =
+			com.archetypes.Archetypes.id("textures/gui/collage/crossbow_left.png");
 	private static final Identifier VANILLA_BOW_DRAWN =
 			Identifier.fromNamespaceAndPath("minecraft", "textures/item/bow_pulling_2.png");
 	private static final Identifier DAGGER =
 			com.archetypes.Archetypes.id("textures/item/iron_dagger.png");
-	private static final Identifier FLAME_ICON =
-			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/flamethrower.png");
+	private static final Identifier DAGGER_LEFT =
+			com.archetypes.Archetypes.id("textures/gui/collage/dagger_left.png");
+	private static final Identifier FLAME_RIGHT =
+			com.archetypes.Archetypes.id("textures/gui/collage/flame_right.png");
 	private static final Identifier SPIKE_ICON =
 			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/glacial_spike.png");
-
-	/** Blit a square sprite horizontally mirrored, drawn 16x16 at (x, y). */
-	private static void mirrored(final GuiGraphicsExtractor graphics, final Identifier texture,
-			final int x, final int y, final int textureSize) {
-		var pose = graphics.pose();
-		pose.pushMatrix();
-		pose.translate(x + 16, y);
-		pose.scale(-1.0F, 1.0F);
-		graphics.blit(RenderPipelines.GUI_TEXTURED, texture, 0, 0, 0.0F, 0.0F, 16, 16,
-				textureSize, textureSize, textureSize, textureSize);
-		pose.popMatrix();
-	}
 }

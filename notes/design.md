@@ -1696,3 +1696,15 @@ mirrored crossbow upper-left + drawn bow (bow_pulling_2) upper-right;
 Seeker = mirrored glacial-spike node icon upper-left x flamethrower
 node icon upper-right, mana regeneration potion in front. Orientations
 are best-guess from vanilla sprite directions — EYEBALL IN GAME.
+
+**Collage fix (2026-07-18).** Two bugs, both mine: (1) mirrored blits
+via pose.scale(-1,1) flip the quad winding and the GUI renderer CULLS
+them — every mirrored sprite (crossbow, second dagger, glacial spike)
+was invisible. Mirrors are PRE-BAKED assets now (textures/gui/collage/
+crossbow_left, dagger_left, flame_right) — never mirror at draw time.
+(2) I'd read "crossing" as corner placement for the Seeker pair; and
+the node icons' native orientations were the OPPOSITE of my assumption
+(flamethrower points NW natively, spike NE) — the mirror now goes on
+the flamethrower, spike used as-is. Compositions are PIL-previewed at
+exact blit offsets before shipping from now on — that render would
+have caught all of this pre-commit.
