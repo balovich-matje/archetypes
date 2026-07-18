@@ -375,28 +375,29 @@ public class ArchetypePickerScreen extends Screen {
 			pose.scale(scale, scale);
 
 			if (archetype == Archetype.AGILITY) {
-				// Back rank in the corners: crossbow aiming upper-left (a
-				// pre-mirrored asset — flipped blits get culled), drawn bow
-				// upper-right. Front: the two daggers crossed at the bottom.
+				// Gathered like the Brawler crest: the enlarged crossbow
+				// (a pre-mirrored asset — flipped blits get culled) and drawn
+				// bow lean into the middle, lower halves buried behind the
+				// two daggers, which cross mid-blade in front.
 				graphics.blit(RenderPipelines.GUI_TEXTURED, CROSSBOW_LEFT,
-						-18, -15, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						-19, -14, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, VANILLA_BOW_DRAWN,
-						2, -15, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						-1, -14, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER,
-						-12, -2, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						-11, -4, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER_LEFT,
-						-4, -2, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						-5, -4, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
 			} else {
-				// The two capstone icons genuinely CROSSING (user layout):
-				// spike blade to the upper-left, flamethrower to the upper-
-				// right, overlapping into an X — the potion in front.
+				// Spike and flamethrower enlarged and pushed through each
+				// other — shafts overlapping into a real X, not tip-to-tip —
+				// with the mana potion in front at the crossing's foot.
 				graphics.blit(RenderPipelines.GUI_TEXTURED, SPIKE_ICON,
-						-15, -15, 0.0F, 0.0F, 16, 16, 32, 32, 32, 32);
+						-15, -15, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_RIGHT,
-						-1, -15, 0.0F, 0.0F, 16, 16, 32, 32, 32, 32);
+						-5, -15, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
 				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 						net.minecraft.world.item.Items.POTION,
-						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -4);
+						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -3);
 			}
 
 			pose.popMatrix();

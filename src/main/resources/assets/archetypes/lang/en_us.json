@@ -1,5 +1,5 @@
 {
-	"screen.archetypes.button": "Archetype",
+	"screen.archetypes.button": "Archetypes",
 	"screen.archetypes.picker": "Choose your Archetype",
 	"screen.archetypes.picker.prompt": "Choose deliberately — changing your mind later has a price.",
 	"screen.archetypes.picker.fork_hint": "Pick one path — the other locks.",

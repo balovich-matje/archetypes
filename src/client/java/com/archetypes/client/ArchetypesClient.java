@@ -173,24 +173,36 @@ public class ArchetypesClient implements ClientModInitializer {
 				(payload, context) -> context.client().execute(() -> ProcIndicatorHud.push(payload)));
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			if (!(screen instanceof InventoryScreen) && !(screen instanceof CreativeModeInventoryScreen)) {
-				return;
+			if (screen instanceof InventoryScreen) {
+				// Survival inventory: a bookmark on the top edge, clear of
+				// the effect list vanilla draws to the panel's right. The
+				// recipe book shifts leftPos without re-running init, so it
+				// re-anchors every tick — and refreshes the label, since the
+				// archetype can be picked while this screen is still alive.
+				BookmarkTab tab = new BookmarkTab(tabLabel(client), () -> openArchetypeUi(client, screen));
+				anchorTab((AbstractContainerScreen<?>) screen, tab);
+				Screens.getWidgets(screen).add(tab);
+
+				ScreenEvents.afterTick(screen).register(s -> {
+					anchorTab((AbstractContainerScreen<?>) s, tab);
+					tab.setMessage(tabLabel(client));
+				});
+			} else if (screen instanceof CreativeModeInventoryScreen) {
+				// Creative keeps the compact square to the panel's right:
+				// the top edge belongs to the real creative tabs, and
+				// creative shows no effect list to collide with.
+				Button button = Button.builder(label(client), b -> openArchetypeUi(client, screen))
+						.bounds(0, 0, BUTTON_SIZE, BUTTON_SIZE)
+						.tooltip(Tooltip.create(Component.translatable("screen.archetypes.button")))
+						.build();
+				anchorButton((AbstractContainerScreen<?>) screen, button);
+				Screens.getWidgets(screen).add(button);
+
+				ScreenEvents.afterTick(screen).register(s -> {
+					anchorButton((AbstractContainerScreen<?>) s, button);
+					button.setMessage(label(client));
+				});
 			}
-
-			Button button = Button.builder(label(client), b -> openArchetypeUi(client, screen))
-					.bounds(0, 0, BUTTON_SIZE, BUTTON_SIZE)
-					.tooltip(Tooltip.create(Component.translatable("screen.archetypes.button")))
-					.build();
-			anchorButton((AbstractContainerScreen<?>) screen, button);
-			Screens.getWidgets(screen).add(button);
-
-			// The recipe book shifts leftPos without re-running init, so keep the
-			// button glued to the panel every tick — and refresh the label, since
-			// the archetype can be picked while this screen is still alive.
-			ScreenEvents.afterTick(screen).register(s -> {
-				anchorButton((AbstractContainerScreen<?>) s, button);
-				button.setMessage(label(client));
-			});
 		});
 	}
 
@@ -198,6 +210,27 @@ public class ArchetypesClient implements ClientModInitializer {
 	private static Component label(final net.minecraft.client.Minecraft client) {
 		boolean unpicked = client.player == null || ModAttachments.get(client.player) == null;
 		return Component.literal("A").withStyle(unpicked ? ChatFormatting.GOLD : ChatFormatting.WHITE);
+	}
+
+	/** The bookmark spells it out; unstyled it takes the tab's dark label ink. */
+	private static Component tabLabel(final net.minecraft.client.Minecraft client) {
+		boolean unpicked = client.player == null || ModAttachments.get(client.player) == null;
+		var text = Component.translatable("screen.archetypes.button");
+		return unpicked ? text.withStyle(ChatFormatting.GOLD) : text;
+	}
+
+	private static void anchorTab(final AbstractContainerScreen<?> screen, final BookmarkTab tab) {
+		AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
+		int x = accessor.archetypes$getLeftPos() + 4;
+
+		// Slot in after the Skills bookmark, whose width both mods compute
+		// with the same label-plus-padding formula.
+		if (FabricLoader.getInstance().isModLoaded(SPECIALITIES)) {
+			x += BookmarkTab.widthFor(Component.translatable("screen.specialities.skills")) + 2;
+		}
+
+		tab.setX(x);
+		tab.setY(accessor.archetypes$getTopPos() - BookmarkTab.HEIGHT);
 	}
 
 	private static void openArchetypeUi(final net.minecraft.client.Minecraft client, final Screen parent) {
