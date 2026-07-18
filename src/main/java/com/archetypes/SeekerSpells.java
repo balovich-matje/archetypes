@@ -392,9 +392,20 @@ public final class SeekerSpells {
 			ProcIndicators.send(player, SubTree.WIZARD, WizardNodes.Family.ECHO);
 		}
 
+		// Missile FX variant A: a light jittered chime (a fixed pitch heard
+		// four times a second turns into a drone), with a deep resonate
+		// bloom underneath only when the cast is empowered — the
+		// eyes-closed tell.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS, 1.0F,
-				empowered ? 1.2F : 0.5F);
+				SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.PLAYERS,
+				empowered ? 0.55F : 0.4F,
+				1.35F + (player.getRandom().nextFloat() - 0.5F) * (empowered ? 0.2F : 0.3F));
+
+		if (empowered) {
+			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.6F,
+					0.85F + (player.getRandom().nextFloat() - 0.5F) * 0.1F);
+		}
 	}
 
 	private static float missileSpeed(final Set<Integer> owned) {
@@ -415,7 +426,8 @@ public final class SeekerSpells {
 		}
 
 		SpellProjectile missile = new SpellProjectile(player, level,
-				SpellProjectile.Mode.MISSILE, new ItemStack(Items.AMETHYST_SHARD))
+				SpellProjectile.Mode.MISSILE,
+				new ItemStack(empowered ? ModItems.MAGIC_BOLT_EMPOWERED : ModItems.MAGIC_BOLT))
 				.withDamage(damage)
 				.withRange(Tuning.MISSILE_RANGE + Tuning.RANGE_PER_RANK
 						* WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.RANGE));

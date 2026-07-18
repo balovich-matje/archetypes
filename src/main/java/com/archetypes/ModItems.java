@@ -115,6 +115,12 @@ public final class ModItems {
 	 * club — whacking with one is exactly as effective as an empty fist.
 	 * Every spell requires SOME wand in the main hand; the specialist wands
 	 * discount and empower their school (see SeekerSpells). */
+	/** The Arcane Mote (missile FX variant A): the projectile's look — a
+	 * violet four-point star, its 8-point empowered sister. Never
+	 * obtainable; SpellProjectile wears them in flight. */
+	public static final Item MAGIC_BOLT = plain("magic_bolt");
+	public static final Item MAGIC_BOLT_EMPOWERED = plain("magic_bolt_empowered");
+
 	public static final Item MAGIC_WAND = registerWand("magic_wand");
 	public static final Item APPRENTICE_WAND = registerWand("apprentice_wand");
 	public static final Item BLAZE_WAND = registerWand("blaze_wand");
@@ -177,6 +183,11 @@ public final class ModItems {
 		Item.Properties properties = material.applySwordProperties(
 				new Item.Properties().setId(key), daggerDamageFor(material), DAGGER_ATTACK_SPEED);
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
+	}
+
+	private static Item plain(final String path) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
+		return Registry.register(BuiltInRegistries.ITEM, key, new Item(new Item.Properties().setId(key)));
 	}
 
 	private static Item registerWand(final String path) {

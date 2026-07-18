@@ -46,6 +46,8 @@
 	"item.archetypes.diamond_dagger": "Diamond Dagger",
 	"item.archetypes.netherite_dagger": "Netherite Dagger",
 	"item.archetypes.magic_wand": "Apprentice Wand",
+	"item.archetypes.magic_bolt": "Arcane Mote",
+	"item.archetypes.magic_bolt_empowered": "Empowered Arcane Mote",
 	"item.archetypes.skill_token": "Skill Token",
 	"item.archetypes.skill_token.granted": "Archetype level %s/%s",
 	"screen.archetypes.tree.bar.archetype": "%s → %s",

@@ -47,6 +47,13 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	/** Lance's travelling ring: how many sparks trace the sweep's width. */
 	private static final int LANCE_RING_POINTS = 6;
 
+	/** Missile FX variant A, the Arcane Mote's palette: a faint violet
+	 * thread for the rank and file, a bright one for empowered/homing. */
+	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST =
+			new net.minecraft.core.particles.DustParticleOptions(0x7E5CBF, 0.6F);
+	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST_BRIGHT =
+			new net.minecraft.core.particles.DustParticleOptions(0xB38EF3, 1.0F);
+
 	/** Mind Well's empowered missile — synced, because the client renders it
 	 * half again bigger; it's also the only missile that keeps the trail. */
 	private static final net.minecraft.network.syncher.EntityDataAccessor<Boolean> DATA_EMPOWERED =
@@ -366,18 +373,30 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			}
 			case FLAME_BOLT -> level.sendParticles(ParticleTypes.FLAME,
 					this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.005);
-			// Only the empowered missile wears the white trail; the rank and
-			// file fly clean (user sketch, new-edits-for-wizard). Lance adds
-			// a spinning ring the width of its sweep, so the AOE reads as a
-			// circle instead of a lone shard.
+			// Missile FX variant A: a near-nothing violet thread for the
+			// spammed cast (the sprite's hot core carries the glow), the
+			// bright thread every tick for empowered and for the homing
+			// capstone (so the curve is legible), plus END_ROD sparkle on
+			// empowered only. Lance keeps its ring, tinted into the family.
 			case MISSILE -> {
 				if (this.pierce) {
 					this.lanceRing(level);
 				}
 
 				if (this.isEmpowered()) {
-					level.sendParticles(ParticleTypes.END_ROD,
-							this.getX(), this.getY(), this.getZ(), 2, 0.05, 0.05, 0.05, 0.0);
+					level.sendParticles(MISSILE_DUST_BRIGHT,
+							this.getX(), this.getY(), this.getZ(), 1, 0.05, 0.05, 0.05, 0.0);
+
+					if (this.tickCount % 2 == 0) {
+						level.sendParticles(ParticleTypes.END_ROD,
+								this.getX(), this.getY(), this.getZ(), 1, 0.03, 0.03, 0.03, 0.0);
+					}
+				} else if (this.homing) {
+					level.sendParticles(MISSILE_DUST_BRIGHT,
+							this.getX(), this.getY(), this.getZ(), 1, 0.03, 0.03, 0.03, 0.0);
+				} else if (this.tickCount % 2 == 0) {
+					level.sendParticles(MISSILE_DUST,
+							this.getX(), this.getY(), this.getZ(), 1, 0.03, 0.03, 0.03, 0.0);
 				}
 			}
 			case HOLY_LIGHT -> level.sendParticles(this.holyParticle(),
@@ -413,7 +432,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			Vec3 point = this.position()
 					.add(u.scale(Math.cos(angle) * radius))
 					.add(w.scale(Math.sin(angle) * radius));
-			level.sendParticles(ParticleTypes.END_ROD, point.x, point.y, point.z,
+			level.sendParticles(MISSILE_DUST_BRIGHT, point.x, point.y, point.z,
 					1, 0.0, 0.0, 0.0, 0.0);
 		}
 	}
@@ -653,6 +672,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		}
 
 		victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+
+		// Variant A: hits tick softly — connection you can hear without a
+		// fourth loud event in the spam.
+		level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
+				SoundEvents.AMETHYST_BLOCK_HIT, SoundSource.PLAYERS, 0.5F,
+				1.1F + (this.random.nextFloat() - 0.5F) * 0.4F);
 
 		if (this.weaknessTicks > 0 && victim.isAlive()) {
 			victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, this.weaknessTicks));

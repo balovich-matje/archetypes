@@ -152,16 +152,20 @@ def up_chevron(im, cx, cy, c=RED, hi=RED_LIGHT):
     dots(im, ((cx - 2, cy), (cx + 2, cy)), c)
 
 
-def down_chevron(im, cx, cy, c=ICE_MID, hi=ICE_LIGHT):
+def down_chevron(im, cx, cy, c=(30, 90, 150, 255), hi=ICE_MID):
     """The slowed glyph: a small 'v' of loose pixels, mirrored from
-    up_chevron so the two read as opposites."""
+    up_chevron so the two read as opposites. Darker than the frost sparkle
+    accent so it still reads against pale ice/snow backgrounds."""
     dot(im, cx, cy + 2, hi)
     dots(im, ((cx - 1, cy + 1), (cx + 1, cy + 1)), c)
     dots(im, ((cx - 2, cy), (cx + 2, cy)), c)
 
 
-def mana_orb(size):
-    return scale(mod_tex("gui/mana_orb_full.png"), size)
+def mana_orb(factor=1.3):
+    """The mod's 9x9 mana orb, scaled by a small multiplicative factor to a
+    corner-accent size (~12px at the default) -- NOT an absolute pixel size,
+    matching the sonnet-wizard script's own scale() convention."""
+    return scale(mod_tex("gui/mana_orb_full.png"), factor)
 
 
 def ice_diamond(block_path, canvas_fill=32):
@@ -231,8 +235,8 @@ def kindling():
     tree's cheaper-cast minus."""
     im = canvas()
     im.alpha_composite(item2x(vanilla("item/flint_and_steel.png")), (0, 0))
-    im.alpha_composite(mana_orb(11), (18, 3))
-    minus(im, 24, 15)
+    im.alpha_composite(mana_orb(), (18, 1))
+    minus(im, 25, 17)
     save(im, "kindling")
 
 
@@ -275,8 +279,8 @@ def chill():
     Kindling's plain fire tool) with a mana orb and the same minus."""
     im = canvas()
     im.alpha_composite(item2x(vanilla("item/snowball.png")), (0, 0))
-    im.alpha_composite(mana_orb(11), (18, 3))
-    minus(im, 24, 15)
+    im.alpha_composite(mana_orb(), (18, 1))
+    minus(im, 25, 17)
     save(im, "chill")
 
 
@@ -327,17 +331,18 @@ def permafrost():
 
 def meteorite():
     """The crater capstone: a magma block (the exact real material this
-    family maps to) for the impact ground, a fire_charge -- this tree's own
-    established fireball glyph -- falling onto it with a small faded echo
-    for the drop."""
+    family maps to) as a thin strip of impact ground, a fire_charge --
+    this tree's own established fireball glyph, enlarged -- falling onto it
+    out of open space above so the drop actually reads against the block,
+    with a small faded echo for the motion."""
     im = canvas()
     magma = item2x(vanilla("block/magma.png"))
-    im.alpha_composite(magma.crop((0, 12, 32, 32)), (0, 12))
-    ball = scale(vanilla("item/fire_charge.png"), 1.5)
-    echo = faded(ball, 130)
-    im.alpha_composite(echo, (10, -3))
-    im.alpha_composite(ball, (7, 1))
-    dots(im, ((5, 22), (26, 21), (9, 24), (23, 25)), (255, 214, 88, 230))
+    im.alpha_composite(magma.crop((0, 23, 32, 32)), (0, 23))
+    ball = scale(vanilla("item/fire_charge.png"), 1.6)
+    echo = faded(ball, 120)
+    im.alpha_composite(echo, (8, -4))
+    im.alpha_composite(ball, (4, 1))
+    dots(im, ((3, 24), (27, 23), (7, 26)), (255, 214, 88, 230))
     save(im, "meteorite")
 
 
@@ -379,9 +384,11 @@ def blizzard():
     im = canvas()
     im.alpha_composite(item2x(vanilla("block/snow.png")), (0, 0))
     d = ImageDraw.Draw(im)
+    streak = (94, 140, 186, 235)
     for x0, y0 in ((-4, 4), (8, -2), (20, 6), (2, 20), (18, 18)):
-        d.line([(x0, y0), (x0 + 8, y0 + 8)], fill=(255, 255, 255, 150), width=1)
-    dots(im, ((5, 3), (24, 5), (14, 15), (27, 22), (7, 26)), (255, 255, 255, 235))
+        d.line([(x0, y0), (x0 + 8, y0 + 8)], fill=streak, width=2)
+    dots(im, ((5, 3), (24, 5), (14, 15), (27, 22), (7, 26)), ICE_MID)
+    dots(im, ((6, 4), (25, 6), (15, 16)), (46, 82, 128, 255))
     save(im, "blizzard")
 
 
@@ -391,8 +398,8 @@ def spellweaver():
     node in this tree shares."""
     im = canvas()
     im.alpha_composite(item2x(vanilla("item/enchanted_book.png")), (0, 0))
-    im.alpha_composite(mana_orb(11), (18, 18))
-    minus(im, 24, 30)
+    im.alpha_composite(mana_orb(), (18, 17))
+    minus(im, 25, 29)
     save(im, "spellweaver")
 
 

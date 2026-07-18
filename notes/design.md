@@ -1614,3 +1614,22 @@ UNIFIED: wizard Arcane Orb + priest Beacon -> "Mana Pool" (Beacon's
 icon); wizard Flow + priest Devotion + elementalist Focused Mind ->
 "Mana Flow" (Devotion's icon) — lang names + live icons + enum
 fallbacks (CONDUIT / LAPIS). Keys/enums unchanged, display only.
+
+**Missile FX bake-off + variant A wired (2026-07-18).** Three Opus
+agents designed full audiovisual identities for Magic Missile (sprite,
+empowered sprite, trail/sound spec, all javap-verified); A and B
+independently converged on "the Arcane Mote" — vanilla nether_star
+silhouette recolored to the amethyst palette with a white-hot core,
+radially symmetric so the billboard renderer has no wrong angle.
+VARIANT A is live: two new never-obtainable items (MAGIC_BOLT /
+_EMPOWERED) the projectile wears in flight; cast chime lifted to a
+LIGHT jittered register (0.4 vol, pitch 1.35 +-0.15 — the old fixed
+0.5 pitch at 4 casts/sec was a drone) with a deep AMETHYST_RESONATE
+bloom under empowered casts only (the eyes-closed tell); a soft
+AMETHYST_HIT tick on connection (missiles had NO hit sound); trails:
+near-nothing dim violet dust every 2 ticks for the rank and file
+(sprite carries the glow), bright dust every tick for empowered (+
+sparse END_ROD) and for the homing capstone (curve legibility), lance
+ring tinted violet for family cohesion. Variants B and C staged in
+notes/art/missile_fx/ — flipping = swap 2 textures + retune the 3
+sound/trail sites.
