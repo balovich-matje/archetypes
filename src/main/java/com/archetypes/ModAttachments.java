@@ -112,11 +112,8 @@ public final class ModAttachments {
 			Archetypes.id("haymaker_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
-	/** Adrenaline's buff window and Battle Trance's last-hit mark. Pure
-	 * server-side bookkeeping — the ticker reads them, nobody else. */
-	public static final AttachmentType<Long> ADRENALINE_UNTIL =
-			AttachmentRegistry.<Long>create(Archetypes.id("adrenaline_until"));
-
+	/** Battle Trance's last-hit mark. Pure server-side bookkeeping — the
+	 * ticker reads it, nobody else. */
 	public static final AttachmentType<Long> TRANCE_HIT_AT =
 			AttachmentRegistry.<Long>create(Archetypes.id("trance_hit_at"));
 

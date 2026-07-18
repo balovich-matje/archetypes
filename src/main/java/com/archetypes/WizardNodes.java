@@ -36,8 +36,9 @@ public final class WizardNodes {
 		ECHO(() -> Items.AMETHYST_CLUSTER),
 		/** +8 blocks of missile range per rank. */
 		RANGE(() -> Items.SPYGLASS),
-		/** The orb in the head: +25 max mana. */
-		ARCANE_ORB(() -> Items.ENDER_PEARL),
+		/** The orb in the head: +25 max mana. Shares the unified Mana Pool
+		 * icon/name with the Priest's Beacon. */
+		ARCANE_ORB(() -> Items.CONDUIT),
 		/** Missiles fly 30% faster. */
 		VELOCITY(() -> Items.FEATHER),
 		/** +20% missile damage to anything already wounded. */
@@ -51,7 +52,8 @@ public final class WizardNodes {
 		LANCE(() -> Items.END_ROD),
 		/** Every 8th, then 4th, missile leaves empowered. */
 		MIND_WELL(() -> Items.LAPIS_LAZULI),
-		FLOW(() -> Items.HEART_OF_THE_SEA),
+		/** Shares the unified Mana Flow icon/name across all Seeker trees. */
+		FLOW(() -> Items.LAPIS_LAZULI),
 		ARCHMAGE(() -> Items.NETHER_STAR),
 		MINOR((Supplier<Item>) null);
 

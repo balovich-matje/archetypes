@@ -1,0 +1,16 @@
+{
+  "castSound":            {"id": "AMETHYST_BLOCK_CHIME", "volume": 0.35, "pitchBase": 1.4, "pitchJitter": 0.18},
+  "empoweredCastSound":   [
+    {"id": "AMETHYST_BLOCK_CHIME",    "volume": 0.45, "pitchBase": 1.25, "pitchJitter": 0.08},
+    {"id": "AMETHYST_BLOCK_RESONATE", "volume": 0.5,  "pitchBase": 0.9,  "pitchJitter": 0.05}
+  ],
+  "hitSound":             {"id": "AMETHYST_BLOCK_HIT", "volume": 0.5, "pitchBase": 1.5, "pitchJitter": 0.15},
+  "trail":                [
+    {"particle": "DUST", "color": "#B389F5", "scale": 0.7, "count": 1, "spread": 0.02, "speed": 0.0, "everyNTicks": 3}
+  ],
+  "empoweredTrail":       [
+    {"particle": "END_ROD",                        "count": 1, "spread": 0.03, "speed": 0.0, "everyNTicks": 1},
+    {"particle": "DUST", "color": "#C9A6FF", "scale": 0.9, "count": 1, "spread": 0.02, "speed": 0.0, "everyNTicks": 2}
+  ],
+  "notes": "LAYERING: a sound whose value is an ARRAY is two vanilla SoundEvents played on the same event (max 2, per brief); a single object is one layer. Only empoweredCastSound layers. Keep the existing playSound call site in SeekerSpells.castMissile; just swap volume/pitch and add the resonate layer for empowered. PITCH JITTER is mandatory on the cast: pitch = pitchBase + (rand*2-1)*pitchJitter, sampled per cast, so 4 casts/sec never phase into a flat drone. All fields verified via javap against minecraft-common-deobf 26.2 (SoundEvents.AMETHYST_BLOCK_CHIME/_HIT/_RESONATE are plain SoundEvent; ParticleTypes.DUST/END_ROD). DUST uses DustParticleOptions(color, scale) like the mod's HOLY_DUST in SpellProjectile. NORMAL TRAIL is deliberately dust-only and sparse (one dim lilac mote every 3 ticks) — the glowing star sprite carries the read, so this is a faint breadcrumb, NOT the always-on white contrail the author removed. SEEKER MISSILE (homing): keep the sprite; add a second violet DUST to the normal trail with speed 0.04 so it curls off-axis and reads as 'searching' (a quiet tell that it's tracking) — do not brighten it into empowered territory. LANCE (pierce): keep the existing END_ROD lanceRing() untouched — the spinning white ring already communicates the sweep width better than any tint; if anything, tint the CORE dust violet to match the family. The empowered sprite is authored as a hotter/haloed sibling; the renderer's existing 1.5x scale stacks on top, so do not also enlarge the texture."
+}

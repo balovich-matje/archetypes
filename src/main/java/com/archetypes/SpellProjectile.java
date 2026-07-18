@@ -53,6 +53,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			net.minecraft.network.syncher.SynchedEntityData.defineId(SpellProjectile.class,
 					net.minecraft.network.syncher.EntityDataSerializers.BOOLEAN);
 
+	/** The meteor's render scale — synced so the client draws the rock as
+	 * big as the mana that bought it. */
+	private static final net.minecraft.network.syncher.EntityDataAccessor<Float> DATA_VISUAL_SCALE =
+			net.minecraft.network.syncher.SynchedEntityData.defineId(SpellProjectile.class,
+					net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+
 	private @Nullable Mode mode;
 	/** Meteorite: the mana that was poured in — impact scales off it. */
 	private float power;
@@ -101,6 +107,16 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	protected void defineSynchedData(final net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
 		super.defineSynchedData(builder);
 		builder.define(DATA_EMPOWERED, false);
+		builder.define(DATA_VISUAL_SCALE, 1.0F);
+	}
+
+	public SpellProjectile withVisualScale(final float scale) {
+		this.getEntityData().set(DATA_VISUAL_SCALE, scale);
+		return this;
+	}
+
+	public float visualScale() {
+		return this.getEntityData().get(DATA_VISUAL_SCALE);
 	}
 
 	public SpellProjectile withEmpowered() {
@@ -429,13 +445,6 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		ServerLevel level = (ServerLevel) this.level();
 
 		switch (this.mode) {
-			case FIREBALL -> {
-				victim.igniteForSeconds(this.igniteSeconds >= 0
-						? this.igniteSeconds : Tuning.FIREBALL_FIRE_SECONDS);
-				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
-						this.shattered(victim, this.damageOverride > 0.0F
-								? this.damageOverride : Tuning.FIREBALL_DAMAGE));
-			}
 			case FLAME_BOLT -> {
 				victim.igniteForSeconds(this.igniteSeconds >= 0
 						? this.igniteSeconds : Tuning.FLAME_BOLT_FIRE_SECONDS);
@@ -444,25 +453,9 @@ public class SpellProjectile extends ThrowableItemProjectile {
 								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
 			}
 			case MISSILE -> this.missileHit(level, victim);
-			case ICE_BLAST -> {
-				// Shatter reads the slow/freeze the victim ALREADY has, so a
-				// volley ramps: the first bolt tags, the next ones profit.
-				float damage = this.shattered(victim, this.damageOverride > 0.0F
-						? this.damageOverride : Tuning.ICE_BLAST_DAMAGE);
-
-				if (this.slowAmp >= 0) {
-					victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
-							this.slowTicks, this.slowAmp));
-				}
-
-				if (this.freezeTicks > 0) {
-					victim.setTicksFrozen(Math.max(victim.getTicksFrozen(), this.freezeTicks));
-				}
-
-				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
-			}
 			case null, default -> {
-				// Meteor and Holy Light area-effect from onHit, ground or flesh alike.
+				// Fireball, Ice Blast, Meteor and Holy Light all area-effect
+				// from onHit — ground or flesh alike.
 			}
 		}
 	}
@@ -479,6 +472,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		switch (this.mode) {
 			case FIREBALL -> {
+				this.elementBurst(level, true);
 				level.sendParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
 						1, 0.0, 0.0, 0.0, 0.0);
 				level.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -487,6 +481,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			case METEOR -> this.impact(level);
 			case HOLY_LIGHT -> this.burst(level);
 			case ICE_BLAST -> {
+				this.elementBurst(level, false);
 				level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
 						15, 0.3, 0.3, 0.3, 0.05);
 				level.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -499,15 +494,53 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		this.discard();
 	}
 
+	/** Fireball and Ice Blast burst in a 3x3 on ANY impact — the direct hit
+	 * and its neighbours all take the payload. */
+	private void elementBurst(final ServerLevel level, final boolean fire) {
+		double radius = Tuning.ELEMENT_BURST_RADIUS;
+
+		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
+				this.getBoundingBox().inflate(radius),
+				living -> living.isAlive() && living != this.getOwner()
+						&& living.distanceToSqr(this) <= radius * radius)) {
+			if (fire) {
+				victim.igniteForSeconds(this.igniteSeconds >= 0
+						? this.igniteSeconds : Tuning.FIREBALL_FIRE_SECONDS);
+				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
+						this.shattered(victim, this.damageOverride > 0.0F
+								? this.damageOverride : Tuning.FIREBALL_DAMAGE));
+			} else {
+				// Shatter reads the slow/freeze the victim ALREADY has, so a
+				// volley ramps: the first bolt tags, the next ones profit.
+				float damage = this.shattered(victim, this.damageOverride > 0.0F
+						? this.damageOverride : Tuning.ICE_BLAST_DAMAGE);
+
+				if (this.slowAmp >= 0) {
+					victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
+							this.slowTicks, this.slowAmp));
+				}
+
+				if (this.freezeTicks > 0) {
+					victim.setTicksFrozen(Math.max(victim.getTicksFrozen(), this.freezeTicks));
+				}
+
+				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+			}
+		}
+	}
+
 	/**
-	 * Meteorite's landing: damage and radius grow with the mana poured in,
-	 * and anything with zero hardness in the crater — torches, flowers, snow
-	 * — is wiped. Real blocks are safe: this is a spell, not TNT.
+	 * Meteorite's landing, all of it scaled by m = power/100 (user formula):
+	 * 8 hearts across a 5x5 at the 100-mana minimum, and damage, area,
+	 * particles and loudness all grow together with every point above.
+	 * Anything with zero hardness in the crater — torches, flowers, snow —
+	 * is wiped. Real blocks are safe: this is a spell, not TNT.
 	 */
 	private void impact(final ServerLevel level) {
-		float radius = Tuning.METEOR_RADIUS_BASE
-				+ Math.max(0.0F, this.power - Tuning.METEOR_MIN_MANA) * Tuning.METEOR_RADIUS_PER_EXTRA_MANA;
-		float damage = this.power * Tuning.METEOR_DAMAGE_PER_MANA;
+		float m = this.power / Tuning.METEOR_MIN_MANA;
+		float radius = Tuning.METEOR_BASE_RADIUS * m;
+		float damage = Tuning.METEOR_BASE_DAMAGE * m;
+		float fx = Math.min(m, Tuning.METEOR_FX_SCALE_CAP);
 
 		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
 				this.getBoundingBox().inflate(radius),
@@ -532,11 +565,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		}
 
 		level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, this.getX(), this.getY(), this.getZ(),
-				1, 0.0, 0.0, 0.0, 0.0);
+				Math.max(1, Math.round(fx)), radius * 0.3, 0.3, radius * 0.3, 0.0);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.2F, 0.7F);
+				SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.2F * fx, 0.7F);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.5F, 0.6F);
+				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.5F * fx, 0.6F);
 	}
 
 	/**

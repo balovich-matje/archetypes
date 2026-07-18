@@ -1586,3 +1586,31 @@ Maintainer overrides: bash says 7s (true 6.8 — Tuning's own doc calls
 it 7), Decimate keeps "in front" (the cone is real), Relentless loses
 the word "capstone", and the legend's capstone line now also covers the
 fire/ice opener lock since those descs no longer mention it.
+
+**Crusher rework + spell feel + UI polish (2026-07-18, second round).**
+CRUSHER (user sketch crusher-rework): grid narrowed to 5 wide; the
+handle is now Bare-Knuckle x4 (day-one fantasy): fists +1 heart/rank
+(1.0 fist -> 9.0 at full, past an iron sword), mace +0.5 hearts/rank —
+one ATTACK_DAMAGE modifier retuned on weapon swap (apply() re-asserts
+now). ADRENALINE deleted -> CLINCH (renamed per sketch note): bare
+hands give AND take 50/100% less knockback. Received = KNOCKBACK_
+RESISTANCE (0..1 ranged attribute — can't go negative, satisfying the
+user's stacking worry); applied = the knockback funnel mixin
+(Haymaker's send-off is a push() impulse, untouched). ADRENALINE_UNTIL
+attachment removed. New clinch.png icon (opus fist + inward arrows).
+SPELLS: Fireball/Ice Blast now explode in a 3x3 (ELEMENT_BURST_RADIUS
+1.5) on any impact — full payload to everyone in it. Every Seeker cast
+swings the wand (flamethrower on channel start). METEORITE reworked to
+the user's m = mana/100 formula: 8 hearts across 5x5 at 100 mana, and
+damage, area, particle count, LOUDNESS and the rock's rendered size
+(new synced DATA_VISUAL_SCALE; renderer scales; FX capped x4, numbers
+uncapped) all scale together. Cast sound: ghast scream ->
+TRIDENT_RIPTIDE_3 whoosh, also scaled.
+UI: the "?" is a real vanilla Button now; clicking pins the legend
+tooltip (anchored under the button) until clicked again. Legend split:
+capstone line purple and capstone-only; NEW gray line for the
+Elementalist's one-element commitment; reset line gray. MANA NODES
+UNIFIED: wizard Arcane Orb + priest Beacon -> "Mana Pool" (Beacon's
+icon); wizard Flow + priest Devotion + elementalist Focused Mind ->
+"Mana Flow" (Devotion's icon) — lang names + live icons + enum
+fallbacks (CONDUIT / LAPIS). Keys/enums unchanged, display only.

@@ -1,6 +1,7 @@
 package com.archetypes.mixin;
 
 import com.archetypes.CrusherNodes;
+import com.archetypes.WeaponClass;
 import com.archetypes.ModAttachments;
 import com.archetypes.ModItems;
 import com.archetypes.NodePurchases;
@@ -308,6 +309,21 @@ public abstract class LivingEntityMixin {
 		// victims out of its own square every second (user call).
 		if (com.archetypes.BlizzardZones.isPulsing()) {
 			return 0.0;
+		}
+
+		// Clinch: a bare-fisted Crusher's blows shove 50/100% less — the
+		// fight stays in punching range. (Haymaker's send-off is a direct
+		// push impulse, not knockback(), so it stays untouched.)
+		if (source.getEntity() instanceof ServerPlayer clincher
+				&& source.getDirectEntity() == clincher
+				&& WeaponClass.of(clincher) == WeaponClass.HANDS) {
+			int clinch = com.archetypes.CrusherNodes.rank(SubTree.CRUSHER,
+					NodePurchases.owned(clincher, SubTree.CRUSHER), com.archetypes.CrusherNodes.Family.CLINCH);
+
+			if (clinch > 0) {
+				return strength * Math.max(0.0,
+						1.0 - Tuning.CLINCH_KNOCKBACK_REDUCTION_PER_RANK * clinch);
+			}
 		}
 
 		// Magic Missiles shove half as hard too — a spam spell that juggles

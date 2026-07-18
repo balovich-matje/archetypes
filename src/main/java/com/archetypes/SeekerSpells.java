@@ -144,6 +144,7 @@ public final class SeekerSpells {
 			fireball.withVaporize();
 		}
 
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 		fireball.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.FIREBALL_SPEED, 0.5F);
 		level.addFreshEntity(fireball);
@@ -180,6 +181,7 @@ public final class SeekerSpells {
 			blast.withPermafrost();
 		}
 
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 		blast.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.ICE_BLAST_SPEED, 0.5F);
 		level.addFreshEntity(blast);
@@ -217,16 +219,23 @@ public final class SeekerSpells {
 			return;
 		}
 
+		float power = wandPower(player, true, false)
+				* arcane(NodePurchases.owned(player, SubTree.ELEMENTALIST), spent);
 		SpellProjectile meteor = new SpellProjectile(player, level,
 				SpellProjectile.Mode.METEOR, new ItemStack(Items.MAGMA_BLOCK))
-				.withPower(wandPower(player, true, false)
-						* arcane(NodePurchases.owned(player, SubTree.ELEMENTALIST), spent));
+				.withPower(power)
+				// The rock is drawn as big as the mana that bought it.
+				.withVisualScale(Math.min(power / Tuning.METEOR_MIN_MANA, Tuning.METEOR_FX_SCALE_CAP));
 		meteor.setPos(targetPos.getX() + 0.5, targetPos.getY() + 1 + Tuning.METEOR_HEIGHT,
 				targetPos.getZ() + 0.5);
 		meteor.setDeltaMovement(0.0, -Tuning.METEOR_SPEED, 0.0);
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 		level.addFreshEntity(meteor);
+		// A loud whoosh, not a ghast's scream (user call) — scaled with the
+		// spend like everything else about the rock.
 		level.playSound(null, targetPos.getX(), targetPos.getY(), targetPos.getZ(),
-				SoundEvents.GHAST_WARN, SoundSource.PLAYERS, 1.2F, 0.7F);
+				SoundEvents.TRIDENT_RIPTIDE_3.value(), SoundSource.PLAYERS,
+				1.2F * Math.min(power / Tuning.METEOR_MIN_MANA, Tuning.METEOR_FX_SCALE_CAP), 0.75F);
 
 		// The whole pool went into the rock; the cost modifiers (Kindling,
 		// the held wand, Spellweaver) refund their share now that it's away.
@@ -267,6 +276,10 @@ public final class SeekerSpells {
 				? elementCost(player, Tuning.FLAME_START_COST, true, false, false)
 				: Tuning.FLAME_COST_PER_TICK)) {
 			return;
+		}
+
+		if (fresh) {
+			player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 		}
 
 		target.setAttached(ModAttachments.FLAME_LAST_TICK, now);
@@ -316,6 +329,7 @@ public final class SeekerSpells {
 		}
 
 		BlockPos targetPos = ((net.minecraft.world.phys.BlockHitResult) hit).getBlockPos();
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 		BlizzardZones.place(player, level,
 				new net.minecraft.world.phys.Vec3(targetPos.getX() + 0.5, targetPos.getY() + 1.0,
 						targetPos.getZ() + 0.5),
@@ -482,6 +496,7 @@ public final class SeekerSpells {
 			light.withFlatArc();
 		}
 
+		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 		light.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 				Tuning.HOLY_SPEED * (fervent ? Tuning.FERVENT_FACTOR : 1.0F), 0.5F);
 		level.addFreshEntity(light);

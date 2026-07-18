@@ -35,12 +35,6 @@ public final class CrusherCombat {
 		AttachmentTarget target = (AttachmentTarget) player;
 		long now = level.getGameTime();
 
-		// Adrenaline: landing blows keeps the frenzy window open; the ticker
-		// turns the window into an attack-speed modifier.
-		if (CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.ADRENALINE) > 0) {
-			target.setAttached(ModAttachments.ADRENALINE_UNTIL, now + Tuning.ADRENALINE_TICKS);
-		}
-
 		// Shockwave: a falling mace blow rings outward — the same damage to
 		// everything within 2 blocks per rank of the one actually struck.
 		int shockwave = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.SHOCKWAVE);

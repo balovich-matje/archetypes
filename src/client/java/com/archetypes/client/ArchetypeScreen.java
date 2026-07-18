@@ -77,6 +77,10 @@ public class ArchetypeScreen extends Screen {
 	private final Archetype archetype;
 	private final List<SubTree> subTrees;
 
+	/** The "?" legend: a real vanilla button; clicking pins the tooltip. */
+	private Button legendButton;
+	private boolean legendPinned;
+
 	public ArchetypeScreen(final @Nullable Screen parent, final Archetype archetype) {
 		super(Component.translatable("screen.archetypes.tree.title",
 				archetype.tierName(0).copy().withStyle(style -> style.withColor(archetype.color() & 0xFFFFFF))));
@@ -93,6 +97,13 @@ public class ArchetypeScreen extends Screen {
 
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, button -> this.onClose())
 				.bounds(this.panelLeft() + PAD, buttonY, BUTTON_WIDTH, BUTTON_HEIGHT)
+				.build());
+
+		// The legend rides the header as a real button; a click pins its
+		// tooltip open until the next click.
+		this.legendButton = this.addRenderableWidget(Button.builder(Component.literal("?"),
+						button -> this.legendPinned = !this.legendPinned)
+				.bounds(this.panelLeft() + this.panelWidth() - PAD - 20, this.panelTop() + 3, 20, 16)
 				.build());
 
 		// Creative-only testing affordance: undo the "permanent" choice. The
@@ -274,8 +285,6 @@ public class ArchetypeScreen extends Screen {
 						.withStyle(style -> style.withColor(this.archetype.color() & 0xFFFFFF)));
 		VanillaUi.chipText(graphics, this.font, header, panelLeft + PAD + 3, panelTop + 8, 0xFFE8E8E8);
 
-		this.legend(graphics, mouseX, mouseY);
-
 		int canvasWidth = this.canvasWidth();
 		int canvasHeight = this.canvasBottom() - this.canvasTop();
 
@@ -383,8 +392,16 @@ public class ArchetypeScreen extends Screen {
 		// anything drawn after it covers the buttons.
 		super.extractRenderState(graphics, mouseX, mouseY, a);
 
+		// Pinned: anchored under its button. Hovered: at the cursor. Node
+		// tooltips win if one is up — you can't hover a node and the "?" at
+		// once anyway.
 		if (tooltip != null) {
 			graphics.setTooltipForNextFrame(this.font, tooltip, mouseX, mouseY);
+		} else if (this.legendPinned) {
+			graphics.setTooltipForNextFrame(this.font, this.legendLines(),
+					this.legendButton.getX() - 4, this.legendButton.getY() + 24);
+		} else if (this.legendButton.isHovered()) {
+			graphics.setTooltipForNextFrame(this.font, this.legendLines(), mouseX, mouseY);
 		}
 	}
 
@@ -494,25 +511,19 @@ public class ArchetypeScreen extends Screen {
 				SkillPoints.levelProgress(player), 0xFF7FCF5F);
 	}
 
-	/** The "?" at the panel's top-right: hover for the legend — halo colors,
-	 * capstone exclusivity, and how respec potions work. */
-	private void legend(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY) {
-		int x = this.panelLeft() + this.panelWidth() - PAD - 12;
-		int y = this.panelTop() + 5;
-
-		VanillaUi.inset(graphics, x, y, 12, 12);
-		graphics.text(this.font, Component.literal("?"), x + 4, y + 2, VanillaUi.LABEL, false);
-
-		if (mouseX >= x && mouseX < x + 12 && mouseY >= y && mouseY < y + 12) {
-			List<FormattedCharSequence> lines = new java.util.ArrayList<>();
-			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.actives")
-					.withStyle(style -> style.withColor(0xFF3B82F6 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
-			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.capstones")
-					.withStyle(style -> style.withColor(0xFFA855F7 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
-			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.reset")
-					.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
-			graphics.setTooltipForNextFrame(this.font, lines, mouseX, mouseY);
-		}
+	/** The legend's lines: halo colors in their own colors, the element
+	 * commitment and the respec brew in plain gray. */
+	private List<FormattedCharSequence> legendLines() {
+		List<FormattedCharSequence> lines = new java.util.ArrayList<>();
+		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.actives")
+				.withStyle(style -> style.withColor(0xFF3B82F6 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
+		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.capstones")
+				.withStyle(style -> style.withColor(0xFFA855F7 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
+		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.elements")
+				.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
+		lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.reset")
+				.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
+		return lines;
 	}
 
 	/**

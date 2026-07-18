@@ -151,10 +151,10 @@ public final class Tuning {
 
 	// --- Crusher ---
 
-	/** Adrenaline: landing a mace or fist hit grants attack speed for a few
-	 * seconds — per rank, doubled for bare fists. */
-	public static final float ADRENALINE_SPEED_PER_RANK = 0.05F;
-	public static final int ADRENALINE_TICKS = 60;
+	/** Clinch: bare fists give and take this much less knockback per rank.
+	 * Received: KNOCKBACK_RESISTANCE is a 0..1 RangedAttribute, so stacking
+	 * with armor can never push knockback negative. */
+	public static final float CLINCH_KNOCKBACK_REDUCTION_PER_RANK = 0.5F;
 
 	/** Sunder: virtual Breach levels (rank for mace, doubled for fists). Each
 	 * level claws back 15% of what the victim's armor absorbed — approximated
@@ -162,10 +162,11 @@ public final class Tuning {
 	 * real Breach enchantment. */
 	public static final float SUNDER_PER_LEVEL = 0.15F;
 
-	/** Bare-Knuckle: unarmed damage per rank. Four ranks take the 1.0 fist to
-	 * 3.0 — with the fist's 4/s recovery and hurt-invulnerability capping real
-	 * exchanges, sustained damage lands near an iron sword's. */
-	public static final float BARE_KNUCKLE_PER_RANK = 0.5F;
+	/** Bare-Knuckle, the day-one handle: fists +1 heart per rank (the 1.0
+	 * fist ends at 9.0 — past an iron sword, the tree's whole opening
+	 * fantasy), the mace +0.5 hearts per rank. */
+	public static final float BARE_KNUCKLE_FIST_PER_RANK = 2.0F;
+	public static final float BARE_KNUCKLE_MACE_PER_RANK = 1.0F;
 
 	/** Iron Skin: armor and toughness per rank while the hands are bare. */
 	public static final float IRON_SKIN_ARMOR_PER_RANK = 1.0F;
@@ -329,10 +330,14 @@ public final class Tuning {
 	public static final float METEOR_MIN_MANA = 100.0F;
 	public static final int METEOR_HEIGHT = 16;
 	public static final float METEOR_SPEED = 1.4F;
-	/** Impact numbers scale with every point of mana poured in. */
-	public static final float METEOR_DAMAGE_PER_MANA = 0.1F;
-	public static final float METEOR_RADIUS_BASE = 3.0F;
-	public static final float METEOR_RADIUS_PER_EXTRA_MANA = 0.02F;
+	/** Everything scales with m = effective mana / 100 (user formula): at
+	 * 100 mana x1.0, at 250 x2.5 — damage, area, particles, loudness and
+	 * the rock's rendered size all together. */
+	public static final float METEOR_BASE_DAMAGE = 16.0F;
+	public static final float METEOR_BASE_RADIUS = 2.5F;
+	/** The rock's render/sound scale is capped so a maxed pool stays loud,
+	 * not absurd; damage and area stay uncapped. */
+	public static final float METEOR_FX_SCALE_CAP = 4.0F;
 	public static final double METEOR_TARGET_RANGE = 32.0;
 	public static final float FLAME_START_COST = 50.0F;
 	/** 25 mana/second, paid per channel tick. */
@@ -429,6 +434,9 @@ public final class Tuning {
 	public static final int IMMOLATION_FIRE_SECONDS_PER_RANK = 3;
 	public static final int JUDGEMENT_WEAKNESS_TICKS = 120;
 	public static final float ASCENDANT_FACTOR = 1.25F;
+
+	/** Fireball and Ice Blast burst in a 3x3 (radius from impact point). */
+	public static final double ELEMENT_BURST_RADIUS = 1.5;
 
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;

@@ -61,23 +61,24 @@ public final class Constellations {
 			// adjacent to both pre-capstones, both capstones, and the tip.
 
 	/**
-	 * The Crusher constellation IS a mace: a four-node shared handle (the
-	 * weapon-agnostic bruiser passives, root at the pommel), a top-heavy head
-	 * whose left flange is the bare-fists path and right flange the mace path
-	 * (eight nodes each, capstone at each flange's peak), and a three-node
-	 * crown across the top — Battle Trance, shared, fed by either capstone.
+	 * The Crusher constellation IS a mace (user sketch,
+	 * crusher-rework-20260718): Bare-Knuckle's four dual-purpose ranks up the
+	 * handle (day-one value, fists or mace), a neck of Sunder and Meteor, a
+	 * top-heavy head whose left flange is the bare-fists path (Iron Skin,
+	 * Clinch, Haymaker) and right flange the mace path (Shockwave, Earth
+	 * Shatterer, Quake), and Battle Trance's crown across the top.
 	 */
 	public static final Constellation CRUSHER_MACE = Constellation.of(
-			"...###...",
-			"..##.##..",
-			"..##.##..",
-			"..##.##..",
-			"...#.#...",
-			"...#.#...",
-			"....#....",
-			"....#....",
-			"....#....",
-			"....#....");
+			".###.",
+			"##.##",
+			"##.##",
+			"##.##",
+			".#.#.",
+			".#.#.",
+			"..#..",
+			"..#..",
+			"..#..",
+			"..#..");
 
 	/**
 	 * A bow at rest (user sketch, markman-new-20260717): the string dead

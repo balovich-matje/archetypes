@@ -32,28 +32,29 @@ public final class SpellProjectileRenderer extends ThrownItemRenderer<SpellProje
 		super.extractRenderState(entity, state, delta);
 
 		if (state instanceof State ours) {
-			ours.empowered = entity.isEmpowered();
+			// Empowered missiles and mana-fed meteors share one scale slot.
+			ours.scale = entity.isEmpowered() ? EMPOWERED_SCALE : entity.visualScale();
 		}
 	}
 
 	@Override
 	public void submit(final ThrownItemRenderState state, final PoseStack pose,
 			final SubmitNodeCollector collector, final CameraRenderState camera) {
-		boolean big = state instanceof State ours && ours.empowered;
+		float scale = state instanceof State ours ? ours.scale : 1.0F;
 
-		if (big) {
+		if (scale != 1.0F) {
 			pose.pushPose();
-			pose.scale(EMPOWERED_SCALE, EMPOWERED_SCALE, EMPOWERED_SCALE);
+			pose.scale(scale, scale, scale);
 		}
 
 		super.submit(state, pose, collector, camera);
 
-		if (big) {
+		if (scale != 1.0F) {
 			pose.popPose();
 		}
 	}
 
 	private static final class State extends ThrownItemRenderState {
-		private boolean empowered;
+		private float scale = 1.0F;
 	}
 }

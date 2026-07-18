@@ -19,7 +19,7 @@ public final class CrusherTicker {
 	private static final Identifier BARE_KNUCKLE_ID = Archetypes.id("bare_knuckle");
 	private static final Identifier IRON_SKIN_ARMOR_ID = Archetypes.id("iron_skin_armor");
 	private static final Identifier IRON_SKIN_TOUGHNESS_ID = Archetypes.id("iron_skin_toughness");
-	private static final Identifier ADRENALINE_ID = Archetypes.id("adrenaline");
+	private static final Identifier CLINCH_ID = Archetypes.id("clinch");
 	private static final Identifier QUAKE_IMMUNITY_ID = Archetypes.id("quake_immunity");
 	private static final Identifier TRANCE_CAP_ID = Archetypes.id("battle_trance_cap");
 
@@ -40,9 +40,14 @@ public final class CrusherTicker {
 		boolean hands = weapon == WeaponClass.HANDS;
 		long now = player.level().getGameTime();
 
+		// Bare-Knuckle: the handle pays with either weapon — hard with
+		// fists, lighter with the mace. apply() re-asserts on value change,
+		// so swapping between them retunes the same modifier.
 		int knuckle = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BARE_KNUCKLE);
+		boolean mace = weapon == WeaponClass.MACE;
 		apply(player.getAttribute(Attributes.ATTACK_DAMAGE), BARE_KNUCKLE_ID,
-				hands && knuckle > 0, knuckle * Tuning.BARE_KNUCKLE_PER_RANK,
+				(hands || mace) && knuckle > 0,
+				knuckle * (hands ? Tuning.BARE_KNUCKLE_FIST_PER_RANK : Tuning.BARE_KNUCKLE_MACE_PER_RANK),
 				AttributeModifier.Operation.ADD_VALUE);
 
 		int skin = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.IRON_SKIN);
@@ -53,16 +58,14 @@ public final class CrusherTicker {
 				hands && skin > 0, skin * Tuning.IRON_SKIN_TOUGHNESS_PER_RANK,
 				AttributeModifier.Operation.ADD_VALUE);
 
-		// Adrenaline: rank-scaled attack speed, doubled for fists, while the
-		// hit-fed window is open and a Crusher weapon is in use.
+		// Clinch: bare fists take less knockback (the applied half lives in
+		// the knockback mixin). KNOCKBACK_RESISTANCE is ranged 0..1, so this
+		// can never overshoot into negative knockback.
 		AttachmentTarget target = (AttachmentTarget) player;
-		int adrenaline = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.ADRENALINE);
-		Long until = target.getAttached(ModAttachments.ADRENALINE_UNTIL);
-		boolean rushing = adrenaline > 0 && (weapon == WeaponClass.MACE || hands)
-				&& until != null && until > now;
-		apply(player.getAttribute(Attributes.ATTACK_SPEED), ADRENALINE_ID,
-				rushing, adrenaline * Tuning.ADRENALINE_SPEED_PER_RANK * (hands ? 2.0F : 1.0F),
-				AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL);
+		int clinch = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.CLINCH);
+		apply(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), CLINCH_ID,
+				hands && clinch > 0, clinch * Tuning.CLINCH_KNOCKBACK_REDUCTION_PER_RANK,
+				AttributeModifier.Operation.ADD_VALUE);
 
 		// Quake: knockback immunity while the charge holds; the slam lands the
 		// tick the charge ends.
@@ -112,6 +115,15 @@ public final class CrusherTicker {
 			attribute.addTransientModifier(new AttributeModifier(id, value, operation));
 		} else if (!should && attribute.hasModifier(id)) {
 			attribute.removeModifier(id);
+		} else if (should) {
+			// The value can change while active (rank bought, weapon swapped
+			// between fists and mace) — cheap to re-assert.
+			AttributeModifier current = attribute.getModifier(id);
+
+			if (current == null || current.amount() != value) {
+				attribute.removeModifier(id);
+				attribute.addTransientModifier(new AttributeModifier(id, value, operation));
+			}
 		}
 	}
 }
