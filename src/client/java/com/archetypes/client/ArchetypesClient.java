@@ -212,11 +212,17 @@ public class ArchetypesClient implements ClientModInitializer {
 		return Component.literal("A").withStyle(unpicked ? ChatFormatting.GOLD : ChatFormatting.WHITE);
 	}
 
-	/** The bookmark spells it out; unstyled it takes the tab's dark label ink. */
+	/**
+	 * The bookmark spells it out; unstyled it takes the tab's dark label
+	 * ink. Gold whenever the tree wants a visit — no archetype picked yet,
+	 * or a perk point sitting unspent.
+	 */
 	private static Component tabLabel(final net.minecraft.client.Minecraft client) {
-		boolean unpicked = client.player == null || ModAttachments.get(client.player) == null;
+		boolean beckons = client.player == null
+				|| ModAttachments.get(client.player) == null
+				|| com.archetypes.SkillPoints.available(client.player) > 0;
 		var text = Component.translatable("screen.archetypes.button");
-		return unpicked ? text.withStyle(ChatFormatting.GOLD) : text;
+		return beckons ? text.withStyle(ChatFormatting.GOLD) : text;
 	}
 
 	private static void anchorTab(final AbstractContainerScreen<?> screen, final BookmarkTab tab) {

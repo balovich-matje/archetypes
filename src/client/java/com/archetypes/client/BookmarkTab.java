@@ -65,8 +65,12 @@ final class BookmarkTab extends AbstractWidget {
 		graphics.fill(x, y + 1, x + 1, y + h, 0xFF000000);
 		graphics.fill(x + w - 1, y + 1, x + w, y + h, 0xFF000000);
 
+		// Plain labels use the flat dark ink of vanilla titles; a styled
+		// (gold) label gets a drop shadow instead — colored text on the grey
+		// body washes out without one, same lesson as the picker's names.
+		boolean styled = this.getMessage().getStyle().getColor() != null;
 		var font = Minecraft.getInstance().font;
 		graphics.text(font, this.getMessage(), x + (w - font.width(this.getMessage())) / 2,
-				y + (h - font.lineHeight) / 2 + 1, VanillaUi.LABEL, false);
+				y + (h - font.lineHeight) / 2 + 1, styled ? 0xFFFFFFFF : VanillaUi.LABEL, styled);
 	}
 }

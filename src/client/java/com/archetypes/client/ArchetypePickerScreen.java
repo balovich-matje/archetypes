@@ -375,29 +375,33 @@ public class ArchetypePickerScreen extends Screen {
 			pose.scale(scale, scale);
 
 			if (archetype == Archetype.AGILITY) {
-				// Gathered like the Brawler crest: the enlarged crossbow
-				// (a pre-mirrored asset — flipped blits get culled) and drawn
-				// bow lean into the middle, lower halves buried behind the
-				// two daggers, which cross mid-blade in front.
+				// The heraldic ⚔ arrangement — judged in a bake-off against
+				// tip-to-tip layouts, which is what two earlier rounds
+				// accidentally were: the MIRRORED dagger goes on the LEFT so
+				// both tips point up-and-OUT and the blades pass through
+				// each other mid-blade (2px apart, 18px). The 20px crossbow
+				// and bow lean in behind, lower halves buried.
 				graphics.blit(RenderPipelines.GUI_TEXTURED, CROSSBOW_LEFT,
-						-19, -14, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
+						-19, -16, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, VANILLA_BOW_DRAWN,
-						-1, -14, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
-				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER,
-						-11, -4, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						-1, -16, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER_LEFT,
-						-5, -4, 0.0F, 0.0F, 16, 16, 16, 16, 16, 16);
+						-10, -8, 0.0F, 0.0F, 18, 18, 16, 16, 16, 16);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER,
+						-8, -8, 0.0F, 0.0F, 18, 18, 16, 16, 16, 16);
 			} else {
-				// Spike and flamethrower enlarged and pushed through each
-				// other — shafts overlapping into a real X, not tip-to-tip —
-				// with the mana potion in front at the crossing's foot.
-				graphics.blit(RenderPipelines.GUI_TEXTURED, SPIKE_ICON,
-						-15, -15, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
-				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_RIGHT,
-						-5, -15, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
+				// Same ⚔ logic: mirrored spike LEFT (head up-left), original
+				// flamethrower RIGHT (head up-right), shafts 5px apart so
+				// they genuinely interpenetrate; the spike rides 3px higher
+				// so its crystal keeps a visible neck above the crossing.
+				// The mana potion hangs in front at the crossing's foot.
+				graphics.blit(RenderPipelines.GUI_TEXTURED, SPIKE_LEFT,
+						-12, -19, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
+				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_ICON,
+						-7, -16, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
 				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 						net.minecraft.world.item.Items.POTION,
-						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -3);
+						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -1);
 			}
 
 			pose.popMatrix();
@@ -423,8 +427,8 @@ public class ArchetypePickerScreen extends Screen {
 			com.archetypes.Archetypes.id("textures/item/iron_dagger.png");
 	private static final Identifier DAGGER_LEFT =
 			com.archetypes.Archetypes.id("textures/gui/collage/dagger_left.png");
-	private static final Identifier FLAME_RIGHT =
-			com.archetypes.Archetypes.id("textures/gui/collage/flame_right.png");
-	private static final Identifier SPIKE_ICON =
-			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/glacial_spike.png");
+	private static final Identifier SPIKE_LEFT =
+			com.archetypes.Archetypes.id("textures/gui/collage/spike_left.png");
+	private static final Identifier FLAME_ICON =
+			com.archetypes.Archetypes.id("textures/node/test/opus/elementalist/flamethrower.png");
 }
