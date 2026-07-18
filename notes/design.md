@@ -1548,3 +1548,23 @@ Protector merge (Sonnet's glyph + Opus's overlays) is the likely
 endgame. Both models independently chose a golden heart for Battle
 Trance. sonnet-slayer's two filenames were normalized to the enum
 (first_blood->firstblood, heavy_blows->heavy).
+
+**Morning feedback round (2026-07-18).** Text readability attempt #3:
+VanillaUi.chipText — the bright archetype color on a small INSET_DARK
+plate with shadow (ink read black; shadow-on-grey washed out; the plate
+supplies the ground the picker cards had all along). Applied to the
+tree header, mastery line and points-unspent. NEW "?" legend at the
+panel's top-right: hover explains blue ring = actives, purple ring =
+capstones (mutually exclusive), and the Amnesia respec brew (red
+mushroom), including that it costs levels. AMNESIA NOW PRICED (user
+musing made concrete, FLAGGED FOR TUNING): I keeps 2/3 of levels
+(AMNESIA_LEVEL_KEEP), II wipes archetype AND all levels — a full
+restart. Picker: prompt/confirm no longer name Amnesia ("changing your
+mind later has a price" — discovery stays in-game); ability previews
+trimmed to ONE per tree (Bladestorm not Decimate, Quake not Haymaker,
+Fireball not Ice Blast) so each card shows exactly three 18px slots.
+BRAWLER ICONS: Opus wired live for all three strength trees (test
+sprites outrank the hand-made sprite()/overlay() paths while the
+comparison vs the user's screenshots of the originals runs); proc
+display follows. Sonnet-protector ruled out by the user (wrong shield
+sprite).

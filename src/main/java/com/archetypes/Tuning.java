@@ -342,6 +342,11 @@ public final class Tuning {
 	public static final float FLAME_BOLT_SPEED = 1.2F;
 	public static final int FLAME_BOLT_PERIOD_TICKS = 2;
 
+	/** Amnesia I's price: the fraction of earned levels KEPT after the
+	 * respec (user: "maybe 33% or even 50% shaved" — starting at a third
+	 * shaved, tune on the server). Amnesia II keeps nothing. */
+	public static final float AMNESIA_LEVEL_KEEP = 2.0F / 3.0F;
+
 	// --- Wands (see ModItems; every spell needs one in the main hand) ---
 	public static final float WAND_APPRENTICE_DISCOUNT = 10.0F;
 	public static final float WAND_SPECIALIST_DISCOUNT = 15.0F;

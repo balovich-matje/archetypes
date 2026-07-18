@@ -90,6 +90,21 @@ public final class VanillaUi {
 		}
 	}
 
+	/**
+	 * A bright-colored line on a small dark plate. Third attempt at
+	 * archetype-colored text on the grey window (user report): darkened ink
+	 * read as black, a drop shadow alone still washed out — the plate
+	 * supplies the contrast so the pastel can stay itself, the way the
+	 * picker's colored names read fine on the darker card body.
+	 */
+	public static void chipText(final GuiGraphicsExtractor graphics,
+			final net.minecraft.client.gui.Font font,
+			final net.minecraft.network.chat.Component text, final int x, final int y, final int color) {
+		int width = font.width(text);
+		graphics.fill(x - 3, y - 2, x + width + 3, y + 10, INSET_DARK);
+		graphics.text(font, text, x, y, color, true);
+	}
+
 	/** The inset bevel alone — for sinking artwork into the page without hiding it. */
 	public static void insetBorder(final GuiGraphicsExtractor graphics, final int x, final int y,
 			final int w, final int h) {

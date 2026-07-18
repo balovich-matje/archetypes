@@ -276,12 +276,13 @@ public final class ModAttachments {
 	}
 
 	/**
-	 * Amnesia II: the choice itself forgotten, nodes included. Banked XP
-	 * stays — this is the sanctioned survival respec, paid for at the
-	 * brewing stand, not a progress wipe.
+	 * Amnesia II: the choice itself forgotten — nodes, archetype AND every
+	 * banked level. A full restart, so switching class late costs what it
+	 * should (user call; Amnesia I's gentler price lives in SkillPoints).
 	 */
 	public static void forgetArchetype(final Player player) {
 		forgetNodes(player);
 		((AttachmentTarget) player).removeAttached(ARCHETYPE);
+		((AttachmentTarget) player).removeAttached(ARCHETYPE_XP);
 	}
 }

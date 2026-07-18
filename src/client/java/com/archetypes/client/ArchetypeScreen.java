@@ -268,13 +268,13 @@ public class ArchetypeScreen extends Screen {
 		// The header wears your tier's name: Seeker on the way up, Oracle at
 		// the end of the journey. Computed per frame — cheap, always current.
 		int tier = this.minecraft.player == null ? 0 : SkillPoints.tier(this.minecraft.player);
-		// Bright archetype color with the picker's drop shadow — the shadow
-		// is what keeps the pastels readable on the grey (user call; the
-		// darkened-ink experiment before this read as plain black).
+		// The header rides a dark chip: bright name color, light body text.
 		Component header = Component.translatable("screen.archetypes.tree.title",
 				this.archetype.tierName(tier).copy()
 						.withStyle(style -> style.withColor(this.archetype.color() & 0xFFFFFF)));
-		graphics.text(this.font, header, panelLeft + PAD, panelTop + 8, VanillaUi.LABEL, true);
+		VanillaUi.chipText(graphics, this.font, header, panelLeft + PAD + 3, panelTop + 8, 0xFFE8E8E8);
+
+		this.legend(graphics, mouseX, mouseY);
 
 		int canvasWidth = this.canvasWidth();
 		int canvasHeight = this.canvasBottom() - this.canvasTop();
@@ -445,9 +445,9 @@ public class ArchetypeScreen extends Screen {
 		if (level >= SkillPoints.MAX_LEVEL && unspent <= 0) {
 			Component mastered = Component.translatable("screen.archetypes.tree.mastered",
 					this.archetype.tierName(1));
-			graphics.text(this.font, mastered,
+			VanillaUi.chipText(graphics, this.font, mastered,
 					left + (width - this.font.width(mastered)) / 2, top + 14,
-					this.archetype.color(), true);
+					this.archetype.color());
 			return;
 		}
 
@@ -485,12 +485,34 @@ public class ArchetypeScreen extends Screen {
 
 		if (unspent > 0) {
 			Component spare = Component.translatable("screen.archetypes.tree.points", unspent);
-			graphics.text(this.font, spare, left + width - this.font.width(spare), top + 18,
-					this.archetype.color(), true);
+			VanillaUi.chipText(graphics, this.font, spare,
+					left + width - this.font.width(spare) - 3, top + 18,
+					this.archetype.color());
 		}
 
 		VanillaUi.progressBar(graphics, left, top + 28, width, BAR_HEIGHT,
 				SkillPoints.levelProgress(player), 0xFF7FCF5F);
+	}
+
+	/** The "?" at the panel's top-right: hover for the legend — halo colors,
+	 * capstone exclusivity, and how respec potions work. */
+	private void legend(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY) {
+		int x = this.panelLeft() + this.panelWidth() - PAD - 12;
+		int y = this.panelTop() + 5;
+
+		VanillaUi.inset(graphics, x, y, 12, 12);
+		graphics.text(this.font, Component.literal("?"), x + 4, y + 2, VanillaUi.LABEL, false);
+
+		if (mouseX >= x && mouseX < x + 12 && mouseY >= y && mouseY < y + 12) {
+			List<FormattedCharSequence> lines = new java.util.ArrayList<>();
+			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.actives")
+					.withStyle(style -> style.withColor(0xFF3B82F6 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
+			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.capstones")
+					.withStyle(style -> style.withColor(0xFFA855F7 & 0xFFFFFF)), VanillaUi.TOOLTIP_WIDTH));
+			lines.addAll(this.font.split(Component.translatable("screen.archetypes.tree.legend.reset")
+					.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
+			graphics.setTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+		}
 	}
 
 	/**

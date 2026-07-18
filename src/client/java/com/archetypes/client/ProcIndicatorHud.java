@@ -53,15 +53,22 @@ public final class ProcIndicatorHud {
 		// item render with the effect layer over it.
 		if ("slayer".equals(payload.subTreeId())) {
 			var family = SlayerNodes.Family.valueOf(payload.family());
-			sprite = family.sprite();
-			size = family.spriteSize();
-		} else if ("crusher".equals(payload.subTreeId())) {
-			var family = com.archetypes.CrusherNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.SLAYER, family);
+			size = 32;
 
-			if (family.sprite() != null) {
+			if (sprite == null) {
 				sprite = family.sprite();
 				size = family.spriteSize();
-			} else {
+			}
+		} else if ("crusher".equals(payload.subTreeId())) {
+			var family = com.archetypes.CrusherNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.CRUSHER, family);
+			size = 32;
+
+			if (sprite == null && family.sprite() != null) {
+				sprite = family.sprite();
+				size = family.spriteSize();
+			} else if (sprite == null) {
 				sprite = family.overlay();
 				size = family.overlaySize();
 				Item base = family.icon();
@@ -80,11 +87,13 @@ public final class ProcIndicatorHud {
 			}
 		} else {
 			var family = ProtectorNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.testSprite(com.archetypes.SubTree.PROTECTOR, family);
+			size = 32;
 
-			if (family.sprite() != null) {
+			if (sprite == null && family.sprite() != null) {
 				sprite = family.sprite();
 				size = family.spriteSize();
-			} else {
+			} else if (sprite == null) {
 				sprite = family.overlay();
 				size = family.overlaySize();
 				Item base = family.icon();

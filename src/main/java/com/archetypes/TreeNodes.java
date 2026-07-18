@@ -68,6 +68,9 @@ public final class TreeNodes {
 		return switch (tree) {
 			case ELEMENTALIST -> "opus";
 			case MARKSMAN, SHADOW, ASSASSIN -> "opus";
+			// Brawler round three: Opus under in-game comparison against the
+			// original hand-made canon (user screenshotted the originals).
+			case PROTECTOR, SLAYER, CRUSHER -> "opus";
 			default -> "sonnet";
 		};
 	}
@@ -84,9 +87,23 @@ public final class TreeNodes {
 	 * family's icon is an item. */
 	public static net.minecraft.resources.@Nullable Identifier iconSprite(final SubTree tree, final int index) {
 		return switch (tree) {
-			case SLAYER -> SlayerNodes.def(tree, index).family().sprite();
-			case CRUSHER -> CrusherNodes.def(tree, index).family().sprite();
-			case PROTECTOR -> ProtectorNodes.def(tree, index).family().sprite();
+			// Brawler A/B: the test set outranks the hand-made sprites while
+			// the comparison runs; MINOR (null test) falls back.
+			case SLAYER -> {
+				SlayerNodes.Family family = SlayerNodes.def(tree, index).family();
+				var test = testSprite(tree, family);
+				yield test != null ? test : family.sprite();
+			}
+			case CRUSHER -> {
+				CrusherNodes.Family family = CrusherNodes.def(tree, index).family();
+				var test = testSprite(tree, family);
+				yield test != null ? test : family.sprite();
+			}
+			case PROTECTOR -> {
+				ProtectorNodes.Family family = ProtectorNodes.def(tree, index).family();
+				var test = testSprite(tree, family);
+				yield test != null ? test : family.sprite();
+			}
 			// Shadow's hand-made sprites (Invisibility) outrank the test set.
 			case SHADOW -> {
 				ShadowNodes.Family family = ShadowNodes.def(tree, index).family();
@@ -103,9 +120,12 @@ public final class TreeNodes {
 	/** Pixel size of the square texture behind iconSprite. */
 	public static int iconSpriteSize(final SubTree tree, final int index) {
 		return switch (tree) {
-			case SLAYER -> SlayerNodes.def(tree, index).family().spriteSize();
-			case CRUSHER -> CrusherNodes.def(tree, index).family().spriteSize();
-			case PROTECTOR -> ProtectorNodes.def(tree, index).family().spriteSize();
+			case SLAYER -> testSprite(tree, SlayerNodes.def(tree, index).family()) != null
+					? 32 : SlayerNodes.def(tree, index).family().spriteSize();
+			case CRUSHER -> testSprite(tree, CrusherNodes.def(tree, index).family()) != null
+					? 32 : CrusherNodes.def(tree, index).family().spriteSize();
+			case PROTECTOR -> testSprite(tree, ProtectorNodes.def(tree, index).family()) != null
+					? 32 : ProtectorNodes.def(tree, index).family().spriteSize();
 			case SHADOW -> {
 				ShadowNodes.Family family = ShadowNodes.def(tree, index).family();
 				yield family.sprite() != null ? family.spriteSize() : 32;
@@ -253,13 +273,14 @@ public final class TreeNodes {
 	public static java.util.List<Integer> pickerActives(final SubTree tree) {
 		return switch (tree) {
 			case PROTECTOR -> indicesOf(tree, ProtectorNodes.Family.BASH);
-			case SLAYER -> indicesOf(tree, SlayerNodes.Family.DECIMATE, SlayerNodes.Family.BLADESTORM);
-			case CRUSHER -> indicesOf(tree, CrusherNodes.Family.QUAKE, CrusherNodes.Family.HAYMAKER);
+			// One preview per tree (user call): the capstone forks are for
+			// the tree screen to explain, not the picker.
+			case SLAYER -> indicesOf(tree, SlayerNodes.Family.BLADESTORM);
+			case CRUSHER -> indicesOf(tree, CrusherNodes.Family.QUAKE);
 			case MARKSMAN -> indicesOf(tree, MarksmanNodes.Family.TRUE_SHOT);
 			case ASSASSIN -> indicesOf(tree, AssassinNodes.Family.SHADOW_STEP);
 			case SHADOW -> indicesOf(tree, ShadowNodes.Family.INVISIBILITY);
-			case ELEMENTALIST -> indicesOf(tree, ElementalistNodes.Family.FIREBALL,
-					ElementalistNodes.Family.ICE_BLAST);
+			case ELEMENTALIST -> indicesOf(tree, ElementalistNodes.Family.FIREBALL);
 			case WIZARD -> indicesOf(tree, WizardNodes.Family.MAGIC_MISSILE);
 			case PRIEST -> indicesOf(tree, PriestNodes.Family.HOLY_LIGHT);
 		};

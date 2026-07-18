@@ -22,10 +22,10 @@ import net.minecraft.world.item.alchemy.Potions;
 import net.minecraft.world.item.crafting.Ingredient;
 
 /**
- * The SMP's respec path: Amnesia I (awkward + red mushroom) refunds every
- * node, Amnesia II (I + glowstone) forgets the archetype choice itself so
- * the picker opens again — banked levels stay both ways; these are respecs,
- * not wipes (the creative Reset button remains the clean slate).
+ * The SMP's respec path, priced (user call): Amnesia I (awkward + red
+ * mushroom) refunds every node but shaves a third of your levels; Amnesia
+ * II (I + glowstone) forgets the archetype choice AND every level — a full
+ * restart. The creative Reset button remains the free testing wipe.
  *
  * <p>Strictly drinkable by design: the drink path applies the instant
  * effect with the drinker as its own source, so that is what the effect
@@ -76,11 +76,12 @@ public final class AmnesiaPotions {
 
 			if (amplifier >= 1) {
 				ModAttachments.forgetArchetype(player);
-				Archetypes.LOGGER.info("{} drank Amnesia II — archetype choice forgotten",
+				Archetypes.LOGGER.info("{} drank Amnesia II — archetype and levels forgotten",
 						player.getName().getString());
 			} else {
 				ModAttachments.forgetNodes(player);
-				Archetypes.LOGGER.info("{} drank Amnesia I — nodes refunded",
+				SkillPoints.shaveLevels(player, Tuning.AMNESIA_LEVEL_KEEP);
+				Archetypes.LOGGER.info("{} drank Amnesia I — nodes refunded, a third of levels paid",
 						player.getName().getString());
 			}
 

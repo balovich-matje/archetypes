@@ -5,6 +5,7 @@ import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.util.Mth;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -196,6 +197,13 @@ public final class SkillPoints {
 		if (bankedXp(player) < needed) {
 			((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, needed);
 		}
+	}
+
+	/** Amnesia's price: keep only this fraction of earned levels, the bank
+	 * cut to exactly the kept level's cumulative cost. */
+	public static void shaveLevels(final Player player, final float keepFraction) {
+		int kept = Mth.clamp((int) Math.floor(level(player) * keepFraction), 0, MAX_LEVEL);
+		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, CUM[kept]);
 	}
 
 	/** Testing affordance: hand over one level outright. Bypasses the
