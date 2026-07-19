@@ -312,8 +312,10 @@ public final class MagicArmaments {
 				active && rank > 0, rank * Tuning.MAGIC_ARMOR_CAP_PER_RANK);
 	}
 
-	/** Levitation: creative-style flight for the channel's length. A creative or
-	 * spectator player's own flight is never touched. */
+	/** Levitation: creative-style flight for the channel's length. Only a
+	 * mayfly this method flipped on (tracked by {@link ModAttachments#ARMAMENTS_FLIGHT})
+	 * is ever taken back — flight owed to creative, spectator or another mod
+	 * survives the channel untouched. */
 	private static void manageFlight(final ServerPlayer player, final boolean active) {
 		if (player.isCreative() || player.isSpectator()) {
 			return;
@@ -326,14 +328,23 @@ public final class MagicArmaments {
 		if (shouldFly && !player.getAbilities().mayfly) {
 			player.getAbilities().mayfly = true;
 			player.onUpdateAbilities();
-		} else if (!shouldFly && player.getAbilities().mayfly) {
-			player.getAbilities().mayfly = false;
-			player.getAbilities().flying = false;
-			player.onUpdateAbilities();
+			((AttachmentTarget) player).setAttached(ModAttachments.ARMAMENTS_FLIGHT, true);
+		} else if (!shouldFly) {
+			revokeFlight(player);
 		}
 	}
 
 	private static void revokeFlight(final ServerPlayer player) {
+		AttachmentTarget target = (AttachmentTarget) player;
+
+		if (target.getAttached(ModAttachments.ARMAMENTS_FLIGHT) == null) {
+			return;
+		}
+
+		// Clear the flag even for a player now in creative, or it lingers into
+		// their next survival stint and steals a later legitimate mayfly.
+		target.removeAttached(ModAttachments.ARMAMENTS_FLIGHT);
+
 		if (player.isCreative() || player.isSpectator() || !player.getAbilities().mayfly) {
 			return;
 		}
@@ -341,6 +352,17 @@ public final class MagicArmaments {
 		player.getAbilities().mayfly = false;
 		player.getAbilities().flying = false;
 		player.onUpdateAbilities();
+	}
+
+	/** The conjured items police themselves: any inventory tick whose holder
+	 * isn't mid-channel destroys the stack (see {@code MagicSwordItem} /
+	 * {@code MagicBowItem}). Containers never tick their stacks, but anything
+	 * withdrawn from one lands in an inventory that does — so a weapon smuggled
+	 * into a chest dies the moment any player takes it back out. */
+	public static void purgeStray(final ItemStack stack, final net.minecraft.world.entity.Entity holder) {
+		if (!(holder instanceof ServerPlayer player) || !isActive(player)) {
+			stack.setCount(0);
+		}
 	}
 
 	/** Clear every conjured weapon out of the player (hotbar/inventory/offhand). */

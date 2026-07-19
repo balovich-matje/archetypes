@@ -226,7 +226,8 @@ public final class ModItems {
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						net.minecraft.util.Unit.INSTANCE)
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.MagicSwordItem(properties));
 	}
 
 	private static Item registerMagicBow() {

@@ -2,6 +2,7 @@ package com.archetypes.items;
 
 import java.util.function.Predicate;
 
+import com.archetypes.MagicArmaments;
 import com.archetypes.NodePurchases;
 import com.archetypes.OracleWizardNodes;
 import com.archetypes.SubTree;
@@ -13,6 +14,8 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
@@ -21,6 +24,7 @@ import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The Spellbow variant of Magic Armaments. It needs no ammo — every draw
@@ -40,6 +44,12 @@ public class MagicBowItem extends BowItem {
 	}
 
 	@Override
+	public void inventoryTick(final ItemStack stack, final ServerLevel level, final Entity entity,
+			final @Nullable EquipmentSlot slot) {
+		MagicArmaments.purgeStray(stack, entity);
+	}
+
+	@Override
 	public InteractionResult use(final Level level, final Player player, final InteractionHand hand) {
 		// Draw regardless of ammo — the arrow is conjured on release.
 		player.startUsingItem(hand);
@@ -56,15 +66,15 @@ public class MagicBowItem extends BowItem {
 			return false;
 		}
 
-		if (level instanceof ServerLevel serverLevel && entity instanceof Player player) {
-			double baseDamage = Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE;
-
-			if (player instanceof ServerPlayer serverPlayer) {
-				int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
-						NodePurchases.owned(serverPlayer, SubTree.ORACLE_WIZARD),
-						OracleWizardNodes.Family.MIND_OVER_MATTER);
-				baseDamage += mom * Tuning.MAGIC_BOW_ARROW_MOM_PER_RANK;
-			}
+		// Only a live channel conjures arrows: a strayed bow (a dupe attempt
+		// caught mid-juggle) fires nothing even in the tick before it purges.
+		if (level instanceof ServerLevel serverLevel && entity instanceof ServerPlayer player
+				&& MagicArmaments.isActive(player)) {
+			int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
+					NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
+					OracleWizardNodes.Family.MIND_OVER_MATTER);
+			double baseDamage = Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE
+					+ mom * Tuning.MAGIC_BOW_ARROW_MOM_PER_RANK;
 
 			Arrow arrow = new Arrow(serverLevel, player, new ItemStack(Items.ARROW), stack);
 			arrow.pickup = AbstractArrow.Pickup.DISALLOWED;

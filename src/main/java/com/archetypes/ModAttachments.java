@@ -246,6 +246,15 @@ public final class ModAttachments {
 	public static final AttachmentType<Long> ARMAMENTS_LAST_UPKEEP =
 			AttachmentRegistry.<Long>create(Archetypes.id("armaments_last_upkeep"));
 
+	/** Set only when Levitation itself flipped mayfly on, so the channel's end
+	 * revokes exactly that grant — flight owed to creative or another mod is
+	 * never stripped. Persistent/copyOnDeath: vanilla saves abilities to NBT,
+	 * so a crash mid-channel must still find this flag on JOIN to take the
+	 * flight back. */
+	public static final AttachmentType<Boolean> ARMAMENTS_FLIGHT = AttachmentRegistry.create(
+			Archetypes.id("armaments_flight"),
+			builder -> builder.persistent(Codec.BOOL).copyOnDeath());
+
 	/** On arrows: where a True Shot left the bow (it despawns 64 blocks out),
 	 * and whether it steers itself. Transient — a saved arrow forgets. */
 	public static final AttachmentType<net.minecraft.world.phys.Vec3> TRUE_SHOT_ORIGIN =
