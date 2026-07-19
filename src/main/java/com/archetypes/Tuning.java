@@ -359,6 +359,20 @@ public final class Tuning {
 	public static final float WAND_SPECIALIST_DISCOUNT = 15.0F;
 	public static final float WAND_SPECIALIST_POWER = 1.5F;
 	public static final float WAND_HOLY_HEAL_FACTOR = 1.5F;
+	/**
+	 * The Oracle's Wand: the specialists' x1.5, but owed to no school — every
+	 * spell in the mod, not just the one element the wand was cut for. It is
+	 * the only wand whose bonus is unconditional, which is what the nether
+	 * star buys.
+	 */
+	public static final float ORACLE_WAND_POWER = 1.5F;
+	/**
+	 * ...and a tenth off every price. A FRACTION, not the flat mana the older
+	 * wands subtract: a flat cut would be a rounding error on the 150-mana
+	 * epic actives and half the price of a cheap missile, so the universal
+	 * wand scales with the spell instead of flattening the cost curve.
+	 */
+	public static final float ORACLE_WAND_DISCOUNT = 0.10F;
 
 	// --- Elementalist: ice + element passives ---
 	public static final float ICE_BLAST_COST = 50.0F;

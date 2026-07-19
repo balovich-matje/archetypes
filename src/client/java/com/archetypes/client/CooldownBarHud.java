@@ -286,7 +286,9 @@ public final class CooldownBarHud {
 				com.archetypes.OracleElementalistNodes.Family.LIGHTNING_STRIKE) > 0) {
 			abilities.add(new Ability(SubTree.ORACLE_ELEMENTALIST,
 					com.archetypes.OracleElementalistNodes.Family.LIGHTNING_STRIKE,
-					ArchetypesClient.ABILITY_KEYS[4], Tuning.LIGHTNING_STRIKE_COST, false));
+					ArchetypesClient.ABILITY_KEYS[4],
+					com.archetypes.SeekerSpells.wandDiscount(player, Tuning.LIGHTNING_STRIKE_COST),
+					false));
 		}
 
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
@@ -295,7 +297,9 @@ public final class CooldownBarHud {
 				com.archetypes.OracleWizardNodes.Family.MAGIC_ARMAMENTS) > 0) {
 			abilities.add(new Ability(SubTree.ORACLE_WIZARD,
 					com.archetypes.OracleWizardNodes.Family.MAGIC_ARMAMENTS,
-					ArchetypesClient.ABILITY_KEYS[5], Tuning.MAGIC_ARMAMENTS_COST, false));
+					ArchetypesClient.ABILITY_KEYS[5],
+					com.archetypes.SeekerSpells.wandDiscount(player, Tuning.MAGIC_ARMAMENTS_COST),
+					false));
 		}
 
 		return abilities;

@@ -75,7 +75,11 @@ public final class MagicArmaments {
 			return;
 		}
 
-		if (!Mana.spend(player, Tuning.MAGIC_ARMAMENTS_COST)) {
+		// The wand is still in hand at conjure time, so the Oracle's Wand
+		// discounts the opening cost. It cannot discount the upkeep: the
+		// channel puts the conjured weapon in the main hand and stashes the
+		// wand away, and every wand bonus reads the main hand only.
+		if (!Mana.spend(player, SeekerSpells.wandDiscount(player, Tuning.MAGIC_ARMAMENTS_COST))) {
 			return;
 		}
 

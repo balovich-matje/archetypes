@@ -53,6 +53,9 @@ public final class OracleSpells {
 			damage *= Tuning.LIGHTNING_OVERCHARGE_FACTOR;
 		}
 
+		// Lightning belongs to no school, so only the universal wand answers.
+		damage *= SeekerSpells.wandPower(player, false, false);
+
 		int repeats = OracleElementalistNodes.rank(SubTree.ORACLE_ELEMENTALIST, owned,
 				OracleElementalistNodes.Family.RECURRENCE);
 		int chains = OracleElementalistNodes.rank(SubTree.ORACLE_ELEMENTALIST, owned,
@@ -111,10 +114,11 @@ public final class OracleSpells {
 
 		// Price: flat for a single target; Tempest adds per extra target and
 		// strikes only as many as the pool covers.
+		float baseCost = SeekerSpells.wandDiscount(player, Tuning.LIGHTNING_STRIKE_COST);
+		float extraCost = SeekerSpells.wandDiscount(player, Tuning.LIGHTNING_TEMPEST_MANA_PER_EXTRA);
+
 		if (tempest) {
-			int affordableExtra = (int) Math.floor(
-					(Mana.current(player) - Tuning.LIGHTNING_STRIKE_COST)
-							/ Tuning.LIGHTNING_TEMPEST_MANA_PER_EXTRA);
+			int affordableExtra = (int) Math.floor((Mana.current(player) - baseCost) / extraCost);
 
 			if (affordableExtra < 0) {
 				return;
@@ -122,11 +126,10 @@ public final class OracleSpells {
 
 			targets = Math.min(targets, 1 + affordableExtra);
 
-			if (!Mana.spend(player, Tuning.LIGHTNING_STRIKE_COST
-					+ Tuning.LIGHTNING_TEMPEST_MANA_PER_EXTRA * (targets - 1))) {
+			if (!Mana.spend(player, baseCost + extraCost * (targets - 1))) {
 				return;
 			}
-		} else if (!Mana.spend(player, Tuning.LIGHTNING_STRIKE_COST)) {
+		} else if (!Mana.spend(player, baseCost)) {
 			return;
 		}
 

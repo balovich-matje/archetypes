@@ -40,7 +40,9 @@ public final class SeekerSpells {
 		}
 
 		// The wand in hand: the apprentice's discounts everything a little,
-		// the specialists their own school a lot.
+		// the specialists their own school a lot. The Oracle's is school-blind
+		// and so is not a branch here at all — see wandDiscount, applied last
+		// because it is a fraction of whatever the school branches left.
 		ItemStack wand = player.getMainHandItem();
 
 		if (wand.is(ModItems.APPRENTICE_WAND)) {
@@ -57,7 +59,20 @@ public final class SeekerSpells {
 			cost *= Tuning.SPELLWEAVER_FACTOR;
 		}
 
-		return Math.max(1.0F, cost);
+		return Math.max(1.0F, wandDiscount(player, cost));
+	}
+
+	/**
+	 * The universal wand's cut of a price. Every mana cost in the mod must pass
+	 * through here, including the flat-priced epic actives that never touch
+	 * {@link #elementCost} — the Oracle's Wand discounts ALL spells, so a cost
+	 * site that skips this shaper is a bug, not an exemption. Client-safe.
+	 */
+	public static float wandDiscount(final net.minecraft.world.entity.player.Player player,
+			final float cost) {
+		return player.getMainHandItem().is(ModItems.ORACLE_WAND)
+				? cost * (1.0F - Tuning.ORACLE_WAND_DISCOUNT)
+				: cost;
 	}
 
 	/** Missile price with Clarity and the held wand; the HUD uses it too. */
@@ -76,9 +91,21 @@ public final class SeekerSpells {
 		return elementCost(player, base, false, false, true);
 	}
 
-	/** The specialist wands' x1.5 on their own school's damage. */
-	private static float wandPower(final ServerPlayer player, final boolean fire, final boolean ice) {
+	/**
+	 * The held wand's damage multiplier. The specialists' x1.5 is school-gated
+	 * (hence the flags); the Oracle's is not, so it answers before them and
+	 * ignores the flags entirely. Only one wand is ever in the main hand, so
+	 * the branches are exclusive by construction and never compound — a
+	 * school-blind spell just calls this with both flags false and gets 1.0
+	 * from every wand but the Oracle's.
+	 */
+	static float wandPower(final net.minecraft.world.entity.player.Player player,
+			final boolean fire, final boolean ice) {
 		ItemStack wand = player.getMainHandItem();
+
+		if (wand.is(ModItems.ORACLE_WAND)) {
+			return Tuning.ORACLE_WAND_POWER;
+		}
 
 		if ((fire && wand.is(ModItems.BLAZE_WAND)) || (ice && wand.is(ModItems.BREEZE_WAND))) {
 			return Tuning.WAND_SPECIALIST_POWER;
@@ -295,7 +322,7 @@ public final class SeekerSpells {
 
 		if (!Mana.spend(player, fresh
 				? elementCost(player, Tuning.FLAME_START_COST, true, false, false)
-				: Tuning.FLAME_COST_PER_TICK)) {
+				: wandDiscount(player, Tuning.FLAME_COST_PER_TICK))) {
 			return;
 		}
 
@@ -446,6 +473,9 @@ public final class SeekerSpells {
 			damage *= Tuning.ARCHMAGE_FACTOR;
 		}
 
+		// School-blind, so only the Oracle's Wand answers here.
+		damage *= wandPower(player, false, false);
+
 		SpellProjectile missile = new SpellProjectile(player, level,
 				SpellProjectile.Mode.MISSILE,
 				new ItemStack(empowered ? ModItems.MAGIC_BOLT_EMPOWERED : ModItems.MAGIC_BOLT))
@@ -504,9 +534,12 @@ public final class SeekerSpells {
 				+ Tuning.MERCY_PER_RANK * PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.MERCY))
 				* ascend
 				* (player.getMainHandItem().is(ModItems.HOLY_WAND) ? Tuning.WAND_HOLY_HEAL_FACTOR : 1.0F);
+		// The Holy Wand shapes the HEAL only (above); the Oracle's Wand is a
+		// damage bonus, so it lands on the harm side and nowhere else.
 		float harm = (Tuning.HOLY_AMOUNT + Tuning.LUMEN_PER_RANK * lumen
 				+ Tuning.WRATH_PER_RANK * PriestNodes.rank(SubTree.PRIEST, owned, PriestNodes.Family.WRATH))
-				* ascend;
+				* ascend
+				* wandPower(player, false, false);
 
 		ServerLevel level = (ServerLevel) player.level();
 		SpellProjectile light = new SpellProjectile(player, level,

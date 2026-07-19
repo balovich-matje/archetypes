@@ -150,6 +150,9 @@ public final class ModItems {
 	public static final Item BLAZE_WAND = registerWand("blaze_wand");
 	public static final Item BREEZE_WAND = registerWand("breeze_wand");
 	public static final Item HOLY_WAND = registerWand("holy_wand");
+	/** The one wand that owes no school: x1.5 and a tenth off EVERY spell.
+	 * See {@link Tuning#ORACLE_WAND_POWER} and SeekerSpells.wandPower. */
+	public static final Item ORACLE_WAND = registerWand("oracle_wand");
 
 	private ModItems() {
 	}
@@ -280,6 +283,7 @@ public final class ModItems {
 			output.accept(BLAZE_WAND);
 			output.accept(BREEZE_WAND);
 			output.accept(HOLY_WAND);
+			output.accept(ORACLE_WAND);
 		});
 
 		// The mod's own creative tab: weapons, wands, potions, testing items.
@@ -310,6 +314,7 @@ public final class ModItems {
 							output.accept(BLAZE_WAND);
 							output.accept(BREEZE_WAND);
 							output.accept(HOLY_WAND);
+							output.accept(ORACLE_WAND);
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 									net.minecraft.world.item.Items.POTION, ManaPotions.MANA_RESTORE));
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
