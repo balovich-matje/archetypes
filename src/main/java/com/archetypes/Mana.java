@@ -24,8 +24,13 @@ public final class Mana {
 				+ Tuning.BEACON_MANA
 				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
 						PriestNodes.Family.BEACON);
-		return Tuning.MANA_BASE + nodes
+		float base = Tuning.MANA_BASE + nodes
 				+ Tuning.MANA_PER_SPELLCASTING_LEVEL * SpecialitiesBridge.spellcastingLevel(player);
+		// Oracle's Wisdom scales the whole pool: +50/100% by rank.
+		int wisdom = OracleElementalistNodes.rank(SubTree.ORACLE_ELEMENTALIST,
+				NodePurchases.owned(player, SubTree.ORACLE_ELEMENTALIST),
+				OracleElementalistNodes.Family.ORACLE_WISDOM);
+		return base * (1.0F + Tuning.ORACLE_WISDOM_PER_RANK * wisdom);
 	}
 
 	public static float regenPerSecond(final Player player) {
@@ -45,7 +50,15 @@ public final class Mana {
 				+ Tuning.DEVOTION_REGEN
 				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
 						PriestNodes.Family.DEVOTION);
-		return Tuning.MANA_REGEN_BASE_PER_SECOND + nodes
+		// Oracle's Focus regenerates a fraction of the (Wisdom-scaled) pool a
+		// second — 2.5/5% by rank. A wand isn't a combat weapon, so this flows
+		// while the Oracle holds one to cast.
+		float oracleFocus = Tuning.ORACLE_FOCUS_REGEN_PER_RANK
+				* OracleElementalistNodes.rank(SubTree.ORACLE_ELEMENTALIST,
+						NodePurchases.owned(player, SubTree.ORACLE_ELEMENTALIST),
+						OracleElementalistNodes.Family.ORACLE_FOCUS)
+				* max(player);
+		return Tuning.MANA_REGEN_BASE_PER_SECOND + nodes + oracleFocus
 				+ SpecialitiesBridge.spellcastingLevel(player) / Tuning.MANA_REGEN_LEVELS_PER_POINT;
 	}
 

@@ -450,6 +450,31 @@ public final class Tuning {
 	/** Lightning Strike's flat mana price. Display-only for now — the effect is
 	 * a stub — but the cooldown bar prices its tile with it. */
 	public static final float LIGHTNING_STRIKE_COST = 150.0F;
+	/** Lightning Strike's per-bolt damage: 40 = 20 hearts of indirect magic. */
+	public static final float LIGHTNING_STRIKE_DAMAGE = 40.0F;
+	/** How far the strike reaches for its target, blocks. */
+	public static final double LIGHTNING_STRIKE_RANGE = 32.0;
+	/** Overcharge: x2.0 Lightning Strike damage. */
+	public static final float LIGHTNING_OVERCHARGE_FACTOR = 2.0F;
+	/** Recurrence: each rank lands one more strike on the target, the extras
+	 * this many ticks apart so they read as successive bolts, not one number. */
+	public static final int LIGHTNING_RECURRENCE_DELAY_TICKS = 4;
+	/** Chain Reaction: every strike arcs to the nearest hostiles within this
+	 * many blocks of the struck target. */
+	public static final double LIGHTNING_CHAIN_RANGE = 8.0;
+	/** Tempest: the area-targeted strike catches every hostile within this
+	 * radius of the aim point. */
+	public static final double LIGHTNING_TEMPEST_RADIUS = 5.0;
+	/** Tempest: mana spent for each hostile caught beyond the first; if the
+	 * pool runs short the strike covers only what it can pay for. */
+	public static final float LIGHTNING_TEMPEST_MANA_PER_EXTRA = 30.0F;
+	/** Ceiling on the bolts one cast may schedule (targets x strikes x
+	 * chains), so a Tempest into a horde can't freeze the server. */
+	public static final int LIGHTNING_MAX_BOLTS = 64;
+	/** Oracle's Wisdom: +50% max mana per rank, on the whole pool. */
+	public static final float ORACLE_WISDOM_PER_RANK = 0.5F;
+	/** Oracle's Focus: regenerate 2.5% of max mana per second per rank. */
+	public static final float ORACLE_FOCUS_REGEN_PER_RANK = 0.025F;
 	/** Magic Armaments' opening mana price to start the channel; display-only
 	 * until the channel effect exists. */
 	public static final float MAGIC_ARMAMENTS_COST = 50.0F;
