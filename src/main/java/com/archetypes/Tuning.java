@@ -579,6 +579,42 @@ public final class Tuning {
 	public static final int SPELLBOW_ARROW_SPARKLE_PERIOD_TICKS = 4;
 	public static final int SPELLBOW_ARROW_CHIME_PERIOD_TICKS = 6;
 
+	// --- Oracle Priest (epic): Aura of Radiance ---
+	/** How long the aura burns off one Holy Light cast, and what Beacon of
+	 * Light raises it to. Both are whole seconds and both are multiples of the
+	 * pulse period, so no pulse is ever clipped short at the end. */
+	public static final int RADIANCE_AURA_TICKS = 200;
+	public static final int RADIANCE_BEACON_TICKS = 600;
+	/** The aura reaches this far, blocks — the same number for the harm and
+	 * the heal, because the tooltip promises one radius. */
+	public static final double RADIANCE_AURA_RADIUS = 8.0;
+	/** The aura resolves once a second. Must stay at or above 11 ticks: below
+	 * that, LivingEntity.hurtServer's invulnerableTime gate would swallow the
+	 * repeat and the aura would tick at half its advertised rate. */
+	public static final int RADIANCE_PULSE_TICKS = 20;
+	/** Damage to the undead and healing to friends per pulse, health points:
+	 * the bare aura, then Brilliance rank 1 and 2 (0.5 / 1 / 2 hearts). The
+	 * rungs SET the number rather than adding to it — the author's spec reads
+	 * "increased to 1/2 hearts", so rank 2 is 2 hearts, not 2.5. */
+	public static final float RADIANCE_AURA_AMOUNT = 1.0F;
+	public static final float RADIANCE_BRILLIANCE_AMOUNT_RANK_1 = 2.0F;
+	public static final float RADIANCE_BRILLIANCE_AMOUNT_RANK_2 = 4.0F;
+	/** Owning Aura of Radiance multiplies every Holy Light cast's mana price,
+	 * discounts and all — the aura is paid for at the cast, not on a clock. */
+	public static final float RADIANCE_HOLY_COST_FACTOR = 2.0F;
+	/** Blinding Light's Weakness/Slowness and Retribution's Strength/Speed are
+	 * both level II, and both are re-laid every pulse for twice the pulse
+	 * period: long enough that a pulse never lapses mid-aura, short enough that
+	 * leaving the aura (or its ending) strips them within a second. */
+	public static final int RADIANCE_EFFECT_AMPLIFIER = 1;
+	public static final int RADIANCE_EFFECT_TICKS = 40;
+	/** The halo FX: this many motes traced around the aura's rim, redrawn this
+	 * often, the ring turning a full circle every RADIANCE_HALO_TURN_TICKS so
+	 * it reads as a sweep rather than a strobe. */
+	public static final int RADIANCE_HALO_POINTS = 12;
+	public static final int RADIANCE_HALO_PERIOD_TICKS = 4;
+	public static final int RADIANCE_HALO_TURN_TICKS = 80;
+
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;
 	public static final float HOLY_AMOUNT = 5.0F;

@@ -311,6 +311,13 @@ public abstract class LivingEntityMixin {
 			return 0.0;
 		}
 
+		// Aura of Radiance doesn't shove either (author's explicit spec): an
+		// aura that punts the undead out of its own eight blocks would spend
+		// its ten seconds undoing itself.
+		if (com.archetypes.RadianceAura.isPulsing()) {
+			return 0.0;
+		}
+
 		// Clinch: a bare-fisted Crusher's blows shove 50/100% less — the
 		// fight stays in punching range. (Haymaker's send-off is a direct
 		// push impulse, not knockback(), so it stays untouched.)

@@ -240,4 +240,18 @@ public final class Constellations {
 			".#.#..",
 			"..#...");
 
+	/**
+	 * Oracle Priest (epic, draft oracle-priest): a standing cross — Aura of
+	 * Radiance at the foot, the two Brilliance rungs up the shaft, the crossbar
+	 * spreading the aura sideways (Blinding Light left, Beacon of Light centre,
+	 * Steadfast right), Retribution at the head. Fully grid-connected — no
+	 * explicit edges needed.
+	 */
+	public static final Constellation ORACLE_PRIEST = Constellation.of(
+			".#.",
+			"###",
+			".#.",
+			".#.",
+			".#.");
+
 }

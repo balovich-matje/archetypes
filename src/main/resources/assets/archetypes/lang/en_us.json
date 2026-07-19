@@ -29,6 +29,7 @@
 	"subtree.archetypes.priest": "Priest",
 	"subtree.archetypes.oracle_elementalist": "Oracle Elementalist",
 	"subtree.archetypes.oracle_wizard": "Oracle Wizard",
+	"subtree.archetypes.oracle_priest": "Oracle Priest",
 	"item.archetypes.wooden_greatsword": "Wooden Greatsword",
 	"item.archetypes.stone_greatsword": "Stone Greatsword",
 	"item.archetypes.copper_greatsword": "Copper Greatsword",
@@ -393,5 +394,17 @@
 	"node.archetypes.oracle_wizard.blink": "Blink",
 	"node.archetypes.oracle_wizard.blink.desc": "Swinging the conjured weapon teleports you up to 8 blocks forward when not targeting a hostile.",
 	"node.archetypes.oracle_wizard.spellbow": "Spellbow",
-	"node.archetypes.oracle_wizard.spellbow.desc": "Magic Armaments conjures a bow instead of a sword. Arrows hit for 13/15.5/18/20.5 at full draw by Mind over Matter rank, reach full draw in x0.25 the time, and fall at x0.25 gravity. Archery shortens the draw further, to x0.10 at most."
+	"node.archetypes.oracle_wizard.spellbow.desc": "Magic Armaments conjures a bow instead of a sword. Arrows hit for 13/15.5/18/20.5 at full draw by Mind over Matter rank, reach full draw in x0.25 the time, and fall at x0.25 gravity. Archery shortens the draw further, to x0.10 at most.",
+	"node.archetypes.oracle_priest.aura_of_radiance": "Aura of Radiance",
+	"node.archetypes.oracle_priest.aura_of_radiance.desc": "Casting Holy Light wreathes you in light for 10 seconds. Undead within 8 blocks take 0.5 hearts per second and are not knocked back; friendly creatures within 8 blocks are healed 0.5 hearts per second. Holy Light costs 100% more mana.",
+	"node.archetypes.oracle_priest.brilliance": "Brilliance",
+	"node.archetypes.oracle_priest.brilliance.desc": "Aura of Radiance's damage and healing increased to 1/2 hearts per second.",
+	"node.archetypes.oracle_priest.beacon_of_light": "Beacon of Light",
+	"node.archetypes.oracle_priest.beacon_of_light.desc": "Aura of Radiance lasts 30 seconds.",
+	"node.archetypes.oracle_priest.blinding_light": "Blinding Light",
+	"node.archetypes.oracle_priest.blinding_light.desc": "Aura of Radiance applies Weakness II and Slowness II to undead within 8 blocks.",
+	"node.archetypes.oracle_priest.steadfast": "Steadfast",
+	"node.archetypes.oracle_priest.steadfast.desc": "You are immune to knockback while Aura of Radiance is active.",
+	"node.archetypes.oracle_priest.retribution": "Retribution",
+	"node.archetypes.oracle_priest.retribution.desc": "Aura of Radiance grants you Strength II and Speed II while active."
 }

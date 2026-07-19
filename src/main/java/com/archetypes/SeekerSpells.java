@@ -91,12 +91,19 @@ public final class SeekerSpells {
 		return elementCost(player, base, false, false, false);
 	}
 
-	/** Holy Light's price with Grace and the held wand; the HUD uses it too. */
+	/** Holy Light's price with Grace and the held wand; the HUD uses it too.
+	 * Aura of Radiance doubles whatever the discounts left — it is charged on
+	 * the cast, so it must ride the last multiplication and not the base, or a
+	 * wand discount would quietly halve the aura's price too. */
 	public static float holyCost(final net.minecraft.world.entity.player.Player player) {
 		float base = Tuning.HOLY_COST - Tuning.GRACE_DISCOUNT
 				* PriestNodes.rank(SubTree.PRIEST, NodePurchases.owned(player, SubTree.PRIEST),
 						PriestNodes.Family.GRACE);
-		return elementCost(player, base, false, false, true);
+		float cost = elementCost(player, base, false, false, true);
+		return OraclePriestNodes.rank(SubTree.ORACLE_PRIEST,
+				NodePurchases.owned(player, SubTree.ORACLE_PRIEST),
+				OraclePriestNodes.Family.AURA_OF_RADIANCE) > 0
+						? cost * Tuning.RADIANCE_HOLY_COST_FACTOR : cost;
 	}
 
 	/**
@@ -578,5 +585,9 @@ public final class SeekerSpells {
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 0.6F,
 				1.1F + (player.getRandom().nextFloat() - 0.5F) * 0.15F);
+
+		// The epic tree's aura rides every cast, and only a paid one: the
+		// doubled price above is what buys it.
+		RadianceAura.begin(player);
 	}
 }

@@ -272,6 +272,18 @@ public final class ModAttachments {
 	public static final AttachmentType<net.minecraft.world.phys.Vec3> REFLECT_AIM =
 			AttachmentRegistry.<net.minecraft.world.phys.Vec3>create(Archetypes.id("reflect_aim"));
 
+	/**
+	 * Game tick when the running Aura of Radiance ends; absent means no aura.
+	 * Deliberately transient and NOT copyOnDeath: the aura is a ten-second
+	 * consequence of a cast, so a relog or a death simply ends it, and
+	 * {@link RadianceAura}'s ticker never has to reconcile an aura it did not
+	 * start. Synced to the owner so the client could dress it later without a
+	 * bespoke packet.
+	 */
+	public static final AttachmentType<Long> RADIANCE_END = AttachmentRegistry.create(
+			Archetypes.id("radiance_end"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),

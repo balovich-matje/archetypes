@@ -37,7 +37,9 @@ public enum SubTree {
 	ORACLE_ELEMENTALIST(Archetype.INTELLECT, "oracle_elementalist", () -> Items.END_ROD,
 			Constellations.ORACLE_ELEMENTALIST, true),
 	ORACLE_WIZARD(Archetype.INTELLECT, "oracle_wizard", () -> Items.ENCHANTED_GOLDEN_APPLE,
-			Constellations.ORACLE_WIZARD, true);
+			Constellations.ORACLE_WIZARD, true),
+	ORACLE_PRIEST(Archetype.INTELLECT, "oracle_priest", () -> Items.BEACON,
+			Constellations.ORACLE_PRIEST, true);
 
 	private final Archetype archetype;
 	private final String id;
@@ -73,6 +75,7 @@ public enum SubTree {
 		return switch (this) {
 			case ELEMENTALIST -> ORACLE_ELEMENTALIST;
 			case WIZARD -> ORACLE_WIZARD;
+			case PRIEST -> ORACLE_PRIEST;
 			default -> null;
 		};
 	}
@@ -82,6 +85,7 @@ public enum SubTree {
 		return switch (this) {
 			case ORACLE_ELEMENTALIST -> ELEMENTALIST;
 			case ORACLE_WIZARD -> WIZARD;
+			case ORACLE_PRIEST -> PRIEST;
 			default -> null;
 		};
 	}
