@@ -83,6 +83,18 @@ public final class RadianceAura {
 				SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5F, 1.6F);
 	}
 
+	/**
+	 * Drop the aura and everything it holds. The ticker cannot be relied on for
+	 * this: it only runs for players whose archetype is still INTELLECT, so a
+	 * respec that drops the archetype (Amnesia II, the creative reset) would
+	 * strand a live Steadfast modifier until the next relog. Safe on a player
+	 * with no aura.
+	 */
+	public static void end(final ServerPlayer player) {
+		((AttachmentTarget) player).removeAttached(ModAttachments.RADIANCE_END);
+		steadfast(player, false);
+	}
+
 	private static void tick(final ServerPlayer player) {
 		AttachmentTarget target = (AttachmentTarget) player;
 		Long end = target.getAttached(ModAttachments.RADIANCE_END);

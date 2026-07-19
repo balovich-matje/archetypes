@@ -406,6 +406,10 @@ public final class ModAttachments {
 		// wand or revoke the channel's flight and modifiers until relog.
 		if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
 			MagicArmaments.restoreDirty(serverPlayer);
+			// Same reason: RadianceAura's ticker is gated on the archetype, so
+			// the Amnesia II and reset paths would leave Steadfast's knockback
+			// immunity standing on a player who no longer owns the node.
+			RadianceAura.end(serverPlayer);
 		}
 
 		((AttachmentTarget) player).removeAttached(PURCHASED);
