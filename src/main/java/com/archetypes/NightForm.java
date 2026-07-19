@@ -544,6 +544,11 @@ public final class NightForm {
 
 	private static final List<Bleed> BLEEDS = new ArrayList<>();
 
+	/** Drop every tracked bleed — called when the server stops. */
+	public static void clearBleeds() {
+		BLEEDS.clear();
+	}
+
 	/** Start (or refresh) the bleed on a victim this transformed player just
 	 * hit. Refreshing rather than stacking keeps the ceiling at the advertised
 	 * rate no matter how fast the attacks land. */

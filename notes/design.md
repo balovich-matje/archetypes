@@ -1814,3 +1814,41 @@ draw pays a Power bonus three times over (46 at Mind over Matter 3, against
 the sword's 20) while Sharpness on the sword stays flat. The share constant
 is not an approximation of Power, it is the inverse of that 3x — so it stays,
 and the bow stays unenchanted. Damage is 13/15.5/18/20.5 at full draw.
+
+## Epic tier round two: Spellbow, Oracle Priest, Nemesis Shadow (2026-07-20)
+
+**Spellbow** — the conjured bow was underpowered for its upkeep. Draw time
+-75%, stacking with Specialities' Archery to a 90% floor. Two traps, both
+real: their draw bonus never reached our bow at all (their mixin wraps
+`BowItem.releaseUsing`, which `MagicBowItem` overrides without super), while
+their CLIENT `UseDurationMixin` matches `instanceof BowItem` and so *did*
+apply — so the client had Archery in the animation and the server did not.
+Ours divides their factor back out client-side. Arrow gravity x0.25 via
+`AbstractArrow.getDefaultGravity` (the mark is synced, unlike True Shot's,
+because the client integrates gravity between position updates and would
+otherwise snap the arrow). Missile-school trail/chime/impact FX reused. Own
+animated art: four sprites (idle + three pull stages) sharing one pulse
+phase, brightening with charge.
+
+**Oracle Priest** — Aura of Radiance is keyed to a Holy Light cast, not a
+keybind: 10s (30s with Beacon), undead within 8 blocks burn and allies heal,
+Holy Light costs +100% while the node is owned. NO dynamic light: the
+`minecraft:light` approach cannot be made airtight (a chunk saved with the
+block plus a process kill orphans an invisible permanent light with no way to
+find it), so the aura is sold with a turning gold rim and END_ROD sparks.
+LambDynamicLights would not have lit it either — it keys off held items.
+
+**Nemesis Shadow** — the Cutpurse's first epic tree and the mod's first
+transformation. `NightForm` is the state machine; `isInvertedHealAndHarm` is
+the single hook that makes a night-form player undead, so healing potions,
+Instant Damage, Holy Light and the Radiance aura all invert at once with
+nothing potion-specific. Ten-second ritual channel, one-hour lock, kills
+restore 25% of the victim's max health, and the three Cutpurse actives are
+renamed and re-iconed while transformed. FX: a PAL ritual animation on its
+own layer, ramping soul particles with a WARDEN_HEARTBEAT drone, vanilla's
+WITHERED heart sprites for the grey health bar, a hidden hunger bar, a
+sunlight bloom overlay, and see-through-walls senses.
+
+Logged decisions, not bugs: hunger is pinned full while transformed and is
+NOT restored to its pre-ritual value on exit (an hour of vampirism ends with
+a full bar); a dimension change does not interrupt the ritual channel.

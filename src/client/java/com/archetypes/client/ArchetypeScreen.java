@@ -509,9 +509,9 @@ public class ArchetypeScreen extends Screen {
 		int level = SkillPoints.level(player);
 		int unspent = SkillPoints.available(player);
 		int epicUnspent = SkillPoints.epicAvailable(player);
-		// Epic points only count as spendable while an epic tree has room:
-		// two 5-cap trees soak 10 of the 15 today, and Strength/Agility have
-		// no epic trees yet, so the raw pool never reaches zero.
+		// Epic points only count as spendable while some epic tree of this
+		// archetype still has room — an archetype whose epic trees are all
+		// capped banks the rest, and the raw pool alone would never read zero.
 		int epicRoom = 0;
 
 		for (SubTree base : this.baseTrees) {

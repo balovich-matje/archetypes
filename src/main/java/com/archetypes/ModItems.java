@@ -256,7 +256,6 @@ public final class ModItems {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_bow"));
 		Item.Properties properties = new Item.Properties().setId(key)
 				.stacksTo(1)
-				.durability(384)
 				.rarity(net.minecraft.world.item.Rarity.EPIC)
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						net.minecraft.util.Unit.INSTANCE)

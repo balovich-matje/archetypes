@@ -17,10 +17,21 @@ public final class NightFormTicker {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 				if (ModAttachments.get(player) == Archetype.AGILITY) {
 					NightForm.tick(player);
+				} else if (NightForm.isActive(player) || NightForm.isChannelling(player)) {
+					// Belt and braces: every archetype-losing path already ends
+					// the form (ModAttachments.forgetNodes), but the form's own
+					// effects read the stamp while only this ticker clears it —
+					// so a stamp without the archetype would strand a vampire.
+					NightForm.end(player);
 				}
 			}
 
 			NightForm.tickBleeds();
 		});
+
+		// A static list of live entities must never survive its server: the
+		// next singleplayer world would tick bleeds on stale references.
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED
+				.register(server -> NightForm.clearBleeds());
 	}
 }
