@@ -446,6 +446,14 @@ public final class Tuning {
 	/** Fireball and Ice Blast burst in a 3x3 (radius from impact point). */
 	public static final double ELEMENT_BURST_RADIUS = 1.5;
 
+	// --- Oracle (epic) actives ---
+	/** Lightning Strike's flat mana price. Display-only for now — the effect is
+	 * a stub — but the cooldown bar prices its tile with it. */
+	public static final float LIGHTNING_STRIKE_COST = 150.0F;
+	/** Magic Armaments' opening mana price to start the channel; display-only
+	 * until the channel effect exists. */
+	public static final float MAGIC_ARMAMENTS_COST = 50.0F;
+
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;
 	public static final float HOLY_AMOUNT = 5.0F;

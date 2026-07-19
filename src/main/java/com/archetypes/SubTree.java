@@ -6,6 +6,7 @@ import java.util.function.Supplier;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+import org.jspecify.annotations.Nullable;
 
 /**
  * The three constellation sub-trees of each archetype. Each one's node graph
@@ -13,32 +14,44 @@ import net.minecraft.world.item.Items;
  * is the vanilla item standing in for that symbol.
  */
 public enum SubTree {
-	PROTECTOR(Archetype.STRENGTH, "protector", () -> Items.SHIELD, Constellations.PROTECTOR_SHIELD),
-	SLAYER(Archetype.STRENGTH, "slayer", () -> Items.IRON_SWORD, Constellations.SLAYER_SWORD),
-	CRUSHER(Archetype.STRENGTH, "crusher", () -> Items.MACE, Constellations.CRUSHER_MACE),
+	PROTECTOR(Archetype.STRENGTH, "protector", () -> Items.SHIELD, Constellations.PROTECTOR_SHIELD, false),
+	SLAYER(Archetype.STRENGTH, "slayer", () -> Items.IRON_SWORD, Constellations.SLAYER_SWORD, false),
+	CRUSHER(Archetype.STRENGTH, "crusher", () -> Items.MACE, Constellations.CRUSHER_MACE, false),
 
-	MARKSMAN(Archetype.AGILITY, "marksman", () -> Items.BOW, Constellations.MARKSMAN_BOW),
-	ASSASSIN(Archetype.AGILITY, "assassin", () -> ModItems.IRON_DAGGER, Constellations.ASSASSIN_DAGGER),
-	SHADOW(Archetype.AGILITY, "shadow", () -> Items.PHANTOM_MEMBRANE, Constellations.SHADOW_MOON),
+	MARKSMAN(Archetype.AGILITY, "marksman", () -> Items.BOW, Constellations.MARKSMAN_BOW, false),
+	ASSASSIN(Archetype.AGILITY, "assassin", () -> ModItems.IRON_DAGGER, Constellations.ASSASSIN_DAGGER, false),
+	SHADOW(Archetype.AGILITY, "shadow", () -> Items.PHANTOM_MEMBRANE, Constellations.SHADOW_MOON, false),
 
 	// Was Fire Mage; the rename widened it to every element, so the fire
 	// charge gave way to a neutral shard of raw magic.
-	ELEMENTALIST(Archetype.INTELLECT, "elementalist", () -> Items.AMETHYST_SHARD, Constellations.ELEMENTALIST_FLAME),
-	WIZARD(Archetype.INTELLECT, "wizard", () -> ModItems.MAGIC_WAND, Constellations.WIZARD_STAFF),
+	ELEMENTALIST(Archetype.INTELLECT, "elementalist", () -> Items.AMETHYST_SHARD, Constellations.ELEMENTALIST_FLAME,
+			false),
+	WIZARD(Archetype.INTELLECT, "wizard", () -> ModItems.MAGIC_WAND, Constellations.WIZARD_STAFF, false),
 	// Was Healer, then briefly Apothecary; the holy-light kit is a priest's.
-	PRIEST(Archetype.INTELLECT, "priest", () -> Items.TOTEM_OF_UNDYING, Constellations.PRIEST_ANKH);
+	PRIEST(Archetype.INTELLECT, "priest", () -> Items.TOTEM_OF_UNDYING, Constellations.PRIEST_ANKH, false),
+
+	// Epic sub-trees: upgraded siblings of the base trees, spent from the epic
+	// pool (levels 46-60). They live in the enum so ids persist and byId
+	// resolves them, but SubTree.of never lists them — ability-slot dispatch,
+	// the picker and the legends stay on the three base trees.
+	ORACLE_ELEMENTALIST(Archetype.INTELLECT, "oracle_elementalist", () -> Items.END_ROD,
+			Constellations.ORACLE_ELEMENTALIST, true),
+	ORACLE_WIZARD(Archetype.INTELLECT, "oracle_wizard", () -> Items.ENCHANTED_GOLDEN_APPLE,
+			Constellations.ORACLE_WIZARD, true);
 
 	private final Archetype archetype;
 	private final String id;
 	private final Supplier<Item> icon;
 	private final Constellation constellation;
+	private final boolean epic;
 
 	SubTree(final Archetype archetype, final String id, final Supplier<Item> icon,
-			final Constellation constellation) {
+			final Constellation constellation, final boolean epic) {
 		this.archetype = archetype;
 		this.id = id;
 		this.icon = icon;
 		this.constellation = constellation;
+		this.epic = epic;
 	}
 
 	/** The node layout: this sub-tree's symbol, drawn in nodes. */
@@ -48,6 +61,29 @@ public enum SubTree {
 
 	public Archetype archetype() {
 		return this.archetype;
+	}
+
+	/** Whether this is an epic sub-tree (spent from the epic pool, 5-point cap). */
+	public boolean isEpic() {
+		return this.epic;
+	}
+
+	/** The epic upgrade of this base tree, or null if it has none yet. */
+	public @Nullable SubTree epicCounterpart() {
+		return switch (this) {
+			case ELEMENTALIST -> ORACLE_ELEMENTALIST;
+			case WIZARD -> ORACLE_WIZARD;
+			default -> null;
+		};
+	}
+
+	/** The base tree this epic tree upgrades, or null for a base tree. */
+	public @Nullable SubTree baseCounterpart() {
+		return switch (this) {
+			case ORACLE_ELEMENTALIST -> ELEMENTALIST;
+			case ORACLE_WIZARD -> WIZARD;
+			default -> null;
+		};
 	}
 
 	public String id() {

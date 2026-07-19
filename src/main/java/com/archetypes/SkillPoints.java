@@ -28,20 +28,38 @@ import net.minecraft.world.entity.player.Player;
  * the curve now paces how fast it gets there.
  */
 public final class SkillPoints {
-	/** Brawler at 0, Colossus at 45. One point per level. */
-	public static final int MAX_LEVEL = 45;
+	/** Brawler at 0, Colossus at the epic cap of 60. One point per level. */
+	public static final int MAX_LEVEL = 60;
 
 	/**
-	 * Most points any one sub-tree accepts. Below its node count on purpose, so
-	 * the Protector picks utility, defence, or a compromise — never all of it.
+	 * The end of the normal tier: levels 1-45 grant one normal point each,
+	 * spendable in the base sub-trees, and 45 is where the peak tier name
+	 * ("Oracle") unlocks. Levels 46-60 grant epic points instead.
+	 */
+	public static final int BASE_LEVEL_CAP = 45;
+
+	/** Levels 46-60 each grant one epic point, {@value} in all. */
+	public static final int MAX_EPIC_POINTS = MAX_LEVEL - BASE_LEVEL_CAP;
+
+	/**
+	 * Most points any one base sub-tree accepts. Below its node count on
+	 * purpose, so the Protector picks utility, defence, or a compromise —
+	 * never all of it.
 	 */
 	public static final int MAX_POINTS_PER_SUB_TREE = 15;
+
+	/**
+	 * Most points any one epic sub-tree accepts. The 15 epic points are meant
+	 * to spread across the epic trees, not sink into a single one.
+	 */
+	public static final int MAX_POINTS_PER_EPIC_SUB_TREE = 5;
 
 	/**
 	 * The curve, in exact integer math: {@code 15 + round(6L²/5)}, where
 	 * {@code 6L² mod 5} is only ever 0, 1 or 4, so adding 2 before the
 	 * integer divide rounds half-up correctly. COST[L] is the price of level
-	 * L; CUM[L] the total banked XP to reach it.
+	 * L; CUM[L] the total banked XP to reach it. The same formula runs the
+	 * whole way to the epic cap.
 	 */
 	private static final int[] COST = new int[MAX_LEVEL + 1];
 	private static final int[] CUM = new int[MAX_LEVEL + 1];
@@ -52,9 +70,12 @@ public final class SkillPoints {
 			CUM[level] = CUM[level - 1] + COST[level];
 		}
 
-		// Anchors from the design doc; a drifted curve should fail loudly.
-		if (CUM[MAX_LEVEL] != 38_349 || CUM[15] != 1_713 || COST[1] != 16 || COST[45] != 2_445) {
-			throw new IllegalStateException("XP curve drifted: cum(45)=" + CUM[MAX_LEVEL]);
+		// Anchors from the design doc; a drifted curve should fail loudly. The
+		// peak-tier and epic-cap totals both come straight from the formula.
+		if (CUM[BASE_LEVEL_CAP] != 38_349 || CUM[15] != 1_713 || COST[1] != 16
+				|| COST[45] != 2_445 || CUM[MAX_LEVEL] != 89_472) {
+			throw new IllegalStateException("XP curve drifted: cum(45)=" + CUM[BASE_LEVEL_CAP]
+					+ " cum(60)=" + CUM[MAX_LEVEL]);
 		}
 	}
 
@@ -76,8 +97,15 @@ public final class SkillPoints {
 		return xp == null ? 0 : xp;
 	}
 
+	/** Normal points committed to base sub-trees. */
 	public static int spent(final Player player) {
 		Integer used = ((AttachmentTarget) player).getAttached(ModAttachments.SPENT_POINTS);
+		return used == null ? 0 : used;
+	}
+
+	/** Epic points committed to epic sub-trees. */
+	public static int epicSpent(final Player player) {
+		Integer used = ((AttachmentTarget) player).getAttached(ModAttachments.EPIC_SPENT_POINTS);
 		return used == null ? 0 : used;
 	}
 
@@ -93,9 +121,16 @@ public final class SkillPoints {
 		return level;
 	}
 
-	/** Points available to commit right now. */
+	/** Normal points available to commit right now. Levels past 45 add no
+	 * normal points, so the base pool tops out at 45 minus what's spent. */
 	public static int available(final Player player) {
-		return Math.max(level(player) - spent(player), 0);
+		return Math.max(Math.min(level(player), BASE_LEVEL_CAP) - spent(player), 0);
+	}
+
+	/** Epic points available to commit right now: one per level past 45,
+	 * minus what's already sunk into epic trees. */
+	public static int epicAvailable(final Player player) {
+		return Math.max(Math.max(level(player) - BASE_LEVEL_CAP, 0) - epicSpent(player), 0);
 	}
 
 	/** XP banked into the current level. */
@@ -118,14 +153,16 @@ public final class SkillPoints {
 		return xpIntoLevel(player) / (float) costForNextLevel(player);
 	}
 
-	/** Progress from start tier to peak tier, 0..1. */
+	/** Progress from start tier to peak tier, 0..1. Full at level 45 — the
+	 * epic levels beyond it are a separate journey and hold the bar at 1. */
 	public static float archetypeProgress(final Player player) {
-		return level(player) / (float) MAX_LEVEL;
+		return Math.min(level(player), BASE_LEVEL_CAP) / (float) BASE_LEVEL_CAP;
 	}
 
-	/** Which tier's name to show: 0 = start, 1 = peak, reached only at max level. */
+	/** Which tier's name to show: 0 = start, 1 = peak, reached at level 45
+	 * (the epic levels keep the peak name, they don't add a third tier). */
 	public static int tier(final Player player) {
-		return level(player) >= MAX_LEVEL ? 1 : 0;
+		return level(player) >= BASE_LEVEL_CAP ? 1 : 0;
 	}
 
 	/** The banking rate for a given advancement count. Pure — the client
@@ -192,7 +229,8 @@ public final class SkillPoints {
 	 * cover them. Only raises, never lowers; a no-op once satisfied.
 	 */
 	public static void ensureBankCoversSpent(final Player player) {
-		int needed = CUM[Math.min(spent(player), MAX_LEVEL)];
+		// Every committed point — normal and epic — needs a level under it.
+		int needed = CUM[Math.min(spent(player) + epicSpent(player), MAX_LEVEL)];
 
 		if (bankedXp(player) < needed) {
 			((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, needed);

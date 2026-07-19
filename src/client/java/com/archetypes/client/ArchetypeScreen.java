@@ -73,9 +73,20 @@ public class ArchetypeScreen extends Screen {
 	private static final int ART_WIDTH = 1024;
 	private static final int ART_HEIGHT = 576;
 
+	/** Small vanilla-look switcher buttons in a section's top-right corner. */
+	private static final int SWITCH_W = 14;
+	private static final int SWITCH_H = 12;
+
 	private final @Nullable Screen parent;
 	private final Archetype archetype;
-	private final List<SubTree> subTrees;
+	/** The three base sub-trees, fixed — the switcher reverts to these. */
+	private final List<SubTree> baseTrees;
+	/** What each section currently shows: a base tree or its epic sibling. */
+	private final List<SubTree> shown;
+
+	/** Per-section epic switchers (null where the section has no epic tree). */
+	private final Button[] epicUp = new Button[3];
+	private final Button[] epicDown = new Button[3];
 
 	/** The "?" legend: a real vanilla button; clicking pins the tooltip. */
 	private Button legendButton;
@@ -86,7 +97,8 @@ public class ArchetypeScreen extends Screen {
 				archetype.tierName(0).copy().withStyle(style -> style.withColor(archetype.color() & 0xFFFFFF))));
 		this.parent = parent;
 		this.archetype = archetype;
-		this.subTrees = SubTree.of(archetype);
+		this.baseTrees = SubTree.of(archetype);
+		this.shown = new java.util.ArrayList<>(this.baseTrees);
 	}
 
 	@Override
@@ -105,6 +117,35 @@ public class ArchetypeScreen extends Screen {
 						button -> this.legendPinned = !this.legendPinned)
 				.bounds(this.panelLeft() + this.panelWidth() - PAD - 20, this.panelTop() + 3, 20, 16)
 				.build());
+
+		// The epic switchers: a stacked up/down pair in the top-right of each
+		// section whose base tree has an epic sibling. Up previews the epic
+		// tree, down returns to the base. Viewing is free; buying is gated by
+		// having epic points. Rendered only for eligible sections.
+		for (int s = 0; s < this.baseTrees.size(); s++) {
+			SubTree base = this.baseTrees.get(s);
+			SubTree epic = base.epicCounterpart();
+
+			if (epic == null) {
+				continue;
+			}
+
+			final int section = s;
+			int right = this.canvasLeft() + this.sectionWidth() * (s + 1);
+			int switchX = right - PAD - SWITCH_W;
+			int switchY = this.canvasTop() + 4;
+
+			this.epicUp[s] = this.addRenderableWidget(Button.builder(Component.literal("^"),
+							button -> this.shown.set(section, epic))
+					.bounds(switchX, switchY, SWITCH_W, SWITCH_H)
+					.tooltip(Tooltip.create(Component.translatable("screen.archetypes.tree.epic.to_epic")))
+					.build());
+			this.epicDown[s] = this.addRenderableWidget(Button.builder(Component.literal("v"),
+							button -> this.shown.set(section, base))
+					.bounds(switchX, switchY + SWITCH_H + 1, SWITCH_W, SWITCH_H)
+					.tooltip(Tooltip.create(Component.translatable("screen.archetypes.tree.epic.to_base")))
+					.build());
+		}
 
 		// Creative-only testing affordance: undo the "permanent" choice. The
 		// server re-checks game mode; this button just hides the option.
@@ -229,8 +270,8 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	private @Nullable Hit nodeAt(final double mouseX, final double mouseY) {
-		for (int section = 0; section < this.subTrees.size(); section++) {
-			Constellation shape = this.subTrees.get(section).constellation();
+		for (int section = 0; section < this.shown.size(); section++) {
+			Constellation shape = this.shown.get(section).constellation();
 			Layout layout = this.layout(section, shape);
 			int size = layout.node();
 
@@ -259,7 +300,7 @@ public class ArchetypeScreen extends Screen {
 			return false;
 		}
 
-		SubTree tree = this.subTrees.get(hit.section());
+		SubTree tree = this.shown.get(hit.section());
 
 		// Client-side check is a courtesy; the server re-runs all of it.
 		if (NodePurchases.check(this.minecraft.player, tree, hit.index()) == NodePurchases.Verdict.BUYABLE) {
@@ -307,8 +348,8 @@ public class ArchetypeScreen extends Screen {
 
 		List<FormattedCharSequence> tooltip = null;
 
-		for (int section = 0; section < this.subTrees.size(); section++) {
-			SubTree tree = this.subTrees.get(section);
+		for (int section = 0; section < this.shown.size(); section++) {
+			SubTree tree = this.shown.get(section);
 			Constellation shape = tree.constellation();
 			Layout layout = this.layout(section, shape);
 			int size = layout.node();
@@ -379,7 +420,7 @@ public class ArchetypeScreen extends Screen {
 				}
 			}
 
-			if (section < this.subTrees.size() - 1) {
+			if (section < this.shown.size() - 1) {
 				VanillaUi.verticalDivider(graphics,
 						this.canvasLeft() + this.sectionWidth() * (section + 1) - 1,
 						this.canvasTop() + 4, this.canvasBottom() - 4);
@@ -387,6 +428,15 @@ public class ArchetypeScreen extends Screen {
 		}
 
 		this.progressBars(graphics, mouseX, mouseY);
+
+		// Grey out the switcher direction that matches what's already shown.
+		for (int section = 0; section < this.epicUp.length; section++) {
+			if (this.epicUp[section] != null) {
+				boolean epicShown = this.shown.get(section).isEpic();
+				this.epicUp[section].active = !epicShown;
+				this.epicDown[section].active = epicShown;
+			}
+		}
 
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
 		// anything drawn after it covers the buttons.
@@ -454,16 +504,28 @@ public class ArchetypeScreen extends Screen {
 
 		int level = SkillPoints.level(player);
 		int unspent = SkillPoints.available(player);
+		int epicUnspent = SkillPoints.epicAvailable(player);
+		// Any section previewing its epic tree flips the point chip and cap line
+		// to the epic pool.
+		boolean epicView = this.shown.stream().anyMatch(SubTree::isEpic);
 
-		// The journey over and every point committed: the bars have nothing
-		// left to say, so a line of flavor stands where they were.
-		if (level >= SkillPoints.MAX_LEVEL && unspent <= 0) {
+		// The journey over and every point committed — normal AND epic: the bars
+		// have nothing left to say, so a line of flavor stands where they were.
+		if (level >= SkillPoints.MAX_LEVEL && unspent <= 0 && epicUnspent <= 0) {
 			Component mastered = Component.translatable("screen.archetypes.tree.mastered",
 					this.archetype.tierName(1));
 			VanillaUi.chipText(graphics, this.font, mastered,
 					left + (width - this.font.width(mastered)) / 2, top + 14,
 					this.archetype.color());
 			return;
+		}
+
+		// When previewing an epic tree, name its tighter per-tree cap.
+		if (epicView) {
+			Component cap = Component.translatable("screen.archetypes.tree.epic.cap",
+					SkillPoints.MAX_POINTS_PER_EPIC_SUB_TREE);
+			graphics.text(this.font, cap, left + (width - this.font.width(cap)) / 2, top,
+					VanillaUi.LABEL_FAINT, false);
 		}
 
 		// Long bar: start tier -> peak tier.
@@ -498,8 +560,12 @@ public class ArchetypeScreen extends Screen {
 					mouseX, mouseY);
 		}
 
-		if (unspent > 0) {
-			Component spare = Component.translatable("screen.archetypes.tree.points", unspent);
+		// The points-remaining chip: epic points while previewing an epic tree,
+		// normal points otherwise.
+		int chipPoints = epicView ? epicUnspent : unspent;
+
+		if (chipPoints > 0) {
+			Component spare = Component.translatable("screen.archetypes.tree.points", chipPoints);
 			VanillaUi.chipText(graphics, this.font, spare,
 					left + width - this.font.width(spare) - 3, top + 18,
 					this.archetype.color());

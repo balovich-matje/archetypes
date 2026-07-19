@@ -49,9 +49,19 @@ public final class ModAttachments {
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
 
-	/** Points already committed to nodes. Earned minus this is what's spendable. */
+	/** Normal points committed to base sub-trees. Earned minus this is what's
+	 * spendable there. */
 	public static final AttachmentType<Integer> SPENT_POINTS = AttachmentRegistry.create(
 			Archetypes.id("spent_points"),
+			builder -> builder
+					.persistent(Codec.INT)
+					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
+	/** Epic points committed to epic sub-trees. Kept apart from the normal
+	 * pool so levels 46-60 feed only the epic trees. */
+	public static final AttachmentType<Integer> EPIC_SPENT_POINTS = AttachmentRegistry.create(
+			Archetypes.id("epic_spent_points"),
 			builder -> builder
 					.persistent(Codec.INT)
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
@@ -269,6 +279,7 @@ public final class ModAttachments {
 	public static void forgetNodes(final Player player) {
 		((AttachmentTarget) player).removeAttached(PURCHASED);
 		((AttachmentTarget) player).removeAttached(SPENT_POINTS);
+		((AttachmentTarget) player).removeAttached(EPIC_SPENT_POINTS);
 		// Proc bookkeeping tied to owned nodes goes too, or a respec inherits
 		// it: a Mind Well counter at 7/8 would empower the first missile after
 		// re-buying, and an armed True Shot fires without the node.

@@ -207,4 +207,37 @@ public final class Constellations {
 			"...#...",
 			"...#...");
 
+	/**
+	 * Oracle Elementalist (epic, draft oracle-elementalist): Lightning Strike
+	 * is the lone root, three columns forking off it — the chain-reaction ladder
+	 * up the left, the recurrence ("never strikes once") ladder up the right, and
+	 * the Oracle's mana line (Wisdom then Focus) up the centre — each column
+	 * capped by a payoff node (Tempest, Overcharge). The root sits a row below
+	 * the columns, so three explicit edges bridge the gap to each ladder's foot.
+	 */
+	public static final Constellation ORACLE_ELEMENTALIST = Constellation.of(
+			"#.#.#",
+			"#.#.#",
+			"#.#.#",
+			"#.#.#",
+			".....",
+			"..#..")
+			.withEdge(2, 0, 0, 2)
+			.withEdge(2, 0, 4, 2)
+			.withEdge(2, 0, 2, 2);
+
+	/**
+	 * Oracle Wizard (epic, draft oracle-wizard): Magic Armaments at the root
+	 * forks into the armour line up the left (Magic Armor, then flight and the
+	 * warding node) and the Mind Over Matter line up the right, whose top rung
+	 * splits to Blink and the Spellbow capstone. Fully grid-connected — no
+	 * explicit edges needed.
+	 */
+	public static final Constellation ORACLE_WIZARD = Constellation.of(
+			"#..#.#",
+			"#...#.",
+			"#...#.",
+			".#.#..",
+			"..#...");
+
 }

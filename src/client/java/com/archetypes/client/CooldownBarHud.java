@@ -278,6 +278,26 @@ public final class CooldownBarHud {
 					com.archetypes.SeekerSpells.holyCost(player), false));
 		}
 
+		// The epic Oracle actives: mana-priced tiles on the epic keys, same as
+		// the base Seeker spells.
+		var oracleElem = NodePurchases.owned(player, SubTree.ORACLE_ELEMENTALIST);
+
+		if (com.archetypes.OracleElementalistNodes.rank(SubTree.ORACLE_ELEMENTALIST, oracleElem,
+				com.archetypes.OracleElementalistNodes.Family.LIGHTNING_STRIKE) > 0) {
+			abilities.add(new Ability(SubTree.ORACLE_ELEMENTALIST,
+					com.archetypes.OracleElementalistNodes.Family.LIGHTNING_STRIKE,
+					ArchetypesClient.ABILITY_KEYS[4], Tuning.LIGHTNING_STRIKE_COST, false));
+		}
+
+		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
+
+		if (com.archetypes.OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, oracleWiz,
+				com.archetypes.OracleWizardNodes.Family.MAGIC_ARMAMENTS) > 0) {
+			abilities.add(new Ability(SubTree.ORACLE_WIZARD,
+					com.archetypes.OracleWizardNodes.Family.MAGIC_ARMAMENTS,
+					ArchetypesClient.ABILITY_KEYS[5], Tuning.MAGIC_ARMAMENTS_COST, false));
+		}
+
 		return abilities;
 	}
 }

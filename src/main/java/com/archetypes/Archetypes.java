@@ -61,7 +61,7 @@ public class Archetypes implements ModInitializer {
 					var player = context.player();
 					Archetype archetype = ModAttachments.get(player);
 
-					if (archetype == null || payload.slot() < 0 || payload.slot() >= 4) {
+					if (archetype == null || payload.slot() < 0 || payload.slot() >= 6) {
 						return;
 					}
 
@@ -70,6 +70,25 @@ public class Archetypes implements ModInitializer {
 					if (payload.slot() == 3) {
 						if (archetype == Archetype.INTELLECT) {
 							SeekerSpells.castElementalistCapstone(player);
+						}
+
+						return;
+					}
+
+					// Slots 4 and 5 are the epic actives, in epic-tree order:
+					// Lightning Strike (Oracle Elementalist) and Magic Armaments
+					// (Oracle Wizard). Only Intellect has epic trees for now.
+					if (payload.slot() == 4) {
+						if (archetype == Archetype.INTELLECT) {
+							OracleSpells.lightningStrike(player);
+						}
+
+						return;
+					}
+
+					if (payload.slot() == 5) {
+						if (archetype == Archetype.INTELLECT) {
+							OracleSpells.magicArmaments(player);
 						}
 
 						return;

@@ -25,6 +25,8 @@ public final class TreeNodes {
 			case WIZARD -> WizardNodes.def(tree, index).family().nameKey();
 			case PRIEST -> PriestNodes.def(tree, index).family().nameKey();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().nameKey();
+			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family().nameKey();
+			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().nameKey();
 		};
 	}
 
@@ -39,6 +41,8 @@ public final class TreeNodes {
 			case WIZARD -> WizardNodes.def(tree, index).family().descriptionKey();
 			case PRIEST -> PriestNodes.def(tree, index).family().descriptionKey();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().descriptionKey();
+			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family().descriptionKey();
+			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().descriptionKey();
 		};
 	}
 
@@ -53,6 +57,8 @@ public final class TreeNodes {
 			case WIZARD -> WizardNodes.def(tree, index).family().icon();
 			case PRIEST -> PriestNodes.def(tree, index).family().icon();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family().icon();
+			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family().icon();
+			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().icon();
 		};
 	}
 
@@ -100,6 +106,8 @@ public final class TreeNodes {
 			case WIZARD -> familySprite(tree, WizardNodes.def(tree, index).family());
 			case PRIEST -> familySprite(tree, PriestNodes.def(tree, index).family());
 			case ELEMENTALIST -> familySprite(tree, ElementalistNodes.def(tree, index).family());
+			// Epic trees have no sprite set yet — item-icon fallback (§3).
+			case ORACLE_ELEMENTALIST, ORACLE_WIZARD -> null;
 		};
 	}
 
@@ -117,6 +125,9 @@ public final class TreeNodes {
 				yield family.sprite() != null ? family.spriteSize() : 32;
 			}
 			case MARKSMAN, ASSASSIN, WIZARD, PRIEST, ELEMENTALIST -> 32;
+			// iconSprite is null for the epic trees, so this is never read; the
+			// switch just has to be exhaustive.
+			case ORACLE_ELEMENTALIST, ORACLE_WIZARD -> 32;
 		};
 	}
 
@@ -158,6 +169,9 @@ public final class TreeNodes {
 			case WIZARD -> WizardNodes.def(tree, index).family() == WizardNodes.Family.MINOR;
 			case PRIEST -> PriestNodes.def(tree, index).family() == PriestNodes.Family.MINOR;
 			case PROTECTOR -> ProtectorNodes.def(tree, index).family() == ProtectorNodes.Family.MINOR;
+			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family()
+					== OracleElementalistNodes.Family.MINOR;
+			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family() == OracleWizardNodes.Family.MINOR;
 		};
 	}
 
@@ -172,6 +186,8 @@ public final class TreeNodes {
 			case WIZARD -> WizardNodes.def(tree, index).rank();
 			case PRIEST -> PriestNodes.def(tree, index).rank();
 			case PROTECTOR -> ProtectorNodes.def(tree, index).rank();
+			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).rank();
+			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).rank();
 		};
 	}
 
@@ -243,6 +259,18 @@ public final class TreeNodes {
 				case RENEWAL, BENEDICTION -> NodeKind.CAPSTONE;
 				default -> NodeKind.NORMAL;
 			};
+			case ORACLE_ELEMENTALIST -> switch (OracleElementalistNodes.def(tree, index).family()) {
+				case LIGHTNING_STRIKE -> NodeKind.ACTIVE;
+				// The AOE-conversion node crowns the tree — ringed as a capstone.
+				case TEMPEST -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
+			case ORACLE_WIZARD -> switch (OracleWizardNodes.def(tree, index).family()) {
+				case MAGIC_ARMAMENTS -> NodeKind.ACTIVE;
+				// The bow-variant node crowns the tree — ringed as a capstone.
+				case SPELLBOW -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
 		};
 	}
 
@@ -269,6 +297,9 @@ public final class TreeNodes {
 			case ELEMENTALIST -> indicesOf(tree, ElementalistNodes.Family.FIREBALL);
 			case WIZARD -> indicesOf(tree, WizardNodes.Family.MAGIC_MISSILE);
 			case PRIEST -> indicesOf(tree, PriestNodes.Family.HOLY_LIGHT);
+			// Epic trees never appear on the picker, but the switch is exhaustive.
+			case ORACLE_ELEMENTALIST -> indicesOf(tree, OracleElementalistNodes.Family.LIGHTNING_STRIKE);
+			case ORACLE_WIZARD -> indicesOf(tree, OracleWizardNodes.Family.MAGIC_ARMAMENTS);
 		};
 	}
 
@@ -283,6 +314,8 @@ public final class TreeNodes {
 			case ELEMENTALIST -> ElementalistNodes.def(tree, index).family();
 			case WIZARD -> WizardNodes.def(tree, index).family();
 			case PRIEST -> PriestNodes.def(tree, index).family();
+			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family();
+			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family();
 		};
 	}
 

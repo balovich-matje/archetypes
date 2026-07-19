@@ -72,11 +72,17 @@ public final class NodePurchases {
 			return Verdict.EXCLUSIVE_TAKEN;
 		}
 
-		if (owned.size() >= SkillPoints.MAX_POINTS_PER_SUB_TREE) {
+		// Epic trees have a tighter cap and draw from the epic pool; base trees
+		// keep their 15-point cap and the normal pool.
+		int cap = tree.isEpic() ? SkillPoints.MAX_POINTS_PER_EPIC_SUB_TREE : SkillPoints.MAX_POINTS_PER_SUB_TREE;
+
+		if (owned.size() >= cap) {
 			return Verdict.TREE_FULL;
 		}
 
-		if (SkillPoints.available(player) <= 0) {
+		int pool = tree.isEpic() ? SkillPoints.epicAvailable(player) : SkillPoints.available(player);
+
+		if (pool <= 0) {
 			return Verdict.NO_POINTS;
 		}
 
@@ -98,8 +104,10 @@ public final class NodePurchases {
 		next.put(tree.id(), list);
 		target.setAttached(ModAttachments.PURCHASED, next);
 
-		Integer spent = target.getAttached(ModAttachments.SPENT_POINTS);
-		target.setAttached(ModAttachments.SPENT_POINTS, (spent == null ? 0 : spent) + 1);
+		// Epic spends draw down the epic pool; base spends the normal one.
+		var counter = tree.isEpic() ? ModAttachments.EPIC_SPENT_POINTS : ModAttachments.SPENT_POINTS;
+		Integer spent = target.getAttached(counter);
+		target.setAttached(counter, (spent == null ? 0 : spent) + 1);
 		return true;
 	}
 }

@@ -39,9 +39,9 @@ public class ArchetypesClient implements ClientModInitializer {
 	private static final String SPECIALITIES = "specialities";
 
 	/** The ability binds: slots 0-2 are the sub-trees left to right, slot 3
-	 * is the Elementalist's capstone (room for more in later versions).
-	 * Exposed so the cooldown bar can label its slots. */
-	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[4];
+	 * is the Elementalist's capstone, slots 4-5 are the epic actives (Lightning
+	 * Strike, Magic Armaments). Exposed so the cooldown bar can label its slots. */
+	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[6];
 
 	/** Our own section in the controls screen, not vanilla's Gameplay. */
 	private static final KeyMapping.Category KEY_CATEGORY =
@@ -64,8 +64,9 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		// Rebindable slot keys — what a slot casts depends on the archetype,
 		// and the server resolves that; the cooldown bar shows each slot's
-		// current bind. The keys only report the press. V is vanilla-free.
-		int[] defaults = { GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H, GLFW.GLFW_KEY_B, GLFW.GLFW_KEY_V };
+		// current bind. The keys only report the press. V, N, M are vanilla-free.
+		int[] defaults = { GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H, GLFW.GLFW_KEY_B, GLFW.GLFW_KEY_V,
+				GLFW.GLFW_KEY_N, GLFW.GLFW_KEY_M };
 
 		for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
 			ABILITY_KEYS[slot] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
