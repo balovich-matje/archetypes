@@ -57,6 +57,18 @@ public final class VanillaUi {
 	 */
 	public static void nodeIcon(final GuiGraphicsExtractor graphics, final com.archetypes.SubTree tree,
 			final int index, final int x, final int y) {
+		// The night form's two renamed actives outrank every other icon rule:
+		// while transformed the tree screen, the cooldown bar and the picker
+		// all show the empowered art, and they resolve it in one place.
+		var night = NightIdentity.sprite(tree, index);
+
+		if (night != null) {
+			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, night,
+					x, y, 0.0F, 0.0F, 16, 16, NightIdentity.SPRITE_SIZE, NightIdentity.SPRITE_SIZE,
+					NightIdentity.SPRITE_SIZE, NightIdentity.SPRITE_SIZE);
+			return;
+		}
+
 		var sprite = com.archetypes.TreeNodes.iconSprite(tree, index);
 
 		if (sprite != null) {

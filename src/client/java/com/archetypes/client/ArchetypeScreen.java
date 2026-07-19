@@ -457,7 +457,11 @@ public class ArchetypeScreen extends Screen {
 			final NodePurchases.Verdict verdict) {
 		List<FormattedCharSequence> lines = new java.util.ArrayList<>();
 
-		Component name = Component.translatable(TreeNodes.nameKey(tree, index));
+		// While transformed, the two empowered Cutpurse actives wear their
+		// night names here as well as on the cooldown bar.
+		String nightKey = NightIdentity.nameKey(tree, index);
+		Component name = Component.translatable(
+				nightKey != null ? nightKey : TreeNodes.nameKey(tree, index));
 
 		if (TreeNodes.familySize(tree, index) > 1) {
 			name = Component.translatable("node.archetypes.ranked", name, TreeNodes.rankOf(tree, index));

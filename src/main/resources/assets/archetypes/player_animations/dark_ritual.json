@@ -1,0 +1,113 @@
+{
+	"name": "dark_ritual",
+	"author": "archetypes",
+	"description": "Dark Ritual: the hands rise through a ten-second summoning",
+	"emote": {
+		"isLoop": false,
+		"returnTick": 4,
+		"beginTick": 0,
+		"endTick": 200,
+		"stopTick": 206,
+		"degrees": true,
+		"moves": [
+			{
+				"tick": 0,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 2
+				},
+				"head": {
+					"pitch": 4
+				},
+				"rightArm": {
+					"pitch": -6,
+					"roll": 6
+				},
+				"leftArm": {
+					"pitch": -6,
+					"roll": -6
+				}
+			},
+			{
+				"tick": 60,
+				"easing": "LINEAR",
+				"torso": {
+					"pitch": -2
+				},
+				"head": {
+					"pitch": -4
+				},
+				"rightArm": {
+					"pitch": -48,
+					"roll": 16,
+					"y": 0.5
+				},
+				"leftArm": {
+					"pitch": -48,
+					"roll": -16,
+					"y": 0.5
+				}
+			},
+			{
+				"tick": 130,
+				"easing": "LINEAR",
+				"torso": {
+					"pitch": -8
+				},
+				"head": {
+					"pitch": -14
+				},
+				"rightArm": {
+					"pitch": -108,
+					"roll": 22,
+					"y": 1.0
+				},
+				"leftArm": {
+					"pitch": -108,
+					"roll": -22,
+					"y": 1.0
+				}
+			},
+			{
+				"tick": 186,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": -14
+				},
+				"head": {
+					"pitch": -28
+				},
+				"rightArm": {
+					"pitch": -164,
+					"roll": 14,
+					"y": 1.5
+				},
+				"leftArm": {
+					"pitch": -164,
+					"roll": -14,
+					"y": 1.5
+				}
+			},
+			{
+				"tick": 200,
+				"easing": "EASEINQUAD",
+				"torso": {
+					"pitch": -18
+				},
+				"head": {
+					"pitch": -34
+				},
+				"rightArm": {
+					"pitch": -176,
+					"roll": 3,
+					"y": 2.0
+				},
+				"leftArm": {
+					"pitch": -176,
+					"roll": -3,
+					"y": 2.0
+				}
+			}
+		]
+	}
+}

@@ -117,9 +117,9 @@ public final class CooldownBarHud {
 				graphics.fill(iconX, iconY, iconX + ICON, iconY + Math.round(ICON * fraction),
 						0xB3000000);
 
-				String seconds = Long.toString((remaining + 19) / 20);
-				graphics.text(client.font, seconds,
-						x + FRAME / 2 - client.font.width(seconds) / 2,
+				String label = clock(remaining);
+				graphics.text(client.font, label,
+						x + FRAME / 2 - client.font.width(label) / 2,
 						y + FRAME / 2 - 4, 0xFFFFFFFF, true);
 			}
 
@@ -133,6 +133,16 @@ public final class CooldownBarHud {
 
 			x += FRAME;
 		}
+	}
+
+	/**
+	 * A remaining-ticks count that fits a 22px tile. Seconds up to 99, then
+	 * whole minutes — the night form runs an hour, and "3600" would spill out
+	 * of the frame and mean nothing at a glance anyway.
+	 */
+	private static String clock(final long remainingTicks) {
+		long seconds = (remainingTicks + 19) / 20;
+		return seconds < 100 ? Long.toString(seconds) : (seconds + 59) / 60 + "m";
 	}
 
 	/** The actives this player owns, tree by tree. */
@@ -289,6 +299,19 @@ public final class CooldownBarHud {
 					ArchetypesClient.ABILITY_KEYS[4],
 					com.archetypes.SeekerSpells.wandDiscount(player, Tuning.LIGHTNING_STRIKE_COST),
 					false));
+		}
+
+		// The Dark Ritual's tile doubles as the night form's clock: the form
+		// and its cooldown are one stamp, so the drain that says "recharging"
+		// is the same drain that says "still a vampire".
+		var nemesis = NodePurchases.owned(player, SubTree.NEMESIS_SHADOW);
+
+		if (com.archetypes.NemesisShadowNodes.rank(SubTree.NEMESIS_SHADOW, nemesis,
+				com.archetypes.NemesisShadowNodes.Family.DARK_RITUAL) > 0) {
+			abilities.add(new Ability(SubTree.NEMESIS_SHADOW,
+					com.archetypes.NemesisShadowNodes.Family.DARK_RITUAL,
+					ArchetypesClient.ABILITY_KEYS[6],
+					ModAttachments.NIGHT_FORM_END, Tuning.NIGHT_FORM_TICKS));
 		}
 
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);

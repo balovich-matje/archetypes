@@ -59,6 +59,8 @@ public class ArchetypesClient implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
+		NightAnimations.initialize();
+		NightFormFx.initialize();
 
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
@@ -166,6 +168,22 @@ public class ArchetypesClient implements ClientModInitializer {
 				com.archetypes.Archetypes.id("proc_indicators"), ProcIndicatorHud::render);
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("mana_bar"), ManaHud::render);
+
+		// Sunlight through a vampire's eyes. On MISC_OVERLAYS like Specialities'
+		// stealth vignette, so it washes the world but stays under the bars.
+		HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS,
+				com.archetypes.Archetypes.id("sun_blind"), SunBlindOverlay::render);
+
+		// The night form pins hunger full and stops natural regeneration, so
+		// the hunger row is a gauge of nothing while it lasts: it is not
+		// greyed, it is gone. Reverts the frame the form lapses — the gate is
+		// re-read every draw and no state is stashed.
+		HudElementRegistry.replaceElement(VanillaHudElements.FOOD_BAR, original ->
+				(graphics, tickCounter) -> {
+					if (!UndeadHud.active()) {
+						original.extractRenderState(graphics, tickCounter);
+					}
+				});
 
 		// The mana row sits where vanilla draws air bubbles; for a Seeker the
 		// bubbles step up one row instead of hiding the orbs underwater.

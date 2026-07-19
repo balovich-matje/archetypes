@@ -198,8 +198,11 @@ public final class NightForm {
 		target.setAttached(ModAttachments.NIGHT_CHANNEL_SLOT, player.getInventory().getSelectedSlot());
 		target.setAttached(ModAttachments.NIGHT_CHANNEL_HURT, player.hurtTime);
 
+		// The ritual's opening thunk: the same charge vanilla plays when a
+		// respawn anchor takes a charge, dropped low. It reads as something
+		// being fed rather than something being cast.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.SOUL_ESCAPE.value(), SoundSource.PLAYERS, 1.0F, 0.5F);
+				SoundEvents.RESPAWN_ANCHOR_CHARGE, SoundSource.PLAYERS, 0.9F, 0.7F);
 	}
 
 	/** Abandon a running channel. No cooldown is charged — that is the whole
@@ -212,8 +215,9 @@ public final class NightForm {
 		}
 
 		clearChannel(player);
+		// The counterpart of the opening charge: the ritual empties back out.
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.7F, 0.5F);
+				SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.PLAYERS, 0.8F, 0.8F);
 	}
 
 	/** The channel ran its course: the hour starts here. */
@@ -224,12 +228,23 @@ public final class NightForm {
 		((AttachmentTarget) player).setAttached(ModAttachments.NIGHT_FORM_END,
 				level.getGameTime() + Tuning.NIGHT_FORM_TICKS);
 
-		// The one FX kept here rather than left to the renderer: the moment of
-		// transformation is the state change, and a silent one reads as a bug.
+		// The transformation stays with the state change rather than moving to
+		// the client FX pass: it must reach everyone in earshot, whether or not
+		// the caster happens to be rendered on their screen.
 		level.sendParticles(ParticleTypes.SOUL, player.getX(), player.getY() + 1.0, player.getZ(),
-				40, 0.4, 0.8, 0.4, 0.05);
+				90, 0.45, 0.9, 0.45, 0.12);
+		level.sendParticles(ParticleTypes.SCULK_SOUL, player.getX(), player.getY() + 1.0,
+				player.getZ(), 35, 0.5, 0.9, 0.5, 0.06);
+		level.sendParticles(ParticleTypes.SCULK_CHARGE_POP, player.getX(), player.getY() + 1.0,
+				player.getZ(), 25, 0.3, 0.6, 0.3, 0.25);
+		level.sendParticles(ParticleTypes.LARGE_SMOKE, player.getX(), player.getY() + 0.2,
+				player.getZ(), 30, 0.6, 0.2, 0.6, 0.02);
+
+		// Warden's emergence, dropped a shade: a long, low, unmistakably
+		// wrong thing arriving. Deliberately not a spell cue — nothing else in
+		// this mod sounds like this, because nothing else costs an hour.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.WITHER_SPAWN, SoundSource.PLAYERS, 0.7F, 1.6F);
+				SoundEvents.WARDEN_EMERGE, SoundSource.PLAYERS, 1.0F, 0.8F);
 	}
 
 	/**
@@ -251,8 +266,13 @@ public final class NightForm {
 		target.removeAttached(ModAttachments.NIGHT_SENSED_PLAYERS);
 
 		if (player.isAlive()) {
+			// The lapse is deliberately small next to the arrival: a light
+			// going out, not a second event. Same beacon the game uses when a
+			// standing power stops standing.
+			((ServerLevel) player.level()).sendParticles(ParticleTypes.SMOKE,
+					player.getX(), player.getY() + 1.0, player.getZ(), 12, 0.3, 0.5, 0.3, 0.01);
 			player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
-					SoundEvents.ZOMBIE_VILLAGER_CURE, SoundSource.PLAYERS, 0.7F, 1.4F);
+					SoundEvents.BEACON_DEACTIVATE, SoundSource.PLAYERS, 0.5F, 0.7F);
 		}
 	}
 
