@@ -459,9 +459,27 @@ public final class Tuning {
 	/** Recurrence: each rank lands one more strike on the target, the extras
 	 * this many ticks apart so they read as successive bolts, not one number. */
 	public static final int LIGHTNING_RECURRENCE_DELAY_TICKS = 4;
-	/** Chain Reaction: every strike arcs to the nearest hostiles within this
-	 * many blocks of the struck target. */
+	/** Chain Reaction: each hop reaches this many blocks, measured from the
+	 * previous victim — the arc walks the horde, it does not fan out from the
+	 * primary. */
 	public static final double LIGHTNING_CHAIN_RANGE = 8.0;
+	/** Chain Reaction: ticks the arc spends travelling between two victims. Low
+	 * enough to feel like lightning, high enough that the eye can follow the
+	 * jump instead of seeing one simultaneous multi-strike. */
+	public static final int LIGHTNING_CHAIN_HOP_DELAY_TICKS = 3;
+	/** Chain arc: particle segments drawn per block of hop length, clamped by
+	 * the segment ceiling. Both are deliberately modest — a Tempest into a
+	 * horde can schedule many hops and every segment is a client packet. */
+	public static final double LIGHTNING_ARC_SEGMENTS_PER_BLOCK = 2.0;
+	public static final int LIGHTNING_ARC_MAX_SEGMENTS = 20;
+	/** Chain arc: how far, in blocks, a segment may be kicked off the straight
+	 * line between the two victims, so the arc reads as a jagged bolt. The
+	 * offset tapers to zero at both ends so the arc still touches its
+	 * entities. */
+	public static final double LIGHTNING_ARC_JITTER = 0.45;
+	/** Chain arc: particles emitted per segment. Keep at 1 — the segment count
+	 * is the density knob. */
+	public static final int LIGHTNING_ARC_PARTICLES_PER_SEGMENT = 1;
 	/** Tempest: the area-targeted strike catches every hostile within this
 	 * radius of the aim point. */
 	public static final double LIGHTNING_TEMPEST_RADIUS = 5.0;

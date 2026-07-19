@@ -367,7 +367,7 @@
 	"node.archetypes.oracle_elementalist.lightning_strike": "Lightning Strike",
 	"node.archetypes.oracle_elementalist.lightning_strike.desc": "Strike a targeted creature up to 32 blocks away for 20 hearts. Consumes 150 mana. Wand in hand.",
 	"node.archetypes.oracle_elementalist.chain": "Chain Reaction",
-	"node.archetypes.oracle_elementalist.chain.desc": "Lightning Strike arcs to 1/2/3 nearby hostiles, each taking 100% of the strike's damage.",
+	"node.archetypes.oracle_elementalist.chain.desc": "Lightning Strike leaps on from each victim to 1/2/3 more hostiles in turn, each taking 100% of the strike's damage.",
 	"node.archetypes.oracle_elementalist.recurrence": "Recurrence",
 	"node.archetypes.oracle_elementalist.recurrence.desc": "Lightning Strike lands 1/2/3 more times on its target, each for 100% of its damage.",
 	"node.archetypes.oracle_elementalist.oracle_wisdom": "Oracle's Wisdom",
