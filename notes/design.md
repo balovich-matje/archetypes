@@ -1708,3 +1708,37 @@ the node icons' native orientations were the OPPOSITE of my assumption
 the flamethrower, spike used as-is. Compositions are PIL-previewed at
 exact blit offsets before shipping from now on — that render would
 have caught all of this pre-commit.
+
+## Epic tier: levels 46-60, Oracle trees (2026-07-19)
+
+Post-45 progression shipped as a framework plus the first two epic trees
+(sketched by the author in the sketchpad, implemented by agents):
+
+- Cap 45 -> 60 on the same quadratic curve (CUM[60] = 89,472; the 45 anchors
+  unchanged). Levels 46-60 grant EPIC points — a separate pool, 15 total,
+  5-point cap per epic tree. Peak tier name still lands at 45; "full
+  potential" flavor needs 60 + no spendable epic points left.
+- Epic trees are SubTree entries flagged epic with base<->epic mapping
+  (ELEMENTALIST<->ORACLE_ELEMENTALIST, WIZARD<->ORACLE_WIZARD). SubTree.of()
+  still returns base trees only. Tree screen: up/down switcher, top-right.
+- Ability 5 (N) = Lightning Strike: 32-block targeted bolt, 40 dmg, 150 mana,
+  Chain x1/2/3, Recurrence x1/2/3 extra strikes, Overcharge x2.0, Tempest
+  AOE capstone (30 mana per extra target, 64-bolt cap). Cosmetic-only
+  LightningBolt carries the look; damage is ours (indirectMagic).
+- Ability 6 (M) = Magic Armaments: toggle channel, 50 mana + 10/s. Conjured
+  diamond-tier sword swaps with the wand (wand parked in a copyOnDeath
+  attachment; dirty channels torn down on JOIN/death/reset). Summoned items
+  self-void anywhere outside a live channel (inventoryTick + ENTITY_LOAD).
+  Mind over Matter +2/4/6 dmg for +10/20/30 upkeep; Magic Armor mana->
+  absorption 0.5/1.0 capped 10/20; Blink 8-block empty-swing teleport;
+  Levitation flight (interop-safe mayfly bookkeeping); Warding purges
+  harmful effects; Spellbow capstone conjures ammo-free arrows.
+- Agent-invented names pending author review: Tempest, Overcharge,
+  Recurrence, Levitation, Warding, Spellbow.
+
+Open by design, revisit before advertising the tier: only 10 of 15 epic
+points are spendable (two trees) and Strength/Agility have none — ship the
+remaining epic trees or gate epic banking; Lightning's 150 cost exceeds the
+100 base pool (mana-column on-ramp is arguably the point); Blink rides the
+unthrottled MeleeSwingPayload (anticheat posture); Tempest+Chain stacks
+bolts in tight packs (capstone fantasy until proven degenerate).
