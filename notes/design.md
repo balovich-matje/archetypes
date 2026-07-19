@@ -1742,3 +1742,42 @@ remaining epic trees or gate epic banking; Lightning's 150 cost exceeds the
 100 base pool (mana-column on-ramp is arguably the point); Blink rides the
 unthrottled MeleeSwingPayload (anticheat posture); Tempest+Chain stacks
 bolts in tight packs (capstone fantasy until proven degenerate).
+
+## Epic tier polish: arcs, animated blade, Oracle's Wand (2026-07-19)
+
+Author feedback on the first epic-tier iteration, all addressed:
+
+- **Chain Reaction jumps now.** The primary keeps its sky bolt; each chain hop
+  travels from the PREVIOUS victim with a jagged ELECTRIC_SPARK arc, a few
+  ticks of flight so the eye follows it, and a crackle on arrival — no sky
+  bolts on chained targets. Hop targets are chosen when the hop lands, so the
+  arc follows a moving horde. One already-struck set per BEAT (all Tempest
+  primaries share it; each recurrence wave gets a fresh one), so a storm
+  spreads outward instead of re-raking the pack it just hit.
+- **Magic Armament is a real conjured blade.** Bespoke ANIMATED texture:
+  vanilla's iron-sword silhouette pixel-for-pixel, recoloured to translucent
+  violet (blade alpha ~140-198, rims near-solid so the shape survives any
+  backdrop), with a brighter pulse travelling guard→tip. 16 frames stacked
+  vertically + magic_sword.png.mcmeta (frametime 2, interpolate) — item
+  textures animate through the same atlas path as blocks; vanilla just never
+  uses it. Glint override OFF so the sprite reads clean under real
+  enchantments. Losing bake-off variant ("pulse", a slow whole-blade breath)
+  kept at notes/art/magic_sword/pulse/ — one file swap away.
+- **Sharpness, not an attribute.** The blade is stamped with a real
+  ENCHANTMENTS component: Sharpness X base, +5 per Mind over Matter rank
+  (XXV at rank 3), re-stamped when a rank is bought mid-channel. The old flat
+  +2/4/6 ATTACK_DAMAGE modifier is gone — Sharpness carries that scaling now,
+  so the node cannot double-dip. Effective 12.5/15/17.5/20 damage by rank.
+- **Upkeep drains per tick** (cost/20 each tick, same cost per second) so the
+  mana orbs trickle instead of stepping; ends on the exact tick the pool
+  cannot pay.
+- **Levitation → gliding.** The creative-flight grant (and its mayfly
+  bookkeeping) is replaced by overriding Player.canGlide() during a channel:
+  true elytra behaviour, so jump-to-deploy, firework boosts, gliding physics
+  and landing are all vanilla's.
+- **Oracle's Wand** (2 netherite ingots + nether star): x1.5 damage and -10%
+  cost on ALL spells, school-blind. Universal shapers rather than a branch per
+  school — wandPower answers the Oracle first and ignores school flags,
+  wandDiscount is applied last to every price INCLUDING the flat-priced epic
+  actives and the Armaments upkeep (which prices off the stashed wand, since
+  the channel holds the conjured weapon instead).

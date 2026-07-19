@@ -137,13 +137,23 @@ public final class OracleSpells {
 
 		long now = level.getGameTime();
 
+		// One already-struck set per beat, shared by every primary landing on
+		// it: a Tempest's chains then carry the storm outward instead of
+		// re-raking the pack it just hit, and nothing takes two arcs at once.
+		java.util.List<java.util.Set<net.minecraft.world.entity.LivingEntity>> waves =
+				new java.util.ArrayList<>();
+
+		for (int r = 0; r <= repeats; r++) {
+			waves.add(OracleStrikes.newWave());
+		}
+
 		for (int t = 0; t < targets; t++) {
 			LivingEntity primary = primaries.get(t);
 			// First strike now; each recurrence a short beat later, chaining too.
-			OracleStrikes.strike(level, player, primary, damage, chains);
+			OracleStrikes.strike(level, player, primary, damage, chains, waves.get(0));
 
 			for (int r = 1; r <= repeats; r++) {
-				OracleStrikes.schedule(level, player, primary, damage, chains,
+				OracleStrikes.schedule(level, player, primary, damage, chains, waves.get(r),
 						now + (long) r * Tuning.LIGHTNING_RECURRENCE_DELAY_TICKS);
 			}
 		}

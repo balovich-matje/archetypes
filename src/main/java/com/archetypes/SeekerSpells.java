@@ -70,9 +70,17 @@ public final class SeekerSpells {
 	 */
 	public static float wandDiscount(final net.minecraft.world.entity.player.Player player,
 			final float cost) {
-		return player.getMainHandItem().is(ModItems.ORACLE_WAND)
-				? cost * (1.0F - Tuning.ORACLE_WAND_DISCOUNT)
-				: cost;
+		return wandDiscount(player.getMainHandItem(), cost);
+	}
+
+	/**
+	 * The same cut, priced off a named wand rather than the main hand — for the
+	 * one caster whose wand is not in the hand it is paying from: a Magic
+	 * Armaments channel stashes the wand and holds the conjured weapon, and its
+	 * upkeep is still a spell cost the Oracle's Wand promises to discount.
+	 */
+	public static float wandDiscount(final ItemStack wand, final float cost) {
+		return wand.is(ModItems.ORACLE_WAND) ? cost * (1.0F - Tuning.ORACLE_WAND_DISCOUNT) : cost;
 	}
 
 	/** Missile price with Clarity and the held wand; the HUD uses it too. */

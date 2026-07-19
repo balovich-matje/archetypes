@@ -234,6 +234,15 @@ public final class MagicArmaments {
 		float cost = (Tuning.MAGIC_ARMAMENTS_UPKEEP_PER_SECOND
 				+ mom * Tuning.MIND_OVER_MATTER_UPKEEP_PER_RANK) / 20.0F;
 
+		// The wand is stashed, not held, for as long as this runs — price the
+		// upkeep off it anyway, or the Oracle's Wand would quietly exempt the
+		// one spell the player is paying for by the tick.
+		ItemStack stashed = ((AttachmentTarget) player).getAttached(ModAttachments.ARMAMENTS_WAND);
+
+		if (stashed != null) {
+			cost = SeekerSpells.wandDiscount(stashed, cost);
+		}
+
 		// spend() is all-or-nothing, so the channel ends on the exact tick the
 		// pool cannot cover a tick's worth.
 		if (!Mana.spend(player, cost)) {

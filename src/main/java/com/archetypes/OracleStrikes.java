@@ -49,7 +49,7 @@ public final class OracleStrikes {
 	/** A recurrence waiting to land: the same target, chains and damage as its
 	 * opening strike, held until its level's game time reaches {@code fireTick}. */
 	private record Recurrence(ServerLevel level, ServerPlayer caster, LivingEntity target,
-			float damage, int chains, long fireTick) implements Pending {
+			float damage, int chains, Set<LivingEntity> struck, long fireTick) implements Pending {
 	}
 
 	/** One chain hop in flight. The next victim is chosen when the hop
@@ -99,26 +99,46 @@ public final class OracleStrikes {
 		});
 	}
 
-	/** Queue a follow-up strike on the same target for a later tick. */
+	/** Queue a follow-up strike on the same target for a later tick. The
+	 * {@code struck} set is shared by everything that lands on the same beat
+	 * (see {@link #strike}); pass a fresh one per wave. */
 	public static void schedule(final ServerLevel level, final ServerPlayer caster,
-			final LivingEntity target, final float damage, final int chains, final long fireTick) {
-		PENDING.add(new Recurrence(level, caster, target, damage, chains, fireTick));
+			final LivingEntity target, final float damage, final int chains,
+			final Set<LivingEntity> struck, final long fireTick) {
+		PENDING.add(new Recurrence(level, caster, target, damage, chains, struck, fireTick));
+	}
+
+	/** A shared already-struck set for one beat of a cast. */
+	public static Set<LivingEntity> newWave() {
+		// Identity, not equality: two distinct mobs must never collapse into
+		// one entry of the already-struck set.
+		return Collections.newSetFromMap(new IdentityHashMap<>());
 	}
 
 	/** One strike: the sky bolt on the primary target, then Chain Reaction's
 	 * first hop, which walks victim to victim from there. */
 	public static void strike(final ServerLevel level, final ServerPlayer caster,
 			final LivingEntity target, final float damage, final int chains) {
+		strike(level, caster, target, damage, chains, newWave());
+	}
+
+	/**
+	 * One strike sharing an already-struck set with the rest of its beat. A
+	 * Tempest fires every primary on the same tick, so they share one set: a
+	 * chain then spreads the storm outward instead of raking mobs the storm
+	 * already hit, and no creature takes two arcs from one beat. Recurrences
+	 * are separate strikes in time and get their own set per wave.
+	 */
+	public static void strike(final ServerLevel level, final ServerPlayer caster,
+			final LivingEntity target, final float damage, final int chains,
+			final Set<LivingEntity> struck) {
 		skyStrike(level, caster, target, damage);
+		struck.add(target);
 
 		if (chains <= 0) {
 			return;
 		}
 
-		// Identity, not equality: two distinct mobs must never collapse into
-		// one entry of the already-struck set.
-		Set<LivingEntity> struck = Collections.newSetFromMap(new IdentityHashMap<>());
-		struck.add(target);
 		PENDING.add(new Hop(level, caster, target, damage, chains, struck,
 				level.getGameTime() + Tuning.LIGHTNING_CHAIN_HOP_DELAY_TICKS));
 	}
@@ -130,7 +150,7 @@ public final class OracleStrikes {
 			return;
 		}
 
-		strike(r.level(), r.caster(), r.target(), r.damage(), r.chains());
+		strike(r.level(), r.caster(), r.target(), r.damage(), r.chains(), r.struck());
 	}
 
 	/** A hop lands: pick the nearest untouched hostile around its source, draw
