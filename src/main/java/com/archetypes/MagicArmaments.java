@@ -109,6 +109,9 @@ public final class MagicArmaments {
 					OracleWizardNodes.Family.MIND_OVER_MATTER));
 		}
 
+		// Stamped here, not left to the next tick: a player who jumps on the
+		// same tick they conjure would otherwise find no wings.
+		fitGlider(conjured, owned);
 		inventory.setItem(slot, conjured);
 
 		// The cap must exist before the opening cost's absorption is banked, or
