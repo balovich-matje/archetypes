@@ -151,9 +151,18 @@ excluded by a capstone, under the per-tree cap, and the player has a point free.
 
 - **15-point cap**: `SkillPoints.MAX_POINTS_PER_SUB_TREE = 15`, below each tree's
   node count, so a full build fills one tree's budget with utility, damage, or a
-  compromise — never everything. `SkillPoints.MAX_LEVEL = 45` = 3 × 15, so a
-  maxed archetype has exactly enough points for all three budgets and no budget
-  covers its own tree.
+  compromise — never everything. `SkillPoints.BASE_LEVEL_CAP = 45` = 3 × 15, so a
+  peak-tier archetype has exactly enough normal points for all three budgets and
+  no budget covers its own tree.
+- **Epic tier**: levels 46–`MAX_LEVEL = 60` each grant one **epic point** instead
+  of a normal one (`EPIC_SPENT_POINTS` tracks the spends; the pools never mix —
+  `check`/`buy` pick pool and cap off `SubTree.isEpic()`). Epic sub-trees
+  (`ORACLE_ELEMENTALIST`, `ORACLE_WIZARD` — Intellect only so far) are upgraded
+  siblings of base trees (`epicCounterpart()`/`baseCounterpart()`), capped at
+  `MAX_POINTS_PER_EPIC_SUB_TREE = 5` each, reached via the per-section switcher
+  on the tree screen, and excluded from `SubTree.of` so the picker, legends and
+  slot dispatch stay on the three base trees. Their actives ride
+  `ActiveAbilityPayload` slots 4–5.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
@@ -200,11 +209,13 @@ player keeps all their XP and the archetype banks a copy, so levelling never
 competes with enchanting.
 
 - **The curve.** `COST[L] = 15 + (6L² + 2) / 5` (exact integer half-up rounding
-  of `1.2L² + 15`), and `CUM[L]` is the cumulative XP to reach level `L`. Both
-  tables are built in a `static` block that asserts the anchors
-  (`CUM[45] = 38_349`, `CUM[15] = 1_713`, `COST[1] = 16`, `COST[45] = 2_445`) and
-  throws if the curve drifts. `level(player)` walks `CUM`; `available(player) =
-  max(level − spent, 0)`.
+  of `1.2L² + 15`), running unchanged to the epic cap, and `CUM[L]` is the
+  cumulative XP to reach level `L`. Both tables are built in a `static` block
+  that asserts the anchors (`CUM[45] = 38_349`, `CUM[60] = 89_472`,
+  `CUM[15] = 1_713`, `COST[1] = 16`, `COST[45] = 2_445`) and throws if the curve
+  drifts. `level(player)` walks `CUM`; `available(player) =
+  max(min(level, 45) − spent, 0)` and `epicAvailable(player) =
+  max(max(level − 45, 0) − epicSpent, 0)` keep the two pools apart.
 - **Advancement multiplier.** Banking is scaled at deposit time by
   `xpMultiplier(advancementCount) = min(1 + 0.025 · count, 3.0)` — every completed
   non-recipe advancement adds 2.5% to the banking rate, tripling it at 80. The
@@ -220,7 +231,9 @@ competes with enchanting.
   refunds every node via `ModAttachments.forgetNodes` but keeps the archetype;
   Amnesia II (`forgetArchetype`) wipes nodes, the choice, and all banked XP. The
   creative `ResetArchetypePayload` path (`ModAttachments.clear`) refunds nodes but
-  *keeps* banked levels. `forgetNodes` also clears proc bookkeeping
+  *keeps* banked levels. `forgetNodes` clears both spent-point pools, ends a
+  live Magic Armaments channel (the ticker's own guards die with the archetype
+  on the Amnesia II and reset paths), and clears proc bookkeeping
   (`MISSILE_CAST_COUNT`, `TRUE_SHOT_ARMED`, `CROSSBOW_PRIMED`) so a respec cannot
   inherit a half-charged proc.
 

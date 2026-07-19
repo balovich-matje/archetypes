@@ -505,13 +505,28 @@ public class ArchetypeScreen extends Screen {
 		int level = SkillPoints.level(player);
 		int unspent = SkillPoints.available(player);
 		int epicUnspent = SkillPoints.epicAvailable(player);
+		// Epic points only count as spendable while an epic tree has room:
+		// two 5-cap trees soak 10 of the 15 today, and Strength/Agility have
+		// no epic trees yet, so the raw pool never reaches zero.
+		int epicRoom = 0;
+
+		for (SubTree base : this.baseTrees) {
+			SubTree epicTree = base.epicCounterpart();
+
+			if (epicTree != null) {
+				epicRoom += Math.max(0, SkillPoints.MAX_POINTS_PER_EPIC_SUB_TREE
+						- NodePurchases.owned(player, epicTree).size());
+			}
+		}
+
 		// Any section previewing its epic tree flips the point chip and cap line
 		// to the epic pool.
 		boolean epicView = this.shown.stream().anyMatch(SubTree::isEpic);
 
-		// The journey over and every point committed — normal AND epic: the bars
-		// have nothing left to say, so a line of flavor stands where they were.
-		if (level >= SkillPoints.MAX_LEVEL && unspent <= 0 && epicUnspent <= 0) {
+		// The journey over and every spendable point committed — normal AND
+		// epic: the bars have nothing left to say, so a line of flavor stands
+		// where they were.
+		if (level >= SkillPoints.MAX_LEVEL && unspent <= 0 && Math.min(epicUnspent, epicRoom) <= 0) {
 			Component mastered = Component.translatable("screen.archetypes.tree.mastered",
 					this.archetype.tierName(1));
 			VanillaUi.chipText(graphics, this.font, mastered,

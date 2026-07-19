@@ -303,6 +303,14 @@ public final class ModAttachments {
 
 	/** Amnesia I: every node refunded, the archetype and its levels untouched. */
 	public static void forgetNodes(final Player player) {
+		// A live Magic Armaments channel must end with the node that powers
+		// it: Amnesia II and the creative reset drop the archetype the
+		// ticker's guards are gated on, so nothing else would restore the
+		// wand or revoke the channel's flight and modifiers until relog.
+		if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+			MagicArmaments.restoreDirty(serverPlayer);
+		}
+
 		((AttachmentTarget) player).removeAttached(PURCHASED);
 		((AttachmentTarget) player).removeAttached(SPENT_POINTS);
 		((AttachmentTarget) player).removeAttached(EPIC_SPENT_POINTS);

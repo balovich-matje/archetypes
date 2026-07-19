@@ -229,8 +229,13 @@ public final class SkillPoints {
 	 * cover them. Only raises, never lowers; a no-op once satisfied.
 	 */
 	public static void ensureBankCoversSpent(final Player player) {
-		// Every committed point — normal and epic — needs a level under it.
-		int needed = CUM[Math.min(spent(player) + epicSpent(player), MAX_LEVEL)];
+		// Every committed point needs a level under it: a normal point one of
+		// levels 1-45, an epic point one past the base cap — e epic points are
+		// only justified from level 45+e, however few normal points are spent.
+		int epicSpent = epicSpent(player);
+		int neededLevel = Math.max(spent(player),
+				epicSpent > 0 ? BASE_LEVEL_CAP + epicSpent : 0);
+		int needed = CUM[Math.min(neededLevel, MAX_LEVEL)];
 
 		if (bankedXp(player) < needed) {
 			((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, needed);

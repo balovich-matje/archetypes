@@ -39,6 +39,11 @@ public final class OracleStrikes {
 	}
 
 	public static void initialize() {
+		// The list is static but a schedule is per-server: entries must not
+		// survive into the next singleplayer world and fire on a stale level.
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPING
+				.register(server -> PENDING.clear());
+
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			if (PENDING.isEmpty()) {
 				return;
