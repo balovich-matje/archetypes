@@ -3,6 +3,8 @@ package com.archetypes;
 import java.util.List;
 import java.util.Set;
 
+import com.archetypes.compat.SpecialitiesBridge;
+
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -400,6 +402,25 @@ public final class MagicArmaments {
 		// setAbsorptionAmount clamps to MAX_ABSORPTION, so the cap holds.
 		float grant = manaSpent * rank * Tuning.MAGIC_ARMOR_HP_PER_MANA_PER_RANK;
 		player.setAbsorptionAmount(player.getAbsorptionAmount() + grant);
+	}
+
+	/**
+	 * The fraction of a normal bow draw the Spellbow needs, for THIS player.
+	 *
+	 * <p>Both sides of the draw must read this one number: the server turns it
+	 * into the power that leaves the bow ({@code MagicBowItem.releaseUsing}) and
+	 * the client turns it into the pull animation
+	 * ({@code UseDurationMixin}). Two factors would let the bow fire at full
+	 * power while its model still shows a half-drawn string.
+	 *
+	 * <p>Specialities' Archery reduction stacks on the node's own, capped —
+	 * their {@code BowItemMixin} cannot reach a bow whose {@code releaseUsing}
+	 * never calls super, so it is folded in here instead of inherited.
+	 */
+	public static float drawTimeFactor(final Player player) {
+		float reduction = Tuning.SPELLBOW_DRAW_TIME_REDUCTION
+				+ SpecialitiesBridge.archeryDrawTimeReduction(SpecialitiesBridge.archeryLevel(player));
+		return 1.0F - Math.min(reduction, Tuning.SPELLBOW_DRAW_TIME_REDUCTION_CAP);
 	}
 
 	/** The conjured sword's Sharpness level at a Mind over Matter rank. */

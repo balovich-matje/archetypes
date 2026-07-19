@@ -393,5 +393,5 @@
 	"node.archetypes.oracle_wizard.blink": "Blink",
 	"node.archetypes.oracle_wizard.blink.desc": "Swinging the conjured weapon teleports you up to 8 blocks forward when not targeting a hostile.",
 	"node.archetypes.oracle_wizard.spellbow": "Spellbow",
-	"node.archetypes.oracle_wizard.spellbow.desc": "Magic Armaments conjures a bow instead of a sword."
+	"node.archetypes.oracle_wizard.spellbow.desc": "Magic Armaments conjures a bow instead of a sword. Arrows hit for 13/15.5/18/20.5 at full draw by Mind over Matter rank, reach full draw in x0.25 the time, and fall at x0.25 gravity. Archery shortens the draw further, to x0.10 at most."
 }

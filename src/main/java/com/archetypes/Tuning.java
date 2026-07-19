@@ -416,6 +416,12 @@ public final class Tuning {
 	public static final float MISSILE_HOMING_SPEED_FACTOR = 0.67F;
 	public static final double MISSILE_HOMING_RADIUS = 12.0;
 	public static final double MISSILE_PIERCE_INFLATE = 0.75;
+	/** The missile's violet, faint mote and bright core. Shared with the
+	 * Spellbow's conjured arrow (see SPELLBOW_ARROW_TRAIL_PERIOD_TICKS): both
+	 * must read as one school of magic, so the colours live here rather than in
+	 * either effect's own class. */
+	public static final int MISSILE_DUST_COLOR = 0x7E5CBF;
+	public static final int MISSILE_DUST_BRIGHT_COLOR = 0xB38EF3;
 
 	// --- Wizard tree ---
 	/** Fraction of incoming damage the (single-rank) shield converts to mana. */
@@ -549,6 +555,29 @@ public final class Tuning {
 	 * draw velocity, so the same level pays out three times over on a full draw
 	 * (46 at rank 3, not 20.5) while Sharpness on the sword stays flat. */
 	public static final float MAGIC_BOW_ARROW_SHARPNESS_SHARE = 1.0F / 3.0F;
+	/** Spellbow: the draw is this much shorter, so full draw lands in a quarter
+	 * of vanilla's 20 ticks. It does NOT move damage — power still caps at 1.0
+	 * and velocity at 3x; only the time to get there changes. The same factor
+	 * must drive the release power and the client pull animation, or the bow
+	 * fires at a power its model has not finished drawing. */
+	public static final float SPELLBOW_DRAW_TIME_REDUCTION = 0.75F;
+	/** Specialities' Archery draw-speed bonus adds to the reduction above; the
+	 * sum is clamped here, so no combination of skill and node draws in under a
+	 * tenth of the normal time. */
+	public static final float SPELLBOW_DRAW_TIME_REDUCTION_CAP = 0.90F;
+	/** Spellbow: conjured arrows fall at this share of an arrow's 0.05/tick
+	 * gravity. Applied on the arrow's own gravity hook, never by inflating
+	 * launch velocity — velocity IS the damage multiplier (see
+	 * MAGIC_BOW_ARROW_SHARPNESS_SHARE), so a velocity hack would also be a
+	 * silent damage buff. */
+	public static final float SPELLBOW_ARROW_GRAVITY_FACTOR = 0.25F;
+	/** Spellbow flight FX, the Magic Missile's signature on an arrow: a violet
+	 * mote every N ticks, an END_ROD sparkle every M, a chime every C. All three
+	 * run sparser than SpellProjectile's because a bow drawing in five ticks
+	 * puts far more projectiles in the air than a missile cast does. */
+	public static final int SPELLBOW_ARROW_TRAIL_PERIOD_TICKS = 2;
+	public static final int SPELLBOW_ARROW_SPARKLE_PERIOD_TICKS = 4;
+	public static final int SPELLBOW_ARROW_CHIME_PERIOD_TICKS = 6;
 
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;

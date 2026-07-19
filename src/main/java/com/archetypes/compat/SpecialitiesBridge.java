@@ -22,6 +22,26 @@ public final class SpecialitiesBridge {
 		return LOADED ? Linked.level(player) : 0;
 	}
 
+	/** The player's Archery level, or 0 without Specialities. */
+	public static int archeryLevel(final Player player) {
+		return LOADED ? Linked.archery(player) : 0;
+	}
+
+	/**
+	 * The draw-time reduction Specialities' Archery skill grants at a level, as
+	 * a fraction of the normal draw (0 without the mod, or at level 0). Read
+	 * from their published curve rather than mirrored here, so a retune on
+	 * their side moves this with it.
+	 *
+	 * <p>Their {@code BowItemMixin} applies this by dividing the held time,
+	 * which never reaches the Spellbow: {@code MagicBowItem} overrides
+	 * {@code releaseUsing} and never calls super. The Spellbow adds it back
+	 * itself (see {@code MagicArmaments.drawTimeFactor}).
+	 */
+	public static float archeryDrawTimeReduction(final int level) {
+		return LOADED && level > 0 ? Linked.archeryReduction(level) : 0.0F;
+	}
+
 	/** Award Spellcasting XP for mana spent; silently a no-op without the mod. */
 	public static void awardSpellcastingXp(final ServerPlayer player, final int amount) {
 		if (LOADED && amount > 0) {
@@ -42,6 +62,17 @@ public final class SpecialitiesBridge {
 	private static final class Linked {
 		private static int level(final Player player) {
 			return com.specialities.skills.SkillManager.get(player).level(SpellcastingSkill.INSTANCE);
+		}
+
+		private static int archery(final Player player) {
+			return com.specialities.skills.SkillManager.get(player)
+					.level(com.specialities.skills.Skill.ARCHERY);
+		}
+
+		/** Their curve is a time MULTIPLIER (1.0 at level 0, falling with
+		 * level); the reduction is its complement. */
+		private static float archeryReduction(final int level) {
+			return 1.0F - com.specialities.skills.Tuning.recoveryTimeMultiplier(level);
 		}
 
 		private static void award(final ServerPlayer player, final int amount) {

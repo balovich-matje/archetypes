@@ -252,6 +252,20 @@ public final class ModAttachments {
 	public static final AttachmentType<Boolean> TRUE_SHOT_HOMING =
 			AttachmentRegistry.<Boolean>create(Archetypes.id("true_shot_homing"));
 
+	/**
+	 * On arrows: conjured by the Spellbow, so it falls at reduced gravity and
+	 * wears the Magic Missile's trail. Transient — a saved arrow forgets and
+	 * reverts to an ordinary one.
+	 *
+	 * <p>Synced to everyone, unlike the True Shot marks above, because gravity
+	 * is the one arrow property the CLIENT also integrates: arrows tick their
+	 * own physics between the server's position updates, so an unsynced flag
+	 * would have the client drop the arrow and snap it back every update.
+	 */
+	public static final AttachmentType<Boolean> SPELLBOW_ARROW = AttachmentRegistry.create(
+			Archetypes.id("spellbow_arrow"),
+			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
+
 	/** On arrows, for one hit-handler call: the return-to-sender velocity a
 	 * Reflection block computed. Applied and cleared at the end of the hit —
 	 * vanilla's post-deflect drop would stomp it if set any earlier. */

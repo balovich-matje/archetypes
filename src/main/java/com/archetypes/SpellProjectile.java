@@ -50,9 +50,9 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	/** Missile FX variant A, the Arcane Mote's palette: a faint violet
 	 * thread for the rank and file, a bright one for empowered/homing. */
 	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST =
-			new net.minecraft.core.particles.DustParticleOptions(0x7E5CBF, 0.6F);
+			new net.minecraft.core.particles.DustParticleOptions(Tuning.MISSILE_DUST_COLOR, 0.6F);
 	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST_BRIGHT =
-			new net.minecraft.core.particles.DustParticleOptions(0xB38EF3, 1.0F);
+			new net.minecraft.core.particles.DustParticleOptions(Tuning.MISSILE_DUST_BRIGHT_COLOR, 1.0F);
 
 	/** Mind Well's empowered missile — synced, because the client renders it
 	 * half again bigger; it's also the only missile that keeps the trail. */
