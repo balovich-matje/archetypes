@@ -1,0 +1,6 @@
+{
+  "parent": "archetypes:item/magic_bow",
+  "textures": {
+    "layer0": "archetypes:item/magic_bow_pulling_1"
+  }
+}

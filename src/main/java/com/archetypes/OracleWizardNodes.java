@@ -16,8 +16,7 @@ import org.jspecify.annotations.Nullable;
  * left line hardens the channel (Magic Armor's temp health, then Gliding's
  * elytra flight and Warding's status immunity) while the right line sharpens the
  * blade (Mind Over Matter's three ranks), whose top rung splits to Blink and the
- * Spellbow capstone that swaps the sword for a bow. Item icons stand in until an
- * epic sprite set ships.
+ * Spellbow capstone that swaps the sword for a bow.
  */
 public final class OracleWizardNodes {
 	public enum Family {

@@ -112,8 +112,11 @@ public final class TreeNodes {
 			case WIZARD -> familySprite(tree, WizardNodes.def(tree, index).family());
 			case PRIEST -> familySprite(tree, PriestNodes.def(tree, index).family());
 			case ELEMENTALIST -> familySprite(tree, ElementalistNodes.def(tree, index).family());
-			// Epic trees have no sprite set yet — item-icon fallback (§3).
-			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST, NEMESIS_SHADOW -> null;
+			case ORACLE_ELEMENTALIST -> familySprite(tree,
+					OracleElementalistNodes.def(tree, index).family());
+			case ORACLE_WIZARD -> familySprite(tree, OracleWizardNodes.def(tree, index).family());
+			case ORACLE_PRIEST -> familySprite(tree, OraclePriestNodes.def(tree, index).family());
+			case NEMESIS_SHADOW -> familySprite(tree, NemesisShadowNodes.def(tree, index).family());
 		};
 	}
 
@@ -131,8 +134,6 @@ public final class TreeNodes {
 				yield family.sprite() != null ? family.spriteSize() : 32;
 			}
 			case MARKSMAN, ASSASSIN, WIZARD, PRIEST, ELEMENTALIST -> 32;
-			// iconSprite is null for the epic trees, so this is never read; the
-			// switch just has to be exhaustive.
 			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST, NEMESIS_SHADOW -> 32;
 		};
 	}

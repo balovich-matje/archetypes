@@ -17,7 +17,7 @@ import org.jspecify.annotations.Nullable;
  * up the right (the bolt strikes the same target again), and the Oracle's mana
  * line up the centre (Wisdom's max mana, then Focus's regen) — each capped by a
  * payoff: Tempest turns the strike into a mana-per-target AOE, Overcharge
- * doubles its damage. Item icons stand in until an epic sprite set ships.
+ * doubles its damage.
  */
 public final class OracleElementalistNodes {
 	public enum Family {

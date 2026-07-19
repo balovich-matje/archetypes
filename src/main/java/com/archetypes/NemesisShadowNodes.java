@@ -17,8 +17,7 @@ import org.jspecify.annotations.Nullable;
  * into the two halves of the vampire: the left line is the body that stops
  * being solid (Ghost Form's three rungs into Incorporeal), the right line is
  * the predator's senses and appetite (Extra Sensory Perception, Eyes of the
- * Night, Feast's two rungs). Item icons stand in until an epic sprite set
- * ships.
+ * Night, Feast's two rungs).
  */
 public final class NemesisShadowNodes {
 	public enum Family {

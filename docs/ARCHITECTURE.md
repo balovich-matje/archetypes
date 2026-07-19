@@ -179,8 +179,9 @@ for its flash), which walks this order:
    stop. This is where the per-tree branching lives:
    - **`familySprite(tree, family)`** points at a 32px sprite in
      `textures/node/<tree>/<family>.png` (one complete set per tree; `null` for
-     `MINOR`). For MARKSMAN/ASSASSIN/WIZARD/PRIEST/ELEMENTALIST, `iconSprite` is
-     *only* this per-tree set.
+     `MINOR`). For MARKSMAN/ASSASSIN/WIZARD/PRIEST/ELEMENTALIST and the four
+     epic trees (ORACLE_ELEMENTALIST/ORACLE_WIZARD/ORACLE_PRIEST/
+     NEMESIS_SHADOW), `iconSprite` is *only* this per-tree set.
    - The Strength trees (SLAYER/CRUSHER/PROTECTOR) try `familySprite` first, then
      fall back to the family's hand-made `sprite()`. SHADOW reverses that (its
      hand-made sprites outrank the set).

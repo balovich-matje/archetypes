@@ -16,8 +16,7 @@ import org.jspecify.annotations.Nullable;
  * Brilliance's two rungs raise both the damage and the healing, the crossbar
  * spreads the aura sideways (Blinding Light saps the undead caught in it,
  * Beacon of Light triples how long it burns, Steadfast roots the caster) and
- * Retribution crowns the shaft with the caster's own war blessing. Item icons
- * stand in until an epic sprite set ships.
+ * Retribution crowns the shaft with the caster's own war blessing.
  */
 public final class OraclePriestNodes {
 	public enum Family {
