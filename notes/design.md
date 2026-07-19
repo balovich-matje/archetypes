@@ -1781,3 +1781,32 @@ Author feedback on the first epic-tier iteration, all addressed:
   wandDiscount is applied last to every price INCLUDING the flat-priced epic
   actives and the Armaments upkeep (which prices off the stashed wand, since
   the channel holds the conjured weapon instead).
+
+## Gliding crash + silent conjured weapons (2026-07-19)
+
+**The crash** (player report, `crash-2026-07-19_23.37.15-server.txt`): gliding
+with the Levitation node killed the server about a second in —
+`IllegalArgumentException: Bound must be positive` from
+`Util.getRandom` inside `LivingEntity.updateFallFlying`. Vanilla trusts
+`canGlide()`: every twentieth gliding tick it collects the equipment slots
+holding a glider and picks one at random to damage. Our mixin claimed a glide
+with no glider equipped, so the list was empty and `nextInt(0)` threw
+mid-tick. Overriding `canGlide` is simply not a safe way to grant flight.
+
+**The fix**: the conjured weapon carries the real components instead —
+`GLIDER` plus an `EQUIPPABLE` naming MAINHAND, stamped (and unstamped) live
+against the Levitation node. Vanilla then answers its own question, the slot
+it finds to damage holds an unbreakable stack (`isDamageableItem()` is false
+with UNBREAKABLE present, so the hit is a no-op), and deploy/boosts/physics/
+landing are all stock. The `Player.canGlide` mixin is gone.
+
+**Silent weapons**: conjured items show their name and nothing else —
+`TOOLTIP_DISPLAY` with ATTRIBUTE_MODIFIERS, UNBREAKABLE, ENCHANTMENTS and
+DAMAGE hidden. NOT the `hideTooltip` flag: that one returns an empty list
+from `ItemStack.getTooltipLines`, taking the name with it.
+
+**Power, not a fudge**: the Spellbow now carries a real Power enchantment at
+the same level as the sword's Sharpness (vanilla's Power curve is identical —
+`1 + 0.5 x (level - 1)`), so vanilla's arrow pipeline pays the bonus off the
+weapon stack. Damage is unchanged (13/15.5/18/20.5 at full draw); the
+one-third-share constant that approximated it is gone.

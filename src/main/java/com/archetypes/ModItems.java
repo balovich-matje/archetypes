@@ -217,6 +217,22 @@ public final class ModItems {
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(new Item.Properties().setId(key)));
 	}
 
+	/**
+	 * A conjured weapon shows its name and nothing else. The mechanics stay —
+	 * unbreakable, Sharpness, the attribute block, the glider a Levitation
+	 * channel stamps on — but every line they would print is hidden, because a
+	 * spell-shaped weapon that lists its stats reads like loot. Note this is
+	 * per-component hiding, NOT the hide_tooltip flag: that one suppresses the
+	 * name too (ItemStack.getTooltipLines returns an empty list for it).
+	 */
+	private static net.minecraft.world.item.component.TooltipDisplay silentTooltip() {
+		return net.minecraft.world.item.component.TooltipDisplay.DEFAULT
+				.withHidden(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS, true)
+				.withHidden(net.minecraft.core.component.DataComponents.UNBREAKABLE, true)
+				.withHidden(net.minecraft.core.component.DataComponents.ENCHANTMENTS, true)
+				.withHidden(net.minecraft.core.component.DataComponents.DAMAGE, true);
+	}
+
 	/** The conjured sword: exactly a diamond sword's melee (3 base + diamond's
 	 * bonus, -2.4 speed), but unbreakable and single-stack. Its real damage is
 	 * the Sharpness {@link MagicArmaments} stamps on the stack at conjure time.
@@ -230,6 +246,7 @@ public final class ModItems {
 				.rarity(net.minecraft.world.item.Rarity.EPIC)
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						net.minecraft.util.Unit.INSTANCE)
+				.component(net.minecraft.core.component.DataComponents.TOOLTIP_DISPLAY, silentTooltip())
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicSwordItem(properties));
@@ -243,6 +260,7 @@ public final class ModItems {
 				.rarity(net.minecraft.world.item.Rarity.EPIC)
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						net.minecraft.util.Unit.INSTANCE)
+				.component(net.minecraft.core.component.DataComponents.TOOLTIP_DISPLAY, silentTooltip())
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicBowItem(properties));

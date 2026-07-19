@@ -538,11 +538,6 @@ public final class Tuning {
 	/** Spellbow: the conjured bow's arrow base damage before Sharpness. Velocity
 	 * (3x at full charge) multiplies it, landing a full shot near the sword's ~7. */
 	public static final float MAGIC_BOW_ARROW_BASE_DAMAGE = 2.5F;
-	/** Sharpness does nothing on a bow, so the arrow adds this share of the
-	 * sword's Sharpness bonus to its base instead. 1/3 inverts the full-draw 3x
-	 * velocity, so a point of sword damage is a point of arrow damage and the two
-	 * variants stay even at every Mind over Matter rank (13/15.5/18/20.5). */
-	public static final float MAGIC_BOW_ARROW_SHARPNESS_SHARE = 1.0F / 3.0F;
 
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;

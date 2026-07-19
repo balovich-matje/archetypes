@@ -5,6 +5,7 @@ import java.util.Set;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.core.Holder;
+import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -15,7 +16,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -99,13 +99,8 @@ public final class MagicArmaments {
 				OracleWizardNodes.Family.SPELLBOW) > 0;
 		ItemStack conjured = new ItemStack(bow ? ModItems.MAGIC_BOW : ModItems.MAGIC_SWORD);
 
-		// Only the sword: Sharpness does nothing on a bow and would read as a
-		// lie in the tooltip. MagicBowItem derives its arrows from the same
-		// bonus instead.
-		if (!bow) {
-			sharpen(level, conjured, OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
-					OracleWizardNodes.Family.MIND_OVER_MATTER));
-		}
+		sharpen(level, conjured, OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+				OracleWizardNodes.Family.MIND_OVER_MATTER));
 
 		inventory.setItem(slot, conjured);
 
@@ -199,7 +194,10 @@ public final class MagicArmaments {
 			return;
 		}
 
+		// Both rides: the scaling enchantment and the wings track whichever
+		// weapon the channel conjured.
 		resharpen(player, owned);
+		fitGlider(player.getMainHandItem(), owned);
 		ward(player, owned);
 		upkeep(player, owned);
 	}
@@ -211,7 +209,7 @@ public final class MagicArmaments {
 	private static void resharpen(final ServerPlayer player, final Set<Integer> owned) {
 		ItemStack held = player.getMainHandItem();
 
-		if (!ModItems.isMagicSword(held)) {
+		if (!ModItems.isSummoned(held)) {
 			return;
 		}
 
@@ -219,9 +217,53 @@ public final class MagicArmaments {
 		int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
 				OracleWizardNodes.Family.MIND_OVER_MATTER);
 
-		if (EnchantmentHelper.getItemEnchantmentLevel(sharpness(level), held)
+		if (EnchantmentHelper.getItemEnchantmentLevel(edge(level, held), held)
 				!= sharpnessLevel(mom)) {
 			sharpen(level, held, mom);
+		}
+
+	}
+
+	/**
+	 * Levitation: the conjured weapon IS the glider.
+	 *
+	 * <p>The obvious implementation — overriding {@code Player.canGlide} — is a
+	 * server crash. Vanilla trusts that hook: every twentieth gliding tick
+	 * {@code LivingEntity.updateFallFlying} collects the equipment slots
+	 * holding a glider and calls {@code Util.getRandom} on that list to pick
+	 * one to damage. Claiming a glide with no glider equipped hands it an empty
+	 * list, and {@code nextInt(0)} throws mid-tick.
+	 *
+	 * <p>So the weapon carries the real components instead: GLIDER plus an
+	 * EQUIPPABLE that names the hand it is already in. Vanilla then answers its
+	 * own question, the slot it finds to damage is an unbreakable stack (a
+	 * no-op), and deploy, boosts, physics and landing are all stock. The glide
+	 * cannot outlive the channel because the weapon cannot: the ticker ends the
+	 * channel the tick it leaves the hand.
+	 */
+	private static void fitGlider(final ItemStack stack, final Set<Integer> owned) {
+		boolean levitation = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+				OracleWizardNodes.Family.LEVITATION) > 0;
+
+		if (levitation == stack.has(DataComponents.GLIDER)) {
+			return;
+		}
+
+		if (levitation) {
+			stack.set(DataComponents.GLIDER, net.minecraft.util.Unit.INSTANCE);
+			// Swapping and interact-equipping off: the hand slot is where it
+			// already lives, and the bow needs its right-click for the draw.
+			stack.set(DataComponents.EQUIPPABLE,
+					net.minecraft.world.item.equipment.Equippable
+							.builder(net.minecraft.world.entity.EquipmentSlot.MAINHAND)
+							.setSwappable(false)
+							.setEquipOnInteract(false)
+							.setDispensable(false)
+							.setDamageOnHurt(false)
+							.build());
+		} else {
+			stack.remove(DataComponents.GLIDER);
+			stack.remove(DataComponents.EQUIPPABLE);
 		}
 	}
 
@@ -355,12 +397,6 @@ public final class MagicArmaments {
 				+ mindOverMatterRank * Tuning.MIND_OVER_MATTER_SHARPNESS_PER_RANK;
 	}
 
-	/** The damage that Sharpness level adds. Mirrors vanilla's own curve
-	 * (1 + 0.5 x (level - 1) since level 1) so the Spellbow, which cannot carry
-	 * the enchantment, can scale off the identical number. */
-	public static float sharpnessBonus(final int mindOverMatterRank) {
-		return 1.0F + 0.5F * (sharpnessLevel(mindOverMatterRank) - 1);
-	}
 
 	/** Stamp the real ENCHANTMENTS component, so the level shows in the tooltip
 	 * and the damage runs through vanilla's pipeline rather than a bolted-on
@@ -368,13 +404,16 @@ public final class MagicArmaments {
 	 * are datapack content and {@code Enchantments.SHARPNESS} is only a key. */
 	private static void sharpen(final ServerLevel level, final ItemStack stack, final int mindOverMatterRank) {
 		ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
-		enchantments.set(sharpness(level), sharpnessLevel(mindOverMatterRank));
+		enchantments.set(edge(level, stack), sharpnessLevel(mindOverMatterRank));
 		EnchantmentHelper.setEnchantments(stack, enchantments.toImmutable());
 	}
 
-	private static Holder<Enchantment> sharpness(final ServerLevel level) {
+	/** Each weapon's own scaling enchantment: Sharpness cuts nothing on a bow,
+	 * and vanilla runs Power through the arrow's weapon stack, so the Spellbow
+	 * takes the identical level as Power and lets the vanilla pipeline pay it. */
+	private static Holder<Enchantment> edge(final ServerLevel level, final ItemStack stack) {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
-				.getOrThrow(Enchantments.SHARPNESS);
+				.getOrThrow(ModItems.isMagicBow(stack) ? Enchantments.POWER : Enchantments.SHARPNESS);
 	}
 
 	private static void applyArmorCap(final ServerPlayer player, final Set<Integer> owned,
@@ -384,29 +423,6 @@ public final class MagicArmaments {
 				active && rank > 0, rank * Tuning.MAGIC_ARMOR_CAP_PER_RANK);
 	}
 
-	/**
-	 * Gliding: the channel stands in for an elytra, nothing more. Hooked from
-	 * {@code PlayerMixin} onto {@code Player.canGlide()}, so vanilla owns
-	 * jump-to-deploy, firework boosts, the flight physics and the landing.
-	 *
-	 * <p>Both terms ride state the owning client already has synced — the
-	 * conjured weapon in the main hand (the channel's own invariant; the ticker
-	 * ends the channel the tick it leaves) and the owned nodes — so the client's
-	 * deploy attempt and the server's re-check always agree. The leading guards
-	 * are vanilla's own preconditions repeated: a channel replaces the wings,
-	 * not the rules that forbid a glide.
-	 */
-	public static boolean canGlide(final Player player) {
-		if (player.getAbilities().flying || player.onGround() || player.isPassenger()
-				|| player.hasEffect(MobEffects.LEVITATION)) {
-			return false;
-		}
-
-		return ModItems.isSummoned(player.getMainHandItem())
-				&& OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
-						NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
-						OracleWizardNodes.Family.LEVITATION) > 0;
-	}
 
 	/** The conjured items police themselves: any inventory tick whose holder
 	 * isn't mid-channel destroys the stack (see {@code MagicSwordItem} /
