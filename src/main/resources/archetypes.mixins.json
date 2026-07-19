@@ -8,6 +8,7 @@
 		"BlocksAttacksMixin",
 		"CrossbowItemMixin",
 		"ExperienceOrbMixin",
+		"FoodDataMixin",
 		"LivingEntityAccessor",
 		"LivingEntityMixin",
 		"PlayerAdvancementsMixin",

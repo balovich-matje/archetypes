@@ -38,6 +38,23 @@ public abstract class ProjectileMixin {
 	 * arrow used to flop at the blocker's feet). The aim is stashed on the arrow
 	 * and applied by {@code AbstractArrowMixin} after the hit handler finishes.
 	 */
+	/**
+	 * Incorporeal: projectiles pass straight through a transformed player.
+	 * {@code canHitEntity} is the one gate every projectile's own move-vector
+	 * sweep consults, and the subclasses that override it
+	 * ({@code ShulkerBullet}, {@code FishingHook}, …) all fold {@code super}'s
+	 * answer into their own — so refusing here refuses everywhere that matters,
+	 * without touching a single projectile type by name.
+	 */
+	@Inject(method = "canHitEntity", at = @At("HEAD"), cancellable = true)
+	private void archetypes$incorporeal(final Entity entity,
+			final CallbackInfoReturnable<Boolean> cir) {
+		if (entity instanceof ServerPlayer player
+				&& com.archetypes.NightForm.isIncorporeal(player)) {
+			cir.setReturnValue(false);
+		}
+	}
+
 	@Inject(method = "deflect", at = @At("RETURN"))
 	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
 			final EntityReference<Entity> newOwner, final boolean fromAttack,

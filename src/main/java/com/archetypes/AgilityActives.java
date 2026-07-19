@@ -63,7 +63,7 @@ public final class AgilityActives {
 			AbstractArrow arrow = arrowItem.createArrow(level, projectile, player, player.getMainHandItem());
 			arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 					Tuning.TRUE_SHOT_SNAP_SPEED, 1.0F);
-			empower(arrow, Tuning.TRUE_SHOT_SNAP_MULTIPLIER, false);
+			empower(arrow, nightFactor(player) * Tuning.TRUE_SHOT_SNAP_MULTIPLIER, false);
 
 			if (!player.hasInfiniteMaterials()) {
 				projectile.shrink(1);
@@ -81,6 +81,16 @@ public final class AgilityActives {
 		boolean seeker = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SEEKER_ARROW) > 0;
 		target.setAttached(ModAttachments.TRUE_SHOT_READY_AT, now
 				+ (seeker ? Tuning.TRUE_SHOT_SEEKER_COOLDOWN_TICKS : Tuning.TRUE_SHOT_COOLDOWN_TICKS));
+	}
+
+	/**
+	 * True Shot's night-form multiplier — x1.5 while transformed (the shot is
+	 * called Heart-piercing Shot then), x1 otherwise. Folded into the arrow's
+	 * multiplier rather than applied on hit, so both the armed shot and Snap
+	 * Shot's conjured one pick it up from the one place damage is set.
+	 */
+	public static float nightFactor(final ServerPlayer player) {
+		return NightForm.isActive(player) ? Tuning.NIGHT_FORM_TRUE_SHOT_FACTOR : 1.0F;
 	}
 
 	/** Applied to an armed player's arrow the moment it enters the world. */

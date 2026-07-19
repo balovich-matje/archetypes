@@ -241,6 +241,12 @@ public abstract class LivingEntityMixin {
 		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
 
 		if (stepStrike != null && stepStrike == level.getGameTime()) {
+			// Stalker's Step: the same blink and strike, landing half again
+			// harder while the night form holds.
+			if (com.archetypes.NightForm.isActive(player)) {
+				result *= Tuning.NIGHT_FORM_SHADOW_STEP_FACTOR;
+			}
+
 			// A Shadow Step strike: Shadow Flurry lands it with three
 			// daggers' weight; Twin Fangs brings the off-hand dagger into
 			// the same blow at half its weight — identical daggers give the
@@ -532,6 +538,82 @@ public abstract class LivingEntityMixin {
 		if (immuneUntil != null && level.getGameTime() < immuneUntil) {
 			cir.setReturnValue(false);
 		}
+	}
+
+	/**
+	 * The night form's undead-ness, at the one place 26.2 actually models it.
+	 * {@code isInvertedHealAndHarm} is a tag test on the entity type; it is the
+	 * single question vanilla's Instant Health / Instant Damage effect asks
+	 * ({@code HealOrHarmMobEffect}), and the same one this mod's Holy Light
+	 * burst and Aura of Radiance already ask. Answering "yes" for a transformed
+	 * player therefore inverts healing potions AND every Priest heal at once,
+	 * with nothing special-cased per potion.
+	 *
+	 * <p>Deliberately gated on {@link net.minecraft.world.entity.player.Player}
+	 * rather than ServerPlayer: the attachment behind it syncs to every client,
+	 * and client code asks this question too.
+	 */
+	@Inject(method = "isInvertedHealAndHarm", at = @At("HEAD"), cancellable = true)
+	private void archetypes$nightFormIsUndead(
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if ((Object) this instanceof net.minecraft.world.entity.player.Player player
+				&& com.archetypes.NightForm.isActive(player)) {
+			cir.setReturnValue(true);
+		}
+	}
+
+	/**
+	 * Ghost Form: 25/50/75% of incoming hits simply pass through a body that
+	 * is only half there. Rolled on the victim's intake like Sidestep, so it
+	 * voids the whole hit whatever its source.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void archetypes$ghostForm(final ServerLevel level, final DamageSource source,
+			final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (!((Object) this instanceof ServerPlayer player)
+				|| !com.archetypes.NightForm.isActive(player)) {
+			return;
+		}
+
+		int rank = com.archetypes.NightForm.rank(player,
+				com.archetypes.NemesisShadowNodes.Family.GHOST_FORM);
+
+		if (rank > 0 && player.getRandom().nextFloat() < Tuning.GHOST_FORM_NEGATE_PER_RANK * rank) {
+			level.sendParticles(net.minecraft.core.particles.ParticleTypes.SMOKE,
+					player.getX(), player.getY() + 1.0, player.getZ(), 6, 0.25, 0.4, 0.25, 0.01);
+			cir.setReturnValue(false);
+		}
+	}
+
+	/**
+	 * Feast: every attack a transformed player lands opens a bleed on the
+	 * victim. Hung off the victim's intake rather than an AFTER_DAMAGE listener
+	 * for the usual reason — that event is gated on the victim surviving, and a
+	 * bleed opened by the blow that killed something else in the same swing
+	 * would go missing.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"))
+	private void archetypes$feast(final ServerLevel level, final DamageSource source,
+			final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (source.getEntity() instanceof ServerPlayer player
+				&& (Object) this instanceof LivingEntity victim) {
+			com.archetypes.NightForm.onHit(player, victim);
+		}
+	}
+
+	/**
+	 * Incorporeal: nothing shoves a body that isn't there. Its own hook rather
+	 * than a branch of the dagger funnel below, because knockback immunity has
+	 * to hold for a sourceless shove too.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private double archetypes$incorporealKnockback(final double strength) {
+		return (Object) this instanceof ServerPlayer player
+				&& com.archetypes.NightForm.isIncorporeal(player) ? 0.0 : strength;
 	}
 
 	/**

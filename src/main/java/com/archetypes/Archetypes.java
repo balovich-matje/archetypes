@@ -32,6 +32,7 @@ public class Archetypes implements ModInitializer {
 		BlizzardZones.initialize();
 		OracleStrikes.initialize();
 		OracleWizardTicker.initialize();
+		NightFormTicker.initialize();
 		RadianceAura.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
@@ -43,6 +44,7 @@ public class Archetypes implements ModInitializer {
 		PayloadTypeRegistry.serverboundPlay().register(MeleeSwingPayload.TYPE, MeleeSwingPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(DisengagePayload.TYPE, DisengagePayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(NightDashPayload.TYPE, NightDashPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
@@ -64,7 +66,7 @@ public class Archetypes implements ModInitializer {
 					var player = context.player();
 					Archetype archetype = ModAttachments.get(player);
 
-					if (archetype == null || payload.slot() < 0 || payload.slot() >= 6) {
+					if (archetype == null || payload.slot() < 0 || payload.slot() >= 7) {
 						return;
 					}
 
@@ -92,6 +94,16 @@ public class Archetypes implements ModInitializer {
 					if (payload.slot() == 5) {
 						if (archetype == Archetype.INTELLECT) {
 							OracleSpells.magicArmaments(player);
+						}
+
+						return;
+					}
+
+					// Slot 6 is the Cutpurse's epic active, the Dark Ritual —
+					// the first epic key outside Intellect.
+					if (payload.slot() == 6) {
+						if (archetype == Archetype.AGILITY) {
+							NightForm.beginRitual(player);
 						}
 
 						return;
@@ -130,6 +142,9 @@ public class Archetypes implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(DisengagePayload.TYPE, (payload, context) -> context
 				.server().execute(() -> AgilityActives.acrobatics(context.player())));
+
+		ServerPlayNetworking.registerGlobalReceiver(NightDashPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> NightForm.dash(context.player())));
 
 		// The greatsword is strictly two-handed: while it's in the main hand
 		// the offhand is dead weight — no shields, no food, no blocks from it.
@@ -189,6 +204,10 @@ public class Archetypes implements ModInitializer {
 					// A Magic Armaments channel that outlived its server hands the
 					// wand back and clears the conjured weapon on the way in.
 					MagicArmaments.restoreDirty(handler.player);
+					// A ritual cannot survive a relog; the hour of night form
+					// can and must (it is the node's whole price), so only the
+					// channel is torn down here.
+					NightForm.interrupt(handler.player);
 				});
 
 		// A player dying mid-channel: end it before drops so the real wand

@@ -28,6 +28,7 @@ public final class TreeNodes {
 			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family().nameKey();
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().nameKey();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family().nameKey();
+			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family().nameKey();
 		};
 	}
 
@@ -45,6 +46,7 @@ public final class TreeNodes {
 			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family().descriptionKey();
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().descriptionKey();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family().descriptionKey();
+			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family().descriptionKey();
 		};
 	}
 
@@ -62,6 +64,7 @@ public final class TreeNodes {
 			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family().icon();
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().icon();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family().icon();
+			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family().icon();
 		};
 	}
 
@@ -110,7 +113,7 @@ public final class TreeNodes {
 			case PRIEST -> familySprite(tree, PriestNodes.def(tree, index).family());
 			case ELEMENTALIST -> familySprite(tree, ElementalistNodes.def(tree, index).family());
 			// Epic trees have no sprite set yet — item-icon fallback (§3).
-			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST -> null;
+			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST, NEMESIS_SHADOW -> null;
 		};
 	}
 
@@ -130,7 +133,7 @@ public final class TreeNodes {
 			case MARKSMAN, ASSASSIN, WIZARD, PRIEST, ELEMENTALIST -> 32;
 			// iconSprite is null for the epic trees, so this is never read; the
 			// switch just has to be exhaustive.
-			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST -> 32;
+			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST, NEMESIS_SHADOW -> 32;
 		};
 	}
 
@@ -176,6 +179,7 @@ public final class TreeNodes {
 					== OracleElementalistNodes.Family.MINOR;
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family() == OracleWizardNodes.Family.MINOR;
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family() == OraclePriestNodes.Family.MINOR;
+			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family() == NemesisShadowNodes.Family.MINOR;
 		};
 	}
 
@@ -193,6 +197,7 @@ public final class TreeNodes {
 			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).rank();
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).rank();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).rank();
+			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).rank();
 		};
 	}
 
@@ -284,6 +289,12 @@ public final class TreeNodes {
 				case RETRIBUTION -> NodeKind.CAPSTONE;
 				default -> NodeKind.NORMAL;
 			};
+			case NEMESIS_SHADOW -> switch (NemesisShadowNodes.def(tree, index).family()) {
+				case DARK_RITUAL -> NodeKind.ACTIVE;
+				// The crown of the left line — ringed as a capstone.
+				case INCORPOREAL -> NodeKind.CAPSTONE;
+				default -> NodeKind.NORMAL;
+			};
 		};
 	}
 
@@ -314,6 +325,7 @@ public final class TreeNodes {
 			case ORACLE_ELEMENTALIST -> indicesOf(tree, OracleElementalistNodes.Family.LIGHTNING_STRIKE);
 			case ORACLE_WIZARD -> indicesOf(tree, OracleWizardNodes.Family.MAGIC_ARMAMENTS);
 			case ORACLE_PRIEST -> indicesOf(tree, OraclePriestNodes.Family.AURA_OF_RADIANCE);
+			case NEMESIS_SHADOW -> indicesOf(tree, NemesisShadowNodes.Family.DARK_RITUAL);
 		};
 	}
 
@@ -331,6 +343,7 @@ public final class TreeNodes {
 			case ORACLE_ELEMENTALIST -> OracleElementalistNodes.def(tree, index).family();
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family();
+			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family();
 		};
 	}
 

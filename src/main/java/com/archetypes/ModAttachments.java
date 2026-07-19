@@ -284,6 +284,79 @@ public final class ModAttachments {
 			Archetypes.id("radiance_end"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
+	// --- Nemesis Shadow (epic): the Dark Ritual and the night form ---
+	// The three attachments below are the FX agent's whole contract with this
+	// tree; read them through {@link NightForm}, never directly.
+
+	/**
+	 * Game tick the night form ends; absent means not transformed. The form and
+	 * its "cooldown" are the same clock (author's spec), so this single stamp is
+	 * both "you are a vampire until" and "you may not ritual again until".
+	 *
+	 * <p>Persistent and copyOnDeath: an hour is longer than most sessions and
+	 * longer than most deaths, and a relog that cured vampirism would make the
+	 * lock — the whole cost of the node — free to dodge. Synced to EVERY client,
+	 * because it is other players' renderers that need to know what just walked
+	 * into the room.
+	 */
+	public static final AttachmentType<Long> NIGHT_FORM_END = AttachmentRegistry.create(
+			Archetypes.id("night_form_end"),
+			builder -> builder
+					.persistent(Codec.LONG)
+					.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all())
+					.copyOnDeath());
+
+	/**
+	 * Game tick the running Dark Ritual channel completes; absent means no
+	 * channel. Transient — a channel cannot survive a relog, and it costs
+	 * nothing to lose one. Synced to everyone: the channel has a first- AND
+	 * third-person animation, so onlookers' renderers read this too.
+	 */
+	public static final AttachmentType<Long> NIGHT_CHANNEL_END = AttachmentRegistry.create(
+			Archetypes.id("night_channel_end"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
+	/**
+	 * True while the transformed player stands in sunlight strong enough to
+	 * burn them. Synced to everyone (it drives an on-screen effect for the
+	 * owner and could dress the avatar for onlookers); set and cleared by
+	 * {@link NightFormTicker}, never by the client.
+	 */
+	public static final AttachmentType<Boolean> NIGHT_SUNLIT = AttachmentRegistry.create(
+			Archetypes.id("night_sunlit"),
+			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
+
+	/**
+	 * Extra Sensory Perception's two rosters of entity ids, refreshed every
+	 * {@link Tuning#ESP_REFRESH_TICKS}: everything living in range, and the
+	 * players among them kept apart so the renderer can mark them out
+	 * distinctly (author's spec). Target-only — nobody else's client has any
+	 * use for what this player can sense.
+	 */
+	public static final AttachmentType<List<Integer>> NIGHT_SENSED = AttachmentRegistry.create(
+			Archetypes.id("night_sensed"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()),
+					AttachmentSyncPredicate.targetOnly()));
+
+	public static final AttachmentType<List<Integer>> NIGHT_SENSED_PLAYERS = AttachmentRegistry.create(
+			Archetypes.id("night_sensed_players"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_INT.apply(ByteBufCodecs.list()),
+					AttachmentSyncPredicate.targetOnly()));
+
+	/** Ghost Form's sneak-dash clock, same shape as the bash's. */
+	public static final AttachmentType<Long> NIGHT_DASH_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("night_dash_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/** Channel bookkeeping the interrupt test needs: the hotbar slot the ritual
+	 * began on, and last tick's hurtTime so a NEW hit can be told from the tail
+	 * of an old one. Server-side only. */
+	public static final AttachmentType<Integer> NIGHT_CHANNEL_SLOT =
+			AttachmentRegistry.<Integer>create(Archetypes.id("night_channel_slot"));
+
+	public static final AttachmentType<Integer> NIGHT_CHANNEL_HURT =
+			AttachmentRegistry.<Integer>create(Archetypes.id("night_channel_hurt"));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),
@@ -344,6 +417,17 @@ public final class ModAttachments {
 		((AttachmentTarget) player).removeAttached(MISSILE_CAST_COUNT);
 		((AttachmentTarget) player).removeAttached(TRUE_SHOT_ARMED);
 		((AttachmentTarget) player).removeAttached(CROSSBOW_PRIMED);
+
+		// The night form outlives everything else this mod grants — an hour is
+		// its whole price — so a respec that drops the Dark Ritual has to end
+		// it here, or the player keeps the vampire without the node.
+		if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
+			NightForm.end(serverPlayer);
+		}
+
+		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_END);
+		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_SLOT);
+		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_HURT);
 	}
 
 	/**

@@ -44,8 +44,10 @@ public final class AgilityCombat {
 
 			boolean homing = MarksmanNodes.rank(SubTree.MARKSMAN,
 					NodePurchases.owned(player, SubTree.MARKSMAN), MarksmanNodes.Family.SEEKER_ARROW) > 0;
-			AgilityActives.empower(arrow,
-					homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER, homing);
+			// Heart-piercing Shot: the same arrow, half again as deadly, while
+			// the night form holds.
+			AgilityActives.empower(arrow, AgilityActives.nightFactor(player)
+					* (homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER), homing);
 
 			// The Seeker Arrow aims itself: whatever the player was pointing
 			// at, the shot leaves toward the nearest visible hostile. Flight
@@ -90,6 +92,9 @@ public final class AgilityCombat {
 			}
 
 			ShadowTicker.onKill(player);
+			// The night form feeds on what it kills: a quarter of the victim's
+			// maximum health, no node beyond the ritual required.
+			NightForm.onKill(player, victim);
 
 			if (player.hasEffect(MobEffects.INVISIBILITY)
 					&& ShadowNodes.rank(SubTree.SHADOW, NodePurchases.owned(player, SubTree.SHADOW),

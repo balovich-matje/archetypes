@@ -254,4 +254,23 @@ public final class Constellations {
 			".#.",
 			".#.");
 
+	/**
+	 * Nemesis Shadow (epic, user sketch nemesis-shadow-first-20260720): the
+	 * Dark Ritual alone at the foot, forking into the two ways of wearing the
+	 * night — Ghost Form's three rungs up the left into Incorporeal at the
+	 * crown, Extra Sensory Perception into the night-sight node and Feast's two
+	 * rungs up the right. Row 2 is deliberately empty, so both forks cross the
+	 * gap on the two explicit edges the sketch records rather than by grid
+	 * adjacency.
+	 */
+	public static final Constellation NEMESIS_SHADOW = Constellation.of(
+			"#...#",
+			"#...#",
+			"#...#",
+			".....",
+			".#.#.",
+			"..#..")
+			.withEdge(1, 1, 0, 3)
+			.withEdge(3, 1, 4, 3);
+
 }

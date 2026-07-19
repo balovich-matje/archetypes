@@ -615,6 +615,66 @@ public final class Tuning {
 	public static final int RADIANCE_HALO_PERIOD_TICKS = 4;
 	public static final int RADIANCE_HALO_TURN_TICKS = 80;
 
+	// --- Nemesis Shadow (epic): the Dark Ritual and the night form ---
+	/** The channel, in ticks. Ten seconds of standing perfectly still is the
+	 * node's real cost; the mana-less Cutpurse pays in exposure, not resource. */
+	public static final int DARK_RITUAL_CHANNEL_TICKS = 200;
+	/** How long the channel ignores the swing/use interrupts after it starts.
+	 * A swing animation runs six ticks and an eat thirty-two, so half a second
+	 * lets the press that FOLLOWS a fight land while an eat still fails. Hits
+	 * are not graced: they are tested by a hurtTime delta, which cannot mistake
+	 * the tail of an older hit for a new one. */
+	public static final int DARK_RITUAL_GRACE_TICKS = 10;
+	/** The night form's length AND its cooldown — the author's sketch names one
+	 * hour for both, so they are one clock: you cannot end it early and you
+	 * cannot re-cast until it lapses. One real-time hour, 20 ticks/second. */
+	public static final int NIGHT_FORM_TICKS = 72_000;
+	/** A kill while transformed restores this share of the victim's MAXIMUM
+	 * health. Max, not remaining: the sketch says "25% of target creature's
+	 * health", and remaining health at the moment of death is ~0. */
+	public static final float NIGHT_FORM_KILL_HEAL_SHARE = 0.25F;
+	/** Sunlight ignites an unhelmeted night-form player for this long, the
+	 * same number vanilla's Mob.burnUndead uses. */
+	public static final float NIGHT_FORM_SUN_BURN_SECONDS = 8.0F;
+	/** Night vision and slow falling are re-asserted every tick at this
+	 * duration and simply left to lapse when the form ends — long enough that
+	 * no tick gap shows, past the 200-tick mark where vanilla night vision
+	 * starts strobing. */
+	public static final int NIGHT_FORM_EFFECT_TICKS = 300;
+
+	/** The empowered Cutpurse actives: Heart-piercing Shot and Stalker's Step
+	 * are the base abilities' final damage times this. Invisibility is
+	 * deliberately untouched (author's spec). */
+	public static final float NIGHT_FORM_TRUE_SHOT_FACTOR = 1.5F;
+	public static final float NIGHT_FORM_SHADOW_STEP_FACTOR = 1.5F;
+
+	/** Extra Sensory Perception's reach in blocks, and how often the roster is
+	 * rebuilt. Twice a second is well inside a walking creature's stride and
+	 * costs one AABB query per transformed player. */
+	public static final double ESP_RADIUS = 32.0;
+	public static final int ESP_REFRESH_TICKS = 10;
+
+	/** Ghost Form: chance to void an incoming hit outright, per rank (25/50/75%).
+	 * Rolled on the victim's intake, so it voids the WHOLE hit, DoTs and
+	 * environment included — at rank 3 the form is three-quarters untouchable,
+	 * which is what an hour-long commitment at the top of an epic tree buys. */
+	public static final float GHOST_FORM_NEGATE_PER_RANK = 0.25F;
+	/** Ghost Form's sneak-dash: blocks travelled per rank (2/4/6), and the
+	 * clock that keeps it from being a flight mode. */
+	public static final double GHOST_DASH_BLOCKS_PER_RANK = 2.0;
+	public static final int GHOST_DASH_COOLDOWN_TICKS = 40;
+
+	/** Feast: health points bled per second, per rank (1/2 hearts), for
+	 * FEAST_TICKS, healing the attacker the same. Re-applying refreshes the
+	 * bleed rather than stacking it, so the ceiling is 2/4 HP per second no
+	 * matter how fast the attacks come. */
+	public static final float FEAST_HP_PER_SECOND_PER_RANK = 2.0F;
+	public static final int FEAST_TICKS = 80;
+	/** The bleed resolves once a second. Must stay at or above 11 ticks, or
+	 * LivingEntity.hurtServer's invulnerableTime gate swallows the repeat and
+	 * the bleed pays out at half its advertised rate (see RADIANCE_PULSE_TICKS). */
+	public static final int FEAST_PULSE_TICKS = 20;
+
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;
 	public static final float HOLY_AMOUNT = 5.0F;

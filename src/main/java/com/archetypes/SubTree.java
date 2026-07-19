@@ -39,7 +39,12 @@ public enum SubTree {
 	ORACLE_WIZARD(Archetype.INTELLECT, "oracle_wizard", () -> Items.ENCHANTED_GOLDEN_APPLE,
 			Constellations.ORACLE_WIZARD, true),
 	ORACLE_PRIEST(Archetype.INTELLECT, "oracle_priest", () -> Items.BEACON,
-			Constellations.ORACLE_PRIEST, true);
+			Constellations.ORACLE_PRIEST, true),
+	// The Cutpurse's first epic tree: the Shadow's dark taken all the way to a
+	// night form. Agility's, so the epic switcher finally lights up outside
+	// Intellect.
+	NEMESIS_SHADOW(Archetype.AGILITY, "nemesis_shadow", () -> Items.WITHER_SKELETON_SKULL,
+			Constellations.NEMESIS_SHADOW, true);
 
 	private final Archetype archetype;
 	private final String id;
@@ -76,6 +81,7 @@ public enum SubTree {
 			case ELEMENTALIST -> ORACLE_ELEMENTALIST;
 			case WIZARD -> ORACLE_WIZARD;
 			case PRIEST -> ORACLE_PRIEST;
+			case SHADOW -> NEMESIS_SHADOW;
 			default -> null;
 		};
 	}
@@ -86,6 +92,7 @@ public enum SubTree {
 			case ORACLE_ELEMENTALIST -> ELEMENTALIST;
 			case ORACLE_WIZARD -> WIZARD;
 			case ORACLE_PRIEST -> PRIEST;
+			case NEMESIS_SHADOW -> SHADOW;
 			default -> null;
 		};
 	}
