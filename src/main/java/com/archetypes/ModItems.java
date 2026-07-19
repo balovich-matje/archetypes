@@ -66,6 +66,20 @@ public final class ModItems {
 		return stack.is(WANDS);
 	}
 
+	/** The Oracle Wizard's conjured weapons. Never craftable, never in a tab —
+	 * they exist only in a Magic Armaments channel and vanish with it. */
+	public static boolean isMagicSword(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(MAGIC_SWORD);
+	}
+
+	public static boolean isMagicBow(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(MAGIC_BOW);
+	}
+
+	public static boolean isSummoned(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(MAGIC_SWORD) || stack.is(MAGIC_BOW);
+	}
+
 	/** Anything martial enough to disqualify a Seeker from regenerating
 	 * mana: real weapons and shields, in either hand. */
 	public static boolean isCombatWeapon(final net.minecraft.world.item.ItemStack stack) {
@@ -75,7 +89,10 @@ public final class ModItems {
 				|| stack.is(net.minecraft.world.item.Items.BOW)
 				|| stack.is(net.minecraft.world.item.Items.CROSSBOW)
 				|| stack.is(net.minecraft.world.item.Items.SHIELD)
-				|| stack.is(net.minecraft.world.item.Items.TRIDENT);
+				|| stack.is(net.minecraft.world.item.Items.TRIDENT)
+				// A conjured weapon is martial too: mana must not regenerate under
+				// the channel or its 10/second upkeep would run partly for free.
+				|| isSummoned(stack);
 	}
 
 	public static boolean holdingCombatWeapon(final net.minecraft.world.entity.player.Player player) {
@@ -120,6 +137,13 @@ public final class ModItems {
 	 * Never obtainable; SpellProjectile wears them in flight. */
 	public static final Item MAGIC_BOLT = plain("magic_bolt");
 	public static final Item MAGIC_BOLT_EMPOWERED = plain("magic_bolt_empowered");
+
+	/** The conjured armaments: a diamond-tier unbreakable sword and a bow, held
+	 * only while a Magic Armaments channel runs. Not craftable, not in any tab —
+	 * MagicArmaments spawns and reclaims them; server guards keep them from ever
+	 * dropping, being stored, or surviving death. */
+	public static final Item MAGIC_SWORD = registerMagicSword();
+	public static final Item MAGIC_BOW = registerMagicBow();
 
 	public static final Item MAGIC_WAND = registerWand("magic_wand");
 	public static final Item APPRENTICE_WAND = registerWand("apprentice_wand");
@@ -188,6 +212,34 @@ public final class ModItems {
 	private static Item plain(final String path) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(new Item.Properties().setId(key)));
+	}
+
+	/** The conjured sword: exactly a diamond sword's melee (3 base + diamond's
+	 * bonus, -2.4 speed), but unbreakable, glinting and single-stack. Mind over
+	 * Matter adds its damage as a player attribute during the channel, not here. */
+	private static Item registerMagicSword() {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_sword"));
+		Item.Properties properties = ToolMaterial.DIAMOND.applySwordProperties(
+				new Item.Properties().setId(key), SWORD_BASE_DAMAGE, -2.4F)
+				.stacksTo(1)
+				.rarity(net.minecraft.world.item.Rarity.EPIC)
+				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
+						net.minecraft.util.Unit.INSTANCE)
+				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
+	}
+
+	private static Item registerMagicBow() {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_bow"));
+		Item.Properties properties = new Item.Properties().setId(key)
+				.stacksTo(1)
+				.durability(384)
+				.rarity(net.minecraft.world.item.Rarity.EPIC)
+				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
+						net.minecraft.util.Unit.INSTANCE)
+				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.MagicBowItem(properties));
 	}
 
 	private static Item registerWand(final String path) {

@@ -475,9 +475,32 @@ public final class Tuning {
 	public static final float ORACLE_WISDOM_PER_RANK = 0.5F;
 	/** Oracle's Focus: regenerate 2.5% of max mana per second per rank. */
 	public static final float ORACLE_FOCUS_REGEN_PER_RANK = 0.025F;
-	/** Magic Armaments' opening mana price to start the channel; display-only
-	 * until the channel effect exists. */
+	/** Magic Armaments' opening mana price to start the channel. */
 	public static final float MAGIC_ARMAMENTS_COST = 50.0F;
+	/** Base channel upkeep, charged as a lump once a second. Mind over Matter
+	 * raises it per rank (see below). Running out ends the channel. */
+	public static final float MAGIC_ARMAMENTS_UPKEEP_PER_SECOND = 10.0F;
+	/** Mind over Matter: each rank adds this much conjured-weapon attack damage
+	 * (+2/4/6) for this much extra upkeep per second (+10/20/30). */
+	public static final float MIND_OVER_MATTER_DAMAGE_PER_RANK = 2.0F;
+	public static final float MIND_OVER_MATTER_UPKEEP_PER_RANK = 10.0F;
+	/** Magic Armor: every point of mana the channel spends banks this much
+	 * absorption per rank (0.5/1.0), capped by the rank's ceiling (10/20). The
+	 * cap rides on MAX_ABSORPTION, so grants past it clamp away like Battle
+	 * Trance's do. */
+	public static final float MAGIC_ARMOR_HP_PER_MANA_PER_RANK = 0.5F;
+	public static final float MAGIC_ARMOR_CAP_PER_RANK = 10.0F;
+	/** Blink: a conjured-sword swing with no hostile under the crosshair jumps
+	 * this far forward, safe-landing permitting. */
+	public static final double MAGIC_ARMAMENTS_BLINK_DISTANCE = 8.0;
+	/** Warding scans and strips harmful effects this often (every half second is
+	 * indistinguishable from instant and far cheaper than every tick). */
+	public static final int MAGIC_ARMAMENTS_WARD_PERIOD_TICKS = 10;
+	/** Spellbow: the conjured bow's arrow base damage at full draw. Velocity
+	 * (3x at full charge) multiplies it, landing a full shot near the sword's
+	 * ~7, and Mind over Matter adds to the base to keep the two variants even. */
+	public static final float MAGIC_BOW_ARROW_BASE_DAMAGE = 2.5F;
+	public static final float MAGIC_BOW_ARROW_MOM_PER_RANK = 0.7F;
 
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;

@@ -35,7 +35,11 @@ public abstract class MinecraftMixin {
 			return;
 		}
 
-		if (WeaponClass.of(this.player) == WeaponClass.NONE) {
+		// A conjured sword is WeaponClass.NONE but still announces its swing, so
+		// the server can resolve Blink.
+		boolean magicSword = com.archetypes.ModItems.isMagicSword(this.player.getMainHandItem());
+
+		if (WeaponClass.of(this.player) == WeaponClass.NONE && !magicSword) {
 			return;
 		}
 

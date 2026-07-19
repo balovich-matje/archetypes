@@ -31,6 +31,7 @@ public class Archetypes implements ModInitializer {
 		SeekerCombat.initialize();
 		BlizzardZones.initialize();
 		OracleStrikes.initialize();
+		OracleWizardTicker.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
@@ -154,6 +155,11 @@ public class Archetypes implements ModInitializer {
 								net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP,
 								net.minecraft.sounds.SoundSource.PLAYERS, 1.1F, 0.55F);
 					}
+
+					// A conjured-sword swing with no hostile aimed at is a Blink.
+					if (ModItems.isMagicSword(player.getMainHandItem())) {
+						MagicArmaments.blink(player);
+					}
 				}));
 
 		ServerPlayNetworking.registerGlobalReceiver(PickArchetypePayload.TYPE, (payload, context) -> {
@@ -179,6 +185,22 @@ public class Archetypes implements ModInitializer {
 				(handler, sender, server) -> {
 					SkillPoints.refreshAdvancementCount(handler.player);
 					SkillPoints.ensureBankCoversSpent(handler.player);
+					// A Magic Armaments channel that outlived its server hands the
+					// wand back and clears the conjured weapon on the way in.
+					MagicArmaments.restoreDirty(handler.player);
+				});
+
+		// A player dying mid-channel: end it before drops so the real wand
+		// returns to the inventory (dropping or kept as any item would) while the
+		// conjured weapon vanishes with the channel.
+		net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents.ALLOW_DEATH.register(
+				(entity, source, amount) -> {
+					if (entity instanceof net.minecraft.server.level.ServerPlayer player
+							&& MagicArmaments.isActive(player)) {
+						MagicArmaments.end(player);
+					}
+
+					return true;
 				});
 
 		ServerPlayNetworking.registerGlobalReceiver(ResetArchetypePayload.TYPE, (payload, context) -> context

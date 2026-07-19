@@ -147,10 +147,11 @@ public final class OracleSpells {
 	}
 
 	/**
-	 * Oracle Wizard active: Magic Armaments — a channelled conjured weapon in
-	 * place of the wand. Node-ownership and mana gating are intentionally left
-	 * out of this stub until the effect exists.
+	 * Oracle Wizard active: Magic Armaments. The Ability-6 press toggles the
+	 * conjured-weapon channel on or off; the mechanism lives in
+	 * {@link MagicArmaments}.
 	 */
 	public static void magicArmaments(final ServerPlayer player) {
+		MagicArmaments.toggle(player);
 	}
 }

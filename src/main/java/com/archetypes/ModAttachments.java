@@ -220,6 +220,32 @@ public final class ModAttachments {
 	public static final AttachmentType<Long> FLAME_LAST_TICK =
 			AttachmentRegistry.<Long>create(Archetypes.id("flame_last_tick"));
 
+	/**
+	 * Magic Armaments channel: the real wand pulled out of the hand while the
+	 * conjured weapon stands in for it. Presence is the channel's on-flag.
+	 * Persistent and copyOnDeath so a relog, crash or death never eats the
+	 * player's wand — {@link MagicArmaments#restoreDirty} puts it back on JOIN if
+	 * a channel died mid-flight, and the death hook restores it before drops.
+	 * Server-only; no client mirrors it.
+	 */
+	public static final AttachmentType<net.minecraft.world.item.ItemStack> ARMAMENTS_WAND =
+			AttachmentRegistry.create(Archetypes.id("armaments_wand"),
+					builder -> builder
+							.persistent(net.minecraft.world.item.ItemStack.CODEC)
+							.copyOnDeath());
+
+	/** The hotbar slot the wand was pulled from, so it goes back exactly where
+	 * it was. Persistent/copyOnDeath alongside the wand it pairs with. */
+	public static final AttachmentType<Integer> ARMAMENTS_SLOT = AttachmentRegistry.create(
+			Archetypes.id("armaments_slot"),
+			builder -> builder.persistent(Codec.INT).copyOnDeath());
+
+	/** Game-time tick of the channel's last upkeep charge. Transient — a relog
+	 * that resets the second's beat is harmless (the channel is ended and
+	 * restored on JOIN anyway). */
+	public static final AttachmentType<Long> ARMAMENTS_LAST_UPKEEP =
+			AttachmentRegistry.<Long>create(Archetypes.id("armaments_last_upkeep"));
+
 	/** On arrows: where a True Shot left the bow (it despawns 64 blocks out),
 	 * and whether it steers itself. Transient — a saved arrow forgets. */
 	public static final AttachmentType<net.minecraft.world.phys.Vec3> TRUE_SHOT_ORIGIN =
