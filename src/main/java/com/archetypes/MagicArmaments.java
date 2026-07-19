@@ -5,6 +5,7 @@ import java.util.Set;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,14 +14,19 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.effect.MobEffectCategory;
 import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
+import net.minecraft.world.item.enchantment.Enchantments;
+import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -34,12 +40,13 @@ import net.minecraft.world.phys.Vec3;
  * before drops while the conjured weapon (which can never drop, be stored, or
  * survive death) simply vanishes.
  *
- * <p>The per-second upkeep follows the Flamethrower's shape (a stored last-tick
- * plus a lump charge), but ticks server-side rather than off a held key: this
- * channel is a toggle, not a hold.
+ * <p>Upkeep is charged every tick at a twentieth of its per-second rate rather
+ * than as a once-a-second lump: mana is a float, so the pool reads as a trickle
+ * instead of a step and Magic Armor's per-mana absorption still totals the same
+ * per second. It ticks server-side rather than off a held key — this channel is
+ * a toggle, not a hold.
  */
 public final class MagicArmaments {
-	private static final Identifier MOM_DAMAGE_ID = Archetypes.id("mind_over_matter");
 	private static final Identifier ARMOR_CAP_ID = Archetypes.id("magic_armor_cap");
 
 	private MagicArmaments() {
@@ -79,11 +86,20 @@ public final class MagicArmaments {
 		AttachmentTarget target = (AttachmentTarget) player;
 		target.setAttached(ModAttachments.ARMAMENTS_WAND, player.getMainHandItem().copy());
 		target.setAttached(ModAttachments.ARMAMENTS_SLOT, slot);
-		target.setAttached(ModAttachments.ARMAMENTS_LAST_UPKEEP, level.getGameTime());
 
 		boolean bow = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
 				OracleWizardNodes.Family.SPELLBOW) > 0;
-		inventory.setItem(slot, new ItemStack(bow ? ModItems.MAGIC_BOW : ModItems.MAGIC_SWORD));
+		ItemStack conjured = new ItemStack(bow ? ModItems.MAGIC_BOW : ModItems.MAGIC_SWORD);
+
+		// Only the sword: Sharpness does nothing on a bow and would read as a
+		// lie in the tooltip. MagicBowItem derives its arrows from the same
+		// bonus instead.
+		if (!bow) {
+			sharpen(level, conjured, OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+					OracleWizardNodes.Family.MIND_OVER_MATTER));
+		}
+
+		inventory.setItem(slot, conjured);
 
 		// The cap must exist before the opening cost's absorption is banked, or
 		// it clamps straight to zero (see Battle Trance).
@@ -119,13 +135,16 @@ public final class MagicArmaments {
 
 		target.removeAttached(ModAttachments.ARMAMENTS_WAND);
 		target.removeAttached(ModAttachments.ARMAMENTS_SLOT);
-		target.removeAttached(ModAttachments.ARMAMENTS_LAST_UPKEEP);
 
 		// Strip the channel's grants immediately, don't wait for the next tick.
-		Set<Integer> owned = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
-		applyMindOverMatter(player, owned, false);
-		applyArmorCap(player, owned, false);
-		revokeFlight(player);
+		applyArmorCap(player, NodePurchases.owned(player, SubTree.ORACLE_WIZARD), false);
+
+		// A glide must not outlive the channel that lent the wings. Vanilla's
+		// own canGlide would drop it within the tick, but ending it here makes
+		// the fall immediate and deliberate rather than a frame late.
+		if (player.isFallFlying()) {
+			player.stopFallFlying();
+		}
 
 		if (player.isAlive()) {
 			player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -146,14 +165,11 @@ public final class MagicArmaments {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
 		boolean active = isActive(player);
 
-		// Attribute grants exist exactly while the channel does; the apply()
-		// helpers add or remove them idempotently.
-		applyMindOverMatter(player, owned, active);
+		// The absorption cap exists exactly while the channel does; apply()
+		// adds or removes it idempotently.
 		applyArmorCap(player, owned, active);
 
 		if (!active) {
-			manageFlight(player, false);
-
 			// A conjured weapon with no channel behind it (a dupe or a dirty
 			// state) must not linger in a hand.
 			if (ModItems.isSummoned(player.getMainHandItem())) {
@@ -173,31 +189,26 @@ public final class MagicArmaments {
 			return;
 		}
 
-		manageFlight(player, true);
 		ward(player, owned);
 		upkeep(player, owned);
 	}
 
+	/** A twentieth of the per-second rate, every tick. Same cost per second, but
+	 * the pool trickles instead of stepping — and because Magic Armor's grant is
+	 * linear in mana spent, its absorption still totals the same per second. */
 	private static void upkeep(final ServerPlayer player, final Set<Integer> owned) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		long now = player.level().getGameTime();
-		Long last = target.getAttached(ModAttachments.ARMAMENTS_LAST_UPKEEP);
-
-		if (last == null || now - last < 20L) {
-			return;
-		}
-
 		int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
 				OracleWizardNodes.Family.MIND_OVER_MATTER);
-		float cost = Tuning.MAGIC_ARMAMENTS_UPKEEP_PER_SECOND
-				+ mom * Tuning.MIND_OVER_MATTER_UPKEEP_PER_RANK;
+		float cost = (Tuning.MAGIC_ARMAMENTS_UPKEEP_PER_SECOND
+				+ mom * Tuning.MIND_OVER_MATTER_UPKEEP_PER_RANK) / 20.0F;
 
+		// spend() is all-or-nothing, so the channel ends on the exact tick the
+		// pool cannot cover a tick's worth.
 		if (!Mana.spend(player, cost)) {
 			end(player);
 			return;
 		}
 
-		target.setAttached(ModAttachments.ARMAMENTS_LAST_UPKEEP, now);
 		grantArmor(player, owned, cost);
 	}
 
@@ -297,12 +308,28 @@ public final class MagicArmaments {
 		player.setAbsorptionAmount(player.getAbsorptionAmount() + grant);
 	}
 
-	private static void applyMindOverMatter(final ServerPlayer player, final Set<Integer> owned,
-			final boolean active) {
-		int rank = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
-				OracleWizardNodes.Family.MIND_OVER_MATTER);
-		apply(player.getAttribute(Attributes.ATTACK_DAMAGE), MOM_DAMAGE_ID,
-				active && rank > 0, rank * Tuning.MIND_OVER_MATTER_DAMAGE_PER_RANK);
+	/** The conjured sword's Sharpness level at a Mind over Matter rank. */
+	public static int sharpnessLevel(final int mindOverMatterRank) {
+		return Tuning.MAGIC_ARMAMENTS_SHARPNESS
+				+ mindOverMatterRank * Tuning.MIND_OVER_MATTER_SHARPNESS_PER_RANK;
+	}
+
+	/** The damage that Sharpness level adds. Mirrors vanilla's own curve
+	 * (1 + 0.5 x (level - 1) since level 1) so the Spellbow, which cannot carry
+	 * the enchantment, can scale off the identical number. */
+	public static float sharpnessBonus(final int mindOverMatterRank) {
+		return 1.0F + 0.5F * (sharpnessLevel(mindOverMatterRank) - 1);
+	}
+
+	/** Stamp the real ENCHANTMENTS component, so the level shows in the tooltip
+	 * and the damage runs through vanilla's pipeline rather than a bolted-on
+	 * attribute. The Holder must come from the level's registries — enchantments
+	 * are datapack content and {@code Enchantments.SHARPNESS} is only a key. */
+	private static void sharpen(final ServerLevel level, final ItemStack stack, final int mindOverMatterRank) {
+		ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
+		enchantments.set(level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+				.getOrThrow(Enchantments.SHARPNESS), sharpnessLevel(mindOverMatterRank));
+		EnchantmentHelper.setEnchantments(stack, enchantments.toImmutable());
 	}
 
 	private static void applyArmorCap(final ServerPlayer player, final Set<Integer> owned,
@@ -312,46 +339,28 @@ public final class MagicArmaments {
 				active && rank > 0, rank * Tuning.MAGIC_ARMOR_CAP_PER_RANK);
 	}
 
-	/** Levitation: creative-style flight for the channel's length. Only a
-	 * mayfly this method flipped on (tracked by {@link ModAttachments#ARMAMENTS_FLIGHT})
-	 * is ever taken back — flight owed to creative, spectator or another mod
-	 * survives the channel untouched. */
-	private static void manageFlight(final ServerPlayer player, final boolean active) {
-		if (player.isCreative() || player.isSpectator()) {
-			return;
+	/**
+	 * Gliding: the channel stands in for an elytra, nothing more. Hooked from
+	 * {@code PlayerMixin} onto {@code Player.canGlide()}, so vanilla owns
+	 * jump-to-deploy, firework boosts, the flight physics and the landing.
+	 *
+	 * <p>Both terms ride state the owning client already has synced — the
+	 * conjured weapon in the main hand (the channel's own invariant; the ticker
+	 * ends the channel the tick it leaves) and the owned nodes — so the client's
+	 * deploy attempt and the server's re-check always agree. The leading guards
+	 * are vanilla's own preconditions repeated: a channel replaces the wings,
+	 * not the rules that forbid a glide.
+	 */
+	public static boolean canGlide(final Player player) {
+		if (player.getAbilities().flying || player.onGround() || player.isPassenger()
+				|| player.hasEffect(MobEffects.LEVITATION)) {
+			return false;
 		}
 
-		boolean shouldFly = active && OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
-				NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
-				OracleWizardNodes.Family.LEVITATION) > 0;
-
-		if (shouldFly && !player.getAbilities().mayfly) {
-			player.getAbilities().mayfly = true;
-			player.onUpdateAbilities();
-			((AttachmentTarget) player).setAttached(ModAttachments.ARMAMENTS_FLIGHT, true);
-		} else if (!shouldFly) {
-			revokeFlight(player);
-		}
-	}
-
-	private static void revokeFlight(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-
-		if (target.getAttached(ModAttachments.ARMAMENTS_FLIGHT) == null) {
-			return;
-		}
-
-		// Clear the flag even for a player now in creative, or it lingers into
-		// their next survival stint and steals a later legitimate mayfly.
-		target.removeAttached(ModAttachments.ARMAMENTS_FLIGHT);
-
-		if (player.isCreative() || player.isSpectator() || !player.getAbilities().mayfly) {
-			return;
-		}
-
-		player.getAbilities().mayfly = false;
-		player.getAbilities().flying = false;
-		player.onUpdateAbilities();
+		return ModItems.isSummoned(player.getMainHandItem())
+				&& OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
+						NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
+						OracleWizardNodes.Family.LEVITATION) > 0;
 	}
 
 	/** The conjured items police themselves: any inventory tick whose holder

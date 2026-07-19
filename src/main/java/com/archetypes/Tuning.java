@@ -495,12 +495,19 @@ public final class Tuning {
 	public static final float ORACLE_FOCUS_REGEN_PER_RANK = 0.025F;
 	/** Magic Armaments' opening mana price to start the channel. */
 	public static final float MAGIC_ARMAMENTS_COST = 50.0F;
-	/** Base channel upkeep, charged as a lump once a second. Mind over Matter
-	 * raises it per rank (see below). Running out ends the channel. */
+	/** Base channel upkeep per second. It is charged as this / 20 every tick,
+	 * not as a once-a-second lump, so the mana bar drains smoothly; the rate is
+	 * identical. Mind over Matter raises it per rank (see below). A tick the
+	 * pool cannot pay ends the channel. */
 	public static final float MAGIC_ARMAMENTS_UPKEEP_PER_SECOND = 10.0F;
-	/** Mind over Matter: each rank adds this much conjured-weapon attack damage
-	 * (+2/4/6) for this much extra upkeep per second (+10/20/30). */
-	public static final float MIND_OVER_MATTER_DAMAGE_PER_RANK = 2.0F;
+	/** The conjured sword's Sharpness at Mind over Matter rank 0, and the levels
+	 * each rank adds (10/15/20/25). Vanilla Sharpness adds 1 + 0.5 x (level - 1)
+	 * damage, so the sword's 7 melee hits for 12.5/15/17.5/20 by rank. */
+	public static final int MAGIC_ARMAMENTS_SHARPNESS = 10;
+	public static final int MIND_OVER_MATTER_SHARPNESS_PER_RANK = 5;
+	/** Mind over Matter's price: this much extra upkeep per second per rank
+	 * (+10/20/30). Its damage rides on Sharpness above, not on an attribute —
+	 * two sources of the same scaling would double-dip. */
 	public static final float MIND_OVER_MATTER_UPKEEP_PER_RANK = 10.0F;
 	/** Magic Armor: every point of mana the channel spends banks this much
 	 * absorption per rank (0.5/1.0), capped by the rank's ceiling (10/20). The
@@ -514,11 +521,14 @@ public final class Tuning {
 	/** Warding scans and strips harmful effects this often (every half second is
 	 * indistinguishable from instant and far cheaper than every tick). */
 	public static final int MAGIC_ARMAMENTS_WARD_PERIOD_TICKS = 10;
-	/** Spellbow: the conjured bow's arrow base damage at full draw. Velocity
-	 * (3x at full charge) multiplies it, landing a full shot near the sword's
-	 * ~7, and Mind over Matter adds to the base to keep the two variants even. */
+	/** Spellbow: the conjured bow's arrow base damage before Sharpness. Velocity
+	 * (3x at full charge) multiplies it, landing a full shot near the sword's ~7. */
 	public static final float MAGIC_BOW_ARROW_BASE_DAMAGE = 2.5F;
-	public static final float MAGIC_BOW_ARROW_MOM_PER_RANK = 0.7F;
+	/** Sharpness does nothing on a bow, so the arrow adds this share of the
+	 * sword's Sharpness bonus to its base instead. 1/3 inverts the full-draw 3x
+	 * velocity, so a point of sword damage is a point of arrow damage and the two
+	 * variants stay even at every Mind over Matter rank (13/15.5/18/20.5). */
+	public static final float MAGIC_BOW_ARROW_SHARPNESS_SHARE = 1.0F / 3.0F;
 
 	// --- Seeker: Holy Light ---
 	public static final float HOLY_COST = 50.0F;

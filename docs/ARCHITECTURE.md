@@ -283,7 +283,10 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    check in `applyItemBlocking`) forces the angle to 0 so a Bulwark holder blocks
    from every direction.
 
-Other mixins: `PlayerMixin` (XP mirror), `PlayerAdvancementsMixin` (advancement
+Other mixins: `PlayerMixin` (XP mirror, plus the `canGlide` hook that lets a
+Magic Armaments channel glide in an elytra's place — declared common because
+`Player` is common and the client's jump-to-deploy runs the same check),
+`PlayerAdvancementsMixin` (advancement
 count), `AbstractArrowMixin`/`AbstractArrowAccessor`/`ProjectileMixin` (True Shot
 flight and reflection), `CrossbowItemMixin` (Rapid Reload), `BlocksAttacksMixin`,
 and `LivingEntityAccessor`. Client-side: `AvatarRendererMixin` (armor hiding,

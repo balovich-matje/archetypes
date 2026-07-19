@@ -215,8 +215,10 @@ public final class ModItems {
 	}
 
 	/** The conjured sword: exactly a diamond sword's melee (3 base + diamond's
-	 * bonus, -2.4 speed), but unbreakable, glinting and single-stack. Mind over
-	 * Matter adds its damage as a player attribute during the channel, not here. */
+	 * bonus, -2.4 speed), but unbreakable and single-stack. Its real damage is
+	 * the Sharpness {@link MagicArmaments} stamps on the stack at conjure time.
+	 * The glint override is FALSE, not absent: the stack carries enchantments,
+	 * so only an explicit false keeps vanilla's glint off the animated sprite. */
 	private static Item registerMagicSword() {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_sword"));
 		Item.Properties properties = ToolMaterial.DIAMOND.applySwordProperties(
@@ -225,7 +227,7 @@ public final class ModItems {
 				.rarity(net.minecraft.world.item.Rarity.EPIC)
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						net.minecraft.util.Unit.INSTANCE)
-				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicSwordItem(properties));
 	}

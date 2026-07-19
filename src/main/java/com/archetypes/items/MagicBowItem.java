@@ -30,8 +30,9 @@ import org.jspecify.annotations.Nullable;
  * The Spellbow variant of Magic Armaments. It needs no ammo — every draw
  * conjures its own arrow, fired with pickup disallowed so nothing is left to
  * gather (an infinity bow's manners). The arrow's damage sits at the conjured
- * sword's budget and rises with Mind over Matter, so choosing the bow costs no
- * power. The item itself is unbreakable and only ever exists inside a channel.
+ * sword's budget and rises with the same Sharpness the sword carries, so
+ * choosing the bow costs no power. The item itself is unbreakable and only ever
+ * exists inside a channel.
  */
 public class MagicBowItem extends BowItem {
 	public MagicBowItem(final Properties properties) {
@@ -70,11 +71,14 @@ public class MagicBowItem extends BowItem {
 		// caught mid-juggle) fires nothing even in the tick before it purges.
 		if (level instanceof ServerLevel serverLevel && entity instanceof ServerPlayer player
 				&& MagicArmaments.isActive(player)) {
+			// Sharpness rides the conjured sword, not a bow. The arrow reads the
+			// bonus that enchantment would have been worth and takes a third of
+			// it into its base, which the 3x full-draw velocity restores whole.
 			int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
 					NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
 					OracleWizardNodes.Family.MIND_OVER_MATTER);
 			double baseDamage = Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE
-					+ mom * Tuning.MAGIC_BOW_ARROW_MOM_PER_RANK;
+					+ MagicArmaments.sharpnessBonus(mom) * Tuning.MAGIC_BOW_ARROW_SHARPNESS_SHARE;
 
 			Arrow arrow = new Arrow(serverLevel, player, new ItemStack(Items.ARROW), stack);
 			arrow.pickup = AbstractArrow.Pickup.DISALLOWED;

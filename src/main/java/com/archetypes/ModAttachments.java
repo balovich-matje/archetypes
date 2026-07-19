@@ -240,20 +240,9 @@ public final class ModAttachments {
 			Archetypes.id("armaments_slot"),
 			builder -> builder.persistent(Codec.INT).copyOnDeath());
 
-	/** Game-time tick of the channel's last upkeep charge. Transient — a relog
-	 * that resets the second's beat is harmless (the channel is ended and
-	 * restored on JOIN anyway). */
-	public static final AttachmentType<Long> ARMAMENTS_LAST_UPKEEP =
-			AttachmentRegistry.<Long>create(Archetypes.id("armaments_last_upkeep"));
-
-	/** Set only when Levitation itself flipped mayfly on, so the channel's end
-	 * revokes exactly that grant — flight owed to creative or another mod is
-	 * never stripped. Persistent/copyOnDeath: vanilla saves abilities to NBT,
-	 * so a crash mid-channel must still find this flag on JOIN to take the
-	 * flight back. */
-	public static final AttachmentType<Boolean> ARMAMENTS_FLIGHT = AttachmentRegistry.create(
-			Archetypes.id("armaments_flight"),
-			builder -> builder.persistent(Codec.BOOL).copyOnDeath());
+	// No upkeep-beat or flight-grant attachment: upkeep is charged every tick
+	// (nothing to remember between charges) and Levitation glides through
+	// vanilla's canGlide rather than borrowing a mayfly that must be given back.
 
 	/** On arrows: where a True Shot left the bow (it despawns 64 blocks out),
 	 * and whether it steers itself. Transient — a saved arrow forgets. */

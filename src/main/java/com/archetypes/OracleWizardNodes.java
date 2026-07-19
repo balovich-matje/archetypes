@@ -13,9 +13,9 @@ import org.jspecify.annotations.Nullable;
 /**
  * What each node of the epic Oracle-Wizard constellation is (draft
  * oracle-wizard). Magic Armaments conjures a weapon in place of the wand; the
- * left line hardens the channel (Magic Armor's temp health, then Levitation's
- * flight and Warding's status immunity) while the right line sharpens the blade
- * (Mind Over Matter's three ranks), whose top rung splits to Blink and the
+ * left line hardens the channel (Magic Armor's temp health, then Gliding's
+ * elytra flight and Warding's status immunity) while the right line sharpens the
+ * blade (Mind Over Matter's three ranks), whose top rung splits to Blink and the
  * Spellbow capstone that swaps the sword for a bow. Item icons stand in until an
  * epic sprite set ships.
  */
@@ -25,8 +25,8 @@ public final class OracleWizardNodes {
 		MAGIC_ARMAMENTS(() -> Items.NETHERITE_SWORD),
 		/** Channel mana also grants temporary health, up to 10/20. */
 		MAGIC_ARMOR(() -> Items.DIAMOND_CHESTPLATE),
-		/** Flight during the channel. */
-		LEVITATION(() -> Items.FEATHER),
+		/** Elytra gliding during the channel (lang name: Gliding). */
+		LEVITATION(() -> Items.ELYTRA),
 		/** Immunity to negative status effects during the channel. */
 		WARD(() -> Items.MILK_BUCKET),
 		/** More weapon damage for more channel cost, three ranks. */
