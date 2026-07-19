@@ -99,8 +99,15 @@ public final class MagicArmaments {
 				OracleWizardNodes.Family.SPELLBOW) > 0;
 		ItemStack conjured = new ItemStack(bow ? ModItems.MAGIC_BOW : ModItems.MAGIC_SWORD);
 
-		sharpen(level, conjured, OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
-				OracleWizardNodes.Family.MIND_OVER_MATTER));
+		// Only the sword: vanilla folds Sharpness into a flat melee bonus but
+		// folds Power into the arrow's BASE damage, which the full-draw 3x
+		// velocity then multiplies — the same level would pay out three times
+		// over on the bow. MagicBowItem derives its arrows from the same bonus
+		// at a third the size instead, so the two variants stay even.
+		if (!bow) {
+			sharpen(level, conjured, OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+					OracleWizardNodes.Family.MIND_OVER_MATTER));
+		}
 
 		inventory.setItem(slot, conjured);
 
@@ -209,7 +216,9 @@ public final class MagicArmaments {
 	private static void resharpen(final ServerPlayer player, final Set<Integer> owned) {
 		ItemStack held = player.getMainHandItem();
 
-		if (!ModItems.isSummoned(held)) {
+		// The bow carries no enchantment at all; its arrows read the rank live
+		// on release, so there is nothing on the stack to keep in step.
+		if (!ModItems.isMagicSword(held)) {
 			return;
 		}
 
@@ -217,11 +226,10 @@ public final class MagicArmaments {
 		int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
 				OracleWizardNodes.Family.MIND_OVER_MATTER);
 
-		if (EnchantmentHelper.getItemEnchantmentLevel(edge(level, held), held)
+		if (EnchantmentHelper.getItemEnchantmentLevel(sharpness(level), held)
 				!= sharpnessLevel(mom)) {
 			sharpen(level, held, mom);
 		}
-
 	}
 
 	/**
@@ -397,6 +405,12 @@ public final class MagicArmaments {
 				+ mindOverMatterRank * Tuning.MIND_OVER_MATTER_SHARPNESS_PER_RANK;
 	}
 
+	/** The damage that Sharpness level adds. Mirrors vanilla's own curve
+	 * (1 + 0.5 x (level - 1) since level 1) so the Spellbow, which cannot carry
+	 * the enchantment, can scale off the identical number. */
+	public static float sharpnessBonus(final int mindOverMatterRank) {
+		return 1.0F + 0.5F * (sharpnessLevel(mindOverMatterRank) - 1);
+	}
 
 	/** Stamp the real ENCHANTMENTS component, so the level shows in the tooltip
 	 * and the damage runs through vanilla's pipeline rather than a bolted-on
@@ -404,16 +418,13 @@ public final class MagicArmaments {
 	 * are datapack content and {@code Enchantments.SHARPNESS} is only a key. */
 	private static void sharpen(final ServerLevel level, final ItemStack stack, final int mindOverMatterRank) {
 		ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
-		enchantments.set(edge(level, stack), sharpnessLevel(mindOverMatterRank));
+		enchantments.set(sharpness(level), sharpnessLevel(mindOverMatterRank));
 		EnchantmentHelper.setEnchantments(stack, enchantments.toImmutable());
 	}
 
-	/** Each weapon's own scaling enchantment: Sharpness cuts nothing on a bow,
-	 * and vanilla runs Power through the arrow's weapon stack, so the Spellbow
-	 * takes the identical level as Power and lets the vanilla pipeline pay it. */
-	private static Holder<Enchantment> edge(final ServerLevel level, final ItemStack stack) {
+	private static Holder<Enchantment> sharpness(final ServerLevel level) {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
-				.getOrThrow(ModItems.isMagicBow(stack) ? Enchantments.POWER : Enchantments.SHARPNESS);
+				.getOrThrow(Enchantments.SHARPNESS);
 	}
 
 	private static void applyArmorCap(final ServerPlayer player, final Set<Integer> owned,

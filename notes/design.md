@@ -1805,8 +1805,12 @@ landing are all stock. The `Player.canGlide` mixin is gone.
 DAMAGE hidden. NOT the `hideTooltip` flag: that one returns an empty list
 from `ItemStack.getTooltipLines`, taking the name with it.
 
-**Power, not a fudge**: the Spellbow now carries a real Power enchantment at
-the same level as the sword's Sharpness (vanilla's Power curve is identical —
-`1 + 0.5 x (level - 1)`), so vanilla's arrow pipeline pays the bonus off the
-weapon stack. Damage is unchanged (13/15.5/18/20.5 at full draw); the
-one-third-share constant that approximated it is gone.
+**Why the Spellbow carries no enchantment**: Power looks like the honest
+version of the one-third-share constant — its curve is identical to
+Sharpness', `1 + 0.5 x (level - 1)` — but the two are not interchangeable.
+`AbstractArrow.onHitEntity` runs `EnchantmentHelper.modifyDamage` against the
+arrow's BASE damage and only then multiplies by the draw velocity, so a full
+draw pays a Power bonus three times over (46 at Mind over Matter 3, against
+the sword's 20) while Sharpness on the sword stays flat. The share constant
+is not an approximation of Power, it is the inverse of that 3x — so it stays,
+and the bow stays unenchanted. Damage is 13/15.5/18/20.5 at full draw.

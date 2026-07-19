@@ -71,13 +71,22 @@ public class MagicBowItem extends BowItem {
 		// caught mid-juggle) fires nothing even in the tick before it purges.
 		if (level instanceof ServerLevel serverLevel && entity instanceof ServerPlayer player
 				&& MagicArmaments.isActive(player)) {
-			// A vanilla arrow off a vanilla-shaped bow: the conjured stack
-			// carries Power (stamped by MagicArmaments, tracked live against
-			// Mind over Matter), and vanilla pays it out of the arrow's weapon
-			// stack on hit. Nothing to compute here but the base.
+			// Sharpness rides the conjured sword, not a bow. The arrow reads the
+			// bonus that enchantment would have been worth and takes a third of
+			// it into its base, which the 3x full-draw velocity restores whole.
+			// A real Power enchantment on the stack would NOT be equivalent:
+			// vanilla adds it to this same base and then multiplies, so the
+			// bonus would be paid three times over (see the SHARPNESS_SHARE note
+			// in Tuning).
+			int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
+					NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
+					OracleWizardNodes.Family.MIND_OVER_MATTER);
+			double baseDamage = Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE
+					+ MagicArmaments.sharpnessBonus(mom) * Tuning.MAGIC_BOW_ARROW_SHARPNESS_SHARE;
+
 			Arrow arrow = new Arrow(serverLevel, player, new ItemStack(Items.ARROW), stack);
 			arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
-			arrow.setBaseDamage(Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE);
+			arrow.setBaseDamage(baseDamage);
 			arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, power * 3.0F, 1.0F);
 
 			if (power == 1.0F) {
