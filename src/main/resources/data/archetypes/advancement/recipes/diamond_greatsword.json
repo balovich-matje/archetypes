@@ -1,0 +1,32 @@
+{
+ "parent": "minecraft:recipes/root",
+ "criteria": {
+  "has_the_recipe": {
+   "trigger": "minecraft:recipe_unlocked",
+   "conditions": {
+    "recipe": "archetypes:diamond_greatsword"
+   }
+  },
+  "has_ingredient": {
+   "trigger": "minecraft:inventory_changed",
+   "conditions": {
+    "items": [
+     {
+      "items": "#minecraft:diamond_tool_materials"
+     }
+    ]
+   }
+  }
+ },
+ "requirements": [
+  [
+   "has_the_recipe",
+   "has_ingredient"
+  ]
+ ],
+ "rewards": {
+  "recipes": [
+   "archetypes:diamond_greatsword"
+  ]
+ }
+}
