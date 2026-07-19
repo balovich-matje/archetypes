@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Set;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -24,6 +25,7 @@ import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
 import net.minecraft.world.item.enchantment.ItemEnchantments;
@@ -79,7 +81,9 @@ public final class MagicArmaments {
 		// discounts the opening cost. It cannot discount the upkeep: the
 		// channel puts the conjured weapon in the main hand and stashes the
 		// wand away, and every wand bonus reads the main hand only.
-		if (!Mana.spend(player, SeekerSpells.wandDiscount(player, Tuning.MAGIC_ARMAMENTS_COST))) {
+		float opening = SeekerSpells.wandDiscount(player, Tuning.MAGIC_ARMAMENTS_COST);
+
+		if (!Mana.spend(player, opening)) {
 			return;
 		}
 
@@ -108,7 +112,9 @@ public final class MagicArmaments {
 		// The cap must exist before the opening cost's absorption is banked, or
 		// it clamps straight to zero (see Battle Trance).
 		applyArmorCap(player, owned, true);
-		grantArmor(player, owned, Tuning.MAGIC_ARMAMENTS_COST);
+		// Absorption is bought with the mana actually paid, discount included —
+		// banking the list price would hand the Oracle's Wand free armour.
+		grantArmor(player, owned, opening);
 
 		player.swing(InteractionHand.MAIN_HAND, true);
 		level.sendParticles(ParticleTypes.ENCHANT, player.getX(), player.getY() + 1.0, player.getZ(),
@@ -193,8 +199,30 @@ public final class MagicArmaments {
 			return;
 		}
 
+		resharpen(player, owned);
 		ward(player, owned);
 		upkeep(player, owned);
+	}
+
+	/** Mind over Matter is read live every tick on the price side, so the blade
+	 * must track it too: a rank bought mid-channel would otherwise charge its
+	 * upkeep at once and only cut after the next conjure. A no-op at an
+	 * unchanged rank, so the stack is not resynced every tick. */
+	private static void resharpen(final ServerPlayer player, final Set<Integer> owned) {
+		ItemStack held = player.getMainHandItem();
+
+		if (!ModItems.isMagicSword(held)) {
+			return;
+		}
+
+		ServerLevel level = (ServerLevel) player.level();
+		int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+				OracleWizardNodes.Family.MIND_OVER_MATTER);
+
+		if (EnchantmentHelper.getItemEnchantmentLevel(sharpness(level), held)
+				!= sharpnessLevel(mom)) {
+			sharpen(level, held, mom);
+		}
 	}
 
 	/** A twentieth of the per-second rate, every tick. Same cost per second, but
@@ -331,9 +359,13 @@ public final class MagicArmaments {
 	 * are datapack content and {@code Enchantments.SHARPNESS} is only a key. */
 	private static void sharpen(final ServerLevel level, final ItemStack stack, final int mindOverMatterRank) {
 		ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
-		enchantments.set(level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
-				.getOrThrow(Enchantments.SHARPNESS), sharpnessLevel(mindOverMatterRank));
+		enchantments.set(sharpness(level), sharpnessLevel(mindOverMatterRank));
 		EnchantmentHelper.setEnchantments(stack, enchantments.toImmutable());
+	}
+
+	private static Holder<Enchantment> sharpness(final ServerLevel level) {
+		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+				.getOrThrow(Enchantments.SHARPNESS);
 	}
 
 	private static void applyArmorCap(final ServerPlayer player, final Set<Integer> owned,
