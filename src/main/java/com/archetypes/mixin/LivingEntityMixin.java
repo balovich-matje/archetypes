@@ -251,10 +251,14 @@ public abstract class LivingEntityMixin {
 
 	/**
 	 * The dagger's damage shaping and DoTs, all on the victim's intake:
-	 * Razor Edge's steel, Expose's finishing bonus, Flense clawing back what
-	 * armor would eat, Deathblow recognising a Shadow Step strike by its
-	 * same-tick stamp — and the Venom/Blight coatings applied here so they
-	 * land even on killing blows.
+	 * Razor Edge's steel, Expose's finishing bonus, one summed ambush box for
+	 * everything Death Mark and the Shadow Step are worth, Flense ignoring a
+	 * share of the armour the blow is about to meet — and the Venom/Blight
+	 * coatings applied here so they land even on killing blows.
+	 *
+	 * <p>The order is load-bearing in exactly one place: Flense runs last,
+	 * because the armour it discounts is only worth what the size of THIS blow
+	 * makes it worth. Everything else here commutes.
 	 *
 	 * <p>Swing-gated, and this branch needed it worst of all, because the coatings
 	 * are APPLIED here rather than merely scaled. A dagger is the Nemesis Shadow's
@@ -293,55 +297,80 @@ public abstract class LivingEntityMixin {
 							com.archetypes.AssassinNodes.Family.EXPOSE);
 		}
 
-		int flense = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-				com.archetypes.AssassinNodes.Family.FLENSE);
-
-		if (flense > 0) {
-			// Exact compensation: post-armor damage comes out as if the
-			// ignored fraction of armor's absorption wasn't there.
-			float absorbed = Math.min(0.8F, (float) victim.getAttributeValue(
-					net.minecraft.world.entity.ai.attributes.Attributes.ARMOR) * 0.04F);
-			float ignored = Math.min(1.0F, Tuning.FLENSE_PER_RANK * flense);
-			result = result * (1.0F - absorbed * (1.0F - ignored)) / (1.0F - absorbed);
-		}
-
-		// Death Mark: the root's quarter and Headhunter's ranks, and only on the
-		// one creature this player named. Multiplied separately rather than
-		// summed — the design prices the Hunt line at 1.25 x 1.5 = x1.875, not
-		// x1.75. Both stamps are checked, not just the flag on the body: the
+		// --- the ambush box ---
+		//
+		// One sum, one multiply. Death Mark and Headhunter ride every dagger
+		// hit; the rest are Shadow Step only. They used to be six separate
+		// multiplications and the product had no ceiling — x25.3 with all of
+		// them lit, which is how one wrong Flense constant became a 377-damage
+		// opener into a 40 HP pool. Adding a seventh term to a sum costs its
+		// own face value; adding a seventh multiplier cost its face value times
+		// everything already there.
+		//
+		// Both mark stamps are checked, not just the flag on the body: the
 		// ticker takes a lapsed mark off a tick later than it expires.
 		boolean marked = com.archetypes.DeathMark.isMarkedBy(victim, player)
 				&& com.archetypes.DeathMark.hasMark(player);
+		float ambush = 1.0F;
 
 		if (marked) {
-			result *= 1.0F + Tuning.DEATH_MARK_DAMAGE_FACTOR;
-			result *= 1.0F + Tuning.HEADHUNTER_PER_RANK
+			ambush += Tuning.DEATH_MARK_DAMAGE_FACTOR;
+			ambush += Tuning.HEADHUNTER_PER_RANK
 					* com.archetypes.NemesisAssassinNodes.rank(player,
 							com.archetypes.NemesisAssassinNodes.Family.HEADHUNTER);
 		}
 
 		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
+		boolean stepping = stepStrike != null && stepStrike == level.getGameTime();
+		boolean executing = false;
 
-		if (stepStrike != null && stepStrike == level.getGameTime()) {
+		if (stepping) {
+			// Stalker's Step: the same blink and strike, landing harder while
+			// the night form holds.
+			if (com.archetypes.NightForm.isActive(player)) {
+				ambush += Tuning.NIGHT_FORM_SHADOW_STEP_BONUS;
+			}
+
+			// Shadow Flurry lands the strike with several daggers' weight; Twin
+			// Fangs brings the off-hand dagger into the same blow at its own
+			// weight against the main hand's, so a bare off-hand gives nothing
+			// and the node nudges toward actually wearing two knives.
+			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0) {
+				ambush += Tuning.SHADOW_FLURRY_BONUS;
+			}
+
+			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+					com.archetypes.AssassinNodes.Family.TWIN_FANGS) > 0) {
+				float main = ModItems.daggerSwingDamage(player.getMainHandItem());
+				float off = ModItems.daggerSwingDamage(player.getOffhandItem());
+
+				if (main > 0.0F && off > 0.0F) {
+					ambush += Tuning.TWIN_FANGS_OFFHAND_BONUS * off / main;
+				}
+			}
+
 			// Coup de Grace, on the Shadow Step strike only. Players are never
 			// deleted outright — the rule Executioner already follows — so the
-			// execute pays them out as a doubling, and unconditionally: an
-			// execute a player only ever meets under a third health would be no
-			// node at all in the fight the branch is built for.
+			// execute pays them out as weight in the box, and unconditionally:
+			// an execute a player only ever meets under a third health would be
+			// no node at all in the fight the branch is built for. In the box,
+			// not over it: it is the one player-exclusive term, and leaving it
+			// outside would hand the whole collapse back to the single build
+			// that owns the capstone.
 			if (marked && com.archetypes.NemesisAssassinNodes.rank(player,
 					com.archetypes.NemesisAssassinNodes.Family.COUP_DE_GRACE) > 0) {
 				boolean isPlayer = victim instanceof net.minecraft.world.entity.player.Player;
+				boolean finishable = victim.getHealth()
+						<= victim.getMaxHealth() * Tuning.COUP_DE_GRACE_THRESHOLD;
 
 				if (isPlayer) {
-					result *= Tuning.COUP_DE_GRACE_PLAYER_MULTIPLIER;
-				} else if (victim.getHealth()
-						<= victim.getMaxHealth() * Tuning.COUP_DE_GRACE_THRESHOLD) {
-					// Executioner's idiom verbatim: past every resistance.
-					result = Math.max(result, victim.getHealth() + 100.0F);
+					ambush += Tuning.COUP_DE_GRACE_PLAYER_BONUS;
+				} else if (finishable) {
+					executing = true;
 				}
 
-				if (isPlayer || victim.getHealth()
-						<= victim.getMaxHealth() * Tuning.COUP_DE_GRACE_THRESHOLD) {
+				if (isPlayer || finishable) {
 					// The Executioner's own cue, dropped a fifth, so the player
 					// learns which blow was the execute.
 					level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
@@ -351,32 +380,35 @@ public abstract class LivingEntityMixin {
 							com.archetypes.NemesisAssassinNodes.Family.COUP_DE_GRACE);
 				}
 			}
+		}
 
-			// Stalker's Step: the same blink and strike, landing half again
-			// harder while the night form holds.
-			if (com.archetypes.NightForm.isActive(player)) {
-				result *= Tuning.NIGHT_FORM_SHADOW_STEP_FACTOR;
-			}
+		result *= ambush;
 
-			// A Shadow Step strike: Shadow Flurry lands it with three
-			// daggers' weight; Twin Fangs brings the off-hand dagger into
-			// the same blow at half its weight — identical daggers give the
-			// old Deathblow's x1.5, and a bare off-hand gives nothing, so
-			// the node nudges toward actually wearing two knives.
-			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0) {
-				result *= Tuning.SHADOW_FLURRY_MULTIPLIER;
-			}
+		if (executing) {
+			// Executioner's idiom verbatim: past every resistance.
+			result = Math.max(result, victim.getHealth() + 100.0F);
+		}
 
-			if (com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-					com.archetypes.AssassinNodes.Family.TWIN_FANGS) > 0) {
-				float main = ModItems.daggerSwingDamage(player.getMainHandItem());
-				float off = ModItems.daggerSwingDamage(player.getOffhandItem());
+		// Flense, LAST, and deliberately so.
+		//
+		// The node reads "the blow ignores this much of the target's armour",
+		// and what armour is worth depends on how big the blow is — vanilla
+		// degrades it by damage/toughness before applying it. So the value fed
+		// to the curve has to be the damage that will actually arrive, which is
+		// everything above this line and nothing below it. Feeding the HEAD
+		// amount instead would price a netherite target's armour at the 7.8 of
+		// a bare swing while dealing a hundred; feeding the post-Flense number
+		// would be circular. Running the stage last makes the input single
+		// valued, and it is what turns Flense from a switch into a curve:
+		// near-worthless on an alpha strike, because a blow that size has
+		// already shred the armour to its floor, and worth roughly double on
+		// the ordinary stab it was always supposed to be about.
+		int flense = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
+				com.archetypes.AssassinNodes.Family.FLENSE);
 
-				if (main > 0.0F && off > 0.0F) {
-					result *= 1.0F + Tuning.TWIN_FANGS_OFFHAND_FACTOR * off / main;
-				}
-			}
+		if (flense > 0) {
+			result *= com.archetypes.ArmourMath.ignoreArmourFactor(victim, result,
+					Tuning.FLENSE_ARMOUR_IGNORE_PER_RANK * flense);
 		}
 
 		int venom = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,

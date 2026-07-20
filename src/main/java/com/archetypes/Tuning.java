@@ -145,11 +145,65 @@ public final class Tuning {
 	/** Bloodlust: Speed I for this long after any melee kill. */
 	public static final int BLOODLUST_TICKS = 60;
 
-	/** Decimate: double damage, 30s cooldown, a wide tilted arc in front.
-	 * Only instant-break blocks (torches, grass, fire...) are swept away —
-	 * anything sturdier survives, so a swing in your own base clears clutter
-	 * without eating the walls. */
-	public static final float DECIMATE_DAMAGE_MULTIPLIER = 2.0F;
+	/** Decimate: a telegraphed execution, 30s cooldown, a wide tilted arc in
+	 * front. Only instant-break blocks (torches, grass, fire...) are swept away
+	 * — anything sturdier survives, so a swing in your own base clears clutter
+	 * without eating the walls.
+	 *
+	 * <p>The damage is read off the VICTIM, not the attacker: {@code
+	 * clamp(maxHealth x FRACTION, MIN, MAX)} on {@code archetypes:decimate},
+	 * which bypasses armour, Protection and shields. Nothing the attacker owns
+	 * moves it — not Sharpness, not Heavy Blows, not Strength, not the swing
+	 * timer — because the whole promise is that it reads identically to every
+	 * victim. That is also the only reason a single number can be tuned at all:
+	 * see {@code SlayerActives.decimate}, which no longer opens a
+	 * {@code MeleeSwing} around its own damage.
+	 *
+	 * <p>Fraction of the victim's max health. Above 1.0 on purpose: the author's
+	 * line is "guarantees a oneshot for classes with no defensives ready", and
+	 * a fraction of exactly 1.0 is a guarantee that any 1 point of absorption —
+	 * a golden apple, a Stalwart tick — quietly repeals. 1.10 of a 40 HP player
+	 * is 44, which is that player's whole bar plus one golden apple, and leaves
+	 * a Spellsword holding Magic Armor 1's +10 temporary hearts at 6 HP: the
+	 * author's second target, "almost a oneshot that can be followed up with a
+	 * single swing", falls straight out of the same number. */
+	public static final float DECIMATE_MAX_HEALTH_FRACTION = 1.10F;
+	/** Floor, so percent-of-max-health does not under-deliver against a small
+	 * pool. Binds below 21.8 max health, i.e. essentially only the vanilla
+	 * 20 HP baseline (a player with no Defence levels) and trash mobs. 24 is
+	 * that vanilla bar plus a golden apple's 4 absorption, so the "your gear
+	 * does not save you, your archetype does" promise reads the same at the
+	 * bottom of the health curve as it does at 40. */
+	public static final float DECIMATE_MIN_DAMAGE = 24.0F;
+	/** Ceiling, so a number calibrated in PvP does not become a boss-deleter.
+	 * Binds above 63.6 max health — unreachable by any player, since Defence
+	 * tops out at +20 — so a player always sees the pure fraction and this cap
+	 * is a PvE-only guard. 70 rather than something tighter because Decimate's
+	 * old output peaked at 43.7 (24 raw x Heavy Blows 1.3 x First Blood 1.4)
+	 * and a capstone must not become a downgrade against big pools: it holds a
+	 * 500 HP Warden to 14% a cast on a 30s cooldown, a Wither to 23%, and an
+	 * Ender Dragon to 35%. */
+	public static final float DECIMATE_MAX_DAMAGE = 70.0F;
+	/** The wind-up, in ticks, between the cast and the blow landing. One full
+	 * second: the entire counterplay budget, and the only reason "you don't
+	 * want to be near it when it's cast" describes a decision rather than a
+	 * dice roll. The parry's riposte skips it — a parry is already a reaction
+	 * and does not owe a second one. */
+	public static final int DECIMATE_WINDUP_TICKS = 20;
+	/** Slowness amplifier worn by the CASTER for the wind-up. 1 = Slowness II.
+	 * Over 20 ticks Slowness I costs a sprinting caster about 0.8 blocks of
+	 * pursuit and Slowness II about 1.7; the arc is 3.5 deep, so II is the one
+	 * that makes "stepped out of the arc" a thing a fleeing target can actually
+	 * do against a caster who commits. */
+	public static final int DECIMATE_WINDUP_SLOWNESS_AMPLIFIER = 1;
+	/** The parry riposte's own clock, separate from {@link
+	 * #DECIMATE_COOLDOWN_TICKS} so the author's rule still holds — "automatically
+	 * cast Decimates will not incur a cooldown, and can happen while the skill
+	 * is already on cooldown". What it stops is the other thing: a landed parry
+	 * refunds itself (ColossusSlayer.pay), so without a clock of its own the
+	 * riposte is an unbounded true-damage nuke whose rate is set by how often
+	 * you are attacked. 10s caps it at 6 free casts a minute. */
+	public static final int DECIMATE_FREE_COOLDOWN_TICKS = 200;
 	public static final int DECIMATE_COOLDOWN_TICKS = 600;
 	public static final double DECIMATE_RANGE = 3.5;
 	public static final int DECIMATE_MAX_BLOCKS = 48;
@@ -307,8 +361,13 @@ public final class Tuning {
 	public static final double SHADOW_STEP_RANGE = 16.0;
 	public static final int SHADOW_STEP_COOLDOWN_TICKS = 300;
 	public static final int SHADOW_STEP_FLURRY_COOLDOWN_TICKS = 600;
-	/** The flurry capstone: one strike, three daggers' worth. */
-	public static final float SHADOW_FLURRY_MULTIPLIER = 3.0F;
+	/**
+	 * The flurry capstone: one strike, several daggers' worth. Additive into
+	 * the ambush box (see {@link #COUP_DE_GRACE_PLAYER_BONUS}), not a
+	 * multiplier of its own — it is the box's largest single term, which is
+	 * the relative standing the old x3.0 had among the step multipliers.
+	 */
+	public static final float SHADOW_FLURRY_BONUS = 4.5F;
 	/** Daggers shove half as hard as a sword would. */
 	public static final float DAGGER_KNOCKBACK_FACTOR = 0.5F;
 
@@ -323,11 +382,29 @@ public final class Tuning {
 	public static final float EXPOSE_PER_RANK = 0.10F;
 	public static final int VENOM_TICKS = 80;
 	public static final int BLIGHT_TICKS = 60;
-	/** Fraction of armor's absorption clawed back per rank; rank 2 = all. */
-	public static final float FLENSE_PER_RANK = 0.5F;
-	/** Twin Fangs: the off-hand dagger joins the step strike at this
-	 * weight — identical daggers reproduce old Deathblow's x1.5. */
-	public static final float TWIN_FANGS_OFFHAND_FACTOR = 0.5F;
+	/**
+	 * Flense: the fraction of the target's ARMOUR the blow behaves as if were
+	 * not there, per rank — rank 2 ignores 60% of it. Denominated in armour,
+	 * not in "absorption", and resolved against
+	 * {@code CombatRules.getDamageAfterAbsorb} itself
+	 * ({@link com.archetypes.ArmourMath}) rather than against a flat 4%-a-point
+	 * stand-in.
+	 *
+	 * <p>The old constant was 0.5 meaning "fraction of armour's absorption
+	 * clawed back", which reached its x5.0 ceiling at 20 armour — plain diamond
+	 * — and paid back mitigation vanilla was not applying, because vanilla
+	 * DEGRADES armour against big hits. That made Flense a switch worth more
+	 * than every other Assassin multiplier combined, and worth most against a
+	 * hit that armour had already stopped mattering to. As an armour-ignore it
+	 * is a curve: worth ~x2.1 on an ordinary stab into netherite and ~x1.11 on
+	 * the Shadow Step opener, where the armour it would ignore is already shred
+	 * to the 20%-of-total floor.
+	 */
+	public static final float FLENSE_ARMOUR_IGNORE_PER_RANK = 0.30F;
+	/** Twin Fangs: the off-hand dagger joins the step strike, additively into
+	 * the ambush box, scaled by its damage against the main hand's — identical
+	 * daggers give the whole term. */
+	public static final float TWIN_FANGS_OFFHAND_BONUS = 1.25F;
 
 	// --- Mana (the Seeker's resource; Spellcasting skill in Specialities) ---
 	public static final float MANA_BASE = 100.0F;
@@ -683,11 +760,14 @@ public final class Tuning {
 	 * starts strobing. */
 	public static final int NIGHT_FORM_EFFECT_TICKS = 300;
 
-	/** The empowered Cutpurse actives: Heart-piercing Shot and Stalker's Step
-	 * are the base abilities' final damage times this. Invisibility is
-	 * deliberately untouched (author's spec). */
+	/** The empowered Cutpurse actives: Heart-piercing Shot is the base
+	 * ability's final damage times this. Invisibility is deliberately
+	 * untouched (author's spec). */
 	public static final float NIGHT_FORM_TRUE_SHOT_FACTOR = 1.5F;
-	public static final float NIGHT_FORM_SHADOW_STEP_FACTOR = 1.5F;
+	/** Stalker's Step is the same blink and strike landing harder, but as an
+	 * additive term in the ambush box rather than a multiplier over it — see
+	 * {@link #COUP_DE_GRACE_PLAYER_BONUS}. */
+	public static final float NIGHT_FORM_SHADOW_STEP_BONUS = 1.25F;
 
 	/** Extra Sensory Perception's reach in blocks, and how often the roster is
 	 * rebuilt. Twice a second is well inside a walking creature's stride and
@@ -811,10 +891,11 @@ public final class Tuning {
 	public static final int DEATH_MARK_TICKS = 1200;
 	public static final int DEATH_MARK_COOLDOWN_TICKS = 900;
 	/** The root's own dagger bonus on the mark, and Headhunter's per rank.
-	 * Together at rank 2 that is 1.25 x 1.5 = x1.875 on a finished base
-	 * Assassin's ~26.8 Shadow Step strike, i.e. ~50 damage on one named
-	 * target — the ceiling the design sets against Lightning Strike's 20
-	 * hearts. Raise either and the epic Hunt line passes the Oracle actives. */
+	 * Both are terms in the ambush box now rather than two separate
+	 * multiplications, so at rank 2 the Hunt line prices a marked stab at
+	 * x1.75 instead of 1.25 x 1.5 = x1.875 — the sustained number barely
+	 * moves, and it is only the opener the collapse takes apart.
+	 * Raise either and the epic Hunt line passes the Oracle actives. */
 	public static final float DEATH_MARK_DAMAGE_FACTOR = 0.25F;
 	public static final float HEADHUNTER_PER_RANK = 0.25F;
 	/**
@@ -824,10 +905,25 @@ public final class Tuning {
 	 * silently halve the node and contradict its own description.
 	 */
 	public static final float COUP_DE_GRACE_THRESHOLD = 0.30F;
-	/** What a marked PLAYER takes instead of the execute. A guaranteed delete
-	 * on a 45s clock is not a skill node (the rule Executioner already follows),
-	 * so the execute pays out as a doubling against players. */
-	public static final float COUP_DE_GRACE_PLAYER_MULTIPLIER = 2.0F;
+	/**
+	 * What a marked PLAYER takes instead of the execute. A guaranteed delete on
+	 * a 45s clock is not a skill node (the rule Executioner already follows),
+	 * so the execute pays out as extra weight on the blow instead.
+	 *
+	 * <h2>The ambush box</h2>
+	 * This term, {@link #SHADOW_FLURRY_BONUS}, {@link #NIGHT_FORM_SHADOW_STEP_BONUS},
+	 * {@link #TWIN_FANGS_OFFHAND_BONUS}, {@link #DEATH_MARK_DAMAGE_FACTOR} and
+	 * {@link #HEADHUNTER_PER_RANK} are summed into ONE multiplier — the ambush
+	 * box — rather than multiplied one over the next. Nine multiplicative
+	 * sources with no ceiling are what turned one bad Flense constant into a
+	 * 9.4x overkill: the product of the old step chain was x25.3 and the box is
+	 * x11.0 with everything lit, and every future node added here costs its own
+	 * face value instead of its face value times everything already in the box.
+	 * Coup de Grace lives INSIDE the box deliberately; it is the only
+	 * player-exclusive term and leaving it outside is what let the collapse be
+	 * undone by the one build that takes the capstone.
+	 */
+	public static final float COUP_DE_GRACE_PLAYER_BONUS = 2.25F;
 	/** Stalk: beyond this, a sneaking hunter is dropped by their own mark. Eight
 	 * blocks is inside a dagger's opening range, so the node hides the approach
 	 * and never the kill. */

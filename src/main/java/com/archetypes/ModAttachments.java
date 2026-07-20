@@ -90,6 +90,15 @@ public final class ModAttachments {
 			Archetypes.id("decimate_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
+	/** The Colossus Slayer riposte's own Decimate clock. Server-side only and
+	 * deliberately NOT the same stamp as {@code DECIMATE_READY_AT}: the author's
+	 * rule is that a parried Decimate neither pays nor waits on the key's
+	 * cooldown, so the free path needs a fence that is not that one. Unsynced
+	 * because nothing draws it — the cooldown bar shows the key, and the key is
+	 * genuinely untouched. */
+	public static final AttachmentType<Long> DECIMATE_FREE_READY_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("decimate_free_ready_at"));
+
 	public static final AttachmentType<Long> BLADESTORM_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("bladestorm_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));

@@ -101,8 +101,11 @@ public final class DamageTrace {
 	/** Above this relative gap the derived product is flagged as drifted. */
 	private static final float MISMATCH_TOLERANCE = 0.01F;
 
-	/** Vanilla's armour curve: each point absorbs 4%, the whole capped at 80%.
-	 * Mirrored from the two shapers that already compute it by hand. */
+	/** The flat 4%-a-point stand-in for vanilla's armour curve, capped at 80%.
+	 * Not vanilla's curve — vanilla degrades armour by {@code damage/toughness}
+	 * before applying it (see {@link ArmourMath}) — but Sunder is still written
+	 * against this approximation, so its mirror has to be too or the alarm
+	 * fires on a stage nobody changed. Flense no longer uses it. */
 	private static final float ARMOR_PER_POINT = 0.04F;
 	private static final float ARMOR_CAP = 0.8F;
 
@@ -310,6 +313,22 @@ public final class DamageTrace {
 						Component.translatable(nameKey), note));
 	}
 
+	/**
+	 * One ambush-box term's line. Same two templates as {@link #factor}, but
+	 * printed as {@code +0.50} rather than {@code x1.50}, because that is what
+	 * the number is now: a summand in one box that is multiplied once. Printing
+	 * a box term as a multiplier would be the trace lying about the shape of
+	 * the arithmetic even while its total came out right.
+	 */
+	private static void bonus(final Frame frame, final String nameKey, final boolean fired,
+			final float amount, final Component note) {
+		frame.lines.add(fired
+				? Component.translatable(KEY + "factor.add",
+						Component.translatable(nameKey), num(amount), note)
+				: Component.translatable(KEY + "factor.off",
+						Component.translatable(nameKey), note));
+	}
+
 	/** A multiplier that is not a multiplier: an execute clamping to lethal. */
 	private static void clamp(final Frame frame, final String nameKey, final Component note) {
 		frame.exact = false;
@@ -353,7 +372,7 @@ public final class DamageTrace {
 			final LivingEntity victim, final float before, final float after) {
 		float derived = switch (stage) {
 			case STAGE_GREATSWORD -> explainGreatsword(frame, attacker, victim);
-			case STAGE_DAGGER -> explainDagger(frame, attacker, victim);
+			case STAGE_DAGGER -> explainDagger(frame, attacker, victim, before);
 			case STAGE_FIRST_STRIKE -> explainFirstStrike(frame, attacker);
 			case STAGE_SUNDER -> explainSunder(frame, attacker, victim);
 			default -> Float.NaN;
@@ -413,7 +432,7 @@ public final class DamageTrace {
 	 * small".
 	 */
 	private static float explainDagger(final Frame frame, final ServerPlayer attacker,
-			final LivingEntity victim) {
+			final LivingEntity victim, final float before) {
 		Set<Integer> owned = NodePurchases.owned(attacker, SubTree.ASSASSIN);
 		float product = 1.0F;
 
@@ -430,49 +449,46 @@ public final class DamageTrace {
 				expose > 0 ? healthNote(victim, 0.5F) : note("unowned"));
 		product *= exposeFactor;
 
-		int flense = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.FLENSE);
-		float absorbed = armorAbsorption(victim);
-		float flenseFactor = 1.0F;
-
-		if (flense > 0) {
-			float ignored = Math.min(1.0F, Tuning.FLENSE_PER_RANK * flense);
-			flenseFactor = (1.0F - absorbed * (1.0F - ignored)) / (1.0F - absorbed);
-		}
-
-		factor(frame, AssassinNodes.Family.FLENSE.nameKey(), flense > 0, flenseFactor,
-				flense > 0 ? note("armour", num((float) victim.getAttributeValue(Attributes.ARMOR)),
-						pct(absorbed)) : note("unowned"));
-		product *= flenseFactor;
-
 		boolean marked = DeathMark.isMarkedBy(victim, attacker) && DeathMark.hasMark(attacker);
-		float markFactor = marked ? 1.0F + Tuning.DEATH_MARK_DAMAGE_FACTOR : 1.0F;
-		factor(frame, NemesisAssassinNodes.Family.DEATH_MARK.nameKey(), marked, markFactor,
+		float ambush = 1.0F;
+
+		float markBonus = marked ? Tuning.DEATH_MARK_DAMAGE_FACTOR : 0.0F;
+		bonus(frame, NemesisAssassinNodes.Family.DEATH_MARK.nameKey(), marked, markBonus,
 				note(marked ? "marked" : "unmarked"));
-		product *= markFactor;
+		ambush += markBonus;
 
 		int headhunter = NemesisAssassinNodes.rank(attacker,
 				NemesisAssassinNodes.Family.HEADHUNTER);
-		float huntFactor = marked ? 1.0F + Tuning.HEADHUNTER_PER_RANK * headhunter : 1.0F;
-		factor(frame, NemesisAssassinNodes.Family.HEADHUNTER.nameKey(),
-				marked && headhunter > 0, huntFactor,
+		float huntBonus = marked ? Tuning.HEADHUNTER_PER_RANK * headhunter : 0.0F;
+		bonus(frame, NemesisAssassinNodes.Family.HEADHUNTER.nameKey(),
+				marked && headhunter > 0, huntBonus,
 				headhunter > 0 ? note(marked ? "marked" : "unmarked") : note("unowned"));
-		product *= huntFactor;
+		ambush += huntBonus;
 
 		Long stepStrike = ((AttachmentTarget) attacker).getAttached(ModAttachments.STEP_STRIKE_AT);
 		boolean stepping = stepStrike != null && stepStrike == attacker.level().getGameTime();
 
-		return product * explainStepStrike(frame, attacker, victim, owned, marked, stepping);
+		ambush += explainStepStrike(frame, attacker, victim, owned, marked, stepping);
+
+		// The one line that says what the collapse bought: every term above is
+		// a summand, and this is the single multiply they all pay into.
+		frame.lines.add(Component.translatable(KEY + "factor.box", num(ambush),
+				note("ambush")));
+		product *= ambush;
+
+		return product * explainFlense(frame, attacker, victim, owned, before * product);
 	}
 
 	/**
-	 * The Shadow Step half of the dagger chain. Split out because every one of
+	 * The Shadow Step half of the ambush box. Split out because every one of
 	 * these is gated twice — once on the blink, once on its own node — and the
-	 * pair is what the author is looking for.
+	 * pair is what the author is looking for. Returns the SUM of its terms, not
+	 * a product: the caller adds it into the same box the mark terms went into.
 	 */
 	private static float explainStepStrike(final Frame frame, final ServerPlayer attacker,
 			final LivingEntity victim, final Set<Integer> owned, final boolean marked,
 			final boolean stepping) {
-		float product = 1.0F;
+		float sum = 0.0F;
 		Component notStepped = note("not_step");
 
 		int coup = NemesisAssassinNodes.rank(attacker, NemesisAssassinNodes.Family.COUP_DE_GRACE);
@@ -480,55 +496,85 @@ public final class DamageTrace {
 		boolean coupArmed = stepping && marked && coup > 0;
 
 		if (coupArmed && isPlayer) {
-			factor(frame, NemesisAssassinNodes.Family.COUP_DE_GRACE.nameKey(), true,
-					Tuning.COUP_DE_GRACE_PLAYER_MULTIPLIER, note("player"));
-			product *= Tuning.COUP_DE_GRACE_PLAYER_MULTIPLIER;
+			bonus(frame, NemesisAssassinNodes.Family.COUP_DE_GRACE.nameKey(), true,
+					Tuning.COUP_DE_GRACE_PLAYER_BONUS, note("player"));
+			sum += Tuning.COUP_DE_GRACE_PLAYER_BONUS;
 		} else if (coupArmed
 				&& victim.getHealth() <= victim.getMaxHealth() * Tuning.COUP_DE_GRACE_THRESHOLD) {
 			clamp(frame, NemesisAssassinNodes.Family.COUP_DE_GRACE.nameKey(),
 					healthNote(victim, Tuning.COUP_DE_GRACE_THRESHOLD));
 		} else {
-			// The one the author already suspects: on a mob the x2 is simply not
-			// on the table, and the execute wants the target under a third first.
-			factor(frame, NemesisAssassinNodes.Family.COUP_DE_GRACE.nameKey(), false, 1.0F,
+			// The one the author already suspects: on a mob the player bonus is
+			// simply not on the table, and the execute wants the target under a
+			// third first.
+			bonus(frame, NemesisAssassinNodes.Family.COUP_DE_GRACE.nameKey(), false, 0.0F,
 					coup <= 0 ? note("unowned")
 							: !stepping ? notStepped
 									: !marked ? note("unmarked") : note("player_only"));
 		}
 
 		boolean night = stepping && NightForm.isActive(attacker);
-		float nightFactor = night ? Tuning.NIGHT_FORM_SHADOW_STEP_FACTOR : 1.0F;
+		float nightBonus = night ? Tuning.NIGHT_FORM_SHADOW_STEP_BONUS : 0.0F;
 		frame.lines.add(night
-				? Component.translatable(KEY + "factor.on",
+				? Component.translatable(KEY + "factor.add",
 						Component.translatable(KEY + "factor.night_form"),
-						num(nightFactor), note("night_form"))
+						num(nightBonus), note("night_form"))
 				: Component.translatable(KEY + "factor.off",
 						Component.translatable(KEY + "factor.night_form"),
 						stepping ? note("no_night_form") : notStepped));
-		product *= nightFactor;
+		sum += nightBonus;
 
 		int flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned,
 				AssassinNodes.Family.SHADOW_FLURRY);
-		float flurryFactor = stepping && flurry > 0 ? Tuning.SHADOW_FLURRY_MULTIPLIER : 1.0F;
+		float flurryBonus = stepping && flurry > 0 ? Tuning.SHADOW_FLURRY_BONUS : 0.0F;
 		// Three-way, like Twin Fangs below it: unowned, owned-but-not-stepping,
 		// and fired. The two-way version claimed "not a Shadow Step strike" on
 		// the line where it HAD fired off a Shadow Step, which is the one thing
 		// a trace must never do — contradict its own verdict.
-		factor(frame, AssassinNodes.Family.SHADOW_FLURRY.nameKey(), stepping && flurry > 0,
-				flurryFactor, flurry <= 0 ? note("unowned")
+		bonus(frame, AssassinNodes.Family.SHADOW_FLURRY.nameKey(), stepping && flurry > 0,
+				flurryBonus, flurry <= 0 ? note("unowned")
 						: !stepping ? notStepped : note("stepped"));
-		product *= flurryFactor;
+		sum += flurryBonus;
 
 		int fangs = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.TWIN_FANGS);
 		float main = ModItems.daggerSwingDamage(attacker.getMainHandItem());
 		float off = ModItems.daggerSwingDamage(attacker.getOffhandItem());
 		boolean twinned = stepping && fangs > 0 && main > 0.0F && off > 0.0F;
-		float fangsFactor = twinned ? 1.0F + Tuning.TWIN_FANGS_OFFHAND_FACTOR * off / main : 1.0F;
-		factor(frame, AssassinNodes.Family.TWIN_FANGS.nameKey(), twinned, fangsFactor,
+		float fangsBonus = twinned ? Tuning.TWIN_FANGS_OFFHAND_BONUS * off / main : 0.0F;
+		bonus(frame, AssassinNodes.Family.TWIN_FANGS.nameKey(), twinned, fangsBonus,
 				fangs <= 0 ? note("unowned")
 						: !stepping ? notStepped : note("offhand", num(off), num(main)));
 
-		return product * fangsFactor;
+		return sum + fangsBonus;
+	}
+
+	/**
+	 * Mirror of the Flense stage, which the handler runs LAST and against the
+	 * damage the rest of the chain produced — so this one takes that number
+	 * rather than deriving it from ranks, and reports the armour curve at that
+	 * magnitude beside the share being ignored. Reading a Flense line on a big
+	 * hit and a small one back to back is the clearest statement of what the
+	 * node now is: the same 60% of armour ignored both times, worth very little
+	 * on the blow that had already flattened the armour and roughly double on
+	 * the one that had not.
+	 */
+	private static float explainFlense(final Frame frame, final ServerPlayer attacker,
+			final LivingEntity victim, final Set<Integer> owned, final float damage) {
+		int flense = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.FLENSE);
+
+		if (flense <= 0) {
+			factor(frame, AssassinNodes.Family.FLENSE.nameKey(), false, 1.0F, note("unowned"));
+			return 1.0F;
+		}
+
+		float ignore = Math.min(1.0F, Tuning.FLENSE_ARMOUR_IGNORE_PER_RANK * flense);
+		float armour = ArmourMath.armour(victim);
+		float value = ArmourMath.ignoreArmourFactor(victim, damage, ignore);
+		factor(frame, AssassinNodes.Family.FLENSE.nameKey(), true, value,
+				note("flense", num(armour), pct(ignore),
+						pct(ArmourMath.mitigation(victim, damage, armour)),
+						pct(ArmourMath.mitigation(victim, damage, armour * (1.0F - ignore)))));
+		return value;
 	}
 
 	/** Mirror of {@code archetypes$firstStrike}. */

@@ -366,14 +366,22 @@ public final class ColossusSlayer {
 	 * <p>A greatsword build that took Bladestorm instead of Decimate has no
 	 * Decimate to cast; rather than swallow the parry it falls through to the
 	 * sword's answer, which is the only other thing a parry can honestly do.
+	 * The same fall-through now covers a second case: {@code SlayerActives
+	 * .decimate(player, true)} reports whether the free cast was accepted, and
+	 * it refuses one that is inside {@link Tuning#DECIMATE_FREE_COOLDOWN_TICKS}.
+	 * That clock is not the key's — the author's "automatically cast Decimates
+	 * will not incur a cooldown, and can happen while the skill is already on
+	 * cooldown" still holds exactly — it is the fence that stops a parry, which
+	 * refunds itself on success in {@link #pay}, from being an unbounded
+	 * armour-ignoring nuke fired by being attacked often enough.
+	 *
+	 * <p>The riposte's Decimate is immediate: no wind-up, no Slowness, no
+	 * telegraph to read. A parry is already a reaction, and the wind-up exists
+	 * to buy the victim one; the person who just swung into a parry has had it.
 	 */
 	private static void riposte(final ServerPlayer player, final ServerLevel level,
 			final LivingEntity attacker, final float amount) {
-		boolean greatsword = ModItems.isGreatsword(player.getMainHandItem());
-
-		if (greatsword && SlayerNodes.rank(SubTree.SLAYER,
-				NodePurchases.owned(player, SubTree.SLAYER), SlayerNodes.Family.DECIMATE) > 0) {
-			SlayerActives.decimate(player, true);
+		if (SlayerActives.decimate(player, true)) {
 			return;
 		}
 

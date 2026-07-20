@@ -24,6 +24,7 @@ public class Archetypes implements ModInitializer {
 		ProtectorTicker.initialize();
 		SlayerCombat.initialize();
 		SlayerTicker.initialize();
+		SlayerActives.initialize();
 		CrusherTicker.initialize();
 		AgilityCombat.initialize();
 		AgilityTicker.initialize();
