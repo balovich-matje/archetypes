@@ -127,6 +127,17 @@ public final class CrusherActives {
 	 * hostiles launched. {@code launch} is the upward impulse, 0 for a slam
 	 * that is not supposed to throw anything.
 	 *
+	 * <p>Marked as a swing, Decimate's shape and Decimate's reason (see
+	 * {@link MeleeSwing}): a slam is the mace being brought down, and the mace's
+	 * own on-hit batch — Sunder's armour shred, Meteor's per-block bonus,
+	 * Shockwave's ring, Battle Trance's absorption, all reached through
+	 * {@code LivingEntityMixin#archetypes$sunderDamage} — is supposed to ride it.
+	 * The gate that hook now carries exists to keep thorns and DoT pulses out,
+	 * not the tree's own weapon actives, and a slam that quietly stopped shredding
+	 * armour would be this fix breaking the branch it was meant to leave alone.
+	 * Marking here rather than in the two callers covers Quake and the Colossus
+	 * Crusher's Aftershock landing at once.
+	 *
 	 * @return everyone it met — Earth Shatterer's refund is keyed on that list
 	 *         being empty
 	 */
@@ -135,14 +146,19 @@ public final class CrusherActives {
 		var victims = level.getEntitiesOfClass(LivingEntity.class,
 				player.getBoundingBox().inflate(radius, 1.5, radius),
 				entity -> entity != player && entity.isAlive() && !entity.isSpectator());
+		var previousSwing = MeleeSwing.begin(player);
 
-		for (LivingEntity victim : victims) {
-			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+		try {
+			for (LivingEntity victim : victims) {
+				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
 
-			if (launch > 0.0 && victim instanceof net.minecraft.world.entity.monster.Monster) {
-				victim.push(0.0, launch, 0.0);
-				victim.hurtMarked = true;
+				if (launch > 0.0 && victim instanceof net.minecraft.world.entity.monster.Monster) {
+					victim.push(0.0, launch, 0.0);
+					victim.hurtMarked = true;
+				}
 			}
+		} finally {
+			MeleeSwing.end(previousSwing);
 		}
 
 		return victims;
@@ -179,7 +195,12 @@ public final class CrusherActives {
 
 	/** Haymaker: one enormous punch — multiplied damage and a stun, no
 	 * knockback theatrics. Whiffing costs nothing; the cooldown starts only
-	 * when a jaw is actually met. */
+	 * when a jaw is actually met.
+	 *
+	 * <p>The punch is marked as a swing for the same reason the slam is: bare
+	 * fists are the Crusher's other weapon, and Sunder's doubled levels and
+	 * Battle Trance's doubled absorption are the whole of what a fists build
+	 * bought. See {@link MeleeSwing}. */
 	public static void haymaker(final ServerPlayer player) {
 		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
 
@@ -217,7 +238,14 @@ public final class CrusherActives {
 
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.HAYMAKER_DAMAGE_MULTIPLIER);
-		victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+		var previousSwing = MeleeSwing.begin(player);
+
+		try {
+			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+		} finally {
+			MeleeSwing.end(previousSwing);
+		}
+
 		victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
 				Tuning.HAYMAKER_STUN_TICKS, Tuning.HAYMAKER_STUN_AMPLIFIER), player);
 

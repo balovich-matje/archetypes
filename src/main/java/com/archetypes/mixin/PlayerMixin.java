@@ -89,4 +89,28 @@ public abstract class PlayerMixin {
 			cir.setReturnValue(false);
 		}
 	}
+
+	/**
+	 * Mark the one path a real swing takes, so the Slayer's on-hit passives can
+	 * tell a swing from everything else a player's damage source can be — see
+	 * {@link com.archetypes.MeleeSwing} for what that was costing.
+	 *
+	 * <p>Wrapped rather than a HEAD/RETURN pair, for the reason the Barbarian's
+	 * healing flag learned the hard way: an exception anywhere under this call
+	 * would leave the flag standing, and every later hit on the server would
+	 * read as a swing until something else overwrote it. The {@code finally}
+	 * makes that impossible.
+	 */
+	@com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod(method = "attack")
+	private void archetypes$markSwing(final net.minecraft.world.entity.Entity target,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+		net.minecraft.world.entity.Entity previous =
+				com.archetypes.MeleeSwing.begin((Player) (Object) this);
+
+		try {
+			original.call(target);
+		} finally {
+			com.archetypes.MeleeSwing.end(previous);
+		}
+	}
 }

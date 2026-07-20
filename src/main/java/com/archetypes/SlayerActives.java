@@ -84,11 +84,21 @@ public final class SlayerActives {
 				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
 						&& inFront(player, entity, flat));
 
-		for (LivingEntity victim : victims) {
-			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
-			Vec3 away = victim.position().subtract(player.position());
-			Vec3 push = new Vec3(away.x, 0.0, away.z).normalize();
-			victim.push(push.x * 0.8, 0.2, push.z * 0.8);
+		// Marked as a swing: a Decimate is the greatsword's biggest one, and
+		// the tree's on-hit passives are supposed to ride it exactly as they
+		// ride a click (see MeleeSwing — the gate exists to exclude thorns and
+		// bleed pulses, not the tree's own weapon actives).
+		var previousSwing = MeleeSwing.begin(player);
+
+		try {
+			for (LivingEntity victim : victims) {
+				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+				Vec3 away = victim.position().subtract(player.position());
+				Vec3 push = new Vec3(away.x, 0.0, away.z).normalize();
+				victim.push(push.x * 0.8, 0.2, push.z * 0.8);
+			}
+		} finally {
+			MeleeSwing.end(previousSwing);
 		}
 
 		// Blocks: only instant-break clutter is swept. destroyBlock drops loot

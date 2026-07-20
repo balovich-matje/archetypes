@@ -150,6 +150,7 @@ public abstract class LivingEntityMixin {
 			final DamageSource source) {
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
+				|| !com.archetypes.MeleeSwing.isSwinging(player)
 				|| !ModItems.isGreatsword(player.getMainHandItem())) {
 			return amount;
 		}
@@ -205,6 +206,17 @@ public abstract class LivingEntityMixin {
 	 * <p>Mind over Matter's other half, the armor bypass, is NOT here: it is a
 	 * real Breach stamp on the conjured weapon, applied inside vanilla's own
 	 * armor formula (see {@code MagicArmaments.enchant}).
+	 *
+	 * <p>The sword's branch is swing-gated, the arrow's is not, and the split is
+	 * the whole point of {@link com.archetypes.MeleeSwing}: "the conjured sword
+	 * hit them" is a claim about a swing, and being the direct entity is not
+	 * evidence of one. A wielder standing in their own Aura of Radiance or
+	 * bleeding someone with Feast is the direct entity of every pulse — both are
+	 * dealt as {@code indirectMagic(player, player)}, which names the player as
+	 * direct entity AND causing entity — so without the gate a channelled sword
+	 * doubled a DoT it had nothing to do with, once a second. The Spellbow's
+	 * arrow is a projectile and can never be confused for a swing, so it keeps
+	 * answering on its own marked-arrow evidence.
 	 */
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
 			at = @At("HEAD"), argsOnly = true)
@@ -215,9 +227,10 @@ public abstract class LivingEntityMixin {
 		}
 
 		if (source.getDirectEntity() == player) {
-			return com.archetypes.ModItems.isMagicSword(player.getMainHandItem())
-					? com.archetypes.MagicArmaments.shapeHit(player, level, amount, false)
-					: amount;
+			return com.archetypes.MeleeSwing.isSwinging(player)
+					&& com.archetypes.ModItems.isMagicSword(player.getMainHandItem())
+							? com.archetypes.MagicArmaments.shapeHit(player, level, amount, false)
+							: amount;
 		}
 
 		return source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
@@ -233,6 +246,18 @@ public abstract class LivingEntityMixin {
 	 * armor would eat, Deathblow recognising a Shadow Step strike by its
 	 * same-tick stamp — and the Venom/Blight coatings applied here so they
 	 * land even on killing blows.
+	 *
+	 * <p>Swing-gated, and this branch needed it worst of all, because the coatings
+	 * are APPLIED here rather than merely scaled. A dagger is the Nemesis Shadow's
+	 * weapon too, and the night form's Feast pulses a bleed as
+	 * {@code indirectMagic(feeder, feeder)} — which names the player as the
+	 * direct entity, exactly like a swing — so every second of every bleed used to
+	 * re-poison, re-wither and re-slow the victim and take Razor Edge, Expose,
+	 * Flense and Death Mark's multipliers on the pulse. Aura of Radiance, the
+	 * Blizzard, Contagion and a lightning chain all wear the same source and did
+	 * the same. Shadow Step's strike is unaffected: it goes through
+	 * {@code Player.attack} ({@code AgilityActives.strike}) and so is a swing by
+	 * the only definition that counts.
 	 */
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
 			at = @At("HEAD"), argsOnly = true)
@@ -240,6 +265,7 @@ public abstract class LivingEntityMixin {
 			final DamageSource source) {
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
+				|| !com.archetypes.MeleeSwing.isSwinging(player)
 				|| !ModItems.isDagger(player.getMainHandItem())) {
 			return amount;
 		}
@@ -393,6 +419,12 @@ public abstract class LivingEntityMixin {
 			return 0.0;
 		}
 
+		// Nor does a Rend pulse (author's call): a wound is not a blow, and a
+		// bleeding mob was being nudged back once a second by its own bleed.
+		if (com.archetypes.SlayerTicker.isBleeding()) {
+			return 0.0;
+		}
+
 		// Aura of Radiance doesn't shove either (author's explicit spec): an
 		// aura that punts the undead out of its own eight blocks would spend
 		// its ten seconds undoing itself.
@@ -499,6 +531,14 @@ public abstract class LivingEntityMixin {
 	 * First Strike: melee out of invisibility opens +25% per rank harder.
 	 * Vanilla breaks the invisibility right after the hit lands, so this
 	 * naturally pays once per vanishing.
+	 *
+	 * <p>"Melee" is the word the node is sold on, and this is the one hook in the
+	 * file with no weapon test at all to narrow it — so being the direct entity
+	 * was doing all the work, and that is precisely what a thorns reflect, a Rend
+	 * pulse and every {@code indirectMagic(player, player)} DoT also look like.
+	 * The "once per vanishing" promise depended on it too: a bleed ticking under
+	 * an invisibility took the opener bonus on every pulse, because a DoT does not
+	 * break invisibility the way a swing does.
 	 */
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
 			at = @At("HEAD"), argsOnly = true)
@@ -506,6 +546,7 @@ public abstract class LivingEntityMixin {
 			final DamageSource source) {
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
+				|| !com.archetypes.MeleeSwing.isSwinging(player)
 				|| !player.hasEffect(net.minecraft.world.effect.MobEffects.INVISIBILITY)) {
 			return amount;
 		}
@@ -542,13 +583,28 @@ public abstract class LivingEntityMixin {
 	 * (capped at 80%); each Sunder level claws 15% of that absorption back as
 	 * bonus damage, which stacks naturally with the real Breach enchantment
 	 * doing its own work inside the armor formula.
+	 *
+	 * <p>Swing-gated, and the gate guards far more than Sunder's own number: this
+	 * hook is also the only call site of {@link com.archetypes.CrusherCombat#onCrusherHit},
+	 * so Shockwave's splash and every point of Battle Trance absorption hang off
+	 * it. A mace Colossus can carry a shield — {@code WeaponClass.MACE} asks only
+	 * about the main hand — so an Iron Spikes reflect was a full Crusher on-hit
+	 * batch: armour shredded, a wave rung out, and a plate of absorption banked,
+	 * for a blow the player answered by standing still. Bare fists escaped that
+	 * one by accident ({@code HANDS} demands an empty off-hand, so no shield), but
+	 * not the DoTs, which name the player as direct entity whatever is held.
+	 *
+	 * <p>Quake, Haymaker and Aftershock all mark themselves as swings for this
+	 * hook's benefit — they are the mace doing its job, and Meteor and the batch
+	 * are supposed to ride them.
 	 */
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$sunderDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
 		if (!(source.getEntity() instanceof ServerPlayer player)
-				|| source.getDirectEntity() != player) {
+				|| source.getDirectEntity() != player
+				|| !com.archetypes.MeleeSwing.isSwinging(player)) {
 			return amount;
 		}
 
@@ -767,7 +823,14 @@ public abstract class LivingEntityMixin {
 	 * neither of their block rewards.
 	 *
 	 * <p>Melee only, and the attacker must BE the damage — a mace in hand does
-	 * not make an arrow unblockable.
+	 * not make an arrow unblockable. Nor does a mace in hand make a DoT
+	 * unblockable, which is the swing gate's job here: "the attacker IS the
+	 * damage" is true of a thorns reflect and of every
+	 * {@code indirectMagic(player, player)} pulse this mod deals, and a Blizzard
+	 * or an Aura of Radiance stripping a guard once a second is not a siege. The
+	 * node's promise is about a blow being driven home, so a blow is what it
+	 * costs. The Crusher's own actives mark themselves, so a Quake or a Haymaker
+	 * still breaks the shield it lands on.
 	 */
 	@ModifyExpressionValue(method = "applyItemBlocking",
 			at = @At(value = "INVOKE",
@@ -776,7 +839,8 @@ public abstract class LivingEntityMixin {
 	private float archetypes$unstoppableForce(final float blocked, final ServerLevel level,
 			final DamageSource source, final float damage) {
 		if (blocked <= 0.0F || !(source.getEntity() instanceof ServerPlayer attacker)
-				|| source.getDirectEntity() != attacker) {
+				|| source.getDirectEntity() != attacker
+				|| !com.archetypes.MeleeSwing.isSwinging(attacker)) {
 			return blocked;
 		}
 
@@ -848,6 +912,13 @@ public abstract class LivingEntityMixin {
 	 * the weapon, the raised guard, and the re-entry guard its own blast damage
 	 * needs); the cheap instance checks are here only to keep the common case —
 	 * every hit taken by every creature on the server — off that call.
+	 *
+	 * <p>The swing gate is here rather than in {@code ProtectorClash} because it
+	 * belongs to the same sentence as the two instance checks: the clash is the
+	 * far end of {@code archetypes$unstoppableForce} and has to answer the same
+	 * question the same way, or a source that could not break the guard could
+	 * still crater the ground between them. Both hooks are Siegebreaker, and
+	 * Siegebreaker is about a blow.
 	 */
 	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
 	private void archetypes$clash(final ServerLevel level, final DamageSource source,
@@ -856,6 +927,7 @@ public abstract class LivingEntityMixin {
 		if ((Object) this instanceof ServerPlayer defender
 				&& source.getEntity() instanceof ServerPlayer attacker
 				&& source.getDirectEntity() == attacker
+				&& com.archetypes.MeleeSwing.isSwinging(attacker)
 				&& com.archetypes.ProtectorClash.clash(attacker, defender, level)) {
 			cir.setReturnValue(false);
 		}

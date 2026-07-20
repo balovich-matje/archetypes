@@ -38,11 +38,26 @@ public final class SlayerTicker {
 	private record Bleed(ServerPlayer source, int rank) {
 	}
 
+	/**
+	 * True only while a Rend pulse is resolving. Two things read it: the
+	 * knockback funnel, because a wound should not shove (author's call —
+	 * a bleeding mob was being nudged away once a second by its own wound),
+	 * and nothing else needs to, because the pulse is not a swing and
+	 * {@code MeleeSwing} already keeps the on-hit passives off it.
+	 */
+	private static boolean bleeding;
+
 	/** Wounded entity -> remaining ticks are tracked in the paired int. */
 	private static final Map<LivingEntity, int[]> BLEED_TICKS = new IdentityHashMap<>();
 	private static final Map<LivingEntity, Bleed> BLEEDS = new IdentityHashMap<>();
 
 	private SlayerTicker() {
+	}
+
+	/** Whether a Rend pulse is landing right now — the knockback funnel's
+	 * question, same shape as {@code BlizzardZones.isPulsing}. */
+	public static boolean isBleeding() {
+		return bleeding;
 	}
 
 	public static void startBleed(final LivingEntity victim, final ServerPlayer source, final int rank) {
@@ -139,10 +154,17 @@ public final class SlayerTicker {
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.BLADESTORM_DAMAGE_FACTOR);
 
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
-				player.getBoundingBox().inflate(Tuning.BLADESTORM_RADIUS, 1.0, Tuning.BLADESTORM_RADIUS),
-				entity -> entity != player && entity.isAlive() && !entity.isSpectator())) {
-			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+		var previousSwing = MeleeSwing.begin(player);
+
+		try {
+			for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
+					player.getBoundingBox().inflate(Tuning.BLADESTORM_RADIUS, 1.0,
+							Tuning.BLADESTORM_RADIUS),
+					entity -> entity != player && entity.isAlive() && !entity.isSpectator())) {
+				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+			}
+		} finally {
+			MeleeSwing.end(previousSwing);
 		}
 	}
 
@@ -202,10 +224,16 @@ public final class SlayerTicker {
 
 			ServerLevel level = (ServerLevel) victim.level();
 			ServerPlayer source = entry.getValue().source();
-			victim.hurtServer(level,
-					source.isAlive() ? victim.damageSources().playerAttack(source)
-							: victim.damageSources().generic(),
-					entry.getValue().rank());
+			bleeding = true;
+
+			try {
+				victim.hurtServer(level,
+						source.isAlive() ? victim.damageSources().playerAttack(source)
+								: victim.damageSources().generic(),
+						entry.getValue().rank());
+			} finally {
+				bleeding = false;
+			}
 			level.sendParticles(ParticleTypes.DAMAGE_INDICATOR,
 					victim.getX(), victim.getY() + victim.getBbHeight() * 0.5, victim.getZ(),
 					2, 0.2, 0.2, 0.2, 0.0);

@@ -34,6 +34,18 @@ public final class SlayerCombat {
 				return;
 			}
 
+			// Every passive below is a reward for SWINGING, so a swing is what
+			// they cost. The damage source cannot answer that — Iron Spikes'
+			// thorns and Rend's own pulses both name the player as source and
+			// direct entity, which is precisely what a swing looks like — so
+			// the answer comes from MeleeSwing, which knows because it wraps
+			// Player.attack itself. Without it, a Slayer holding a shield
+			// reflected thorns that applied Rend, whose pulses rolled Blade
+			// Dance, whose lashes fed Taste of Blood (author's report).
+			if (!MeleeSwing.isSwinging(player)) {
+				return;
+			}
+
 			ItemStack weapon = player.getMainHandItem();
 			boolean sword = ModItems.isSword(weapon);
 			boolean greatsword = ModItems.isGreatsword(weapon);
@@ -75,7 +87,8 @@ public final class SlayerCombat {
 		});
 
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
-			if (!(source.getEntity() instanceof ServerPlayer player)) {
+			if (!(source.getEntity() instanceof ServerPlayer player)
+					|| !MeleeSwing.isSwinging(player)) {
 				return;
 			}
 
