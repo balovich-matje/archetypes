@@ -92,6 +92,21 @@ public final class ProcIndicatorHud {
 			sprite = com.archetypes.TreeNodes.familySprite(
 					com.archetypes.SubTree.COLOSSUS_CRUSHER, family);
 			size = 32;
+		} else if ("colossus_slayer".equals(payload.subTreeId())) {
+			var family = com.archetypes.ColossusSlayerNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.familySprite(
+					com.archetypes.SubTree.COLOSSUS_SLAYER, family);
+			size = 32;
+		} else if ("colossus_protector".equals(payload.subTreeId())) {
+			var family = com.archetypes.ColossusProtectorNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.familySprite(
+					com.archetypes.SubTree.COLOSSUS_PROTECTOR, family);
+			size = 32;
+		} else if ("nemesis_assassin".equals(payload.subTreeId())) {
+			var family = com.archetypes.NemesisAssassinNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.familySprite(
+					com.archetypes.SubTree.NEMESIS_ASSASSIN, family);
+			size = 32;
 		} else {
 			// The Protector's is the FALLBACK branch, so it has to survive a
 			// proc from a tree with no branch of its own: Family.valueOf throws
