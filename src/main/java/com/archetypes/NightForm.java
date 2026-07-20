@@ -7,6 +7,7 @@ import java.util.Set;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -23,8 +24,8 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * The Nemesis Shadow's night form: the Dark Ritual's ten-second channel, the
- * hour of vampirism it commits the player to, and every mechanic that hangs off
- * being transformed.
+ * vampirism it commits the player to, and every mechanic that hangs off being
+ * transformed.
  *
  * <h2>The state machine</h2>
  * Three states, all derived from two synced game-tick stamps and nothing else:
@@ -34,10 +35,16 @@ import org.jspecify.annotations.Nullable;
  *       {@link #beginRitual} enters it, {@link #interrupt} leaves it with no
  *       cooldown charged (author's spec: an interrupted ritual costs nothing),
  *       and any action other than moving interrupts — see
- *       {@link #interrupted}.</li>
- *   <li><b>Transformed</b> — {@code NIGHT_FORM_END} set and in the future. The
- *       form's length and its cooldown are ONE clock, so there is no way out
- *       before it lapses and no way to re-cast until it does.</li>
+ *       {@link #interrupted}. A press made DURING a channel is ignored, not
+ *       treated as a cancel: the ability key already carries two meanings
+ *       (transform, revert) and a third would make a repeated key event
+ *       toggle the ritual. Swinging, using an item or switching slots is the
+ *       way out, and it costs nothing.</li>
+ *   <li><b>Transformed</b> — {@code NIGHT_FORM_SINCE} set. It carries no
+ *       expiry: the form is a TOGGLE and lasts until the player ends it. The
+ *       stamp's value is read for one question only — whether
+ *       {@link Tuning#NIGHT_FORM_LOCKOUT_TICKS} has passed and the revert
+ *       press is allowed yet.</li>
  * </ul>
  * The two states are mutually exclusive: {@link #complete} clears the channel
  * stamp as it writes the form stamp.
@@ -50,8 +57,8 @@ import org.jspecify.annotations.Nullable;
  *   <tr><th>Call</th><th>Scope</th><th>Meaning</th></tr>
  *   <tr><td>{@link #isActive}</td><td>every client</td>
  *       <td>this player is transformed right now</td></tr>
- *   <tr><td>{@link #remainingTicks}</td><td>every client</td>
- *       <td>ticks of vampirism left (0 when mortal)</td></tr>
+ *   <tr><td>{@link #lockoutRemainingTicks}</td><td>every client</td>
+ *       <td>ticks before the form can be dropped (0 once it can)</td></tr>
  *   <tr><td>{@link #isChannelling}</td><td>every client</td>
  *       <td>a Dark Ritual is running — drives the 1st/3rd person animation</td></tr>
  *   <tr><td>{@link #channelProgress}</td><td>every client</td>
@@ -83,17 +90,32 @@ public final class NightForm {
 	// Predicates — the client-readable face.
 	// ------------------------------------------------------------------
 
-	/** Whether this player is transformed right now. Safe on both sides. */
+	/** Whether this player is transformed right now. The stamp's PRESENCE is
+	 * the answer — the form has no expiry. Safe on both sides. */
 	public static boolean isActive(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_END);
-		return end != null && player.level().getGameTime() < end;
+		return ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_SINCE) != null;
 	}
 
-	/** Ticks of night form left, or 0 when mortal. */
-	public static int remainingTicks(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_END);
-		long now = player.level().getGameTime();
-		return end == null || now >= end ? 0 : (int) Math.min(Integer.MAX_VALUE, end - now);
+	/** Ticks before the form may be dropped, or 0 when it may be (or when the
+	 * player is mortal). Counts down while the lockout runs. */
+	public static int lockoutRemainingTicks(final Player player) {
+		Long since = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_SINCE);
+
+		if (since == null) {
+			return 0;
+		}
+
+		// A stamp in the future can only mean a game-time rewind (a restored
+		// backup, a /time set is day-time not game-time); clamp rather than
+		// hand out a lockout longer than the one that was paid for.
+		long elapsed = Math.max(0L, player.level().getGameTime() - since);
+		return (int) Math.max(0L, Tuning.NIGHT_FORM_LOCKOUT_TICKS - elapsed);
+	}
+
+	/** Whether the transformed player has held the form long enough to drop
+	 * it. False for a mortal player, who has nothing to drop. */
+	public static boolean canRevert(final Player player) {
+		return isActive(player) && lockoutRemainingTicks(player) == 0;
 	}
 
 	/** Whether a Dark Ritual channel is running on this player. */
@@ -177,17 +199,22 @@ public final class NightForm {
 	// ------------------------------------------------------------------
 
 	/**
-	 * The ability-7 press. Starts the channel, or cancels a running one — a
-	 * deliberate cancel is just another interrupt and costs nothing. While
-	 * transformed the press does nothing at all: the hour is the node's price.
+	 * The ability-7 press, which is a TOGGLE:
+	 * <ul>
+	 *   <li>mortal — start the channel;</li>
+	 *   <li>channelling — ignored (see the class doc: the key already means two
+	 *       things, and a key-repeat must not toggle a running ritual);</li>
+	 *   <li>transformed — {@link #revert}, or a refusal line if the lockout has
+	 *       not run out.</li>
+	 * </ul>
 	 */
 	public static void beginRitual(final ServerPlayer player) {
-		if (rank(player, NemesisShadowNodes.Family.DARK_RITUAL) <= 0 || isActive(player)) {
+		if (rank(player, NemesisShadowNodes.Family.DARK_RITUAL) <= 0 || isChannelling(player)) {
 			return;
 		}
 
-		if (isChannelling(player)) {
-			interrupt(player);
+		if (isActive(player)) {
+			revert(player);
 			return;
 		}
 
@@ -220,13 +247,13 @@ public final class NightForm {
 				SoundEvents.RESPAWN_ANCHOR_DEPLETE.value(), SoundSource.PLAYERS, 0.8F, 0.8F);
 	}
 
-	/** The channel ran its course: the hour starts here. */
+	/** The channel ran its course: vampirism starts here and does not stop on
+	 * its own. The stamp is the entry time, not an expiry. */
 	private static void complete(final ServerPlayer player) {
 		clearChannel(player);
 
 		ServerLevel level = (ServerLevel) player.level();
-		((AttachmentTarget) player).setAttached(ModAttachments.NIGHT_FORM_END,
-				level.getGameTime() + Tuning.NIGHT_FORM_TICKS);
+		((AttachmentTarget) player).setAttached(ModAttachments.NIGHT_FORM_SINCE, level.getGameTime());
 
 		// The transformation stays with the state change rather than moving to
 		// the client FX pass: it must reach everyone in earshot, whether or not
@@ -248,27 +275,51 @@ public final class NightForm {
 	}
 
 	/**
-	 * End the night form now. The ability key can never reach this — the hour
-	 * is not cancellable — but the ticker calls it when the clock lapses and
-	 * {@code ModAttachments.forgetNodes} calls it when the node is respecced
-	 * away. Safe to call on a mortal player.
+	 * The player's own request to be human again. Refused, with a reason on the
+	 * action bar rather than in chat, until the lockout has run out — the hour
+	 * is the node's price and the only thing left of the old timer.
+	 *
+	 * <p>No second channel: the ritual is what buys the form, and a
+	 * ten-second interruptible channel to LEAVE it would strand a player
+	 * mid-fight in the one state the sun burns. Dropping it is immediate.
+	 */
+	private static void revert(final ServerPlayer player) {
+		int left = lockoutRemainingTicks(player);
+
+		if (left > 0) {
+			// Overlay, not chat: the key can be pressed repeatedly and this
+			// line overwrites itself instead of stacking. No sound, for the
+			// same reason.
+			player.sendOverlayMessage(Component.translatable("message.archetypes.night_form.locked",
+					(left + 59 * 20) / (60 * 20)));
+			return;
+		}
+
+		end(player);
+	}
+
+	/**
+	 * End the night form now, unconditionally. Reached by the player's own
+	 * {@link #revert} once the lockout has passed, by the ticker's strand-guard
+	 * when the archetype goes, and by {@code ModAttachments.forgetNodes} when
+	 * the node is respecced away. Safe to call on a mortal player.
 	 */
 	public static void end(final ServerPlayer player) {
 		AttachmentTarget target = (AttachmentTarget) player;
 
-		if (target.getAttached(ModAttachments.NIGHT_FORM_END) == null) {
+		if (target.getAttached(ModAttachments.NIGHT_FORM_SINCE) == null) {
 			return;
 		}
 
-		target.removeAttached(ModAttachments.NIGHT_FORM_END);
+		target.removeAttached(ModAttachments.NIGHT_FORM_SINCE);
 		target.removeAttached(ModAttachments.NIGHT_SUNLIT);
 		target.removeAttached(ModAttachments.NIGHT_SENSED);
 		target.removeAttached(ModAttachments.NIGHT_SENSED_PLAYERS);
 
 		if (player.isAlive()) {
-			// The lapse is deliberately small next to the arrival: a light
-			// going out, not a second event. Same beacon the game uses when a
-			// standing power stops standing.
+			// The return to human is deliberately small next to the arrival: a
+			// light going out, not a second event. Same beacon the game uses
+			// when a standing power stops standing.
 			((ServerLevel) player.level()).sendParticles(ParticleTypes.SMOKE,
 					player.getX(), player.getY() + 1.0, player.getZ(), 12, 0.3, 0.5, 0.3, 0.01);
 			player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
@@ -292,7 +343,7 @@ public final class NightForm {
 			tickChannel(player);
 		}
 
-		if (((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_END) != null) {
+		if (((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_SINCE) != null) {
 			tickForm(player);
 		}
 	}
@@ -349,7 +400,9 @@ public final class NightForm {
 	}
 
 	private static void tickForm(final ServerPlayer player) {
-		if (!isActive(player) || rank(player, NemesisShadowNodes.Family.DARK_RITUAL) <= 0) {
+		// The form no longer lapses on its own, so the only teardown left here
+		// is the respec case: the node that grants it is gone.
+		if (rank(player, NemesisShadowNodes.Family.DARK_RITUAL) <= 0) {
 			end(player);
 			return;
 		}

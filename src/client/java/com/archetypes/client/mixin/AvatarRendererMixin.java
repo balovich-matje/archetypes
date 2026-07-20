@@ -28,6 +28,8 @@ public abstract class AvatarRendererMixin {
 				.archetypes$addLayer(new BulwarkShieldLayer((AvatarRenderer) (Object) this));
 		((LivingEntityRendererAccessor) this)
 				.archetypes$addLayer(new com.archetypes.client.BladestormLayer((AvatarRenderer) (Object) this));
+		((LivingEntityRendererAccessor) this).archetypes$addLayer(
+				new com.archetypes.client.NightAuraLayer((AvatarRenderer) (Object) this, context));
 	}
 
 	/**
@@ -59,6 +61,15 @@ public abstract class AvatarRendererMixin {
 			state.legsEquipment = net.minecraft.world.item.ItemStack.EMPTY;
 			state.feetEquipment = net.minecraft.world.item.ItemStack.EMPTY;
 		}
+
+		// The night form's aura, same handoff. Invisibility wins over it in
+		// every case: an invisible Cutpurse must give away nothing, and layers
+		// are not skipped for an invisible entity on their own (see
+		// NightAuraLayer). isInvisible covers the mod's Invisibility and
+		// vanilla's potion alike — both are MobEffects.INVISIBILITY.
+		fabricState.setData(com.archetypes.client.NightAuraLayer.ACTIVE,
+				entity instanceof net.minecraft.world.entity.player.Player player
+						&& com.archetypes.NightForm.isActive(player) && !entity.isInvisible());
 
 		// Bladestorm: same handoff, keyed on the synced channel-end timestamp.
 		Long stormEnd = ((AttachmentTarget) entity).getAttached(ModAttachments.BLADESTORM_END);

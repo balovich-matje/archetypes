@@ -33,13 +33,33 @@ public final class CooldownBarHud {
 	/** Breathing room between the hotbar's edge and our first slot. */
 	private static final int MARGIN = 4;
 
+	/** How many ticks a tile still has to drain, or 0 when it is ready. Kept as
+	 * a function rather than an attachment type because not every clock IS an
+	 * attachment: the night form's lockout is derived from when the form was
+	 * entered, not stored as a ready-at stamp. */
+	private interface Clock {
+		int remainingTicks(Player player);
+	}
+
 	private record Ability(SubTree tree, int node, net.minecraft.client.KeyMapping key,
-			AttachmentType<Long> readyAt, int totalTicks, float manaCost, boolean spendsAll) {
+			Clock clock, int totalTicks, float manaCost, boolean spendsAll) {
 		/** Cooldown-driven active: no mana involved. */
 		private Ability(final SubTree tree, final Enum<?> family,
 				final net.minecraft.client.KeyMapping key,
 				final AttachmentType<Long> readyAt, final int totalTicks) {
-			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key, readyAt, totalTicks,
+			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key,
+					player -> {
+						Long ready = ((AttachmentTarget) player).getAttached(readyAt);
+						long left = ready == null ? 0L : ready - player.level().getGameTime();
+						return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, left));
+					}, totalTicks, 0.0F, false);
+		}
+
+		/** An active whose clock is not a ready-at attachment. */
+		private Ability(final SubTree tree, final Enum<?> family,
+				final net.minecraft.client.KeyMapping key,
+				final Clock clock, final int totalTicks) {
+			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key, clock, totalTicks,
 					0.0F, false);
 		}
 
@@ -47,7 +67,7 @@ public final class CooldownBarHud {
 		 * An all-mana spell (Meteorite) prices itself at the whole pool. */
 		private Ability(final SubTree tree, final Enum<?> family,
 				final net.minecraft.client.KeyMapping key, final float manaCost, final boolean spendsAll) {
-			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key, null, 0,
+			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key, (Clock) null, 0,
 					manaCost, spendsAll);
 		}
 	}
@@ -69,7 +89,6 @@ public final class CooldownBarHud {
 			return;
 		}
 
-		long now = client.level.getGameTime();
 		int width = client.getWindow().getGuiScaledWidth();
 		int height = client.getWindow().getGuiScaledHeight();
 		// Docked to the hotbar's right edge, bottom-aligned with it — the
@@ -87,9 +106,7 @@ public final class CooldownBarHud {
 			// shows (bake-off sets included), the tracker shows.
 			VanillaUi.nodeIcon(graphics, ability.tree(), ability.node(), iconX, iconY);
 
-			Long readyAt = ability.readyAt() == null ? null
-					: ((AttachmentTarget) player).getAttached(ability.readyAt());
-			long remaining = readyAt == null ? 0 : readyAt - now;
+			long remaining = ability.clock() == null ? 0 : ability.clock().remainingTicks(player);
 
 			// Spells: the price tag sits top-left, and an unaffordable spell
 			// dims exactly like one on cooldown — the bar reads one language.
@@ -301,9 +318,9 @@ public final class CooldownBarHud {
 					false));
 		}
 
-		// The Dark Ritual's tile doubles as the night form's clock: the form
-		// and its cooldown are one stamp, so the drain that says "recharging"
-		// is the same drain that says "still a vampire".
+		// The Dark Ritual's tile is the night form's lockout: while it drains,
+		// the key is refused; bright means "press to go back". A mortal
+		// Cutpurse's tile is bright too — for them the press starts the ritual.
 		var nemesis = NodePurchases.owned(player, SubTree.NEMESIS_SHADOW);
 
 		if (com.archetypes.NemesisShadowNodes.rank(SubTree.NEMESIS_SHADOW, nemesis,
@@ -311,7 +328,8 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(SubTree.NEMESIS_SHADOW,
 					com.archetypes.NemesisShadowNodes.Family.DARK_RITUAL,
 					ArchetypesClient.ABILITY_KEYS[6],
-					ModAttachments.NIGHT_FORM_END, Tuning.NIGHT_FORM_TICKS));
+					com.archetypes.NightForm::lockoutRemainingTicks,
+					Tuning.NIGHT_FORM_LOCKOUT_TICKS));
 		}
 
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);

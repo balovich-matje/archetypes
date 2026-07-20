@@ -56,6 +56,16 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * stale sprint presses the moment a draw begins. */
 	private static boolean wasDrawingBow;
 
+	/** Whether each ability key was already held last tick. GLFW auto-repeat
+	 * feeds KeyboardHandler a stream of PRESS-shaped events while a key is
+	 * held, and 26.2's handler calls KeyMapping.click for every one of them
+	 * (it only branches on release) — so a HELD key racks up clicks at the OS
+	 * repeat rate. For a press-to-fire ability that meant one payload per
+	 * repeat: the Dark Ritual's toggle started, cancelled and restarted its
+	 * channel several times a second, which is the sound the author heard.
+	 * Clicks made while the key was already down are dropped here. */
+	private static final boolean[] ABILITY_KEY_HELD = new boolean[ABILITY_KEYS.length];
+
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
@@ -80,11 +90,23 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
+				boolean held = ABILITY_KEYS[slot].isDown();
+				boolean clicked = false;
+
+				// The queue is always drained, held or not, so a backlog can
+				// never leak into a later tick and fire twice.
 				while (ABILITY_KEYS[slot].consumeClick()) {
-					if (client.player != null) {
-						ClientPlayNetworking.send(new ActiveAbilityPayload(slot));
-					}
+					clicked = true;
 				}
+
+				// A tap that began and ended inside one tick still fires (it
+				// is not down NOW, so it cannot be a repeat); several clicks
+				// in one tick collapse to one payload.
+				if (clicked && !(held && ABILITY_KEY_HELD[slot]) && client.player != null) {
+					ClientPlayNetworking.send(new ActiveAbilityPayload(slot));
+				}
+
+				ABILITY_KEY_HELD[slot] = held;
 			}
 
 			// The level-up toast: the XP attachment syncs to this client, so

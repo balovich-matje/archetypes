@@ -290,18 +290,24 @@ public final class ModAttachments {
 	// tree; read them through {@link NightForm}, never directly.
 
 	/**
-	 * Game tick the night form ends; absent means not transformed. The form and
-	 * its "cooldown" are the same clock (author's spec), so this single stamp is
-	 * both "you are a vampire until" and "you may not ritual again until".
+	 * Game tick the night form was ENTERED; absent means not transformed. The
+	 * form itself has no end — it is a toggle (author's spec) — so presence is
+	 * the "you are a vampire" boolean and the value is only ever read to answer
+	 * "has the lockout passed yet", i.e. may this player turn back.
 	 *
-	 * <p>Persistent and copyOnDeath: an hour is longer than most sessions and
-	 * longer than most deaths, and a relog that cured vampirism would make the
-	 * lock — the whole cost of the node — free to dodge. Synced to EVERY client,
+	 * <p>Persistent and copyOnDeath: the form is now permanent state, so a
+	 * relog, a crash or a death that cured vampirism would erase a commitment
+	 * the player cannot otherwise undo for an hour. Synced to EVERY client,
 	 * because it is other players' renderers that need to know what just walked
 	 * into the room.
+	 *
+	 * <p>The id deliberately differs from the retired {@code night_form_end}:
+	 * that stamp meant an expiry, and reading an old save's expiry as an entry
+	 * time would hand a lapsed vampire a fresh, silent hour. Saves written
+	 * before the toggle simply wake up mortal.
 	 */
-	public static final AttachmentType<Long> NIGHT_FORM_END = AttachmentRegistry.create(
-			Archetypes.id("night_form_end"),
+	public static final AttachmentType<Long> NIGHT_FORM_SINCE = AttachmentRegistry.create(
+			Archetypes.id("night_form_since"),
 			builder -> builder
 					.persistent(Codec.LONG)
 					.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all())

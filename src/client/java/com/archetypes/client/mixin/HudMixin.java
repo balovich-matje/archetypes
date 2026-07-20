@@ -12,9 +12,10 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
 /**
- * The night form's health bar: every heart it draws is swapped for vanilla's
- * WITHERED sprite, which is the same silhouette drained of colour — grey, still
- * outlined, still readable at a glance.
+ * The night form's health bar: every heart it draws is swapped for our own
+ * GREY sprite — vanilla's heart geometry with its red ramp replaced, so the
+ * silhouette and the socket alignment are unchanged. Vanilla's withered set is
+ * deliberately left alone: it means the Wither, and only the Wither.
  *
  * <p>The swap happens at the blit rather than at {@code HeartType.forPlayer}
  * because that enum is private to {@code Hud} and cannot be named from here.

@@ -1,5 +1,6 @@
 package com.archetypes.client;
 
+import com.archetypes.Archetypes;
 import com.archetypes.NightForm;
 
 import net.minecraft.client.Minecraft;
@@ -18,10 +19,12 @@ import net.minecraft.world.entity.player.Player;
  * (death, respec, a lapse while the screen is up).
  */
 public final class UndeadHud {
-	/** Vanilla's grey heart set, keyed by the same four flags its sprite names
-	 * carry. Withered is what the game already draws for a player rotting on
-	 * their feet — the undead read is vanilla's own, not an invention. */
-	private static final String WITHERED = "hud/heart/withered_";
+	/** Our own grey heart set, keyed by the same flags vanilla's sprite names
+	 * carry. NOT vanilla's withered set: that sprite means the Wither's effect
+	 * and must keep meaning only that. Ours is vanilla's exact heart geometry
+	 * with the red ramp swapped for a grey one, so it still aligns pixel for
+	 * pixel with the container sockets behind it. */
+	private static final String GREY = "hud/heart/grey_";
 	private static final String HEART_PREFIX = "hud/heart/";
 
 	private UndeadHud() {
@@ -38,7 +41,8 @@ public final class UndeadHud {
 	 * A heart sprite drained of its colour, or the sprite unchanged when the
 	 * player is mortal. Containers (the empty sockets) and vehicle hearts pass
 	 * through: the sockets are already grey, and a mount's health is the
-	 * mount's business.
+	 * mount's business. Withered hearts pass through as well — a vampire who
+	 * is ALSO withering should read as withering.
 	 */
 	public static Identifier drain(final Identifier sprite) {
 		if (!active() || !sprite.getNamespace().equals("minecraft")) {
@@ -52,9 +56,12 @@ public final class UndeadHud {
 			return sprite;
 		}
 
-		// Vanilla ships the full eight-way withered set, so the flags carried
-		// by the name being replaced map one-for-one onto a name that exists.
-		StringBuilder drained = new StringBuilder(WITHERED);
+		// We ship all eight combinations of the flags that survive this
+		// mapping (hardcore x half x blinking), so every name reachable here
+		// maps onto a sprite that exists. The poisoned/frozen/absorbing
+		// variants collapse into the plain grey ones on purpose: while
+		// transformed, the health row says one thing.
+		StringBuilder drained = new StringBuilder(GREY);
 
 		if (path.contains("hardcore")) {
 			drained.append("hardcore_");
@@ -66,6 +73,6 @@ public final class UndeadHud {
 			drained.append("_blinking");
 		}
 
-		return Identifier.withDefaultNamespace(drained.toString());
+		return Archetypes.id(drained.toString());
 	}
 }

@@ -11,11 +11,13 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The Dark Ritual's channel, seen and heard: dark motes drawn up out of the
  * ground into a tightening column, over a heartbeat that quickens as the ten
- * seconds run out.
+ * seconds run out — and, once it takes, the trail the transformed body sheds
+ * for as long as the form is worn.
  *
  * <p>Client-side and stateless. {@code NIGHT_CHANNEL_END} syncs to every
  * client, so each one runs this pass over every player it can see and arrives
@@ -40,6 +42,10 @@ public final class NightFormFx {
 	 * in rate over the channel. */
 	private static final int BEAT_SLOW = 21;
 	private static final int BEAT_FAST = 6;
+	/** The transformed trail's per-tick mote chance, standing still and at its
+	 * ceiling. One mote a tick would be a bonfire; these read as a shed. */
+	private static final float TRAIL_IDLE_CHANCE = 0.12F;
+	private static final float TRAIL_MAX_CHANCE = 0.7F;
 
 	private NightFormFx() {
 	}
@@ -53,9 +59,41 @@ public final class NightFormFx {
 			for (AbstractClientPlayer player : client.level.players()) {
 				if (NightForm.isChannelling(player)) {
 					channelTick(client.level, player, NightForm.channelProgress(player));
+				} else if (NightForm.isActive(player) && !player.isInvisible()) {
+					formTick(client.level, player);
 				}
 			}
 		});
+	}
+
+	/**
+	 * The transformed body's own trail: dark motes shed from the torso, drifting
+	 * down and lagging behind the player's motion, so a vampire crossing a field
+	 * leaves a smear of night. Denser while moving — standing still it is a
+	 * slow smoulder, which keeps a hiding vampire from lighting themselves up.
+	 *
+	 * <p>Never runs for an invisible player (the caller's gate). This is the
+	 * author's hard constraint: a Cutpurse in night form lives on Invisibility,
+	 * and a particle trail is a position.
+	 */
+	private static void formTick(final ClientLevel level, final AbstractClientPlayer player) {
+		RandomSource random = player.getRandom();
+		double speed = player.getDeltaMovement().horizontalDistance();
+		float chance = (float) Math.min(TRAIL_MAX_CHANCE, TRAIL_IDLE_CHANCE + speed * 6.0);
+
+		if (random.nextFloat() >= chance) {
+			return;
+		}
+
+		// Born at the body, given the player's own velocity halved so the mote
+		// falls behind rather than travelling with them.
+		Vec3 drift = player.getDeltaMovement().scale(-0.5);
+		double x = player.getX() + (random.nextDouble() - 0.5) * 0.7;
+		double y = player.getY() + 0.4 + random.nextDouble() * (player.getBbHeight() - 0.6);
+		double z = player.getZ() + (random.nextDouble() - 0.5) * 0.7;
+
+		level.addParticle(random.nextInt(4) == 0 ? ParticleTypes.SCULK_SOUL : ParticleTypes.SMOKE,
+				x, y, z, drift.x, drift.y - 0.02, drift.z);
 	}
 
 	private static void channelTick(final ClientLevel level, final AbstractClientPlayer player,

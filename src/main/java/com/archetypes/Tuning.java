@@ -653,10 +653,10 @@ public final class Tuning {
 	 * are not graced: they are tested by a hurtTime delta, which cannot mistake
 	 * the tail of an older hit for a new one. */
 	public static final int DARK_RITUAL_GRACE_TICKS = 10;
-	/** The night form's length AND its cooldown — the author's sketch names one
-	 * hour for both, so they are one clock: you cannot end it early and you
-	 * cannot re-cast until it lapses. One real-time hour, 20 ticks/second. */
-	public static final int NIGHT_FORM_TICKS = 72_000;
+	/** The night form is a TOGGLE, not a timer: it lasts until the player ends
+	 * it. This is the lockout — how long after transforming the revert press is
+	 * refused. One real-time hour, 20 ticks/second (author's spec). */
+	public static final int NIGHT_FORM_LOCKOUT_TICKS = 72_000;
 	/** A kill while transformed restores this share of the victim's MAXIMUM
 	 * health. Max, not remaining: the sketch says "25% of target creature's
 	 * health", and remaining health at the moment of death is ~0. */

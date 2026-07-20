@@ -292,7 +292,7 @@ count), `AbstractArrowMixin`/`AbstractArrowAccessor`/`ProjectileMixin` (True Sho
 flight and reflection), `CrossbowItemMixin` (Rapid Reload), `BlocksAttacksMixin`,
 and `LivingEntityAccessor`. Client-side: `AvatarRendererMixin` (armor hiding,
 ability poses), `LocalPlayerMixin`, `MinecraftMixin`, `HudMixin` (the night
-form's withered hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
+form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
 
@@ -332,8 +332,8 @@ tick.
 | `VanillaUi` | shared vanilla-style window/inset drawing and `nodeIcon` |
 | `BookmarkTab` | the survival-inventory bookmark widget |
 | `SpellProjectileRenderer`, `BladestormLayer`, `BulwarkShieldLayer`, `GreatswordSweepParticle`, `SlayerAnimations` | render layers and the animation player |
-| `NightAnimations`, `NightFormFx` | the Dark Ritual's pose, and its particle column and quickening heartbeat |
-| `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its withered hearts and its hidden hunger row |
+| `NightAnimations`, `NightFormFx`, `NightAuraLayer` | the Dark Ritual's pose, its particle column and quickening heartbeat plus the transformed body's trail, and the violet energy-swirl aura onlookers see on a vampire |
+| `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its grey hearts and its hidden hunger row |
 | `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours, and the two empowered active identities |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 
@@ -344,8 +344,13 @@ walk `level.players()` each client tick the way `SlayerAnimations` does, so
 onlookers see a caster's ritual exactly as the caster does. The three display
 overrides are gated per frame and hold no state to restore: `UndeadHud.active()`
 decides both the hunger row's `replaceElement` and `HudMixin`'s heart-sprite
-swap (vanilla's own WITHERED set, not new art), and `SunBlindOverlay` snaps its
-bloom to zero the frame the form lapses. `ExtraSensoryPerception` supplies the
+swap (our own `hud/heart/grey_*` set — vanilla's WITHERED sprites are left to
+mean the Wither), and `SunBlindOverlay` snaps its bloom to zero the frame the
+form ends. The aura and the trail are the one part that is NOT purely the
+owner's view: `AvatarRendererMixin` writes `NightAuraLayer.ACTIVE` onto every
+player's render state the way it does `BULWARK_ACTIVE`, and both it and
+`NightFormFx`'s trail are suppressed whenever the player is invisible, so a
+Cutpurse's Invisibility is never betrayed by their own vampirism. `ExtraSensoryPerception` supplies the
 outline colour that `EntityRendererMixin` writes onto `EntityRenderState`
 (vanilla's glowing field) and the sensed test that `LevelExtractorMixin` uses to
 excuse a walled-off creature from occlusion culling — both read the LOCAL

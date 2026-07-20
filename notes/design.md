@@ -1925,3 +1925,63 @@ wants a second playtest.
 Warding. Family constants stay `SPELLBOW`/`LEVITATION`/`WARD` — they are lang
 keys and sprite filenames, and the display names already read correctly.
 Node descriptions are the author's own sketch text, proofread only.
+
+## Night form round two: toggle, key edge, aura, grey hearts (2026-07-20)
+
+Author's verdict on the tree: "simply incredible", with four fixes.
+
+**The form is a toggle, not a timer.** Author's words: "if player transformed
+into night form, he doesn't have a timer, he now just has a 1 hour cooldown
+until he can switch back into human form." So `NIGHT_FORM_END` (an expiry)
+becomes `NIGHT_FORM_SINCE` (an entry stamp): its presence is "you are a
+vampire", full stop, and its value answers only "may you turn back yet".
+`Tuning.NIGHT_FORM_TICKS` is now `NIGHT_FORM_LOCKOUT_TICKS`, same 72,000.
+A new attachment id rather than a reinterpreted one, because reading an old
+save's expiry as an entry time would silently hand a lapsed vampire a fresh
+hour; pre-toggle saves wake mortal. The stamp was already persistent and
+copyOnDeath and stays so — the form is permanent state now, so losing it to a
+relog would erase something the player cannot redo for an hour.
+
+Reverting does NOT re-channel. The ritual is what buys the form; a ten-second
+interruptible channel to LEAVE it would strand a player mid-fight in the one
+state the sun burns. The refusal before the hour is up is an action-bar line
+(overwrites itself, no sound, no chat spam), not a denial beep.
+
+**The key spam was GLFW auto-repeat.** 26.2's `KeyboardHandler.keyPress`
+branches only on release: every PRESS *and REPEAT* event calls
+`KeyMapping.click`, so a held key racks up clicks at the OS repeat rate and
+`ArchetypesClient`'s `while (consumeClick())` sent one payload per repeat.
+With the old cancel-on-press toggle that started, cancelled and restarted the
+ritual several times a second — the sound the author heard. Fixed at the
+source for ALL seven ability keys: clicks are always drained, but a payload
+only goes out when the key was not already down last tick, so a held key fires
+exactly once and a sub-tick tap still fires. Belt and braces on the server: a
+press during a running channel is now IGNORED rather than treated as a cancel.
+The key already means two things (transform, revert) and a third would let any
+duplicated press toggle the ritual; swinging, using an item or switching slots
+still aborts a channel at no cost.
+
+**The vampire looks like one.** Both halves the author offered, because they
+cover different distances: `NightAuraLayer` puts violet filaments crawling
+over the body (vanilla's energy-swirl path — note it is ADDITIVE with a 0.1
+alpha cutout, so nothing drawn there can darken skin; the "dark" read is a
+deep violet drawn as light on a mostly-transparent sheet), and `NightFormFx`
+sheds a smoke/sculk-soul trail that lags behind the player's motion so the
+form still reads in a moving silhouette at range. The shell is vanilla's
+outer-armor humanoid, not the player model — a coplanar copy would z-fight.
+
+Hard constraint from the author: none of it may show while the player is
+invisible, since a Cutpurse in night form lives on Invisibility. Both gates
+read the entity's invisible flag, which is where the mod's Invisibility and
+vanilla's potion both land. This is not decoration: `shouldRenderLayers`
+defaults to TRUE, so an invisible player's layers keep drawing unless
+something stops them.
+
+**Grey hearts, not withered ones.** The withered sprite means the Wither and
+now keeps meaning only that. Ours is vanilla's own heart art with its
+four-tone red ramp remapped to a grey one — same pixels, same silhouette, same
+alignment against the container sockets, with a faint blue lift so it reads as
+cold rather than as a disabled widget. Eight sprites, the combinations the HUD
+path actually reaches (hardcore x half x blinking); poisoned/frozen/absorbing
+hearts collapse into the plain grey ones on purpose, and a vampire who is also
+withering still shows withered.
