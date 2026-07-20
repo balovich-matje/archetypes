@@ -597,13 +597,19 @@ public abstract class LivingEntityMixin {
 	 * Ghost Form: 25/50/75% of incoming hits simply pass through a body that
 	 * is only half there. Rolled on the victim's intake like Sidestep, so it
 	 * voids the whole hit whatever its source.
+	 *
+	 * <p>Sources tagged {@code bypasses_invulnerability} are the one exception:
+	 * that tag is {@code out_of_world} and {@code generic_kill}, i.e. the void
+	 * and {@code /kill}. Nothing this mod grants may make a hard kill fail —
+	 * at rank 3 a /kill would miss three times in four.
 	 */
 	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
 	private void archetypes$ghostForm(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if (!((Object) this instanceof ServerPlayer player)
-				|| !com.archetypes.NightForm.isActive(player)) {
+				|| !com.archetypes.NightForm.isActive(player)
+				|| source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
 			return;
 		}
 
