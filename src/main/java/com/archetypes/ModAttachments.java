@@ -277,12 +277,13 @@ public final class ModAttachments {
 	 * Deliberately transient and NOT copyOnDeath: the aura is a ten-second
 	 * consequence of a cast, so a relog or a death simply ends it, and
 	 * {@link RadianceAura}'s ticker never has to reconcile an aura it did not
-	 * start. Synced to the owner so the client could dress it later without a
-	 * bespoke packet.
+	 * start. Synced to EVERY client, not just the owner: the aura's light is
+	 * drawn client-side around whoever is glowing, so an onlooker's client has
+	 * to know the aura is up. Read it through {@link RadianceAura#isActive}.
 	 */
 	public static final AttachmentType<Long> RADIANCE_END = AttachmentRegistry.create(
 			Archetypes.id("radiance_end"),
-			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
 
 	// --- Nemesis Shadow (epic): the Dark Ritual and the night form ---
 	// The three attachments below are the FX agent's whole contract with this

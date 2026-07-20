@@ -1832,11 +1832,25 @@ phase, brightening with charge.
 
 **Oracle Priest** — Aura of Radiance is keyed to a Holy Light cast, not a
 keybind: 10s (30s with Beacon), undead within 8 blocks burn and allies heal,
-Holy Light costs +100% while the node is owned. NO dynamic light: the
-`minecraft:light` approach cannot be made airtight (a chunk saved with the
-block plus a process kill orphans an invisible permanent light with no way to
-find it), so the aura is sold with a turning gold rim and END_ROD sparks.
-LambDynamicLights would not have lit it either — it keys off held items.
+Holy Light costs +100% while the node is owned. It resolves four times a
+second at a quarter share each, so it reads as a field rather than a
+heartbeat; the per-second totals in `Tuning` are unchanged, and the pulse gets
+past vanilla's damage cooldown by lending each victim a zero i-frame counter
+for the length of one `hurtServer` call and putting the old one back, so no
+other damage source can tell the aura happened.
+
+Real light level 14 on the caster, and it is drawn **client-side only**: a
+`minecraft:light` in a *ServerLevel* cannot be made airtight (a chunk saved
+with the block plus a process kill orphans an invisible permanent light with
+no way to find it), so `RadianceLight` writes into the client's own
+`ClientLevel` instead, which is rebuilt from packets on join and thrown away
+on leave. The server is never told, nothing is serialised, and a kill at any
+instant leaves nothing — there is no cleanup window to miss. It is
+LambDynamicLights' idea (a synced flag re-lights the client level) done
+through the vanilla light engine rather than a render-time override, so
+falloff and occlusion are real. The turning gold rim and END_ROD sparks stay
+as the aura's silhouette at distance, and an `aura_of_radiance` MobEffect
+carries the buff icon (cosmetic only — `RADIANCE_END` remains the one clock).
 
 **Nemesis Shadow** — the Cutpurse's first epic tree and the mod's first
 transformation. `NightForm` is the state machine; `isInvertedHealAndHarm` is

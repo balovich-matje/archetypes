@@ -61,6 +61,7 @@ public class ArchetypesClient implements ClientModInitializer {
 		SlayerAnimations.initialize();
 		NightAnimations.initialize();
 		NightFormFx.initialize();
+		RadianceLight.initialize();
 
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);

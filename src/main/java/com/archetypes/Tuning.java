@@ -606,12 +606,18 @@ public final class Tuning {
 	/** The aura reaches this far, blocks — the same number for the harm and
 	 * the heal, because the tooltip promises one radius. */
 	public static final double RADIANCE_AURA_RADIUS = 8.0;
-	/** The aura resolves once a second. Must stay at or above 11 ticks: below
-	 * that, LivingEntity.hurtServer's invulnerableTime gate would swallow the
-	 * repeat and the aura would tick at half its advertised rate. */
-	public static final int RADIANCE_PULSE_TICKS = 20;
-	/** Damage to the undead and healing to friends per pulse, health points:
-	 * the bare aura, then Brilliance rank 1 and 2 (0.5 / 1 / 2 hearts). The
+	/** The aura resolves four times a second so it reads as a field rather
+	 * than a heartbeat. Below 11 ticks LivingEntity.hurtServer's
+	 * invulnerableTime gate would swallow every repeat, so the pulse does NOT
+	 * go through the gate: {@link RadianceAura} lends the victim a zero
+	 * i-frame counter for the one call and puts the old one back (see
+	 * {@code hurt}). Must divide RADIANCE_AURA_TICKS and RADIANCE_BEACON_TICKS
+	 * exactly, or the per-second totals below stop being whole. */
+	public static final int RADIANCE_PULSE_TICKS = 5;
+	/** Damage to the undead and healing to friends per SECOND, health points:
+	 * the bare aura, then Brilliance rank 1 and 2 (0.5 / 1 / 2 hearts). A
+	 * pulse pays RADIANCE_PULSE_TICKS/20 of this, so the advertised per-second
+	 * number is what the clock actually delivers whatever the cadence. The
 	 * rungs SET the number rather than adding to it — the author's spec reads
 	 * "increased to 1/2 hearts", so rank 2 is 2 hearts, not 2.5. */
 	public static final float RADIANCE_AURA_AMOUNT = 1.0F;
@@ -632,6 +638,10 @@ public final class Tuning {
 	public static final int RADIANCE_HALO_POINTS = 12;
 	public static final int RADIANCE_HALO_PERIOD_TICKS = 4;
 	public static final int RADIANCE_HALO_TURN_TICKS = 80;
+	/** The block-light level the caster emits while the aura is up (the
+	 * author's number; glowstone is 15). Client-side only — see
+	 * {@code RadianceLight} — so nothing about this reaches saved data. */
+	public static final int RADIANCE_LIGHT_LEVEL = 14;
 
 	// --- Nemesis Shadow (epic): the Dark Ritual and the night form ---
 	/** The channel, in ticks. Ten seconds of standing perfectly still is the
@@ -690,7 +700,9 @@ public final class Tuning {
 	public static final int FEAST_TICKS = 80;
 	/** The bleed resolves once a second. Must stay at or above 11 ticks, or
 	 * LivingEntity.hurtServer's invulnerableTime gate swallows the repeat and
-	 * the bleed pays out at half its advertised rate (see RADIANCE_PULSE_TICKS). */
+	 * the bleed pays out at half its advertised rate. (The aura goes faster
+	 * than that only because it lends its victims a zero i-frame counter for
+	 * the length of one call; the bleed deliberately does not.) */
 	public static final int FEAST_PULSE_TICKS = 20;
 
 	// --- Seeker: Holy Light ---

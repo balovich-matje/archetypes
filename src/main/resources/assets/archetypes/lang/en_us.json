@@ -201,6 +201,7 @@
 	"item.archetypes.spellcasting_tome_100": "Spellcasting Tome (+100 Levels)",
 	"item.archetypes.spellcasting_tome.granted": "Spellcasting level %s",
 	"item.archetypes.spellcasting_tome.no_specialities": "Needs the Specialities mod to level Spellcasting",
+	"effect.archetypes.aura_of_radiance": "Aura of Radiance",
 	"effect.archetypes.mana_restore": "Mana Restore",
 	"effect.archetypes.mana_regeneration": "Mana Regeneration",
 	"item.minecraft.potion.effect.mana_restore": "Potion of Mana Restore",

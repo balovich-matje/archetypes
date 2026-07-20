@@ -27,7 +27,7 @@ synced copy. Two sync scopes are used:
   (all but `DISENGAGE_READY_AT`, which stays server-side and unsynced).
 - `AttachmentSyncPredicate.all()` — synced to everyone. Used for state other
   players' renderers need: `BULWARK_ACTIVE`, `ARMOR_HIDDEN`, `DECIMATE_SWING_AT`,
-  `BLADESTORM_END`, `QUAKE_CHARGE_END`.
+  `BLADESTORM_END`, `QUAKE_CHARGE_END`, `RADIANCE_END`.
 
 Some attachments are `.persistent(codec)` and `.copyOnDeath()` (the archetype,
 its XP, owned nodes, mana); others are transient (cooldown timestamps, proc
@@ -335,6 +335,7 @@ tick.
 | `NightAnimations`, `NightFormFx` | the Dark Ritual's pose, and its particle column and quickening heartbeat |
 | `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its withered hearts and its hidden hunger row |
 | `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours, and the two empowered active identities |
+| `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 
 **The night form's client half.** Everything the Nemesis Shadow's night form
 looks and sounds like reads the synced attachments through `NightForm`'s static

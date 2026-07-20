@@ -2,6 +2,8 @@ package com.archetypes;
 
 import java.util.Set;
 
+import com.archetypes.mixin.LivingEntityAccessor;
+
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.minecraft.core.particles.DustParticleOptions;
@@ -18,6 +20,7 @@ import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.entity.player.Player;
 
 /**
  * Aura of Radiance, the Oracle Priest's root: Holy Light leaves the caster
@@ -28,8 +31,9 @@ import net.minecraft.world.entity.monster.Enemy;
  *
  * <p>The aura is a pure server effect and its only persistent trace is the
  * attachment holding its end tick, which is transient by design (see
- * {@link ModAttachments#RADIANCE_END}). Nothing is placed in the world: see the
- * lighting note on {@link #halo}.
+ * {@link ModAttachments#RADIANCE_END}). Nothing is ever placed in the server's
+ * world: the glow is drawn client-side from that same stamp (see
+ * {@code RadianceLight}), and the halo is particles.
  */
 public final class RadianceAura {
 	private static final Identifier STEADFAST_ID = Archetypes.id("radiance_steadfast");
@@ -48,6 +52,16 @@ public final class RadianceAura {
 
 	public static boolean isPulsing() {
 		return pulsing;
+	}
+
+	/**
+	 * Whether this player is wreathed in light right now. Safe on either side
+	 * and on any {@link Player}: {@code RADIANCE_END} syncs to every client, so
+	 * this is the whole contract the client-side glow reads.
+	 */
+	public static boolean isActive(final Player player) {
+		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.RADIANCE_END);
+		return end != null && player.level().getGameTime() < end;
 	}
 
 	public static void initialize() {
@@ -76,8 +90,16 @@ public final class RadianceAura {
 		int ticks = OraclePriestNodes.rank(SubTree.ORACLE_PRIEST, owned,
 				OraclePriestNodes.Family.BEACON_OF_LIGHT) > 0
 						? Tuning.RADIANCE_BEACON_TICKS : Tuning.RADIANCE_AURA_TICKS;
+		// +1, the pad BlizzardZones needs for the same reason: the cast runs
+		// from the packet queue, so by the first tick-end this ticker observes
+		// game time may already have advanced once. Without the pad the head
+		// pulse (remaining == ticks) could be missed and the aura would deliver
+		// one pulse short of the advertised total. With it the observed
+		// remaining runs ticks..1 or ticks+1..1 and both yield exactly
+		// ticks/RADIANCE_PULSE_TICKS pulses.
 		((AttachmentTarget) player).setAttached(ModAttachments.RADIANCE_END,
-				player.level().getGameTime() + ticks);
+				player.level().getGameTime() + ticks + 1);
+		RadianceEffect.show(player, ticks);
 
 		player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.BEACON_ACTIVATE, SoundSource.PLAYERS, 0.5F, 1.6F);
@@ -93,6 +115,7 @@ public final class RadianceAura {
 	public static void end(final ServerPlayer player) {
 		((AttachmentTarget) player).removeAttached(ModAttachments.RADIANCE_END);
 		steadfast(player, false);
+		RadianceEffect.hide(player);
 	}
 
 	private static void tick(final ServerPlayer player) {
@@ -115,6 +138,10 @@ public final class RadianceAura {
 		if (!active) {
 			if (end != null) {
 				target.removeAttached(ModAttachments.RADIANCE_END);
+				// The badge outlives the stamp only when the aura is cut short
+				// (a respec mid-aura); on a natural lapse its own duration has
+				// already run out and this is a no-op.
+				RadianceEffect.hide(player);
 			}
 
 			return;
@@ -124,7 +151,11 @@ public final class RadianceAura {
 		long remaining = end - now;
 
 		if (remaining % Tuning.RADIANCE_PULSE_TICKS == 0) {
-			pulse(level, player, owned);
+			// Damage and healing pulse four times a second; the status effects
+			// stay on the old once-a-second beat. Re-laying a 40-tick Weakness
+			// four times a second would resync the whole effect to every
+			// tracking client four times a second for no visible gain.
+			pulse(level, player, owned, remaining % 20 == 0);
 		}
 
 		if (remaining % Tuning.RADIANCE_HALO_PERIOD_TICKS == 0) {
@@ -133,19 +164,25 @@ public final class RadianceAura {
 	}
 
 	/**
-	 * One second of aura. The undead branch comes first and is exhaustive for
-	 * the undead, exactly as Holy Light's own burst resolves them, so a
-	 * non-hostile undead (a skeleton horse) is burned rather than healed.
+	 * One pulse of aura — a RADIANCE_PULSE_TICKS share of a second's worth.
+	 * The undead branch comes first and is exhaustive for the undead, exactly
+	 * as Holy Light's own burst resolves them, so a non-hostile undead (a
+	 * skeleton horse) is burned rather than healed.
 	 */
-	private static void pulse(final ServerLevel level, final ServerPlayer player, final Set<Integer> owned) {
+	private static void pulse(final ServerLevel level, final ServerPlayer player,
+			final Set<Integer> owned, final boolean layEffects) {
 		int brilliance = OraclePriestNodes.rank(SubTree.ORACLE_PRIEST, owned,
 				OraclePriestNodes.Family.BRILLIANCE);
-		float amount = switch (brilliance) {
+		float perSecond = switch (brilliance) {
 			case 0 -> Tuning.RADIANCE_AURA_AMOUNT;
 			case 1 -> Tuning.RADIANCE_BRILLIANCE_AMOUNT_RANK_1;
 			default -> Tuning.RADIANCE_BRILLIANCE_AMOUNT_RANK_2;
 		};
-		boolean blinding = OraclePriestNodes.rank(SubTree.ORACLE_PRIEST, owned,
+		// The Tuning numbers are per second; a pulse pays its share. The
+		// duration constants are whole multiples of the period, so the shares
+		// add back up to the advertised total exactly.
+		float amount = perSecond * Tuning.RADIANCE_PULSE_TICKS / 20.0F;
+		boolean blinding = layEffects && OraclePriestNodes.rank(SubTree.ORACLE_PRIEST, owned,
 				OraclePriestNodes.Family.BLINDING_LIGHT) > 0;
 		double radiusSq = Tuning.RADIANCE_AURA_RADIUS * Tuning.RADIANCE_AURA_RADIUS;
 
@@ -156,8 +193,7 @@ public final class RadianceAura {
 					player.getBoundingBox().inflate(Tuning.RADIANCE_AURA_RADIUS),
 					living -> living.isAlive() && living.distanceToSqr(player) <= radiusSq)) {
 				if (creature.isInvertedHealAndHarm()) {
-					creature.hurtServer(level,
-							level.damageSources().indirectMagic(player, player), amount);
+					hurt(level, creature, player, amount);
 
 					if (blinding && creature.isAlive()) {
 						creature.addEffect(new MobEffectInstance(MobEffects.WEAKNESS,
@@ -176,7 +212,7 @@ public final class RadianceAura {
 			pulsing = false;
 		}
 
-		if (OraclePriestNodes.rank(SubTree.ORACLE_PRIEST, owned,
+		if (layEffects && OraclePriestNodes.rank(SubTree.ORACLE_PRIEST, owned,
 				OraclePriestNodes.Family.RETRIBUTION) > 0) {
 			player.addEffect(new MobEffectInstance(MobEffects.STRENGTH,
 					Tuning.RADIANCE_EFFECT_TICKS, Tuning.RADIANCE_EFFECT_AMPLIFIER));
@@ -186,17 +222,54 @@ public final class RadianceAura {
 	}
 
 	/**
+	 * One victim's share of a pulse.
+	 *
+	 * <p>{@code LivingEntity.hurtServer} swallows a repeat outright while
+	 * {@code invulnerableTime > 10} and the new damage is no larger than
+	 * {@code lastHurt} — at a five-tick cadence that is every pulse after the
+	 * first, so a naive call would pay out a quarter of the advertised rate.
+	 * The two ways out are both wrong: a BYPASSES_COOLDOWN damage type still
+	 * stamps {@code invulnerableTime = 20} on the way through, which would keep
+	 * every mob in the aura permanently inside a damage cooldown and quietly
+	 * dock the caster's own sword hits; simply zeroing the counter and walking
+	 * away would hand out free i-frames.
+	 *
+	 * <p>So the counter and {@code lastHurt} are saved, zeroed for the length
+	 * of exactly one call, and put back. The pulse lands in full and the
+	 * victim's cooldown state afterwards is bit-for-bit what it would have been
+	 * had the aura not touched it — no other damage source sees the aura at
+	 * all. Knockback is already suppressed for the duration via
+	 * {@link #isPulsing}.
+	 */
+	private static void hurt(final ServerLevel level, final LivingEntity victim,
+			final ServerPlayer player, final float amount) {
+		LivingEntityAccessor accessor = (LivingEntityAccessor) victim;
+		int invulnerable = victim.invulnerableTime;
+		float lastHurt = accessor.archetypes$getLastHurt();
+
+		victim.invulnerableTime = 0;
+		accessor.archetypes$setLastHurt(0.0F);
+
+		try {
+			victim.hurtServer(level, level.damageSources().indirectMagic(player, player), amount);
+		} finally {
+			victim.invulnerableTime = invulnerable;
+			accessor.archetypes$setLastHurt(lastHurt);
+		}
+	}
+
+	/**
 	 * The aura's only visual: a turning rim of holy motes at the eight-block
 	 * edge and a column of sparks on the caster.
 	 *
-	 * <p>The sketch asked for real glowstone-strength light on the player.
-	 * Vanilla has no dynamic entity lighting, and the only way to fake it
-	 * server-side is to plant and chase {@code minecraft:light} blocks — which
-	 * cannot be made airtight: a chunk that saves while the aura is up and a
-	 * process that dies before the cleanup runs leave an invisible light block
-	 * in the player's world with no way to find it again. Particles cost
-	 * nothing and can leave nothing behind, so the aura is sold with light
-	 * rather than lit.
+	 * <p>The real light the sketch asked for is NOT here and is not the
+	 * server's business: planting {@code minecraft:light} in a ServerLevel
+	 * cannot be made airtight, because a chunk that saves while the aura is up
+	 * and a process that dies before the cleanup runs leave an invisible light
+	 * block in the saved world with no way to find it again. The glow is drawn
+	 * entirely inside the client's own copy of the level instead — see
+	 * {@code RadianceLight} — which is thrown away at disconnect and never
+	 * written to disk.
 	 */
 	private static void halo(final ServerLevel level, final ServerPlayer player) {
 		double turn = (level.getGameTime() % Tuning.RADIANCE_HALO_TURN_TICKS)
