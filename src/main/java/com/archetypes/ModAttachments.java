@@ -478,6 +478,41 @@ public final class ModAttachments {
 			Archetypes.id("marked_by"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.all()));
 
+	// --- Colossus Crusher (epic): Titan's Leap ---
+	// Read all four through {@link TitansLeap}, never directly.
+
+	/** Titan's Leap's cooldown, same shape as the bash's. */
+	public static final AttachmentType<Long> LEAP_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("leap_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/**
+	 * The game tick a leap left the ground; absent means nobody is in the air
+	 * on our account. Presence is the in-flight flag the landing consumes and
+	 * the fall-damage waiver reads.
+	 *
+	 * <p>Server-side only and transient: a leap cannot survive a relog, and
+	 * {@code Archetypes}' JOIN handler clears it the way it clears the Dark
+	 * Ritual's channel — a restored stamp would waive fall damage forever.
+	 */
+	public static final AttachmentType<Long> LEAP_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("leap_at"));
+
+	/**
+	 * The highest Y the running leap has reached. This, minus the Y it lands
+	 * at, is what Aftershock pays per block fallen — deliberately NOT
+	 * {@code fallDistance}, which vanilla has already zeroed by the time an
+	 * END_SERVER_TICK listener sees the ground (the same trap
+	 * {@code SMASH_AT} exists to dodge). Server-side bookkeeping.
+	 */
+	public static final AttachmentType<Double> LEAP_PEAK_Y =
+			AttachmentRegistry.<Double>create(Archetypes.id("leap_peak_y"));
+
+	/** Immovable's last anvil, so a nullified shove is announced once a second
+	 * rather than once per hit. Server-side only. */
+	public static final AttachmentType<Long> IMMOVABLE_CUE_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("immovable_cue_at"));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),
@@ -555,6 +590,10 @@ public final class ModAttachments {
 			// A mark outlives a respec the same way: the flag lives on ANOTHER
 			// entity, so nothing but this call would ever take it back off.
 			DeathMark.clear(serverPlayer);
+			// And an in-flight leap: the stamp is what waives fall damage, and
+			// only the landing clears it. A respec mid-air would land on a
+			// player who no longer owns the node and never take the waiver back.
+			TitansLeap.clear(serverPlayer);
 		}
 
 		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_END);

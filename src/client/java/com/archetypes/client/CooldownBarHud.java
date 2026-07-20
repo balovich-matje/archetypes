@@ -357,6 +357,18 @@ public final class CooldownBarHud {
 					ModAttachments.DEATH_MARK_READY_AT, Tuning.DEATH_MARK_COOLDOWN_TICKS));
 		}
 
+		// Titan's Leap shares slot 6 with the Dark Ritual; a Brawler only ever
+		// sees this one, a Cutpurse only ever sees that one.
+		var colossusCrusher = NodePurchases.owned(player, SubTree.COLOSSUS_CRUSHER);
+
+		if (com.archetypes.ColossusCrusherNodes.rank(SubTree.COLOSSUS_CRUSHER, colossusCrusher,
+				com.archetypes.ColossusCrusherNodes.Family.TITAN_LEAP) > 0) {
+			abilities.add(new Ability(SubTree.COLOSSUS_CRUSHER,
+					com.archetypes.ColossusCrusherNodes.Family.TITAN_LEAP,
+					ArchetypesClient.ABILITY_KEYS[6],
+					ModAttachments.LEAP_READY_AT, Tuning.TITAN_LEAP_COOLDOWN_TICKS));
+		}
+
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
 
 		if (com.archetypes.OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, oracleWiz,

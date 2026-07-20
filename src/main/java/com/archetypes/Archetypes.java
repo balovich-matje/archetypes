@@ -222,6 +222,11 @@ public class Archetypes implements ModInitializer {
 					// entity id is not stable across a relog anyway — a restored
 					// stamp would name whatever wears that id now.
 					DeathMark.clear(handler.player);
+					// And an in-flight Titan's Leap: the stamp is what waives
+					// fall damage, and only a landing spends it — a leap
+					// restored on a player standing safely on the ground would
+					// waive every fall they ever took after it.
+					TitansLeap.clear(handler.player);
 				});
 
 		// A player dying mid-channel: end it before drops so the real wand

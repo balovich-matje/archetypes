@@ -64,7 +64,10 @@ public final class CrusherCombat {
 
 		if (trance > 0) {
 			float gain = Tuning.TRANCE_ABSORPTION_PER_HIT * (weapon == WeaponClass.HANDS ? 2.0F : 1.0F);
-			float cap = Tuning.TRANCE_CAP_PER_RANK * trance;
+			// The epic Bulwark raises this ceiling, and it has to be the SAME
+			// ceiling the MAX_ABSORPTION modifier carries — a cap raised in the
+			// attribute but not here would never be banked into.
+			float cap = CrusherTicker.tranceCap(player, owned);
 			player.setAbsorptionAmount(Math.min(cap,
 					Math.max(player.getAbsorptionAmount(), 0.0F) + gain));
 			target.setAttached(ModAttachments.TRANCE_HIT_AT, now);

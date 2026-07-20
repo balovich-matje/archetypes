@@ -21,6 +21,9 @@ public final class CrusherTicker {
 	private static final Identifier CLINCH_ID = Archetypes.id("clinch");
 	private static final Identifier QUAKE_IMMUNITY_ID = Archetypes.id("quake_immunity");
 	private static final Identifier TRANCE_CAP_ID = Archetypes.id("battle_trance_cap");
+	/** Immovable's own id, distinct from Clinch's and Quake's: three
+	 * modifiers on one attribute must not share a key or the last writer wins. */
+	private static final Identifier IMMOVABLE_EXPLOSION_ID = Archetypes.id("immovable_explosion");
 
 	private CrusherTicker() {
 	}
@@ -91,7 +94,7 @@ public final class CrusherTicker {
 		// straight back to nothing.
 		int trance = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE);
 		apply(player.getAttribute(Attributes.MAX_ABSORPTION), TRANCE_CAP_ID,
-				trance > 0, trance * Tuning.TRANCE_CAP_PER_RANK,
+				trance > 0, tranceCap(player, owned),
 				AttributeModifier.Operation.ADD_VALUE);
 
 		// Battle Trance decay: the banked hearts fade once the fight is over.
@@ -102,6 +105,30 @@ public final class CrusherTicker {
 				player.setAbsorptionAmount(Math.max(0.0F, player.getAbsorptionAmount() - 1.0F));
 			}
 		}
+
+		// Immovable: explosions and wind charges do not route through
+		// LivingEntity.knockback at all — ServerExplosion pushes entities
+		// directly and asks EXPLOSION_KNOCKBACK_RESISTANCE instead, so the
+		// attribute is the only place that clause can live. Hits are the
+		// knockback funnel's job (LivingEntityMixin$immovableKnockback).
+		apply(player.getAttribute(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE), IMMOVABLE_EXPLOSION_ID,
+				TitansLeap.rank(player, ColossusCrusherNodes.Family.IMMOVABLE) > 0, 1.0,
+				AttributeModifier.Operation.ADD_VALUE);
+
+		TitansLeap.tick(player);
+	}
+
+	/**
+	 * Battle Trance's ceiling in health: the base tree's 2.0 per rank plus the
+	 * epic Bulwark's 6.0 per rank. Both the MAX_ABSORPTION modifier above and
+	 * the per-hit clamp in {@code CrusherCombat} have to read this same number,
+	 * or Bulwark raises a ceiling the banking never reaches.
+	 */
+	public static float tranceCap(final ServerPlayer player, final java.util.Set<Integer> owned) {
+		int trance = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE);
+		int bulwark = TitansLeap.rank(player, ColossusCrusherNodes.Family.BULWARK);
+		return trance * Tuning.TRANCE_CAP_PER_RANK
+				+ bulwark * Tuning.COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK;
 	}
 
 	private static void apply(final AttributeInstance attribute, final Identifier id,

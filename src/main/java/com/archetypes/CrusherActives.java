@@ -67,18 +67,7 @@ public final class CrusherActives {
 				+ density * Tuning.QUAKE_DENSITY_BONUS
 				+ meteor * Tuning.QUAKE_METEOR_BONUS;
 
-		var victims = level.getEntitiesOfClass(LivingEntity.class,
-				player.getBoundingBox().inflate(Tuning.QUAKE_RADIUS, 1.5, Tuning.QUAKE_RADIUS),
-				entity -> entity != player && entity.isAlive() && !entity.isSpectator());
-
-		for (LivingEntity victim : victims) {
-			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
-
-			if (victim instanceof net.minecraft.world.entity.monster.Monster) {
-				victim.push(0.0, Tuning.QUAKE_LAUNCH, 0.0);
-				victim.hurtMarked = true;
-			}
-		}
+		var victims = slam(player, level, Tuning.QUAKE_RADIUS, damage, Tuning.QUAKE_LAUNCH);
 
 		// Earth Shatterer: a slam that met no flesh vents into the ground —
 		// most of the cooldown refunded, and the earth itself gives way,
@@ -129,8 +118,42 @@ public final class CrusherActives {
 			}
 		}
 
-		// The earth answers: a ring of this ground's own debris plus the
-		// heavy smash — the closest vanilla has to rock breaking rock.
+		slamFx(player, level, Tuning.QUAKE_RADIUS);
+	}
+
+	/**
+	 * The slam's victim pass, shared by Quake and by the Colossus Crusher's
+	 * Aftershock landing: multiplied damage to everything standing in the ring,
+	 * hostiles launched. {@code launch} is the upward impulse, 0 for a slam
+	 * that is not supposed to throw anything.
+	 *
+	 * @return everyone it met — Earth Shatterer's refund is keyed on that list
+	 *         being empty
+	 */
+	static java.util.List<LivingEntity> slam(final ServerPlayer player, final ServerLevel level,
+			final double radius, final float damage, final double launch) {
+		var victims = level.getEntitiesOfClass(LivingEntity.class,
+				player.getBoundingBox().inflate(radius, 1.5, radius),
+				entity -> entity != player && entity.isAlive() && !entity.isSpectator());
+
+		for (LivingEntity victim : victims) {
+			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+
+			if (launch > 0.0 && victim instanceof net.minecraft.world.entity.monster.Monster) {
+				victim.push(0.0, launch, 0.0);
+				victim.hurtMarked = true;
+			}
+		}
+
+		return victims;
+	}
+
+	/**
+	 * The earth answers: a ring of this ground's own debris plus the heavy
+	 * smash — the closest vanilla has to rock breaking rock. The ring is drawn
+	 * at the slam's own radius, so eight blocks reads as eight blocks.
+	 */
+	static void slamFx(final ServerPlayer player, final ServerLevel level, final double radius) {
 		var ground = player.getBlockStateOn();
 
 		if (!ground.isAir()) {
@@ -139,9 +162,9 @@ public final class CrusherActives {
 				level.sendParticles(
 						new net.minecraft.core.particles.BlockParticleOption(
 								net.minecraft.core.particles.ParticleTypes.BLOCK, ground),
-						player.getX() + Math.cos(angle) * Tuning.QUAKE_RADIUS * 0.8,
+						player.getX() + Math.cos(angle) * radius * 0.8,
 						player.getY() + 0.2,
-						player.getZ() + Math.sin(angle) * Tuning.QUAKE_RADIUS * 0.8,
+						player.getZ() + Math.sin(angle) * radius * 0.8,
 						3, 0.15, 0.25, 0.15, 0.1);
 			}
 		}

@@ -85,8 +85,31 @@ public final class ProcIndicatorHud {
 				Item base = family.icon();
 				item = base == null ? ItemStack.EMPTY : new ItemStack(base);
 			}
+		} else if ("colossus_crusher".equals(payload.subTreeId())) {
+			// The epic tree ships a complete 32px set, so there is no item or
+			// overlay fallback to walk — the sprite is the whole resolution.
+			var family = com.archetypes.ColossusCrusherNodes.Family.valueOf(payload.family());
+			sprite = com.archetypes.TreeNodes.familySprite(
+					com.archetypes.SubTree.COLOSSUS_CRUSHER, family);
+			size = 32;
 		} else {
-			var family = ProtectorNodes.Family.valueOf(payload.family());
+			// The Protector's is the FALLBACK branch, so it has to survive a
+			// proc from a tree with no branch of its own: Family.valueOf throws
+			// on an unknown name, and a thrown packet handler takes the client
+			// with it. An unrecognised family simply does not flash.
+			ProtectorNodes.Family family = null;
+
+			for (ProtectorNodes.Family candidate : ProtectorNodes.Family.values()) {
+				if (candidate.name().equals(payload.family())) {
+					family = candidate;
+					break;
+				}
+			}
+
+			if (family == null) {
+				return;
+			}
+
 			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.PROTECTOR, family);
 			size = 32;
 

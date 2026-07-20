@@ -746,4 +746,129 @@ public abstract class LivingEntityMixin {
 
 		return angle;
 	}
+
+	/**
+	 * Unstoppable Force: a mace or a bare fist is not blocked, and the shield
+	 * raised against it is knocked aside the way the Warden knocks it aside.
+	 *
+	 * <p>Both halves, in one hook, and the reason they cannot be split: vanilla
+	 * routes the shield-disable through {@code Player.blockUsingItem}, which
+	 * {@code applyItemBlocking} only calls when {@code damageBlocked > 0} — so
+	 * an attack that blocks for nothing can never reach it. We therefore
+	 * intercept {@code resolveBlockedDamage} itself, run the Warden's own call
+	 * ({@code BlocksAttacks.disable}, the exact method
+	 * {@code Warden.getSecondsToDisableBlocking}'s 5 seconds feed) by hand, and
+	 * hand back zero.
+	 *
+	 * <p>Zeroing here rather than at the return of {@code applyItemBlocking} is
+	 * deliberate: the blocked amount is also what pays the shield's durability
+	 * ({@code hurtBlockingItem}) and what gates Iron Spikes and Braced. A hit
+	 * that was never blocked must cost the blocker no durability and proc
+	 * neither of their block rewards.
+	 *
+	 * <p>Melee only, and the attacker must BE the damage — a mace in hand does
+	 * not make an arrow unblockable.
+	 */
+	@ModifyExpressionValue(method = "applyItemBlocking",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/item/component/BlocksAttacks;resolveBlockedDamage("
+							+ "Lnet/minecraft/world/damagesource/DamageSource;FD)F"))
+	private float archetypes$unstoppableForce(final float blocked, final ServerLevel level,
+			final DamageSource source, final float damage) {
+		if (blocked <= 0.0F || !(source.getEntity() instanceof ServerPlayer attacker)
+				|| source.getDirectEntity() != attacker) {
+			return blocked;
+		}
+
+		com.archetypes.WeaponClass weapon = com.archetypes.WeaponClass.of(attacker);
+
+		if ((weapon != com.archetypes.WeaponClass.MACE && weapon != com.archetypes.WeaponClass.HANDS)
+				|| com.archetypes.TitansLeap.rank(attacker,
+						com.archetypes.ColossusCrusherNodes.Family.SIEGEBREAKER) <= 0) {
+			return blocked;
+		}
+
+		LivingEntity blocker = (LivingEntity) (Object) this;
+		net.minecraft.world.item.ItemStack blockingWith = blocker.getItemBlockingWith();
+		var blocksAttacks = blockingWith == null ? null
+				: blockingWith.get(net.minecraft.core.component.DataComponents.BLOCKS_ATTACKS);
+
+		if (blocksAttacks != null) {
+			blocksAttacks.disable(level, blocker, Tuning.UNSTOPPABLE_DISABLE_SECONDS, blockingWith);
+		}
+
+		com.archetypes.TitansLeap.unstoppableCue(attacker, level, blocker);
+		return 0.0F;
+	}
+
+	/**
+	 * Immovable: nothing shoves a Colossus. Its own hook next to Incorporeal's
+	 * and Siege's, for their reason — knockback immunity has to hold for a
+	 * sourceless shove too — rather than a KNOCKBACK_RESISTANCE modifier, so
+	 * the node can announce itself when it actually eats something. Explosions
+	 * and wind charges never reach this method; that clause lives on
+	 * EXPLOSION_KNOCKBACK_RESISTANCE in {@code CrusherTicker}.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private double archetypes$immovableKnockback(final double strength) {
+		if (strength <= 0.0 || !((Object) this instanceof ServerPlayer player)
+				|| com.archetypes.TitansLeap.rank(player,
+						com.archetypes.ColossusCrusherNodes.Family.IMMOVABLE) <= 0) {
+			return strength;
+		}
+
+		com.archetypes.TitansLeap.immovableCue(player);
+		return 0.0;
+	}
+
+	/**
+	 * No fall damage for an Immovable Colossus, and none from a Titan's Leap.
+	 * A cancelling inject rather than a {@code fallDistance} reset, which is
+	 * the whole point: the leap exists to feed Meteor, Shockwave and vanilla's
+	 * own mace smash, and every one of them reads the fall it would have
+	 * zeroed. Same shape as On the Wing's.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void archetypes$titansLeapFall(final ServerLevel level, final DamageSource source,
+			final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if ((Object) this instanceof ServerPlayer player
+				&& source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)
+				&& (com.archetypes.TitansLeap.isLeaping(player)
+						|| com.archetypes.TitansLeap.rank(player,
+								com.archetypes.ColossusCrusherNodes.Family.IMMOVABLE) > 0)) {
+			cir.setReturnValue(false);
+		}
+	}
+
+	/**
+	 * Bulwark: 20% per rank off everything, but only while Battle Trance is
+	 * actually holding banked health. Same shape as Mana Shield's — a
+	 * victim-side {@code ModifyVariable} on the shared {@code amount}, so it
+	 * composes multiplicatively with whatever else shaped the hit.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$colossusBulwark(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!((Object) this instanceof ServerPlayer player)
+				|| !com.archetypes.TitansLeap.bulwarkHolding(player)) {
+			return amount;
+		}
+
+		int rank = com.archetypes.TitansLeap.rank(player,
+				com.archetypes.ColossusCrusherNodes.Family.BULWARK);
+
+		// The flash is for hits, not for drowning or a burning tick: those
+		// arrive every tick and would strobe the indicator. The reduction
+		// itself still applies to every source.
+		if (source.getEntity() != null) {
+			ProcIndicators.send(player, SubTree.COLOSSUS_CRUSHER,
+					com.archetypes.ColossusCrusherNodes.Family.BULWARK);
+		}
+
+		return amount * Math.max(0.0F, 1.0F - Tuning.COLOSSUS_BULWARK_DR_PER_RANK * rank);
+	}
 }

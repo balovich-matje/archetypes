@@ -832,4 +832,93 @@ public final class Tuning {
 	 * is load-bearing in PvP and must read as continuous, not as a proc. */
 	public static final int DEATH_MARK_SMOKE_PERIOD_TICKS = 10;
 
+	// --- Colossus Crusher (epic): Titan's Leap and its two branches ---
+
+	/**
+	 * The leap's upward impulse, blocks per tick. NOT 15 — vertical travel is
+	 * gravity plus per-tick drag, so the impulse that reaches the advertised 15
+	 * blocks has to be solved for, not scaled. Simulating vanilla's own air
+	 * step ({@code LivingEntity.travelInAir}: move by dy, then
+	 * {@code dy = (dy - 0.08) * 0.98}) peaks at 14.96 blocks from 1.69.
+	 * {@link #RUSH_IMPULSE_PER_BLOCK} is a HORIZONTAL, on-the-ground
+	 * approximation and does not apply here.
+	 */
+	public static final double TITAN_LEAP_UP_IMPULSE = 1.69;
+	/**
+	 * The leap's forward impulse, blocks per tick along the flat look vector.
+	 * Solved the same way against vanilla's 0.91 horizontal air drag over the
+	 * 40 ticks the leap spends off the ground: 0.55 carries 5.97 blocks, i.e.
+	 * the advertised 6. Player input during the flight adds to this.
+	 */
+	public static final double TITAN_LEAP_FORWARD_IMPULSE = 0.55;
+	/** Exactly Quake's clock ({@link #QUAKE_COOLDOWN_TICKS}). The two mace
+	 * actives must not run on visibly different timers. */
+	public static final int TITAN_LEAP_COOLDOWN_TICKS = 600;
+	/** Ticks after take-off before the landing test is allowed to fire, so the
+	 * tick the player is still standing on the ground does not count as a
+	 * landing. Two ticks clears the ground at 1.69 blocks/tick. */
+	public static final int TITAN_LEAP_LAUNCH_GRACE_TICKS = 2;
+	/** The flight's leash. The arc itself is 40 ticks; anything still in the
+	 * air after ten seconds got there by terrain, and a leap that never lands
+	 * somewhere the ticker can see it would leave the fall-damage waiver
+	 * standing forever. */
+	public static final int TITAN_LEAP_MAX_FLIGHT_TICKS = 200;
+
+	/**
+	 * Aftershock's radius: 4/6/8 blocks. Quake's own is 3
+	 * ({@link #QUAKE_RADIUS}) and Earth Shatterer's climbs 2/4/6, so rank 3
+	 * sits one notch above the base tree's ceiling — correct for epic.
+	 */
+	public static final double AFTERSHOCK_RADIUS_BASE = 2.0;
+	public static final double AFTERSHOCK_RADIUS_PER_RANK = 2.0;
+	/** Lifted verbatim from {@link #QUAKE_DAMAGE_MULTIPLIER} so the landing
+	 * reads as the same slam and needs no second mental model. */
+	public static final float AFTERSHOCK_DAMAGE_MULTIPLIER = 1.5F;
+	/** Health per block fallen, per rank — 0.25/0.5/0.75 hearts. Meteor's own
+	 * curve ({@link #METEOR_PER_BLOCK_PER_RANK}) one rank longer, but paid to a
+	 * whole radius, only on a leap, and only once per 30 seconds. */
+	public static final float AFTERSHOCK_PER_BLOCK_PER_RANK = 0.5F;
+	/** Blocks of fall that count. Without a cap a Colossus who leaps off a
+	 * mountain rather than off the leap gets unbounded AoE; 20 is above the
+	 * leap's own 15, so it only ever bites on terrain abuse. */
+	public static final float AFTERSHOCK_MAX_FALL = 20.0F;
+	/** The send-off, matching Quake's ({@link #QUAKE_LAUNCH}). */
+	public static final double AFTERSHOCK_LAUNCH = 0.95;
+
+	/** Gravity Well's reach. Deliberately larger than Aftershock's ceiling:
+	 * the node buys a gather, and a gather smaller than the slam it replaces
+	 * would have nothing to say. */
+	public static final double GRAVITY_WELL_RADIUS = 12.0;
+	/** Haymaker's stun ({@link #HAYMAKER_STUN_AMPLIFIER} = Slowness VI) held
+	 * twice as long, over a whole radius, with no damage attached. */
+	public static final int GRAVITY_WELL_SLOW_TICKS = 60;
+	public static final int GRAVITY_WELL_SLOW_AMPLIFIER = 5;
+	/** Pull impulse per block of distance, and its ceiling. The cap is what
+	 * stops a creature twelve blocks out being fired THROUGH the player: at
+	 * 0.09/block a 12-block pull would open at 1.08 blocks/tick. */
+	public static final double GRAVITY_WELL_PULL_PER_BLOCK = 0.09;
+	public static final double GRAVITY_WELL_MAX_PULL = 0.7;
+	/** Inside this, a creature is already where the well wanted it and is left
+	 * alone — pulling it further would push it out the far side. */
+	public static final double GRAVITY_WELL_DEAD_ZONE = 1.5;
+
+	/** Immovable's cue: at most one anvil per second, so the node announces
+	 * itself the first time a shove is eaten without droning under a mob pack. */
+	public static final int IMMOVABLE_CUE_PERIOD_TICKS = 20;
+
+	/** Bulwark: 20% off per rank while Battle Trance holds banked health. The
+	 * condition is the balance — the trance decays
+	 * {@link #TRANCE_DECAY_DELAY_TICKS} after the last landed hit, so this is a
+	 * reward for still swinging, not a passive shield. */
+	public static final float COLOSSUS_BULWARK_DR_PER_RANK = 0.20F;
+	/** Health added to Battle Trance's ceiling per rank — 3/6 hearts. The base
+	 * cap is {@link #TRANCE_CAP_PER_RANK} x 3 = 3 hearts, so rank 2 triples it. */
+	public static final float COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK = 6.0F;
+
+	/** Unstoppable Force: seconds a shield raised against a mace or a bare fist
+	 * is knocked aside for. The Warden's own number
+	 * ({@code Warden.getSecondsToDisableBlocking} returns 5.0F), applied
+	 * through the same {@code BlocksAttacks.disable} vanilla routes it to. */
+	public static final float UNSTOPPABLE_DISABLE_SECONDS = 5.0F;
+
 }
