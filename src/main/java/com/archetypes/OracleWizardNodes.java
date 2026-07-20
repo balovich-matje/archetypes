@@ -11,12 +11,11 @@ import net.minecraft.world.item.Items;
 import org.jspecify.annotations.Nullable;
 
 /**
- * What each node of the epic Oracle-Wizard constellation is (draft
- * oracle-wizard). Magic Armaments conjures a weapon in place of the wand; the
- * left line hardens the channel (Magic Armor's temp health, then Gliding's
- * elytra flight and Warding's status immunity) while the right line sharpens the
- * blade (Mind Over Matter's three ranks), whose top rung splits to Blink and the
- * Spellbow capstone that swaps the sword for a bow.
+ * What each node of the epic Oracle-Wizard constellation is (user sketch
+ * oracle-wizard-second-20260720). Magic Armaments conjures a weapon in place of
+ * the wand and the two Magic Armor rungs harden the channel; that trunk then
+ * forks three ways — Gliding into Warding (mobility), Mind over Matter into
+ * Blink (the blade), Spellbow into Mana Siphon (the bow).
  */
 public final class OracleWizardNodes {
 	public enum Family {
@@ -28,12 +27,14 @@ public final class OracleWizardNodes {
 		LEVITATION(() -> Items.ELYTRA),
 		/** Immunity to negative status effects during the channel. */
 		WARD(() -> Items.MILK_BUCKET),
-		/** More weapon damage for more channel cost, three ranks. */
+		/** One node: the conjured weapon deals double damage and ignores armor. */
 		MIND_OVER_MATTER(() -> Items.BREEZE_ROD),
 		/** Swings teleport you forward when not targeting a hostile. */
 		BLINK(() -> Items.ENDER_PEARL),
 		/** Capstone-worthy: the armament is a bow instead of a sword. */
 		SPELLBOW(() -> Items.BOW),
+		/** Spellbow hits pay mana back (agent-invented name, pending review). */
+		MANA_SIPHON(() -> Items.AMETHYST_SHARD),
 		MINOR((Supplier<Item>) null);
 
 		private final @Nullable Supplier<Item> icon;
@@ -66,21 +67,22 @@ public final class OracleWizardNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// The root.
-		byCell.put(cell(2, 0), new Def(Family.MAGIC_ARMAMENTS, 1));
+		// The trunk: the active, then the two absorption rungs.
+		byCell.put(cell(3, 0), new Def(Family.MAGIC_ARMAMENTS, 1));
+		byCell.put(cell(3, 1), new Def(Family.MAGIC_ARMOR, 1));
+		byCell.put(cell(3, 2), new Def(Family.MAGIC_ARMOR, 2));
 
-		// Left line: the defensive channel upgrades, bottom-up.
-		byCell.put(cell(1, 1), new Def(Family.MAGIC_ARMOR, 1));
-		byCell.put(cell(0, 2), new Def(Family.MAGIC_ARMOR, 2));
-		byCell.put(cell(0, 3), new Def(Family.LEVITATION, 1));
-		byCell.put(cell(0, 4), new Def(Family.WARD, 1));
+		// Left branch: staying alive and staying airborne.
+		byCell.put(cell(1, 4), new Def(Family.LEVITATION, 1));
+		byCell.put(cell(0, 5), new Def(Family.WARD, 1));
 
-		// Right line: the offensive channel upgrades, splitting at the top.
-		byCell.put(cell(3, 1), new Def(Family.MIND_OVER_MATTER, 1));
-		byCell.put(cell(4, 2), new Def(Family.MIND_OVER_MATTER, 2));
-		byCell.put(cell(4, 3), new Def(Family.MIND_OVER_MATTER, 3));
-		byCell.put(cell(3, 4), new Def(Family.BLINK, 1));
+		// Centre branch: the blade.
+		byCell.put(cell(3, 4), new Def(Family.MIND_OVER_MATTER, 1));
+		byCell.put(cell(3, 5), new Def(Family.BLINK, 1));
+
+		// Right branch: the bow.
 		byCell.put(cell(5, 4), new Def(Family.SPELLBOW, 1));
+		byCell.put(cell(6, 5), new Def(Family.MANA_SIPHON, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.ORACLE_WIZARD.nodes();

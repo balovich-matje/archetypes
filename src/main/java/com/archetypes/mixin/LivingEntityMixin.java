@@ -196,6 +196,37 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * The conjured armaments' on-hit shaping: Mind over Matter's doubling for
+	 * both weapons, and Mana Siphon's refund for the bow. The sword arrives as
+	 * a direct player attack, the Spellbow as its own marked arrow — the same
+	 * hook answers both so one node cannot mean two different numbers.
+	 *
+	 * <p>Mind over Matter's other half, the armor bypass, is NOT here: it is a
+	 * real Breach stamp on the conjured weapon, applied inside vanilla's own
+	 * armor formula (see {@code MagicArmaments.enchant}).
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$magicArmamentHit(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!(source.getEntity() instanceof ServerPlayer player)) {
+			return amount;
+		}
+
+		if (source.getDirectEntity() == player) {
+			return com.archetypes.ModItems.isMagicSword(player.getMainHandItem())
+					? com.archetypes.MagicArmaments.shapeHit(player, level, amount, false)
+					: amount;
+		}
+
+		return source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
+				&& Boolean.TRUE.equals(
+						((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))
+								? com.archetypes.MagicArmaments.shapeHit(player, level, amount, true)
+								: amount;
+	}
+
+	/**
 	 * The dagger's damage shaping and DoTs, all on the victim's intake:
 	 * Razor Edge's steel, Expose's finishing bonus, Flense clawing back what
 	 * armor would eat, Deathblow recognising a Shadow Step strike by its

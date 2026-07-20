@@ -227,18 +227,26 @@ public final class Constellations {
 			.withEdge(2, 0, 2, 2);
 
 	/**
-	 * Oracle Wizard (epic, draft oracle-wizard): Magic Armaments at the root
-	 * forks into the armour line up the left (Magic Armor, then flight and the
-	 * warding node) and the Mind Over Matter line up the right, whose top rung
-	 * splits to Blink and the Spellbow capstone. Fully grid-connected — no
-	 * explicit edges needed.
+	 * Oracle Wizard (epic, user sketch oracle-wizard-second-20260720): a trunk
+	 * of Magic Armaments and the two Magic Armor rungs, splitting at its head
+	 * into three ways to spend the channel — Gliding into Warding on the left,
+	 * Mind over Matter into Blink up the centre, Spellbow into Mana Siphon on
+	 * the right. Row 3 is deliberately empty, so all three branches leave the
+	 * trunk on the explicit edges the sketch records rather than by grid
+	 * adjacency. The sketch's other three lines (each branch's own pair) are
+	 * already grid-diagonal and are NOT repeated here — a second edge between
+	 * the same two nodes would draw the line twice.
 	 */
 	public static final Constellation ORACLE_WIZARD = Constellation.of(
-			"#..#.#",
-			"#...#.",
-			"#...#.",
-			".#.#..",
-			"..#...");
+			"#..#..#",
+			".#.#.#.",
+			".......",
+			"...#...",
+			"...#...",
+			"...#...")
+			.withEdge(3, 2, 1, 4)
+			.withEdge(3, 2, 3, 4)
+			.withEdge(3, 2, 5, 4);
 
 	/**
 	 * Oracle Priest (epic, draft oracle-priest): a standing cross — Aura of

@@ -387,6 +387,39 @@ def spellbow():
     return im
 
 
+def mana_siphon():
+    """Hits pay the channel back: a conjured arrow buried in a fat mana orb,
+    which is coming apart into motes streaming back the way the shot came."""
+    def build(im):
+        orb = canvas()
+        disc(orb, 9, 6, 5.4, BLUE)
+        disc(orb, 8, 5, 3.2, BLUE_L)
+        # A dark underside so the orb reads as a sphere, not a dot.
+        for y in range(16):
+            for x in range(16):
+                if orb.getpixel((x, y))[3] and (x + y) > 17:
+                    orb.putpixel((x, y), BLUE_D)
+        im.alpha_composite(outline(orb))
+
+        # The arrow, driven up into it from the lower left.
+        shaft = canvas()
+        for i in range(9):
+            x, y = 1 + i, 14 - i
+            plot(shaft, ((x, y), (x + 1, y), (x, y - 1)), CREAM)
+        for x, y in ((1, 15), (2, 15), (0, 14)):
+            shaft.putpixel((x, y), (206, 190, 130, 255))
+        im.alpha_composite(outline(shaft))
+
+    im = base(build)
+    # The mana coming back out, trailing down the shaft toward the archer.
+    plot(im, ((6, 20), (7, 20), (6, 21), (7, 21)), BLUE_L)
+    plot(im, ((3, 25), (4, 25), (3, 26), (4, 26)), BLUE)
+    plot(im, ((1, 29), (2, 29), (8, 18), (9, 18)), BLUE_D)
+    sparkle(im, 24, 4, 3, BLUE_L, WHITE)
+    sparkle(im, 27, 15, 2, V_PL, WHITE)
+    return im
+
+
 ICONS = {
     "magic_armaments": magic_armaments,
     "magic_armor": magic_armor,
@@ -395,10 +428,11 @@ ICONS = {
     "mind_over_matter": mind_over_matter,
     "blink": blink,
     "spellbow": spellbow,
+    "mana_siphon": mana_siphon,
 }
 
 ORDER = ["magic_armaments", "magic_armor", "levitation", "ward",
-         "mind_over_matter", "blink", "spellbow"]
+         "mind_over_matter", "blink", "spellbow", "mana_siphon"]
 
 
 def main():

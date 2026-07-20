@@ -4,9 +4,6 @@ import java.util.function.Predicate;
 
 import com.archetypes.MagicArmaments;
 import com.archetypes.ModAttachments;
-import com.archetypes.NodePurchases;
-import com.archetypes.OracleWizardNodes;
-import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
@@ -136,12 +133,10 @@ public class MagicBowItem extends BowItem {
 			// A real Power enchantment on the stack would NOT be equivalent:
 			// vanilla adds it to this same base and then multiplies, so the
 			// bonus would be paid three times over (see the SHARPNESS_SHARE note
-			// in Tuning).
-			int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
-					NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
-					OracleWizardNodes.Family.MIND_OVER_MATTER);
+			// in Tuning). Mind over Matter is absent for the same reason — it
+			// doubles the landed hit, in MagicArmaments.shapeHit.
 			double baseDamage = Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE
-					+ MagicArmaments.sharpnessBonus(mom) * Tuning.MAGIC_BOW_ARROW_SHARPNESS_SHARE;
+					+ MagicArmaments.sharpnessBonus() * Tuning.MAGIC_BOW_ARROW_SHARPNESS_SHARE;
 
 			Arrow arrow = new Arrow(serverLevel, player, new ItemStack(Items.ARROW), stack);
 			arrow.pickup = AbstractArrow.Pickup.DISALLOWED;

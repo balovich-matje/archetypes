@@ -515,20 +515,33 @@ public final class Tuning {
 	public static final float ORACLE_FOCUS_REGEN_PER_RANK = 0.025F;
 	/** Magic Armaments' opening mana price to start the channel. */
 	public static final float MAGIC_ARMAMENTS_COST = 50.0F;
-	/** Base channel upkeep per second. It is charged as this / 20 every tick,
-	 * not as a once-a-second lump, so the mana bar drains smoothly; the rate is
-	 * identical. Mind over Matter raises it per rank (see below). A tick the
-	 * pool cannot pay ends the channel. */
+	/** Channel upkeep per second — the whole price now that Mind over Matter is
+	 * a single node and charges nothing extra. It is charged as this / 20 every
+	 * tick, not as a once-a-second lump, so the mana bar drains smoothly; the
+	 * rate is identical. A tick the pool cannot pay ends the channel. */
 	public static final float MAGIC_ARMAMENTS_UPKEEP_PER_SECOND = 10.0F;
-	/** The conjured sword's Sharpness at Mind over Matter rank 0, and the levels
-	 * each rank adds (10/15/20/25). Vanilla Sharpness adds 1 + 0.5 x (level - 1)
-	 * damage, so the sword's 7 melee hits for 12.5/15/17.5/20 by rank. */
+	/** The conjured sword's Sharpness, flat: vanilla adds 1 + 0.5 x (level - 1),
+	 * so the sword's 7 melee hits for 12.5 and the bow matches it at full draw
+	 * (see MAGIC_BOW_ARROW_SHARPNESS_SHARE). Mind over Matter no longer moves
+	 * this — it multiplies the finished hit instead. */
 	public static final int MAGIC_ARMAMENTS_SHARPNESS = 10;
-	public static final int MIND_OVER_MATTER_SHARPNESS_PER_RANK = 5;
-	/** Mind over Matter's price: this much extra upkeep per second per rank
-	 * (+10/20/30). Its damage rides on Sharpness above, not on an attribute —
-	 * two sources of the same scaling would double-dip. */
-	public static final float MIND_OVER_MATTER_UPKEEP_PER_RANK = 10.0F;
+	/** Mind over Matter: the conjured weapon's damage, x2, applied to the
+	 * finished hit in the damage funnel rather than folded into Sharpness or the
+	 * arrow's base. A multiplier is the one form that means the same thing on
+	 * both weapons — an additive bonus on the arrow's base is tripled by the
+	 * full-draw velocity (see MAGIC_BOW_ARROW_SHARPNESS_SHARE), a multiplier is
+	 * not. */
+	public static final float MIND_OVER_MATTER_DAMAGE = 2.0F;
+	/** Mind over Matter's armor bypass, as virtual Breach levels stamped on the
+	 * conjured weapon. Armor effectiveness is clamped to [0, 1] after the
+	 * enchantment shifts it and Breach subtracts 0.15 per level, so anything
+	 * past 6 zeroes out any armor value; 7 is that with a level to spare. This
+	 * is a REAL enchantment, not Sunder's virtual-Breach arithmetic: Sunder
+	 * claws back a share of what armor ate and has to estimate it, while a full
+	 * bypass is exactly what vanilla's own armor_effectiveness hook does — and
+	 * the same stamp covers the bow, because an arrow's damage source reports
+	 * the bow it was fired from as its weapon item. */
+	public static final int MIND_OVER_MATTER_BREACH = 7;
 	/** Magic Armor: every point of mana the channel spends banks this much
 	 * absorption per rank (0.5/1.0), capped by the rank's ceiling (10/20). The
 	 * cap rides on MAX_ABSORPTION, so grants past it clamp away like Battle
@@ -547,7 +560,7 @@ public final class Tuning {
 	/** Sharpness does nothing on a bow, so the arrow adds this share of the
 	 * sword's Sharpness bonus to its base instead. 1/3 inverts the full-draw 3x
 	 * velocity, so a point of sword damage is a point of arrow damage and the two
-	 * variants stay even at every Mind over Matter rank (13/15.5/18/20.5).
+	 * variants stay even (13 against the sword's 12.5).
 	 *
 	 * <p>A real Power enchantment on the stack CANNOT replace this, however
 	 * identical the two curves look on paper: vanilla adds Power to the arrow's
@@ -578,6 +591,11 @@ public final class Tuning {
 	public static final int SPELLBOW_ARROW_TRAIL_PERIOD_TICKS = 2;
 	public static final int SPELLBOW_ARROW_SPARKLE_PERIOD_TICKS = 4;
 	public static final int SPELLBOW_ARROW_CHIME_PERIOD_TICKS = 6;
+	/** Mana Siphon: a Spellbow arrow that draws blood pays this much mana back.
+	 * It is the whole reason the bow branch can outlive its own upkeep — five
+	 * seconds of channel per landed shot — so it is deliberately gated on a hit
+	 * landing on a living target, never on the shot leaving the bow. */
+	public static final float MANA_SIPHON_PER_HIT = 50.0F;
 
 	// --- Oracle Priest (epic): Aura of Radiance ---
 	/** How long the aura burns off one Holy Light cast, and what Beacon of

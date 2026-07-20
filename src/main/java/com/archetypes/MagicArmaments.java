@@ -101,15 +101,7 @@ public final class MagicArmaments {
 				OracleWizardNodes.Family.SPELLBOW) > 0;
 		ItemStack conjured = new ItemStack(bow ? ModItems.MAGIC_BOW : ModItems.MAGIC_SWORD);
 
-		// Only the sword: vanilla folds Sharpness into a flat melee bonus but
-		// folds Power into the arrow's BASE damage, which the full-draw 3x
-		// velocity then multiplies — the same level would pay out three times
-		// over on the bow. MagicBowItem derives its arrows from the same bonus
-		// at a third the size instead, so the two variants stay even.
-		if (!bow) {
-			sharpen(level, conjured, OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
-					OracleWizardNodes.Family.MIND_OVER_MATTER));
-		}
+		enchant(level, conjured, owned);
 
 		// Stamped here, not left to the next tick: a player who jumps on the
 		// same tick they conjure would otherwise find no wings.
@@ -206,34 +198,28 @@ public final class MagicArmaments {
 			return;
 		}
 
-		// Both rides: the scaling enchantment and the wings track whichever
-		// weapon the channel conjured.
-		resharpen(player, owned);
+		// Both rides: the enchantments and the wings track whichever weapon the
+		// channel conjured.
+		reenchant(player, owned);
 		fitGlider(player.getMainHandItem(), owned);
 		ward(player, owned);
 		upkeep(player, owned);
 	}
 
-	/** Mind over Matter is read live every tick on the price side, so the blade
-	 * must track it too: a rank bought mid-channel would otherwise charge its
-	 * upkeep at once and only cut after the next conjure. A no-op at an
-	 * unchanged rank, so the stack is not resynced every tick. */
-	private static void resharpen(final ServerPlayer player, final Set<Integer> owned) {
+	/** Mind over Matter can be bought mid-channel, so the conjured weapon has to
+	 * pick up its Breach without being re-conjured. A no-op once the stamp
+	 * matches, so the stack is not resynced every tick. */
+	private static void reenchant(final ServerPlayer player, final Set<Integer> owned) {
 		ItemStack held = player.getMainHandItem();
 
-		// The bow carries no enchantment at all; its arrows read the rank live
-		// on release, so there is nothing on the stack to keep in step.
-		if (!ModItems.isMagicSword(held)) {
+		if (!ModItems.isSummoned(held)) {
 			return;
 		}
 
 		ServerLevel level = (ServerLevel) player.level();
-		int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
-				OracleWizardNodes.Family.MIND_OVER_MATTER);
 
-		if (EnchantmentHelper.getItemEnchantmentLevel(sharpness(level), held)
-				!= sharpnessLevel(mom)) {
-			sharpen(level, held, mom);
+		if (EnchantmentHelper.getItemEnchantmentLevel(breach(level), held) != breachLevel(owned)) {
+			enchant(level, held, owned);
 		}
 	}
 
@@ -284,10 +270,7 @@ public final class MagicArmaments {
 	 * the pool trickles instead of stepping — and because Magic Armor's grant is
 	 * linear in mana spent, its absorption still totals the same per second. */
 	private static void upkeep(final ServerPlayer player, final Set<Integer> owned) {
-		int mom = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
-				OracleWizardNodes.Family.MIND_OVER_MATTER);
-		float cost = (Tuning.MAGIC_ARMAMENTS_UPKEEP_PER_SECOND
-				+ mom * Tuning.MIND_OVER_MATTER_UPKEEP_PER_RANK) / 20.0F;
+		float cost = Tuning.MAGIC_ARMAMENTS_UPKEEP_PER_SECOND / 20.0F;
 
 		// The wand is stashed, not held, for as long as this runs — price the
 		// upkeep off it anyway, or the Oracle's Wand would quietly exempt the
@@ -423,32 +406,93 @@ public final class MagicArmaments {
 		return 1.0F - Math.min(reduction, Tuning.SPELLBOW_DRAW_TIME_REDUCTION_CAP);
 	}
 
-	/** The conjured sword's Sharpness level at a Mind over Matter rank. */
-	public static int sharpnessLevel(final int mindOverMatterRank) {
-		return Tuning.MAGIC_ARMAMENTS_SHARPNESS
-				+ mindOverMatterRank * Tuning.MIND_OVER_MATTER_SHARPNESS_PER_RANK;
+	/** The damage the conjured sword's flat Sharpness adds. Mirrors vanilla's
+	 * own curve (1 + 0.5 x (level - 1) since level 1) so the Spellbow, which
+	 * cannot carry the enchantment, can scale off the identical number. */
+	public static float sharpnessBonus() {
+		return 1.0F + 0.5F * (Tuning.MAGIC_ARMAMENTS_SHARPNESS - 1);
 	}
 
-	/** The damage that Sharpness level adds. Mirrors vanilla's own curve
-	 * (1 + 0.5 x (level - 1) since level 1) so the Spellbow, which cannot carry
-	 * the enchantment, can scale off the identical number. */
-	public static float sharpnessBonus(final int mindOverMatterRank) {
-		return 1.0F + 0.5F * (sharpnessLevel(mindOverMatterRank) - 1);
-	}
-
-	/** Stamp the real ENCHANTMENTS component, so the level shows in the tooltip
-	 * and the damage runs through vanilla's pipeline rather than a bolted-on
-	 * attribute. The Holder must come from the level's registries — enchantments
-	 * are datapack content and {@code Enchantments.SHARPNESS} is only a key. */
-	private static void sharpen(final ServerLevel level, final ItemStack stack, final int mindOverMatterRank) {
+	/**
+	 * Mind over Matter's half that vanilla can carry for us: virtual Breach on
+	 * the conjured weapon, which zeroes the victim's armor effectiveness inside
+	 * {@code CombatRules.getDamageAfterAbsorb}. The doubling is NOT here — see
+	 * {@link #shapeHit}: Sharpness is flat but Power (and any bonus folded into
+	 * an arrow's base) is multiplied by the full-draw velocity, so no single
+	 * enchantment doubles both weapons by the same amount.
+	 *
+	 * <p>Sharpness rides the sword only, for the same reason: on the bow it
+	 * would reach the arrow's base through {@code EnchantmentHelper.modifyDamage}
+	 * and be paid out three times over.
+	 */
+	private static void enchant(final ServerLevel level, final ItemStack stack, final Set<Integer> owned) {
 		ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
-		enchantments.set(sharpness(level), sharpnessLevel(mindOverMatterRank));
+
+		if (ModItems.isMagicSword(stack)) {
+			enchantments.set(sharpness(level), Tuning.MAGIC_ARMAMENTS_SHARPNESS);
+		}
+
+		int breach = breachLevel(owned);
+
+		if (breach > 0) {
+			enchantments.set(breach(level), breach);
+		}
+
 		EnchantmentHelper.setEnchantments(stack, enchantments.toImmutable());
 	}
 
+	private static int breachLevel(final Set<Integer> owned) {
+		return OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+				OracleWizardNodes.Family.MIND_OVER_MATTER) > 0
+						? Tuning.MIND_OVER_MATTER_BREACH
+						: 0;
+	}
+
+	/** The Holder must come from the level's registries — enchantments are
+	 * datapack content and {@code Enchantments.SHARPNESS} is only a key. */
 	private static Holder<Enchantment> sharpness(final ServerLevel level) {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
 				.getOrThrow(Enchantments.SHARPNESS);
+	}
+
+	private static Holder<Enchantment> breach(final ServerLevel level) {
+		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
+				.getOrThrow(Enchantments.BREACH);
+	}
+
+	/**
+	 * The conjured weapons' on-hit half, off the {@code hurtServer} funnel:
+	 * Mind over Matter's doubling and Mana Siphon's refund. Both weapons land
+	 * here — the sword as a direct player attack, the Spellbow's arrow as a
+	 * marked projectile whose shooter is the channeller.
+	 *
+	 * <p>The doubling is applied to the finished hit rather than to the sword's
+	 * Sharpness or the arrow's base damage, because those two are not the same
+	 * currency: {@code AbstractArrow.onHitEntity} multiplies the arrow's base by
+	 * the draw velocity (3x at full draw) AFTER the enchantment bonus lands on
+	 * it, while Sharpness on a sword is flat. One multiplier on the outgoing
+	 * damage is the only form that doubles both by exactly two.
+	 */
+	public static float shapeHit(final ServerPlayer player, final ServerLevel level,
+			final float amount, final boolean spellbowArrow) {
+		Set<Integer> owned = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
+		float result = amount;
+
+		if (OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+				OracleWizardNodes.Family.MIND_OVER_MATTER) > 0) {
+			result *= Tuning.MIND_OVER_MATTER_DAMAGE;
+		}
+
+		// Mana Siphon pays on the hit, not on the shot: an arrow that finds
+		// nothing costs the archer the shot and nothing more.
+		if (spellbowArrow && OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
+				OracleWizardNodes.Family.MANA_SIPHON) > 0) {
+			Mana.add(player, Tuning.MANA_SIPHON_PER_HIT);
+			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.PLAYERS, 0.5F, 1.6F);
+		}
+
+		return result;
 	}
 
 	private static void applyArmorCap(final ServerPlayer player, final Set<Integer> owned,

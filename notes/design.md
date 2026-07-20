@@ -1852,3 +1852,62 @@ sunlight bloom overlay, and see-through-walls senses.
 Logged decisions, not bugs: hunger is pinned full while transformed and is
 NOT restored to its pre-ritual value on exit (an hour of vampirism ends with
 a full bar); a dimension change does not interrupt the ritual channel.
+
+## Oracle Wizard round two: the three-way fork (2026-07-20)
+
+Playtest verdict from the author: Magic Armaments was "underpowered compared
+to other spells" — the channel cost more than it delivered. Their re-sketch
+(`tools/edits/oracle-wizard-second-20260720-103835`) rebuilds the tree into
+the epic-tier design language: a strong opener that diverges into playstyles.
+
+**Shape.** Magic Armaments (3,0) → Magic Armor 1 (3,1) → Magic Armor 2 (3,2),
+then three branches off that head — Gliding → Warding (1,4)/(0,5), Mind over
+Matter → Blink (3,4)/(3,5), Spellbow → Mana Siphon (5,4)/(6,5). Row 3 is
+empty, so the three branches leave the trunk on explicit edges. Note what the
+5-point epic cap does to this shape: the trunk costs 3, so a build buys the
+trunk plus exactly one branch — or MoM and Spellbow, skipping both tips. The
+fork is a real choice, not a checklist.
+
+**Mind over Matter is one node.** The three-rank chain (+5 Sharpness and
++10 mana/s per rank) is gone. It now does what the author wrote: x2.0 damage
+and full armor bypass, on both conjured weapons — and the channel's upkeep is
+a flat 10 mana/s again, with nothing else to pay.
+
+**Two halves, two mechanisms, and the reason they can't be one.** The bypass
+is a REAL Breach 7 stamped on the conjured weapon: armor effectiveness is
+clamped to [0,1] after enchantments shift it and Breach subtracts 0.15/level,
+so 6+ zeroes any armor value, inside vanilla's own `CombatRules
+.getDamageAfterAbsorb`. This is deliberately NOT Sunder's virtual-Breach
+arithmetic (`LivingEntityMixin.archetypes$sunderDamage`): Sunder claws back a
+*share* of what armor ate and has to estimate the absorbed fraction, while a
+full bypass is exactly the hook vanilla exposes. One stamp covers both
+weapons — an arrow's damage source reports the bow it was fired from as its
+weapon item (`AbstractArrow.getWeaponItem` → `firedFromWeapon`), so the bow's
+Breach reaches the armor formula on the arrow's hit.
+
+The doubling could NOT ride an enchantment, for the reason already logged for
+Power: `AbstractArrow.onHitEntity` runs `EnchantmentHelper.modifyDamage`
+against the arrow's BASE and only then multiplies by the draw velocity, so any
+additive bonus is paid three times over on a full draw while Sharpness on the
+sword stays flat. A multiplier on the finished hit is the only form that means
+"x2" on both. It lives in the `hurtServer` funnel
+(`archetypes$magicArmamentHit`), which also pays Mana Siphon.
+
+**Mana Siphon** (agent-invented name, pending author review) is the new (6,5)
+node: a Spellbow arrow that hits a living target refunds 50 mana — five
+seconds of channel per landed shot, so the bow branch outlives its own upkeep.
+Gated on the hit, never on the shot: a miss costs the archer the arrow.
+
+**Where the power lands now.** Sword 12.5 → 25 per hit with MoM, ~1.6 full
+swings/s ≈ 40 dps. Spellbow arrow 13 → 26 at full draw, ~3 shots/s ≈ 78 dps,
+both ignoring armor entirely — against a flat 10 mana/s. Mana regen is still
+zero while a conjured weapon is held, so without Mana Siphon the channel is
+pool-limited (10-20 s off a typical Seeker pool); with it, the bow branch is
+mana-positive and runs indefinitely. The complaint is answered — if anything
+the trunk-plus-MoM-plus-Spellbow build is now the tree's strongest line and
+wants a second playtest.
+
+**Renames from the sketch** (kept): the placeholders are Spellbow, Gliding and
+Warding. Family constants stay `SPELLBOW`/`LEVITATION`/`WARD` — they are lang
+keys and sprite filenames, and the display names already read correctly.
+Node descriptions are the author's own sketch text, proofread only.
