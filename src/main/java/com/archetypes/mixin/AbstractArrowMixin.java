@@ -91,6 +91,32 @@ public abstract class AbstractArrowMixin {
 		}
 	}
 
+	/**
+	 * A Deadeye arrow wears a thin crit trail down range, on the same per-tick
+	 * hook the Spellbow's trail uses and at a quarter of its density. Drawn
+	 * from the mark on the ARROW, not from the shooter's stance: 64 blocks is
+	 * over three seconds of flight and the stance can lapse mid-air.
+	 */
+	@Inject(method = "tick", at = @At("HEAD"))
+	private void archetypes$deadeyeFlightFx(final CallbackInfo ci) {
+		AbstractArrow arrow = (AbstractArrow) (Object) this;
+
+		if (!(arrow.level() instanceof net.minecraft.server.level.ServerLevel level)
+				|| arrow.tickCount % Tuning.DEADEYE_TRAIL_PERIOD_TICKS != 0
+				|| !Boolean.TRUE.equals(
+						((AttachmentTarget) arrow).getAttached(ModAttachments.DEADEYE_ARROW))) {
+			return;
+		}
+
+		// A stopped arrow is stuck or spent; the trail ends with the flight.
+		if (arrow.getDeltaMovement().lengthSqr() < 0.01) {
+			return;
+		}
+
+		level.sendParticles(net.minecraft.core.particles.ParticleTypes.CRIT,
+				arrow.getX(), arrow.getY(), arrow.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
+	}
+
 	@Inject(method = "tick", at = @At("HEAD"))
 	private void archetypes$trueShotFlight(final CallbackInfo ci) {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;

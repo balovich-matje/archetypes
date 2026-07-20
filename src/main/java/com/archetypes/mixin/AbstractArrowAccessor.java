@@ -16,4 +16,12 @@ public interface AbstractArrowAccessor {
 
 	@Accessor("pickupItemStack")
 	net.minecraft.world.item.ItemStack archetypes$getPickupItemStack();
+
+	/** {@code setPierceLevel} is private in 26.2 (the getter is public), and
+	 * Punch Through wants vanilla's own piercing rather than a parallel
+	 * hit-counter: the ignore set, the pierced-and-killed list the
+	 * KILLED_BY_ARROW criterion reads, and the synced entity-data field all
+	 * come with it. */
+	@org.spongepowered.asm.mixin.gen.Invoker("setPierceLevel")
+	void archetypes$setPierceLevel(byte level);
 }

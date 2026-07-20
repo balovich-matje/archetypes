@@ -214,6 +214,10 @@ public class Archetypes implements ModInitializer {
 					// can and must (it is the node's whole price), so only the
 					// channel is torn down here.
 					NightForm.interrupt(handler.player);
+					// Same rule for Deadeye: fifteen seconds is not worth
+					// persisting, and a stance stamp restored without its
+					// ticker would hand out free arrows until it lapsed.
+					Deadeye.end(handler.player);
 				});
 
 		// A player dying mid-channel: end it before drops so the real wand

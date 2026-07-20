@@ -31,9 +31,20 @@ public abstract class CrossbowItemMixin {
 	@ModifyReturnValue(method = "getChargeDuration", at = @At("RETURN"))
 	private static int archetypes$rapidReload(final int original, final ItemStack stack,
 			final LivingEntity entity) {
-		if (!(entity instanceof Player player)
-				|| !Boolean.TRUE.equals(((AttachmentTarget) player)
-						.getAttached(ModAttachments.CROSSBOW_PRIMED))) {
+		if (!(entity instanceof Player player)) {
+			return original;
+		}
+
+		// Deadeye charges instantly. Floored at one tick because vanilla
+		// DIVIDES by this duration (CrossbowItem's charge-progress property).
+		// Computed on both sides: DEADEYE_END syncs to every client, so the
+		// owner's draw prediction and the server agree.
+		if (com.archetypes.Deadeye.isActive(player)) {
+			return 1;
+		}
+
+		if (!Boolean.TRUE.equals(((AttachmentTarget) player)
+				.getAttached(ModAttachments.CROSSBOW_PRIMED))) {
 			return original;
 		}
 

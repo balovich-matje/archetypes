@@ -27,7 +27,9 @@ synced copy. Two sync scopes are used:
   (all but `DISENGAGE_READY_AT`, which stays server-side and unsynced).
 - `AttachmentSyncPredicate.all()` — synced to everyone. Used for state other
   players' renderers need: `BULWARK_ACTIVE`, `ARMOR_HIDDEN`, `DECIMATE_SWING_AT`,
-  `BLADESTORM_END`, `QUAKE_CHARGE_END`, `RADIANCE_END`.
+  `BLADESTORM_END`, `QUAKE_CHARGE_END`, `RADIANCE_END`, `DEADEYE_END` (which the
+  owner's client also needs, because it predicts a crossbow's charge time) and
+  the per-arrow `DEADEYE_ARROW`.
 
 Some attachments are `.persistent(codec)` and `.copyOnDeath()` (the archetype,
 its XP, owned nodes, mana); others are transient (cooldown timestamps, proc
@@ -342,6 +344,7 @@ tick.
 | `SpellProjectileRenderer`, `BladestormLayer`, `BulwarkShieldLayer`, `GreatswordSweepParticle`, `SlayerAnimations` | render layers and the animation player |
 | `NightAnimations`, `NightFormFx`, `NightAuraLayer` | the Dark Ritual's pose, its particle column and quickening heartbeat plus the transformed body's trail, and the violet energy-swirl aura onlookers see on a vampire |
 | `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its grey hearts and its hidden hunger row |
+| `DeadeyeOverlay` | the Deadeye stance's concentration vignette, drawn as nested fills rather than a texture |
 | `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours, and the two empowered active identities |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 

@@ -364,6 +364,74 @@ public final class ModAttachments {
 	public static final AttachmentType<Integer> NIGHT_CHANNEL_HURT =
 			AttachmentRegistry.<Integer>create(Archetypes.id("night_channel_hurt"));
 
+	// --- Nemesis Marksman (epic): Deadeye ---
+
+	/**
+	 * Game tick the running Deadeye stance ends; absent means no stance. Read
+	 * it through {@link Deadeye#isActive}, never directly.
+	 *
+	 * <p>Transient: fifteen seconds cannot meaningfully survive a relog, and
+	 * {@code Archetypes}' JOIN handler clears it the way it clears the Dark
+	 * Ritual's channel. Synced to EVERY client, for two reasons — the owner's
+	 * client predicts a crossbow's charge time from
+	 * {@code CrossbowItemMixin.getChargeDuration}, which must return the same
+	 * number on both sides, and every client draws the stance's arrow trail.
+	 */
+	public static final AttachmentType<Long> DEADEYE_END = AttachmentRegistry.create(
+			Archetypes.id("deadeye_end"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
+	/** Deadeye's cooldown, same shape as the bash's. */
+	public static final AttachmentType<Long> DEADEYE_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("deadeye_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/**
+	 * Siege: the game tick the player last stopped moving, or absent while
+	 * they are moving. Planted means this is set AND
+	 * {@link Tuning#SIEGE_ARM_TICKS} have passed. Server-side only — the arm's
+	 * particles and its pling are sent from the ticker, so no client reads it.
+	 */
+	public static final AttachmentType<Long> DEADEYE_STILL_SINCE =
+			AttachmentRegistry.<Long>create(Archetypes.id("deadeye_still_since"));
+
+	/** Last tick's server-side position, which is what the still test compares.
+	 * Deliberately NOT getDeltaMovement: the client owns a player's movement
+	 * and the server's copy of it is not trustworthy tick to tick. */
+	public static final AttachmentType<net.minecraft.world.phys.Vec3> DEADEYE_LAST_POS =
+			AttachmentRegistry.<net.minecraft.world.phys.Vec3>create(Archetypes.id("deadeye_last_pos"));
+
+	/**
+	 * On arrows: this one left a bow or crossbow while Deadeye held, and this
+	 * one left while the shooter was planted. The stance can lapse mid-flight
+	 * — 64 blocks is three seconds — so the arrow carries what it was owed
+	 * rather than asking the shooter at impact.
+	 *
+	 * <p>DEADEYE_ARROW is synced to everyone because every client draws the
+	 * crit trail off it; the Siege stamp is server-side damage bookkeeping.
+	 */
+	public static final AttachmentType<Boolean> DEADEYE_ARROW = AttachmentRegistry.create(
+			Archetypes.id("deadeye_arrow"),
+			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
+
+	public static final AttachmentType<Boolean> DEADEYE_SIEGE_ARROW =
+			AttachmentRegistry.<Boolean>create(Archetypes.id("deadeye_siege_arrow"));
+
+	/**
+	 * On arrows: empowered by True Shot or conjured by Snap Shot. The epic
+	 * tree's multipliers refuse it — the base tree owns the one big shot and
+	 * the epic tree buffs the stream, or Snap Shot x Long Shot 2 x Siege is
+	 * x24 on a single armour-bypassed arrow.
+	 */
+	public static final AttachmentType<Boolean> TRUE_SHOT_ARROW =
+			AttachmentRegistry.<Boolean>create(Archetypes.id("true_shot_arrow"));
+
+	/** On projectiles: Evasion already waved this one through someone, so the
+	 * puff is drawn once per projectile rather than once per collision sweep
+	 * ({@code canHitEntity} is asked several times a tick). */
+	public static final AttachmentType<Boolean> DEADEYE_PHASED =
+			AttachmentRegistry.<Boolean>create(Archetypes.id("deadeye_phased"));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),
@@ -434,6 +502,10 @@ public final class ModAttachments {
 		// it here, or the player keeps the vampire without the node.
 		if (player instanceof net.minecraft.server.level.ServerPlayer serverPlayer) {
 			NightForm.end(serverPlayer);
+			// Deadeye's Slowness and Fleet's Speed are re-asserted by the
+			// ticker, which is gated on the node — so a respec mid-stance would
+			// leave the stance's stamp standing and the arrows still free.
+			Deadeye.end(serverPlayer);
 		}
 
 		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_END);

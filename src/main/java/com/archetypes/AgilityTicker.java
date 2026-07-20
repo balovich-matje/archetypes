@@ -5,8 +5,9 @@ import net.minecraft.server.level.ServerPlayer;
 
 /**
  * Keeps the Assassin's dagger-stance modifier (Lightfoot's feet) in step
- * with what's in the main hand. Shadow Flurry's extra strikes used to be
- * delivered here — the capstone is one triple-weight strike now.
+ * with what's in the main hand, and runs the Deadeye stance. Shadow Flurry's
+ * extra strikes used to be delivered here — the capstone is one triple-weight
+ * strike now.
  */
 public final class AgilityTicker {
 	private static final net.minecraft.resources.Identifier LIGHTFOOT_ID =
@@ -18,6 +19,12 @@ public final class AgilityTicker {
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+				// The stance's own beat: the effect re-assert, the still test
+				// and the lapse. Run for every player, not just Cutpurses —
+				// the strand-guard inside it is what ends a stance whose
+				// archetype went away (NightFormTicker's lesson).
+				Deadeye.tick(player);
+
 				boolean dagger = ModItems.isDagger(player.getMainHandItem());
 				var owned = NodePurchases.owned(player, SubTree.ASSASSIN);
 				stance(player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.MOVEMENT_SPEED),

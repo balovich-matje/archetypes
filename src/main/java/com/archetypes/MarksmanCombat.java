@@ -44,6 +44,12 @@ public final class MarksmanCombat {
 			return;
 		}
 
+		// Deadeye goes FIRST, and the order is load-bearing: it normalises an
+		// underdrawn arrow up to full-draw speed, and Swift Flight's multiplier
+		// then rides whatever it finds. Reversed, the normalisation would stomp
+		// Swift Flight's speed-up back down to 3.0.
+		Deadeye.onArrowSpawn(player, arrow);
+
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.MARKSMAN);
 
 		// Swift Flight, damage-neutral: arrow damage scales with impact speed,
@@ -82,13 +88,17 @@ public final class MarksmanCombat {
 	 * victim is about to take; the blast copies it.
 	 */
 	public static float onArrowHit(final ServerPlayer player, final LivingEntity victim,
-			final ServerLevel level, final float amount) {
+			final ServerLevel level, final AbstractArrow arrow, final float amount) {
 		if (detonating) {
 			return amount;
 		}
 
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.MARKSMAN);
-		float result = amount;
+		// The epic tree's own shaping — Long Shot, Siege and Punch Through —
+		// rides the same returned value, so the two trees' numbers compose on
+		// one figure instead of two hooks racing on the same argument.
+		float result = Deadeye.shapeArrowHit(player, victim, arrow, amount);
+		Deadeye.onArrowHit(player);
 
 		// Piercing Tips: compensate what two armor points would have eaten
 		// (~4% each, the Sunder trick), so the shot lands as if they weren't

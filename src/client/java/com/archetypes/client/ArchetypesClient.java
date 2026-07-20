@@ -163,8 +163,22 @@ public class ArchetypesClient implements ClientModInitializer {
 			// draw began, those stale presses fired the roll instantly (user
 			// bug). Drain the backlog on the draw's first tick; only presses
 			// made during the draw itself count.
+			// Vault widens the gate to a crossbow, and for a crossbow "aimed"
+			// means charged. Decided client-side off the SAME owned-node set
+			// the server re-validates with, so the two never disagree about
+			// whether a press should have gone out.
 			boolean drawingBow = client.player != null && client.player.isUsingItem()
 					&& client.player.getUseItem().is(net.minecraft.world.item.Items.BOW);
+
+			if (client.player != null && !drawingBow
+					&& com.archetypes.NemesisMarksmanNodes.rank(client.player,
+							com.archetypes.NemesisMarksmanNodes.Family.VAULT) > 0) {
+				var main = client.player.getMainHandItem();
+				drawingBow = (client.player.isUsingItem()
+						&& client.player.getUseItem().is(net.minecraft.world.item.Items.CROSSBOW))
+						|| (main.is(net.minecraft.world.item.Items.CROSSBOW)
+								&& net.minecraft.world.item.CrossbowItem.isCharged(main));
+			}
 
 			if (drawingBow) {
 				while (client.options.keySprint.consumeClick()) {
@@ -197,6 +211,11 @@ public class ArchetypesClient implements ClientModInitializer {
 		// stealth vignette, so it washes the world but stays under the bars.
 		HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS,
 				com.archetypes.Archetypes.id("sun_blind"), SunBlindOverlay::render);
+
+		// The Deadeye stance's concentration vignette, same layer for the same
+		// reason: it washes the world, not the bars.
+		HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS,
+				com.archetypes.Archetypes.id("deadeye_focus"), DeadeyeOverlay::render);
 
 		// The night form pins hunger full and stops natural regeneration, so
 		// the hunger row is a gauge of nothing while it lasts: it is not

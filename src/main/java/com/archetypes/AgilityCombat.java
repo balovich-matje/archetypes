@@ -48,6 +48,7 @@ public final class AgilityCombat {
 			// the night form holds.
 			AgilityActives.empower(arrow, AgilityActives.nightFactor(player)
 					* (homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER), homing);
+			AgilityActives.markTrueShot(arrow);
 
 			// The Seeker Arrow aims itself: whatever the player was pointing
 			// at, the shot leaves toward the nearest visible hostile. Flight

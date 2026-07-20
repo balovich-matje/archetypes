@@ -332,6 +332,18 @@ public final class CooldownBarHud {
 					Tuning.NIGHT_FORM_LOCKOUT_TICKS));
 		}
 
+		// Deadeye's tile drains its 90-second lockout. Long Watch lengthens the
+		// stance, not the cooldown, so the total never moves.
+		var nemesisMarksman = NodePurchases.owned(player, SubTree.NEMESIS_MARKSMAN);
+
+		if (com.archetypes.NemesisMarksmanNodes.rank(SubTree.NEMESIS_MARKSMAN, nemesisMarksman,
+				com.archetypes.NemesisMarksmanNodes.Family.DEADEYE) > 0) {
+			abilities.add(new Ability(SubTree.NEMESIS_MARKSMAN,
+					com.archetypes.NemesisMarksmanNodes.Family.DEADEYE,
+					ArchetypesClient.ABILITY_KEYS[4],
+					ModAttachments.DEADEYE_READY_AT, Tuning.DEADEYE_COOLDOWN_TICKS));
+		}
+
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
 
 		if (com.archetypes.OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, oracleWiz,

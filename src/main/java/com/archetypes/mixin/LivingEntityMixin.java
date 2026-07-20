@@ -189,7 +189,8 @@ public abstract class LivingEntityMixin {
 		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
 				&& source.getEntity() instanceof ServerPlayer player
 				&& com.archetypes.MarksmanCombat.fromMarksmanWeapon(arrow)) {
-			return com.archetypes.MarksmanCombat.onArrowHit(player, (LivingEntity) (Object) this, level, amount);
+			return com.archetypes.MarksmanCombat.onArrowHit(player, (LivingEntity) (Object) this,
+					level, arrow, amount);
 		}
 
 		return amount;
@@ -651,6 +652,38 @@ public abstract class LivingEntityMixin {
 	private double archetypes$incorporealKnockback(final double strength) {
 		return (Object) this instanceof ServerPlayer player
 				&& com.archetypes.NightForm.isIncorporeal(player) ? 0.0 : strength;
+	}
+
+	/**
+	 * Siege: a planted archer is not moved. The third condition on this
+	 * overload, next to Steadfast's and Incorporeal's — the same reason as
+	 * theirs, that knockback immunity has to hold for a sourceless shove too.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private double archetypes$siegeKnockback(final double strength) {
+		return (Object) this instanceof ServerPlayer player
+				&& com.archetypes.Deadeye.isPlanted(player) ? 0.0 : strength;
+	}
+
+	/**
+	 * On the Wing: no fall damage while the Deadeye stance holds. Its own
+	 * cancelling injection rather than a branch of Ghost Form's, because Ghost
+	 * Form is a dice roll on every source and this is a certainty about one.
+	 * Slow Falling, the node's other half, is re-asserted by the ticker.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void archetypes$onTheWing(final ServerLevel level, final DamageSource source,
+			final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if ((Object) this instanceof ServerPlayer player
+				&& source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)
+				&& com.archetypes.Deadeye.isActive(player)
+				&& com.archetypes.Deadeye.rank(player,
+						com.archetypes.NemesisMarksmanNodes.Family.ON_THE_WING) > 0) {
+			cir.setReturnValue(false);
+		}
 	}
 
 	/**

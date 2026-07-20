@@ -64,6 +64,7 @@ public final class AgilityActives {
 			arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 					Tuning.TRUE_SHOT_SNAP_SPEED, 1.0F);
 			empower(arrow, nightFactor(player) * Tuning.TRUE_SHOT_SNAP_MULTIPLIER, false);
+			markTrueShot(arrow);
 
 			if (!player.hasInfiniteMaterials()) {
 				projectile.shrink(1);
@@ -105,6 +106,17 @@ public final class AgilityActives {
 		if (homing) {
 			target.setAttached(ModAttachments.TRUE_SHOT_HOMING, true);
 		}
+	}
+
+	/**
+	 * Mark an arrow as the base tree's one big shot. Deadeye also calls
+	 * {@link #empower} (for the flat flight and the origin stamp), so the mark
+	 * cannot live in there — and the Nemesis Marksman multipliers refuse a
+	 * marked arrow, which is what keeps Snap Shot x Long Shot x Siege off the
+	 * same projectile.
+	 */
+	public static void markTrueShot(final AbstractArrow arrow) {
+		((AttachmentTarget) arrow).setAttached(ModAttachments.TRUE_SHOT_ARROW, true);
 	}
 
 	/** Invisibility: eight seconds of the vanilla effect on a half-minute
@@ -207,8 +219,9 @@ public final class AgilityActives {
 	public static void acrobatics(final ServerPlayer player) {
 		int rank = MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
 				MarksmanNodes.Family.ACROBATICS);
+		boolean vault = NemesisMarksmanNodes.rank(player, NemesisMarksmanNodes.Family.VAULT) > 0;
 
-		if (rank <= 0 || !player.isUsingItem() || !player.getUseItem().is(Items.BOW)
+		if (rank <= 0 || !readyToRoll(player, vault)
 				|| onCooldown(player, ModAttachments.DISENGAGE_READY_AT)) {
 			return;
 		}
@@ -221,16 +234,44 @@ public final class AgilityActives {
 			return;
 		}
 
-		double impulse = rank * Tuning.ACROBATICS_BLOCKS_PER_RANK * Tuning.RUSH_IMPULSE_PER_BLOCK;
+		// Vault replaces the per-rank distance with a flat eight blocks and the
+		// eight-second clock with three.
+		double blocks = vault ? Tuning.VAULT_BLOCKS : rank * Tuning.ACROBATICS_BLOCKS_PER_RANK;
+		double impulse = blocks * Tuning.RUSH_IMPULSE_PER_BLOCK;
 		player.setDeltaMovement(player.getDeltaMovement()
 				.add(forward.normalize().scale(impulse).add(0.0, 0.15, 0.0)));
 		player.hurtMarked = true;
-		((AttachmentTarget) player).setAttached(ModAttachments.DISENGAGE_READY_AT,
-				level.getGameTime() + Tuning.DISENGAGE_COOLDOWN_TICKS);
+		((AttachmentTarget) player).setAttached(ModAttachments.DISENGAGE_READY_AT, level.getGameTime()
+				+ (vault ? Tuning.VAULT_COOLDOWN_TICKS : Tuning.DISENGAGE_COOLDOWN_TICKS));
 		level.sendParticles(ParticleTypes.CLOUD,
-				player.getX(), player.getY() + 0.1, player.getZ(), 5, 0.2, 0.02, 0.2, 0.01);
+				player.getX(), player.getY() + 0.1, player.getZ(), vault ? 12 : 5, 0.2, 0.02, 0.2, 0.01);
+		// The same cue either way; Vault's is pitched up, because a roll four
+		// times as long should not sound like the short one.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.RABBIT_JUMP, SoundSource.PLAYERS, 1.0F, 0.7F);
+				SoundEvents.RABBIT_JUMP, SoundSource.PLAYERS, 1.0F, vault ? 1.2F : 0.7F);
+	}
+
+	/**
+	 * Whether the weapon is ready enough to roll behind. The base skill wants a
+	 * bow actually drawn; Vault also takes a crossbow, and for a crossbow
+	 * "drawn" has to mean CHARGED — the draw is a moment, the loaded state is
+	 * the aim, and requiring {@code isUsingItem} would make the node
+	 * unreachable with the weapon it names. Nothing here tests the ground:
+	 * Acrobatics never did, so Vault's mid-air clause costs no code.
+	 */
+	private static boolean readyToRoll(final ServerPlayer player, final boolean vault) {
+		if (player.isUsingItem() && player.getUseItem().is(Items.BOW)) {
+			return true;
+		}
+
+		if (!vault) {
+			return false;
+		}
+
+		ItemStack main = player.getMainHandItem();
+		return (player.isUsingItem() && player.getUseItem().is(Items.CROSSBOW))
+				|| (main.is(Items.CROSSBOW)
+						&& net.minecraft.world.item.CrossbowItem.isCharged(main));
 	}
 
 	/** One authentic full-charge attack: enchants, crits and all. The stamp

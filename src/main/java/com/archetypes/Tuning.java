@@ -709,4 +709,73 @@ public final class Tuning {
 	public static final float HOLY_SPEED = 0.8F;
 	public static final int HOLY_EFFECT_TICKS = 200;
 
+	// --- Nemesis Marksman (epic): Deadeye and its two branches ---
+	/** The stance, in ticks, and with Long Watch. Fifteen seconds of
+	 * draw-free fire is worth about four to six ordinary shots' extra output;
+	 * Long Watch's +67% is priced against a capstone. */
+	public static final int DEADEYE_TICKS = 300;
+	public static final int DEADEYE_LONG_WATCH_TICKS = 500;
+	/** 90 seconds from the press, so the stance never overlaps itself even at
+	 * Long Watch's 25. The one dial to turn first if Deadeye reads as
+	 * mandatory rather than special. */
+	public static final int DEADEYE_COOLDOWN_TICKS = 1800;
+	/** Slowness II (and Fleet's Speed II) are re-asserted every tick at this
+	 * duration and left to lapse, never removed — the NightForm.tickForm
+	 * idiom, which cannot eat an effect the player had from elsewhere. */
+	public static final int DEADEYE_EFFECT_TICKS = 40;
+	/** Amplifier 1 is the numeral II: vanilla's -30% and +40%. Fleet is a net
+	 * swing of about 70% movement, which is what makes it a point on its own. */
+	public static final int DEADEYE_SLOWNESS_AMPLIFIER = 1;
+	public static final int FLEET_SPEED_AMPLIFIER = 1;
+	/** The speed a fully-drawn bow arrow leaves at: BowItem passes
+	 * {@code pow * 3.0F} to shootFromRotation and pow tops out at 1. An
+	 * underdrawn Deadeye arrow is scaled UP to this; a crossbow's 3.15 is
+	 * already past it and is left alone. Damage follows, because
+	 * AbstractArrow.onHitEntity multiplies baseDamage by the impact speed. */
+	public static final double DEADEYE_FULL_DRAW_SPEED = 3.0;
+
+	/** Long Shot: extra damage per block flown, per rank, capped at
+	 * DEADEYE_LONG_SHOT_CAP_BLOCKS — x2.0 at rank 1 and x3.0 at rank 2, both
+	 * reached at 50 blocks. That is inside the 64-block despawn but outside
+	 * any mob's aggro range, so the payout has to be chosen. */
+	public static final float LONG_SHOT_PER_BLOCK_PER_RANK = 0.02F;
+	public static final double LONG_SHOT_CAP_BLOCKS = 50.0;
+	/** Punch Through: vanilla's pierce level, i.e. two creatures passed
+	 * through before the third stops the arrow (AbstractArrow discards once
+	 * pierceLevel + 1 entities are in its ignore set). One below Piercing IV,
+	 * so an enchanted crossbow still does something the tree does not. */
+	public static final byte PUNCH_THROUGH_PIERCE_LEVEL = 2;
+	/** Siege: the planted multiplier, and how long standing still takes to
+	 * arm it. Snap Shot's x4.0 halved, because unlike Snap Shot it applies to
+	 * every arrow. */
+	public static final float SIEGE_MULTIPLIER = 2.0F;
+	public static final int SIEGE_ARM_TICKS = 20;
+	/** How far the server-side position may drift between ticks and still
+	 * count as standing still. The client is authoritative about movement, so
+	 * this is a position delta, not getDeltaMovement — a stationary player
+	 * still jitters by a fraction of a block. */
+	public static final double SIEGE_STILL_TOLERANCE = 0.003;
+	/** The ceiling on the product of everything Deadeye contributes to one
+	 * arrow (Long Shot x Siege x Punch Through's armour compensation). Long
+	 * Shot and Siege already refuse True Shot arrows; this is the second
+	 * fence, so no combination of nodes can reach the x24 the design's own
+	 * balance pass warned about. */
+	public static final float DEADEYE_MAX_MULTIPLIER = 6.0F;
+
+	/** Vault: Acrobatics' roll becomes a flat eight blocks on a three-second
+	 * clock, replacing 2-per-rank on eight seconds. */
+	public static final double VAULT_BLOCKS = 8.0;
+	public static final int VAULT_COOLDOWN_TICKS = 60;
+	/** On the Wing: seconds off Acrobatics per arrow that hits — Focus's
+	 * ratio (10s off 20s) against Vault's three-second clock, i.e. hitting
+	 * keeps you rolling. */
+	public static final int ON_THE_WING_REFUND_TICKS = 40;
+
+	/** Deadeye's arrows leave a crit trail every this many ticks of flight —
+	 * the Spellbow's per-tick hook, at a quarter of its density. */
+	public static final int DEADEYE_TRAIL_PERIOD_TICKS = 2;
+	/** The concentration vignette's peak alpha at the screen edge. Fifteen
+	 * percent: it must read as focus, not as damage. */
+	public static final float DEADEYE_VIGNETTE_ALPHA = 0.15F;
+
 }

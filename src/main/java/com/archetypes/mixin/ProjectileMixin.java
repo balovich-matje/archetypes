@@ -49,8 +49,31 @@ public abstract class ProjectileMixin {
 	@Inject(method = "canHitEntity", at = @At("HEAD"), cancellable = true)
 	private void archetypes$incorporeal(final Entity entity,
 			final CallbackInfoReturnable<Boolean> cir) {
-		if (entity instanceof ServerPlayer player
-				&& com.archetypes.NightForm.isIncorporeal(player)) {
+		if (!(entity instanceof ServerPlayer player)) {
+			return;
+		}
+
+		if (com.archetypes.NightForm.isIncorporeal(player)) {
+			cir.setReturnValue(false);
+			return;
+		}
+
+		// Evasion: the second predicate on the same gate. The puff is drawn at
+		// most once per projectile, not once per collision sweep — canHitEntity
+		// is asked several times a tick per projectile, and an unmarked puff
+		// was a smoke column rather than a pass-through.
+		if (com.archetypes.Deadeye.isEvading(player)) {
+			Projectile self = (Projectile) (Object) this;
+			var onProjectile = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) self;
+
+			if (self.level() instanceof ServerLevel level
+					&& !Boolean.TRUE.equals(onProjectile.getAttached(
+							com.archetypes.ModAttachments.DEADEYE_PHASED))) {
+				onProjectile.setAttached(com.archetypes.ModAttachments.DEADEYE_PHASED, true);
+				level.sendParticles(ParticleTypes.CLOUD,
+						self.getX(), self.getY(), self.getZ(), 6, 0.15, 0.15, 0.15, 0.01);
+			}
+
 			cir.setReturnValue(false);
 		}
 	}
