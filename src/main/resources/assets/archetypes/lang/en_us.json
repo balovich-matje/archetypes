@@ -416,7 +416,7 @@
 	"node.archetypes.oracle_priest.retribution": "Retribution",
 	"node.archetypes.oracle_priest.retribution.desc": "Aura of Radiance grants you Strength II/Speed II while active.",
 	"node.archetypes.nemesis_shadow.dark_ritual": "Dark Ritual",
-	"node.archetypes.nemesis_shadow.dark_ritual.desc": "Transform yourself into a creature of the night and gain new abilities. 10 seconds transformation time, cooldown 1 hour. Health regeneration is halted, but kills will restore you 25% of the target creature's maximum health.",
+	"node.archetypes.nemesis_shadow.dark_ritual.desc": "Transform yourself into a creature of the night and gain new abilities. 10 seconds transformation time; after a successful channel you cannot transform back for one hour. Health regeneration is halted, but kills will restore you 25% of the target creature's maximum health.",
 	"node.archetypes.nemesis_shadow.extra_sensory_perception": "Extra Sensory Perception",
 	"node.archetypes.nemesis_shadow.extra_sensory_perception.desc": "While in night form, you gain the ability to see all creatures within 32 blocks.",
 	"node.archetypes.nemesis_shadow.night_eyes": "Eyes of the Night",
