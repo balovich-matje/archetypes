@@ -5,10 +5,10 @@ import com.archetypes.ColossusSlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
+import com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod;
+import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
+
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * The other half of "which heals are magic": Instant Health. It never ticks —
@@ -21,17 +21,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(targets = "net.minecraft.world.effect.HealOrHarmMobEffect")
 public abstract class HealOrHarmMobEffectMixin {
-	@Inject(method = "applyInstantaneousEffect", at = @At("HEAD"))
-	private void archetypes$magicalHealBegin(final ServerLevel level, final Entity source,
+	/**
+	 * One wrap, not a HEAD/RETURN pair: a RETURN inject is skipped when the
+	 * wrapped call throws, and the flag is a static — a single exception
+	 * anywhere under here would leave every later heal in the server marked
+	 * magical until the next potion. try/finally cannot leak.
+	 */
+	@WrapMethod(method = "applyInstantaneousEffect")
+	private void archetypes$magicalHeal(final ServerLevel level, final Entity source,
 			final Entity owner, final LivingEntity mob, final int amplification,
-			final double scale, final CallbackInfo ci) {
+			final double scale, final Operation<Void> original) {
 		ColossusSlayer.beginMagicalHealing();
-	}
 
-	@Inject(method = "applyInstantaneousEffect", at = @At("RETURN"))
-	private void archetypes$magicalHealEnd(final ServerLevel level, final Entity source,
-			final Entity owner, final LivingEntity mob, final int amplification,
-			final double scale, final CallbackInfo ci) {
-		ColossusSlayer.endMagicalHealing();
+		try {
+			original.call(level, source, owner, mob, amplification, scale);
+		} finally {
+			ColossusSlayer.endMagicalHealing();
+		}
 	}
 }

@@ -514,6 +514,16 @@ public final class ModAttachments {
 			AttachmentRegistry.<Long>create(Archetypes.id("immovable_cue_at"));
 
 	// --- Colossus Slayer (epic): the parry window ---
+	/**
+	 * Game tick a missed parry stops locking the input out. Without it a
+	 * modified client could re-open the window the tick it lapses and stand in
+	 * a permanent parry; the swing penalty alone only slows attacking, it does
+	 * not stop the next press. Server-authoritative, synced for symmetry.
+	 */
+	public static final AttachmentType<Long> PARRY_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("parry_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
 	// Both are server-side only and transient, and both are read through
 	// {@link ColossusSlayer}, never directly. Nothing about a 0.3-second
 	// window is worth syncing: the client already knows it pressed the combo,
@@ -613,6 +623,7 @@ public final class ModAttachments {
 			// only the landing clears it. A respec mid-air would land on a
 			// player who no longer owns the node and never take the waiver back.
 			TitansLeap.clear(serverPlayer);
+			ColossusSlayer.clearWindow(serverPlayer);
 		}
 
 		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_END);

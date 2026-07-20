@@ -242,7 +242,7 @@ public final class ColossusSlayer {
 	/** Attack and block came down together: open the window, or ignore the
 	 * press if one is already open (a held combo is one parry, not sixty). */
 	public static void open(final ServerPlayer player) {
-		if (!canParry(player) || isWindowOpen(player)) {
+		if (!canParry(player) || isWindowOpen(player) || lockedOut(player)) {
 			return;
 		}
 
@@ -250,6 +250,22 @@ public final class ColossusSlayer {
 		long now = player.level().getGameTime();
 		target.setAttached(ModAttachments.PARRY_AT, now);
 		target.setAttached(ModAttachments.PARRY_UNTIL, now + Tuning.PARRY_WINDOW_TICKS);
+	}
+
+	/** A missed parry locks the input out for one penalised swing. The swing
+	 * penalty alone is not a fence: a client that presses every tick would
+	 * re-open the window the moment it lapsed and never be hittable. */
+	private static boolean lockedOut(final Player player) {
+		Long readyAt = ((AttachmentTarget) player).getAttached(ModAttachments.PARRY_READY_AT);
+		return readyAt != null && player.level().getGameTime() < readyAt;
+	}
+
+	/** Drop a running window and its lockout — the respec path. */
+	public static void clearWindow(final ServerPlayer player) {
+		AttachmentTarget target = (AttachmentTarget) player;
+		target.removeAttached(ModAttachments.PARRY_UNTIL);
+		target.removeAttached(ModAttachments.PARRY_AT);
+		target.removeAttached(ModAttachments.PARRY_READY_AT);
 	}
 
 	private static boolean isWindowOpen(final Player player) {
@@ -275,6 +291,10 @@ public final class ColossusSlayer {
 		// ran the deeper it starts.
 		setSwingTicker(player, (int) (player.level().getGameTime() - started
 				- delay * (Tuning.PARRY_MISS_SWING_FACTOR - 1.0F)));
+
+		// The same beat the swing needs to recover, as an input fence.
+		((AttachmentTarget) player).setAttached(ModAttachments.PARRY_READY_AT,
+				player.level().getGameTime() + (long) (delay * Tuning.PARRY_MISS_SWING_FACTOR));
 
 		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.PLAYERS, 0.7F, 0.6F);
