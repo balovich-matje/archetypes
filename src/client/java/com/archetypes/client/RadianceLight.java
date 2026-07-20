@@ -195,13 +195,17 @@ public final class RadianceLight {
 				player.getY() + player.getBbHeight() * 0.5, player.getZ());
 		BlockPos seat = null;
 
-		if (free(level, chest, held)) {
-			seat = chest;
-		} else {
-			BlockPos feet = player.blockPosition();
-
-			if (free(level, feet, held)) {
-				seat = feet;
+		// Chest first, then the blocks around it. Standing in grass or flowers
+		// used to put the light out entirely: they are not air, and a light
+		// cannot replace them without deleting them from the client's view —
+		// so the search steps over them to the head, the feet, and finally the
+		// four sides. Light carries 14 blocks; one block of offset is nothing.
+		for (BlockPos candidate : new BlockPos[] {
+				chest, chest.above(), player.blockPosition(),
+				chest.north(), chest.south(), chest.east(), chest.west() }) {
+			if (free(level, candidate, held)) {
+				seat = candidate;
+				break;
 			}
 		}
 
