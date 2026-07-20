@@ -1,5 +1,6 @@
 package com.archetypes.mixin;
 
+import com.archetypes.ColossusProtector;
 import com.archetypes.MagicArmaments;
 import com.archetypes.SkillPoints;
 
@@ -25,6 +26,25 @@ public abstract class PlayerMixin {
 
 		if (!player.level().isClientSide()) {
 			SkillPoints.bank(player, amount);
+		}
+	}
+
+	/**
+	 * Well Fed: a bar that can hold more must also be fillable past 20.
+	 *
+	 * <p>{@code canEat} rather than {@code FoodData.needsFood} because
+	 * {@code FoodData} does not know whose it is, and because this is the gate
+	 * both sides consult — {@code Consumable.canConsume} refuses to start the
+	 * meal on the client too, so a client that still thought 20 was full would
+	 * never send the use at all.
+	 */
+	@Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
+	private void archetypes$bankedHungerIsEdible(final boolean canAlwaysEat,
+			final CallbackInfoReturnable<Boolean> cir) {
+		Player player = (Player) (Object) this;
+
+		if (player.getFoodData().getFoodLevel() < ColossusProtector.hungerCeiling(player)) {
+			cir.setReturnValue(true);
 		}
 	}
 }

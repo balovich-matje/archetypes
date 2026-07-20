@@ -207,6 +207,12 @@ public class ArchetypesClient implements ClientModInitializer {
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("mana_bar"), ManaHud::render);
 
+		// Well Fed's bank, gilded over the hunger row vanilla stops filling at
+		// twenty. Attached rather than replacing FOOD_BAR: the row underneath
+		// is still vanilla's and still says everything it always said.
+		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
+				com.archetypes.Archetypes.id("banked_hunger"), BankedHungerHud::render);
+
 		// Sunlight through a vampire's eyes. On MISC_OVERLAYS like Specialities'
 		// stealth vignette, so it washes the world but stays under the bars.
 		HudElementRegistry.attachElementAfter(VanillaHudElements.MISC_OVERLAYS,

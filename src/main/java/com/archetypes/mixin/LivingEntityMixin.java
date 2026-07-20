@@ -871,4 +871,95 @@ public abstract class LivingEntityMixin {
 
 		return amount * Math.max(0.0F, 1.0F - Tuning.COLOSSUS_BULWARK_DR_PER_RANK * rank);
 	}
+
+	/**
+	 * Instinctive Guard: a carried shield blocks a share of every hit without
+	 * ever being raised. A victim-side {@code ModifyVariable} on the shared
+	 * {@code amount}, Mana Shield's shape, so it composes with the rest of the
+	 * funnel and lands before armour — which is where vanilla's own blocking
+	 * lands too. The whole of the rule is in
+	 * {@link com.archetypes.ColossusProtector#instinctiveGuard}.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$instinctiveGuard(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		return (Object) this instanceof ServerPlayer player
+				? com.archetypes.ColossusProtector.instinctiveGuard(player, level, source, amount)
+				: amount;
+	}
+
+	/**
+	 * Free Hand: the shield stays up while the hands eat.
+	 *
+	 * <p>Cancelling at the head of {@code getItemBlockingWith} rather than
+	 * anywhere in the damage path on purpose — that method is the single
+	 * definition of "is this entity blocking, and with what", so answering it
+	 * puts the whole of vanilla's blocking back on at once: the arc test, the
+	 * durability, the block sound, {@code blockUsingItem} and with it Iron
+	 * Spikes and Braced, and the shield-up pose every watching client draws.
+	 * Nothing about blocking is re-implemented.
+	 *
+	 * <p>Common, not server-side: the client asks the same question to pose the
+	 * player and to decide its own hits, and it holds the synced node list.
+	 */
+	@Inject(method = "getItemBlockingWith", at = @At("HEAD"), cancellable = true)
+	private void archetypes$freeHand(
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<
+					net.minecraft.world.item.ItemStack> cir) {
+		if (!((Object) this instanceof net.minecraft.world.entity.player.Player player)) {
+			return;
+		}
+
+		net.minecraft.world.item.ItemStack shield =
+				com.archetypes.ColossusProtector.freeHandBlock(player);
+
+		if (shield != null) {
+			cir.setReturnValue(shield);
+		}
+	}
+
+	/**
+	 * Free Hand's durability, charged to the hand that actually blocked.
+	 * {@code applyItemBlocking} passes {@code getUsedItemHand()} straight into
+	 * {@code hurtBlockingItem}, which turns it into the equipment slot the
+	 * break is reported against — for a free-hand block that is the hand
+	 * holding the food, not the shield.
+	 */
+	@ModifyExpressionValue(method = "applyItemBlocking",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;getUsedItemHand()"
+							+ "Lnet/minecraft/world/InteractionHand;"))
+	private net.minecraft.world.InteractionHand archetypes$freeHandDurability(
+			final net.minecraft.world.InteractionHand hand) {
+		if (!((Object) this instanceof net.minecraft.world.entity.player.Player player)) {
+			return hand;
+		}
+
+		net.minecraft.world.InteractionHand blocking =
+				com.archetypes.ColossusProtector.freeHandBlockHand(player);
+		return blocking == null ? hand : blocking;
+	}
+
+	/**
+	 * Free Hand's block sound. {@code hurtServer} reads the component it plays
+	 * {@code onBlocked} from off {@code getUseItem()} rather than off whatever
+	 * {@code applyItemBlocking} decided had blocked — same assumption, that the
+	 * two are one item. Handing it the shield is what makes a free-hand block
+	 * sound like the block it is.
+	 */
+	@ModifyExpressionValue(method = "hurtServer",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;getUseItem()"
+							+ "Lnet/minecraft/world/item/ItemStack;"))
+	private net.minecraft.world.item.ItemStack archetypes$freeHandBlockSound(
+			final net.minecraft.world.item.ItemStack itemInUse) {
+		if (!((Object) this instanceof net.minecraft.world.entity.player.Player player)) {
+			return itemInUse;
+		}
+
+		net.minecraft.world.item.ItemStack shield =
+				com.archetypes.ColossusProtector.freeHandBlock(player);
+		return shield == null ? itemInUse : shield;
+	}
 }

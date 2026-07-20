@@ -474,7 +474,7 @@
 	"node.archetypes.colossus_protector.hearty_meal": "Hearty Meal",
 	"node.archetypes.colossus_protector.hearty_meal.desc": "Eating food now grants an 8 minute buff: meat grants Strength II, fruit grants Speed II, milk grants Regeneration I.",
 	"node.archetypes.colossus_protector.instinctive_guard": "Instinctive Guard",
-	"node.archetypes.colossus_protector.instinctive_guard.desc": "You now passively block all attacks at 25/50% effectiveness.",
+	"node.archetypes.colossus_protector.instinctive_guard.desc": "While carrying a shield, you passively block all attacks at 25/50% effectiveness. The shield still takes full damage for those blocks.",
 	"node.archetypes.colossus_protector.free_hand": "Free Hand",
 	"node.archetypes.colossus_protector.free_hand.desc": "You can now perform all one-handed actions while holding block.",
 	"node.archetypes.colossus_protector.immovable_object": "Immovable Object",

@@ -35,6 +35,7 @@ public class Archetypes implements ModInitializer {
 		OracleWizardTicker.initialize();
 		NightFormTicker.initialize();
 		RadianceAura.initialize();
+		ColossusProtector.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);

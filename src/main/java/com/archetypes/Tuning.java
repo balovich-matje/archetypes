@@ -921,4 +921,55 @@ public final class Tuning {
 	 * through the same {@code BlocksAttacks.disable} vanilla routes it to. */
 	public static final float UNSTOPPABLE_DISABLE_SECONDS = 5.0F;
 
+	/**
+	 * Ironclad: +50% armour and armour toughness, as an
+	 * {@code ADD_MULTIPLIED_TOTAL} amount, so the number here IS the "final
+	 * multiplier" the sketch asked for.
+	 *
+	 * <p>Both attributes are {@code RangedAttribute}s with hard ceilings —
+	 * armour 30, toughness 20 — and full netherite is exactly 20 armour and 12
+	 * toughness. So this lands a netherite Colossus on 30 armour, the game's
+	 * own maximum, and 18 toughness. That is the node's real shape: it does not
+	 * break the armour ceiling, it puts the ceiling within reach of gear that
+	 * never got there, and iron (15 armour, 0 toughness) gains more from it
+	 * than diamond does.
+	 */
+	public static final double IRONCLAD_ARMOUR_BONUS = 0.50;
+
+	/** Well Fed: 25% off the time a bite of food takes, per rank. Rank 2 halves
+	 * it — a steak in 16 ticks rather than 32. */
+	public static final float WELL_FED_EAT_SPEED_PER_RANK = 0.25F;
+	/** Well Fed: how much further the hunger bar fills, per rank, as a share of
+	 * vanilla's 20. Rank 1 is 30, rank 2 is 40 — two full bars.
+	 *
+	 * <p>The regeneration thresholds are untouched (see {@link
+	 * ColossusProtector#hungerCeiling}), so the bank buys time, not a rate: at
+	 * 40 the player simply stays above vanilla's 18-point regen line for twice
+	 * as long before food matters again. Saturation is still capped at
+	 * {@code FoodConstants.MAX_SATURATION}; letting it ride the raised ceiling
+	 * would have doubled the fast regen too, which is a rate. */
+	public static final float WELL_FED_BANK_PER_RANK = 0.50F;
+
+	/** Hearty Meal: eight minutes, the sketch's number, in ticks. Long enough
+	 * that a fed Colossus is buffed for a whole expedition and short enough
+	 * that it is not simply permanent — a Beacon's own range is 11 seconds. */
+	public static final int HEARTY_MEAL_TICKS = 9600;
+	/** Strength II and Speed II are amplifier 1; Regeneration I is amplifier 0. */
+	public static final int HEARTY_MEAL_MEAT_AMPLIFIER = 1;
+	public static final int HEARTY_MEAL_FRUIT_AMPLIFIER = 1;
+	public static final int HEARTY_MEAL_MILK_AMPLIFIER = 0;
+
+	/**
+	 * Instinctive Guard: the share of a would-be block a carried shield
+	 * actually stops, per rank — 25% then 50%.
+	 *
+	 * <p>A vanilla shield blocks 100% of what it blocks at all, so rank 2 is
+	 * half of every non-bypassing hit, always, with no button and no facing.
+	 * That is two of this tree's five points and it is fenced by the shield
+	 * itself: the durability charged is the whole block, not the quarter or
+	 * half kept ({@link ColossusProtector#instinctiveGuard}), so a Colossus who
+	 * stands in a mob pack goes through shields.
+	 */
+	public static final float INSTINCTIVE_GUARD_PER_RANK = 0.25F;
+
 }

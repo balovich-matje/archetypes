@@ -289,7 +289,12 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    of invisibility), `archetypes$sunderDamage` (mace/fists armor-shred + Meteor
    smash bonus + the `CrusherCombat.onCrusherHit` batch). Attacker-side hooks
    check `source.getEntity()`; victim-side `archetypes$manaShield` checks
-   `(Object)this` and drains the pool instead of health.
+   `(Object)this` and drains the pool instead of health, and
+   `archetypes$instinctiveGuard` does the same for a Colossus Protector's
+   carried-but-unraised shield (see `ColossusProtector.instinctiveGuard`: the
+   shield's own `BlocksAttacks` decides what is blockable, the facing angle is
+   forced to 0, and the durability charged is the whole block even though the
+   player keeps only a quarter or half of it).
 3. Separately, `archetypes$daggerKnockback` (`@ModifyVariable` on `knockback`)
    funnels all knockback: daggers and missiles shove at half, Flamethrower and
    Blizzard pulses at zero, and Clinch reduces a bare-fisted Crusher's shove.
@@ -297,14 +302,40 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    check in `applyItemBlocking`) forces the angle to 0 so a Bulwark holder blocks
    from every direction.
 
-Other mixins: `PlayerMixin` (XP mirror, plus the `canGlide` hook that lets a
+**Blocking without holding block.** `getItemBlockingWith` is vanilla's single
+definition of "is this entity blocking, and with what" — `isBlocking`,
+`applyItemBlocking` and every pose read it — so Free Hand answers *it* rather
+than re-implementing blocking. `archetypes$freeHand` returns the shield in the
+player's other hand while the used-item slot is busy with something else
+(vanilla has one such slot per entity, so eating and blocking cannot both be
+"the item I am using"), which puts the arc test, the durability, the block
+sound and Iron Spikes/Braced back on unchanged. Two companion
+`@ModifyExpressionValue`s repair vanilla's assumption that the blocking item
+and the item in use are the same one: `archetypes$freeHandDurability` charges
+`applyItemBlocking`'s wear to the shield's hand, and
+`archetypes$freeHandBlockSound` hands `hurtServer` the shield to read
+`onBlocked` off. The mixin is common because the client asks the same question
+to pose the player.
+
+Other mixins: `PlayerMixin` (XP mirror, the `canGlide` hook that lets a
 Magic Armaments channel glide in an elytra's place — declared common because
-`Player` is common and the client's jump-to-deploy runs the same check),
-`PlayerAdvancementsMixin` (advancement
+`Player` is common and the client's jump-to-deploy runs the same check — and
+`canEat`, so Well Fed's raised hunger ceiling is fillable past 20 on both
+sides), `PlayerAdvancementsMixin` (advancement
 count), `AbstractArrowMixin`/`AbstractArrowAccessor`/`ProjectileMixin` (True Shot
 flight and reflection), `CrossbowItemMixin` (Rapid Reload), `BlocksAttacksMixin`,
-and `LivingEntityAccessor`. Client-side: `AvatarRendererMixin` (armor hiding,
-ability poses), `LocalPlayerMixin`, `MinecraftMixin`, `HudMixin` (the night
+`ItemStackMixin` (Well Fed's faster eating, on `getUseDuration`),
+`FoodPropertiesMixin` (Well Fed's banked hunger — `FoodData` clamps to a
+hardcoded 20 and holds no reference to its owner, so the top-up is wrapped
+around `FoodData.eat` where the player is a parameter), `ConsumableMixin`
+(Hearty Meal, injected at `onConsume`'s `stack.consume` call: late enough that
+milk's clear-everything cannot wipe the Regeneration it grants, early enough
+that the stack still knows what it is), and `LivingEntityAccessor`.
+Client-side: `AvatarRendererMixin` (armor hiding,
+ability poses), `LocalPlayerMixin`, `MinecraftMixin` (charged-swing announce,
+plus the `handleKeybinds` head that spends attack and use clicks before the
+`isUsingItem()` arm swallows them — the whole of Free Hand and Immovable
+Object, since nothing server-side forbids either), `HudMixin` (the night
 form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
@@ -350,6 +381,7 @@ tick.
 | `DeadeyeOverlay` | the Deadeye stance's concentration vignette, drawn as nested fills rather than a texture |
 | `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours *and* Stalk's bone-white mark outline (the mark wins over ESP), and the two empowered active identities |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
+| `BankedHungerHud` | Well Fed's hunger above 20, gilded over the vanilla drumstick row — absorption's language, capacity past the normal maximum on the existing row |
 
 **The night form's client half.** Everything the Nemesis Shadow's night form
 looks and sounds like reads the synced attachments through `NightForm`'s static
