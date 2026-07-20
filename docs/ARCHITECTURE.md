@@ -111,6 +111,9 @@ nodes and an outline becomes a ring. Two authored extras:
   both capstones.
 - `.withDecorativeEdge(...)` — a cosmetic line that closes a silhouette but does
   **not** count for adjacency.
+- `.withRoots(col, row, ...)` — the tree's entry points, named explicitly
+  instead of "every node on the bottom row". For a shape that puts column feet
+  on the same row as the root meant to feed them.
 
 A node's stable identity is its **index** into `constellation().nodes()`.
 `PURCHASED` stores owned indices per sub-tree id, so grids must not be reordered
@@ -152,8 +155,12 @@ one preview active per tree shown on the picker (pinned explicitly, not derived)
 `NodePurchases` owns buy logic. `NodePurchases.check` returns a `Verdict`
 (`BUYABLE`, `OWNED`, `NOT_CONNECTED`, `NO_POINTS`, `TREE_FULL`,
 `EXCLUSIVE_TAKEN`) so the screen can explain *why* a node is locked. A node is
-buyable when it is a root (`row() == 0`) or adjacent to an owned node, not
-excluded by a capstone, under the per-tree cap, and the player has a point free.
+buyable when it is a root (`Constellation.isRoot`) or adjacent to an owned
+node, not excluded by a capstone, under the per-tree cap, and the player has a
+point free. A tree's roots are its bottom row unless it declares them with
+`withRoots`; only `COLOSSUS_CRUSHER` does, because its bottom row carries the
+feet of both columns as well as Titan's Leap, and the leap has to stay the way
+in.
 `NodePurchases.buy` is server-only, re-runs `check`, appends the index to
 `PURCHASED`, and increments `SPENT_POINTS`.
 
@@ -312,8 +319,8 @@ Colossus Protector's Immovable Object refuses it there (`BlocksAttacksMixin`,
 `HEAD`, cancellable, asking `ColossusProtector.immovableObject`), which is what
 lets the node promise "by normal means" without keeping a list of attackers.
 Our own Unstoppable Force is deliberately not exempted: the two absolutes meet
-as the clash instead (`ProtectorClash`, fired from
-`archetypes$unstoppableForce`).
+as the clash instead (`ProtectorClash`, fired from the cancelling
+`hurtServer` head `archetypes$clash`).
 
 Other mixins: `PlayerMixin` (XP mirror, the `canGlide` hook that lets a
 Magic Armaments channel glide in an elytra's place — declared common because
@@ -383,7 +390,7 @@ tick.
 | `NightAnimations`, `NightFormFx`, `NightAuraLayer` | the Dark Ritual's pose, its particle column and quickening heartbeat plus the transformed body's trail, and the violet energy-swirl aura onlookers see on a vampire |
 | `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its grey hearts and its hidden hunger row |
 | `DeadeyeOverlay` | the Deadeye stance's concentration vignette, drawn as nested fills rather than a texture |
-| `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours *and* Stalk's bone-white mark outline (the mark wins over ESP), and the two empowered active identities |
+| `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours *and* Death Mark's red (the mark wins over ESP and over anything vanilla paints; Stalk adds only the through-walls exemption), and the two empowered active identities |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 | `BankedHungerHud` | Well Fed's hunger above 20, as a bevelled 1px halo around the vanilla drumsticks that bank is currently backing (leftmost first, the end vanilla drains first). Anchored after `FOOD_BAR`, not `HOTBAR`, or it would draw under the row it marks; hidden in creative and spectator |
 

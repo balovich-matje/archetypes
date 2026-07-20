@@ -849,7 +849,7 @@ public final class Tuning {
 	 * is load-bearing in PvP and must read as continuous, not as a proc. */
 	public static final int DEATH_MARK_SMOKE_PERIOD_TICKS = 10;
 
-	// --- Colossus Crusher (epic): Titan's Leap and its two branches ---
+	// --- Colossus Crusher (epic): Titan's Leap and its two columns ---
 
 	/**
 	 * The leap's upward impulse, blocks per tick. NOT 15 — vertical travel is
@@ -902,26 +902,22 @@ public final class Tuning {
 	/** The send-off, matching Quake's ({@link #QUAKE_LAUNCH}). */
 	public static final double AFTERSHOCK_LAUNCH = 0.95;
 
-	/** Gravity Well's reach. Deliberately larger than Aftershock's ceiling:
-	 * the node buys a gather, and a gather smaller than the slam it replaces
-	 * would have nothing to say. */
-	public static final double GRAVITY_WELL_RADIUS = 12.0;
-	/** Haymaker's stun ({@link #HAYMAKER_STUN_AMPLIFIER} = Slowness VI) held
-	 * twice as long, over a whole radius, with no damage attached. */
-	public static final int GRAVITY_WELL_SLOW_TICKS = 60;
-	public static final int GRAVITY_WELL_SLOW_AMPLIFIER = 5;
-	/** Pull impulse per block of distance, and its ceiling. The cap is what
-	 * stops a creature twelve blocks out being fired THROUGH the player: at
-	 * 0.09/block a 12-block pull would open at 1.08 blocks/tick. */
-	public static final double GRAVITY_WELL_PULL_PER_BLOCK = 0.09;
-	public static final double GRAVITY_WELL_MAX_PULL = 0.7;
-	/** Inside this, a creature is already where the well wanted it and is left
-	 * alone — pulling it further would push it out the far side. */
-	public static final double GRAVITY_WELL_DEAD_ZONE = 1.5;
-
-	/** Immovable's cue: at most one anvil per second, so the node announces
-	 * itself the first time a shove is eaten without droning under a mob pack. */
-	public static final int IMMOVABLE_CUE_PERIOD_TICKS = 20;
+	/**
+	 * Hardened: armour per plate, by what was in hand when the hit landed. The
+	 * fists number is double the mace's for the tree's usual reason — a mace
+	 * Colossus is already being paid by Aftershock and Sunder, and bare hands
+	 * have to buy something back.
+	 */
+	public static final int HARDENED_MACE_ARMOR = 1;
+	public static final int HARDENED_UNARMED_ARMOR = 2;
+	/**
+	 * A plate's life, per rank: 2 seconds at rank 1, 4 at rank 2. Rank is a
+	 * multiplier on the DURATION and not on the amount, so the second rank pays
+	 * by letting plates overlap twice as deep rather than by handing out more
+	 * armour per hit — which is what makes the "stacks independently, new
+	 * stacks don't refresh duration" rule the node's whole mechanic.
+	 */
+	public static final int HARDENED_DURATION_TICKS_PER_RANK = 40;
 
 	/** Bulwark: 20% off per rank while Battle Trance holds banked health. The
 	 * condition is the balance — the trance decays
@@ -964,6 +960,12 @@ public final class Tuning {
 	 */
 	public static final double CLASH_PUSH = 0.5;
 	public static final double CLASH_LIFT = 0.42;
+
+	/** The Protector's Immovable Object cue: at most one note per second, so a
+	 * node whose whole effect is that nothing happened announces itself the
+	 * first time without droning under a mob pack. (The Crusher's own Immovable
+	 * shared this period until the node was replaced by Hardened.) */
+	public static final int IMMOVABLE_CUE_PERIOD_TICKS = 20;
 
 	/**
 	 * Ironclad: +50% armour and armour toughness, as an

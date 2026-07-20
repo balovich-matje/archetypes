@@ -38,9 +38,9 @@ import net.minecraft.world.phys.Vec3;
  * obsidian and leave netherrack standing in the wrong places; the author asked
  * for a hardness ceiling instead ({@link Tuning#CLASH_MAX_HARDNESS}), which is
  * the pickaxe's ordering, not TNT's. And its push runs through
- * {@code EXPLOSION_KNOCKBACK_RESISTANCE} — an attribute {@code CrusherTicker}
- * pins to 1.0 for exactly the player who is going to be standing here. So the
- * blast is spelled out by hand: our own block filter, our own velocity write.
+ * {@code EXPLOSION_KNOCKBACK_RESISTANCE}, which is exactly the attribute a
+ * Colossus in full armour has been raising all game. So the blast is spelled
+ * out by hand: our own block filter, our own velocity write.
  *
  * <h2>Re-entry</h2>
  * This runs from inside the blocker's {@code hurtServer}, and it calls
@@ -222,13 +222,14 @@ public final class ProtectorClash {
 	/**
 	 * Five blocks apart, each along the line between them, and nothing gets to
 	 * opt out. Written as a velocity rather than through {@code knockback} or an
-	 * explosion's own push because both nodes' owners are precisely the builds
-	 * that have made themselves immune to those: the Crusher's Immovable zeroes
-	 * {@code LivingEntity.knockback} at the head, and {@code CrusherTicker} pins
-	 * {@code EXPLOSION_KNOCKBACK_RESISTANCE} to 1.0. {@code setDeltaMovement}
-	 * consults neither, and {@code hurtMarked} is what publishes forced motion —
-	 * {@code ServerEntity} sends the packet to tracking players AND to the moved
-	 * entity itself, so the client stops predicting and goes where it is put.
+	 * explosion's own push because both of these builds are wearing the answer
+	 * to those: {@code KNOCKBACK_RESISTANCE} and
+	 * {@code EXPLOSION_KNOCKBACK_RESISTANCE} are what netherite armour and the
+	 * Crusher's own Clinch raise, and a shove that both participants can shrug
+	 * off is not a clash. {@code setDeltaMovement} consults neither, and
+	 * {@code hurtMarked} is what publishes forced motion — {@code ServerEntity}
+	 * sends the packet to tracking players AND to the moved entity itself, so
+	 * the client stops predicting and goes where it is put.
 	 *
 	 * <p>After the damage, never before: {@code hurtServer} ends in
 	 * {@code dealDefaultKnockback}, and anything written first would be

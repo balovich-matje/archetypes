@@ -802,25 +802,30 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * Immovable: nothing shoves a Colossus. Its own hook next to Incorporeal's
-	 * and Siege's, for their reason — knockback immunity has to hold for a
-	 * sourceless shove too — rather than a KNOCKBACK_RESISTANCE modifier, so
-	 * the node can announce itself when it actually eats something. Explosions
-	 * and wind charges never reach this method; that clause lives on
-	 * EXPLOSION_KNOCKBACK_RESISTANCE in {@code CrusherTicker}.
+	 * Hardened: a blow taken plates the Colossus for two or four seconds, +1
+	 * with a mace and +2 bare-fisted, and the plates stack without ever
+	 * refreshing each other.
+	 *
+	 * <p>At RETURN, not at HEAD like the rest of this file, and it is the one
+	 * hook here that wants to be: every other hook shapes or cancels the hit
+	 * and so has to run before vanilla resolves it, while this one asks a
+	 * question only the finished call can answer — {@code hurtServer} returns
+	 * true exactly when damage was actually taken, so an i-frame'd or fully
+	 * refused hit hands out no plate. Lethal hits still count (the method
+	 * returns true for them), which is why this is not an AFTER_DAMAGE listener.
+	 *
+	 * <p>{@link com.archetypes.Hardened#onHurt} owns the rest of the test —
+	 * the rank, the weapon, and the "an entity must have thrown it" clause that
+	 * keeps fire, fall and drowning out.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(
-			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
-			at = @At("HEAD"), argsOnly = true, ordinal = 0)
-	private double archetypes$immovableKnockback(final double strength) {
-		if (strength <= 0.0 || !((Object) this instanceof ServerPlayer player)
-				|| com.archetypes.TitansLeap.rank(player,
-						com.archetypes.ColossusCrusherNodes.Family.IMMOVABLE) <= 0) {
-			return strength;
+	@Inject(method = "hurtServer", at = @At("RETURN"))
+	private void archetypes$hardened(final ServerLevel level, final DamageSource source,
+			final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if ((Object) this instanceof ServerPlayer player
+				&& Boolean.TRUE.equals(cir.getReturnValue())) {
+			com.archetypes.Hardened.onHurt(player, source);
 		}
-
-		com.archetypes.TitansLeap.immovableCue(player);
-		return 0.0;
 	}
 
 	/**
@@ -857,11 +862,12 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * No fall damage for an Immovable Colossus, and none from a Titan's Leap.
-	 * A cancelling inject rather than a {@code fallDistance} reset, which is
-	 * the whole point: the leap exists to feed Meteor, Shockwave and vanilla's
-	 * own mace smash, and every one of them reads the fall it would have
-	 * zeroed. Same shape as On the Wing's.
+	 * No fall damage from a Titan's Leap — the leap's own waiver, and nothing
+	 * else's: it lasts exactly as long as the flight stamp does. A cancelling
+	 * inject rather than a {@code fallDistance} reset, which is the whole
+	 * point: the leap exists to feed Meteor, Shockwave and vanilla's own mace
+	 * smash, and every one of them reads the fall it would have zeroed. Same
+	 * shape as On the Wing's.
 	 */
 	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
 	private void archetypes$titansLeapFall(final ServerLevel level, final DamageSource source,
@@ -869,9 +875,7 @@ public abstract class LivingEntityMixin {
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if ((Object) this instanceof ServerPlayer player
 				&& source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)
-				&& (com.archetypes.TitansLeap.isLeaping(player)
-						|| com.archetypes.TitansLeap.rank(player,
-								com.archetypes.ColossusCrusherNodes.Family.IMMOVABLE) > 0)) {
+				&& com.archetypes.TitansLeap.isLeaping(player)) {
 			cir.setReturnValue(false);
 		}
 	}

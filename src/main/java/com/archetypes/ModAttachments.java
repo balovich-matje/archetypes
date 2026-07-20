@@ -467,8 +467,9 @@ public final class ModAttachments {
 	 * when nothing has. This is the mark's client-visible channel and the same
 	 * one {@code BULWARK_ACTIVE} and {@code DEADEYE_ARROW} already use — state
 	 * written onto the entity it describes and synced to everyone, so a
-	 * renderer can ask the body rather than be handed a roster. Stalk's
-	 * through-wall outline is one id comparison against it.
+	 * renderer can ask the body rather than be handed a roster. The mark's red
+	 * outline is one id comparison against it, and Stalk's through-wall
+	 * exemption is that same comparison plus a rank.
 	 *
 	 * <p>Server-side writers only, and always in step with the owner's
 	 * {@link #MARK_TARGET} — {@link DeathMark} is the only class that touches
@@ -478,8 +479,9 @@ public final class ModAttachments {
 			Archetypes.id("marked_by"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.all()));
 
-	// --- Colossus Crusher (epic): Titan's Leap ---
-	// Read all four through {@link TitansLeap}, never directly.
+	// --- Colossus Crusher (epic): Titan's Leap, and Hardened's plates ---
+	// The three leap stamps are read through {@link TitansLeap} and the plates
+	// through {@link Hardened}, never directly.
 
 	/** Titan's Leap's cooldown, same shape as the bash's. */
 	public static final AttachmentType<Long> LEAP_READY_AT = AttachmentRegistry.create(
@@ -508,18 +510,23 @@ public final class ModAttachments {
 	public static final AttachmentType<Double> LEAP_PEAK_Y =
 			AttachmentRegistry.<Double>create(Archetypes.id("leap_peak_y"));
 
-	/** Immovable's last anvil, so a nullified shove is announced once a second
-	 * rather than once per hit. Server-side only. */
-	public static final AttachmentType<Long> IMMOVABLE_CUE_AT =
-			AttachmentRegistry.<Long>create(Archetypes.id("immovable_cue_at"));
+	/**
+	 * Hardened's live plates — one entry per hit taken, each with its own
+	 * expiry, read and written only through {@link Hardened}. A list, not a
+	 * count and a deadline, because the node's whole promise is that a new hit
+	 * never refreshes an older plate.
+	 *
+	 * <p>Transient, unsynced and server-side: nothing about two seconds of
+	 * armour is worth a packet (the client sees the ARMOR attribute vanilla
+	 * already syncs), and plates must not survive a relog or a death — a fresh
+	 * entity with no attachment is exactly the reset the node wants.
+	 */
+	public static final AttachmentType<List<Hardened.Plate>> HARDENED_PLATES =
+			AttachmentRegistry.<List<Hardened.Plate>>create(Archetypes.id("hardened_plates"));
 
-	/** The Protector's Immovable Object has a stamp of its own rather than
-	 * sharing the one above, and it has to: a Brawler can afford both nodes,
-	 * and the two cues sit on the same call chain in the wrong order. An axe on
-	 * a raised shield reaches {@code blockedByItem} → {@code knockback} — which
-	 * stamps the Crusher's cue — BEFORE it reaches the shield disable this one
-	 * answers, so one shared budget is not "one anvil a second between them",
-	 * it is silence for the Protector node forever. Server-side only. */
+	/** The Protector's Immovable Object cue, at most one a second. Its own
+	 * stamp on the Protector's own node — the Crusher's Immovable, which used
+	 * to need a second one alongside it, is gone. Server-side only. */
 	public static final AttachmentType<Long> IMMOVABLE_OBJECT_CUE_AT =
 			AttachmentRegistry.<Long>create(Archetypes.id("immovable_object_cue_at"));
 
@@ -626,6 +633,10 @@ public final class ModAttachments {
 			// only the landing clears it. A respec mid-air would land on a
 			// player who no longer owns the node and never take the waiver back.
 			TitansLeap.clear(serverPlayer);
+			// Hardened's plates and the ARMOR modifier they feed: the ticker
+			// would drop both next tick anyway, but "next tick" is a tick of
+			// armour a player who just sold the node has no claim to.
+			Hardened.clear(serverPlayer);
 			ColossusSlayer.clearWindow(serverPlayer);
 		}
 

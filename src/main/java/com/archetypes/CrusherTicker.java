@@ -12,7 +12,9 @@ import net.minecraft.server.level.ServerPlayer;
  * The Crusher's stances, mirroring SlayerTicker's pattern: attribute
  * modifiers that exist exactly while their condition holds. Bare-Knuckle and
  * Iron Skin while the hands are bare; Battle Trance's absorption drains
- * once the fight goes quiet.
+ * once the fight goes quiet; and the epic Hardened's plates, whose modifier is
+ * re-asserted here every tick because its value shrinks on its own as
+ * individually-timed plates lapse.
  */
 public final class CrusherTicker {
 	private static final Identifier BARE_KNUCKLE_ID = Archetypes.id("bare_knuckle");
@@ -21,9 +23,6 @@ public final class CrusherTicker {
 	private static final Identifier CLINCH_ID = Archetypes.id("clinch");
 	private static final Identifier QUAKE_IMMUNITY_ID = Archetypes.id("quake_immunity");
 	private static final Identifier TRANCE_CAP_ID = Archetypes.id("battle_trance_cap");
-	/** Immovable's own id, distinct from Clinch's and Quake's: three
-	 * modifiers on one attribute must not share a key or the last writer wins. */
-	private static final Identifier IMMOVABLE_EXPLOSION_ID = Archetypes.id("immovable_explosion");
 
 	private CrusherTicker() {
 	}
@@ -106,14 +105,15 @@ public final class CrusherTicker {
 			}
 		}
 
-		// Immovable: explosions and wind charges do not route through
-		// LivingEntity.knockback at all — ServerExplosion pushes entities
-		// directly and asks EXPLOSION_KNOCKBACK_RESISTANCE instead, so the
-		// attribute is the only place that clause can live. Hits are the
-		// knockback funnel's job (LivingEntityMixin$immovableKnockback).
-		apply(player.getAttribute(Attributes.EXPLOSION_KNOCKBACK_RESISTANCE), IMMOVABLE_EXPLOSION_ID,
-				TitansLeap.rank(player, ColossusCrusherNodes.Family.IMMOVABLE) > 0, 1.0,
-				AttributeModifier.Operation.ADD_VALUE);
+		// Hardened: one modifier carrying the SUM of every live plate, and the
+		// expiry clock for the list behind it — Hardened.armour() drops the
+		// plates that lapsed this tick on its way past. apply() rewrites a
+		// modifier whose amount drifted, which is the whole mechanism: as
+		// plates fall off independently the number shrinks a step at a time.
+		// No cap of ours; vanilla's ARMOR is a RangedAttribute maxing at 30.
+		double hardened = Hardened.armour(player);
+		apply(player.getAttribute(Attributes.ARMOR), Hardened.ARMOR_ID,
+				hardened > 0.0, hardened, AttributeModifier.Operation.ADD_VALUE);
 
 		TitansLeap.tick(player);
 	}

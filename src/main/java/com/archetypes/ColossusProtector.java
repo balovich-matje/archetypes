@@ -304,12 +304,8 @@ public final class ColossusProtector {
 	 * meeting is authored as its own event on the Crusher's hook rather than as
 	 * a quiet win for whoever we special-cased here.
 	 *
-	 * <p>Cued, and rate-limited, for {@code TitansLeap.immovableCue}'s reason:
-	 * a node whose whole effect is that nothing happened is invisible without
-	 * one. On a stamp of its own, not the Crusher Immovable's: the two nodes
-	 * are both affordable out of one epic pool, and the shield-block path
-	 * stamps the Crusher's cue first, so sharing meant this cue never fired at
-	 * all for the player who owned both.
+	 * <p>Cued, and rate-limited, for the reason any node like it needs one: a
+	 * node whose whole effect is that nothing happened is invisible without it.
 	 *
 	 * @return true if the disable must not happen
 	 */

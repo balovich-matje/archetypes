@@ -16,10 +16,18 @@ import org.spongepowered.asm.mixin.injection.At;
  * an entity that never reaches extraction never reaches the outline pass
  * either.
  *
- * <p>Only that one test is relaxed, and only for sensed entities. The frustum
- * check above it stands — an outline behind the camera is work nobody sees,
- * and the roster is capped by a 32-block query, so this can never let more
- * than a handful of extra entities through.
+ * <p>This hook is the whole of what Stalk buys. The Death Mark's red is
+ * painted by {@code EntityRendererMixin} for any mark, node or no node; what
+ * Stalk adds is being on the allowed side of THIS test, so the red keeps
+ * showing once the quarry puts a wall between you. Hence
+ * {@link ExtraSensoryPerception#piercesWalls} rather than the outline colour —
+ * asking "is it outlined?" here would have handed the through-wall perk to
+ * every mark for free.
+ *
+ * <p>Only that one test is relaxed, and only for entities that earned it. The
+ * frustum check above it stands — an outline behind the camera is work nobody
+ * sees, the ESP roster is capped by a 32-block query and a mark is one entity,
+ * so this can never let more than a handful of extras through.
  */
 @Mixin(LevelExtractor.class)
 public abstract class LevelExtractorMixin {
@@ -29,6 +37,6 @@ public abstract class LevelExtractorMixin {
 							+ "isSectionCompiledAndVisible(Lnet/minecraft/core/BlockPos;)Z"))
 	private boolean archetypes$senseThroughWalls(final boolean visible, final Entity entity,
 			final Frustum frustum, final double camX, final double camY, final double camZ) {
-		return visible || ExtraSensoryPerception.senses(entity);
+		return visible || ExtraSensoryPerception.piercesWalls(entity);
 	}
 }

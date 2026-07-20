@@ -6,8 +6,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.world.effect.MobEffectInstance;
-import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
@@ -15,8 +13,8 @@ import net.minecraft.world.phys.Vec3;
 
 /**
  * Titan's Leap — the Colossus Crusher's epic active, ability slot 6 for a
- * Brawler, and the two landings that read off it. Slot 6 is shared with the
- * Cutpurse's Dark Ritual; the dispatch picks on archetype, so the two never
+ * Brawler, and the Aftershock landing that reads off it. Slot 6 is shared with
+ * the Cutpurse's Dark Ritual; the dispatch picks on archetype, so the two never
  * collide.
  *
  * <h2>The state machine</h2>
@@ -186,27 +184,19 @@ public final class TitansLeap {
 	}
 
 	/**
-	 * The landing. Both branches read the same fall and neither can fire
-	 * without its node, so a root-only Colossus simply comes down.
-	 *
-	 * <p>Aftershock first, then Gravity Well: a hybrid who bought both gets the
-	 * damage resolved against where the crowd stood, not against where the pull
-	 * put them.
+	 * The landing. Aftershock is the only thing a landing does now — it cannot
+	 * fire without its node, so a root-only Colossus simply comes down.
 	 */
 	private static void land(final ServerPlayer player, final ServerLevel level, final float fell) {
 		if (rank(player, ColossusCrusherNodes.Family.AFTERSHOCK) > 0) {
 			aftershock(player, level, fell);
-		}
-
-		if (rank(player, ColossusCrusherNodes.Family.GRAVITY_WELL) > 0) {
-			gravityWell(player, level);
 		}
 	}
 
 	/**
 	 * Aftershock: the landing that hits. Mace in hand — the branch's whole
 	 * premise, and the reason the tooltip says so (a fists Colossus spends the
-	 * leap on engaging instead).
+	 * leap on closing the distance instead).
 	 */
 	private static void aftershock(final ServerPlayer player, final ServerLevel level,
 			final float fell) {
@@ -227,59 +217,9 @@ public final class TitansLeap {
 				ColossusCrusherNodes.Family.AFTERSHOCK);
 	}
 
-	/**
-	 * Gravity Well: the landing that holds. No damage and no launch by design —
-	 * this is the Anchor branch's whole brief, the way Ghost Form is the
-	 * Shadow's.
-	 *
-	 * <p>The pull is capped ({@link Tuning#GRAVITY_WELL_MAX_PULL}) and skips
-	 * anything already inside {@link Tuning#GRAVITY_WELL_DEAD_ZONE}, so nothing
-	 * is fired through the player and out the far side. It works on other
-	 * players too: {@code hurtMarked} is what publishes forced motion, and
-	 * {@code ServerEntity} sends the motion packet to tracking players AND to
-	 * the moved entity itself.
-	 */
-	private static void gravityWell(final ServerPlayer player, final ServerLevel level) {
-		double radiusSq = Tuning.GRAVITY_WELL_RADIUS * Tuning.GRAVITY_WELL_RADIUS;
-		Vec3 centre = player.position();
-
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
-				player.getBoundingBox().inflate(Tuning.GRAVITY_WELL_RADIUS),
-				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
-						&& entity.distanceToSqr(player) <= radiusSq)) {
-			Vec3 toCentre = centre.subtract(victim.position());
-			double distance = toCentre.length();
-
-			victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
-					Tuning.GRAVITY_WELL_SLOW_TICKS, Tuning.GRAVITY_WELL_SLOW_AMPLIFIER), player);
-
-			if (distance <= Tuning.GRAVITY_WELL_DEAD_ZONE) {
-				continue;
-			}
-
-			Vec3 pull = toCentre.normalize().scale(Math.min(Tuning.GRAVITY_WELL_MAX_PULL,
-					distance * Tuning.GRAVITY_WELL_PULL_PER_BLOCK));
-			victim.setDeltaMovement(pull.x, pull.y + 0.1, pull.z);
-			victim.hurtMarked = true;
-
-			// The tell: sculk streaming inward along the vector it was dragged
-			// down. Drawn at the victim, so a crowd reads as a crowd moving.
-			level.sendParticles(ParticleTypes.SCULK_CHARGE_POP,
-					victim.getX(), victim.getY(0.5), victim.getZ(), 4, 0.2, 0.2, 0.2, 0.02);
-		}
-
-		level.sendParticles(ParticleTypes.PORTAL,
-				player.getX(), player.getY() + 0.5, player.getZ(), 60, 0.4, 0.6, 0.4, 1.2);
-		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.CONDUIT_ACTIVATE, SoundSource.PLAYERS, 1.0F, 0.5F);
-		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.WARDEN_HEARTBEAT, SoundSource.PLAYERS, 1.2F, 0.6F);
-		ProcIndicators.send(player, SubTree.COLOSSUS_CRUSHER,
-				ColossusCrusherNodes.Family.GRAVITY_WELL);
-	}
-
 	// ------------------------------------------------------------------
-	// The Anchor branch's two passives, read from the damage funnel.
+	// The two column-top passives, read from the damage funnel. Hardened,
+	// the third, keeps its own bookkeeping and lives in {@link Hardened}.
 	// ------------------------------------------------------------------
 
 	/**
@@ -293,27 +233,6 @@ public final class TitansLeap {
 				&& CrusherNodes.rank(SubTree.CRUSHER, NodePurchases.owned(player, SubTree.CRUSHER),
 						CrusherNodes.Family.BATTLE_TRANCE) > 0
 				&& player.getAbsorptionAmount() > 0.0F;
-	}
-
-	/**
-	 * Immovable's anvil, at most once a second. The node is otherwise silent
-	 * and invisible, so without this a player has no way to learn that the shove
-	 * they did not take was theirs.
-	 */
-	public static void immovableCue(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		long now = player.level().getGameTime();
-		Long last = target.getAttached(ModAttachments.IMMOVABLE_CUE_AT);
-
-		if (last != null && now - last < Tuning.IMMOVABLE_CUE_PERIOD_TICKS) {
-			return;
-		}
-
-		target.setAttached(ModAttachments.IMMOVABLE_CUE_AT, now);
-		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.4F, 0.7F);
-		ProcIndicators.send(player, SubTree.COLOSSUS_CRUSHER,
-				ColossusCrusherNodes.Family.IMMOVABLE);
 	}
 
 	/**

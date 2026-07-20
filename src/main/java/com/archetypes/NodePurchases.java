@@ -53,8 +53,8 @@ public final class NodePurchases {
 
 		Constellation shape = tree.constellation();
 
-		// Roots are the bottom row; everything else needs an owned neighbour.
-		boolean connected = shape.nodes().get(node).row() == 0;
+		// Roots need nothing owned; everything else needs an owned neighbour.
+		boolean connected = shape.isRoot(node);
 
 		for (int[] edge : shape.edges()) {
 			if ((edge[0] == node && owned.contains(edge[1]))

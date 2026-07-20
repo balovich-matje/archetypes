@@ -43,8 +43,10 @@ import org.jspecify.annotations.Nullable;
  * The mark's client-visible half rides {@code MARKED_BY} on the marked entity —
  * the channel {@code BULWARK_ACTIVE} and {@code DEADEYE_ARROW} already use, and
  * the reason there is no mark packet. A client asks the body who marked it
- * ({@link #markedBy}) rather than being handed anyone's roster, which is all
- * Stalk's through-wall outline needs. The smoke over a mark's head is sent from
+ * ({@link #markedBy}) rather than being handed anyone's roster, which is all the
+ * red outline needs — the mark alone paints it, for the assassin who named it,
+ * and Stalk only adds seeing that red through walls
+ * ({@code ExtraSensoryPerception}). The smoke over a mark's head is sent from
  * {@link #tick} as ordinary particles, so every player in range sees the tell
  * whether or not they own anything.
  *
@@ -178,15 +180,27 @@ public final class DeathMark {
 	 *
 	 * <p>The flag on the BODY is the part that matters: it lives on another
 	 * entity, so nothing else in the mod would ever take it back off.
+	 *
+	 * <p>Every level is searched, not just the one the assassin is standing in.
+	 * The ticker's own strand-guard drops a mark the moment the two are in
+	 * different dimensions — which is precisely when the assassin's level no
+	 * longer holds the body, so looking there only would strand the flag on it.
+	 * A {@code ServerPlayer} keeps its entity id through a portal, so walking
+	 * back would light that stale body red again for a mark that ended minutes
+	 * ago. Marks end a handful of times a minute at worst; a loop over the
+	 * server's three-or-so levels is not a cost worth optimising.
 	 */
 	public static void clear(final ServerPlayer player) {
 		AttachmentTarget owner = (AttachmentTarget) player;
 		Integer id = owner.getAttached(ModAttachments.MARK_TARGET);
 
-		if (id != null && player.level() instanceof ServerLevel level
-				&& level.getEntity(id) instanceof Entity body
-				&& isMarkedBy(body, player)) {
-			((AttachmentTarget) body).removeAttached(ModAttachments.MARKED_BY);
+		if (id != null && player.level() instanceof ServerLevel here) {
+			for (ServerLevel level : here.getServer().getAllLevels()) {
+				if (level.getEntity(id) instanceof Entity body && isMarkedBy(body, player)) {
+					((AttachmentTarget) body).removeAttached(ModAttachments.MARKED_BY);
+					break;
+				}
+			}
 		}
 
 		owner.removeAttached(ModAttachments.MARK_TARGET);

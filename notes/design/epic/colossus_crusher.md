@@ -1,5 +1,17 @@
 # Colossus Crusher — epic sub-tree design
 
+> **Superseded in part, 2026-07-20.** The author's sketch
+> `tools/edits/colossus-crusher-new-edits-20260720-192137.json` reshaped this
+> tree after implementation: the grid dropped to four rows with Titan's Leap
+> alone on the bottom row between the two column feet (and declared as the
+> tree's only root, so the leap is still the way in), and **Gravity Well and
+> Immovable were both cut** — replaced by one two-rank passive, **Hardened**,
+> which banks +1 armour with a mace or +2 unarmed for 2/4 seconds every time an
+> entity hurts you, each stack expiring on its own. §3's right branch, §4's node
+> table, §5's grid and §6's Gravity Well / Immovable notes below describe the
+> tree as first designed, not as it ships. `ColossusCrusherNodes` and
+> `Constellations.COLOSSUS_CRUSHER` are the truth.
+
 Epic sibling of **CRUSHER** (Strength: mace and bare fists). Design doc only —
 no Java, no assets, no gradle. Every mechanical claim below is anchored to code
 that exists today; anything I could not verify is called out as uncertain in

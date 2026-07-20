@@ -11,15 +11,31 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Extra Sensory Perception paints its outlines through vanilla's own glowing
- * machinery: {@code EntityRenderState.outlineColor} is the single field that
- * decides both whether an entity joins the outline pass and what colour it
- * comes out, and the tail of extraction is where vanilla itself writes it
- * (from {@code Minecraft.shouldEntityAppearGlowing}). Writing after vanilla
- * means a genuinely glowing entity keeps its team colour unless it is sensed.
+ * The Death Mark's red and Extra Sensory Perception's outlines are painted
+ * through vanilla's own glowing machinery: {@code EntityRenderState.outlineColor}
+ * is the single field that decides both whether an entity joins the outline
+ * pass and what colour it comes out, and the tail of extraction is where
+ * vanilla itself writes it —
+ * {@code state.outlineColor = appearsGlowing ? ARGB.opaque(entity.getTeamColor()) : 0},
+ * the last thing {@code EntityRenderer.extractRenderState} does with it.
  *
- * <p>Client-only and read off the LOCAL player's own roster, so one player's
- * senses can never tint another player's view.
+ * <p><b>TAIL is what makes ours win.</b> Injecting after that line means our
+ * colour replaces whatever the Glowing effect ({@code isCurrentlyGlowing}, via
+ * {@code Minecraft.shouldEntityAppearGlowing}), a spectator's outline key, or a
+ * scoreboard team colour ({@code Entity.getTeamColor}) had just put there. No
+ * later stage recomputes the field: subclasses of {@code EntityRenderer} never
+ * assign it, and submit-time code only reads it — {@code LivingEntityRenderer}
+ * hands it straight to {@code submitModel}, where a non-zero value is the
+ * ticket into the outline collector AND the colour drawn. So a marked mob that
+ * is also glowing from Umbral Sight, or a marked player on a red-teamed
+ * scoreboard, still comes out the mark's red.
+ *
+ * <p>Leaving the field alone when we have no colour is equally deliberate: an
+ * entity we neither mark nor sense keeps vanilla's team-coloured glow exactly
+ * as it was.
+ *
+ * <p>Client-only and read off the LOCAL player's own mark and rosters, so one
+ * player's hunt can never tint another player's view.
  */
 @Mixin(EntityRenderer.class)
 public abstract class EntityRendererMixin {

@@ -351,17 +351,31 @@ public final class Constellations {
 			"#...#");
 
 	/**
-	 * Colossus Crusher (epic, user sketch colossus-crusher-suggested-edits-
-	 * 20260720): Titan's Leap at the foot forking into the two things a landing
-	 * can be — Aftershock's three rungs up the left (it hits) and Gravity Well
-	 * up the right (it holds) — with the right column continuing into what the
-	 * body itself becomes. Fully grid-connected — no explicit edges.
+	 * Colossus Crusher (epic, user sketch colossus-crusher-new-edits-20260720):
+	 * two full-height columns with Titan's Leap alone between their feet — the
+	 * landing that hits (Aftershock's three rungs, capped by Unstoppable Force)
+	 * up the left, the body that hardens under fire (Hardened's two rungs, then
+	 * Bulwark's two) up the right.
+	 *
+	 * <p>The leap sits two columns clear of both, so 8-connectivity gives it no
+	 * edge at all: the two explicit ones below are what make the foot of the
+	 * tree a fork rather than three unrelated roots. The decorative line closes
+	 * the silhouette across the crown (Unstoppable Force to Bulwark II) without
+	 * letting either column be bought into from the other's top.
 	 */
 	public static final Constellation COLOSSUS_CRUSHER = Constellation.of(
 			"#...#",
 			"#...#",
 			"#...#",
-			".#.#.",
-			"..#..");
+			"#.#.#")
+			.withEdge(2, 0, 0, 0)
+			.withEdge(2, 0, 4, 0)
+			.withDecorativeEdge(0, 3, 4, 3)
+			// The only tree that has to say this. Its bottom row carries the
+			// foot of both columns as well as Titan's Leap, and the default
+			// "every bottom-row node is a way in" would have made the two edges
+			// above decoration: you could buy the whole right column without
+			// ever owning the leap that the left column exists to follow.
+			.withRoots(2, 0);
 
 }

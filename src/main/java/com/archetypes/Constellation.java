@@ -24,14 +24,16 @@ public final class Constellation {
 	private final List<Node> nodes;
 	private final List<int[]> edges;
 	private final List<int[]> decorativeEdges;
+	private final List<Integer> roots;
 
 	private Constellation(final int width, final int height, final List<Node> nodes,
-			final List<int[]> edges, final List<int[]> decorativeEdges) {
+			final List<int[]> edges, final List<int[]> decorativeEdges, final List<Integer> roots) {
 		this.width = width;
 		this.height = height;
 		this.nodes = nodes;
 		this.edges = edges;
 		this.decorativeEdges = decorativeEdges;
+		this.roots = roots;
 	}
 
 	public static Constellation of(final String... grid) {
@@ -65,7 +67,8 @@ public final class Constellation {
 			}
 		}
 
-		return new Constellation(width, height, List.copyOf(nodes), List.copyOf(edges), List.of());
+		return new Constellation(width, height, List.copyOf(nodes), List.copyOf(edges), List.of(),
+				List.of());
 	}
 
 	/**
@@ -78,7 +81,8 @@ public final class Constellation {
 		int b = this.indexOf(col2, row2);
 		List<int[]> extended = new ArrayList<>(this.edges);
 		extended.add(new int[] { a, b });
-		return new Constellation(this.width, this.height, this.nodes, List.copyOf(extended), this.decorativeEdges);
+		return new Constellation(this.width, this.height, this.nodes, List.copyOf(extended),
+				this.decorativeEdges, this.roots);
 	}
 
 	/**
@@ -92,7 +96,40 @@ public final class Constellation {
 		int b = this.indexOf(col2, row2);
 		List<int[]> extended = new ArrayList<>(this.decorativeEdges);
 		extended.add(new int[] { a, b });
-		return new Constellation(this.width, this.height, this.nodes, this.edges, List.copyOf(extended));
+		return new Constellation(this.width, this.height, this.nodes, this.edges,
+				List.copyOf(extended), this.roots);
+	}
+
+	/**
+	 * The same constellation with its entry points named explicitly, instead of
+	 * "every node on the bottom row".
+	 *
+	 * <p>That default is right for a tree whose bottom row IS its foot, and
+	 * wrong the moment a shape puts two column feet on the same row as the root
+	 * that is supposed to feed them: they would each become a second way in, and
+	 * the edges drawn from the root to them would stop meaning anything. The
+	 * Colossus Crusher is that shape — Titan's Leap sits between the feet of
+	 * both columns, and the tree only makes sense if you have to buy the leap
+	 * before the things that happen when it lands.
+	 */
+	public Constellation withRoots(final int... colsAndRows) {
+		List<Integer> declared = new ArrayList<>();
+
+		for (int i = 0; i < colsAndRows.length; i += 2) {
+			declared.add(this.indexOf(colsAndRows[i], colsAndRows[i + 1]));
+		}
+
+		return new Constellation(this.width, this.height, this.nodes, this.edges,
+				this.decorativeEdges, List.copyOf(declared));
+	}
+
+	/**
+	 * Whether this node can be bought with nothing owned yet. Declared roots win
+	 * when a tree names them; otherwise the bottom row is the foot, which is how
+	 * every tree that never calls {@link #withRoots} still works.
+	 */
+	public boolean isRoot(final int node) {
+		return this.roots.isEmpty() ? this.nodes.get(node).row() == 0 : this.roots.contains(node);
 	}
 
 	private int indexOf(final int col, final int row) {

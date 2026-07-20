@@ -2,6 +2,7 @@ package com.archetypes.mixin;
 
 import com.archetypes.ColossusProtector;
 import com.archetypes.MagicArmaments;
+import com.archetypes.ModItems;
 import com.archetypes.SkillPoints;
 
 import net.minecraft.world.entity.player.Player;
@@ -45,6 +46,47 @@ public abstract class PlayerMixin {
 
 		if (player.getFoodData().getFoodLevel() < ColossusProtector.hungerCeiling(player)) {
 			cir.setReturnValue(true);
+		}
+	}
+
+	/**
+	 * A dagger is a single-target weapon, so it never cleaves.
+	 *
+	 * <p>Vanilla decides a swing sweeps in exactly one place:
+	 * {@code Player.isSweepAttack} returns true when the swing was full
+	 * strength, was neither a crit nor a sprint-knockback, the player is on the
+	 * ground and moving under {@code getSpeed() * 2.5} — and the MAIN HAND item
+	 * {@code is(ItemTags.SWORDS)}. That last clause is the whole gate: the
+	 * Sweeping Edge enchantment is not consulted here at all, it only feeds
+	 * {@code Attributes.SWEEPING_DAMAGE_RATIO}, which is read later inside
+	 * {@code doSweepAttack} to scale damage that by then has already been
+	 * decided upon. Our daggers deliberately sit in {@code ItemTags.SWORDS}
+	 * (see {@link ModItems#isSword}), which is why they sweep today.
+	 *
+	 * <p>Returning false here — rather than cancelling {@code doSweepAttack} —
+	 * is what kills every part of the cleave at once, because that one boolean
+	 * is threaded through {@code attack}: it gates the {@code doSweepAttack}
+	 * call, and that method is the sole source of the extra damage to
+	 * neighbours, of {@code SoundEvents.PLAYER_ATTACK_SWEEP}, and of the
+	 * {@code ParticleTypes.SWEEP_ATTACK} flash (all three live in its body; the
+	 * client renders no sweep of its own). Suppressing only the call would
+	 * leave the swing SILENT instead: {@code attackVisualEffects} plays the
+	 * normal strong/weak hit sound only when the sweep flag is false, so the
+	 * flag has to be false for the dagger to keep its ordinary thud.
+	 *
+	 * <p>Main hand, not {@code getWeaponItem()}, to mirror the very check being
+	 * replaced. This also covers Shadow Step's scripted blow, which reaches its
+	 * victim through {@code Player.attack} with a forced full-strength ticker
+	 * (see {@code AgilityActives.strike}) and would otherwise sweep on landing.
+	 */
+	@Inject(method = "isSweepAttack", at = @At("HEAD"), cancellable = true)
+	private void archetypes$daggersNeverSweep(final boolean fullStrengthAttack,
+			final boolean criticalAttack, final boolean knockbackAttack,
+			final CallbackInfoReturnable<Boolean> cir) {
+		Player player = (Player) (Object) this;
+
+		if (ModItems.isDagger(player.getMainHandItem())) {
+			cir.setReturnValue(false);
 		}
 	}
 }

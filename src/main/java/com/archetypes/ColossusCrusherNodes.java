@@ -12,10 +12,10 @@ import org.jspecify.annotations.Nullable;
 
 /**
  * What each node of the epic Colossus-Crusher constellation is (user sketch
- * colossus-crusher-suggested-edits-20260720). Titan's Leap at the foot is the
- * tree's one ability key (slot 6 for a Brawler), and the fork above it decides
- * what the landing is for: the left column makes it hit, the right column
- * makes it hold — then goes on to what the body is worth once it lands.
+ * colossus-crusher-new-edits-20260720). Titan's Leap at the foot is the tree's
+ * one ability key (slot 6 for a Brawler), and the fork it opens decides what
+ * the Colossus is for: the left column makes the landing hit, the right column
+ * makes the body worth hitting.
  */
 public final class ColossusCrusherNodes {
 	public enum Family {
@@ -23,10 +23,8 @@ public final class ColossusCrusherNodes {
 		TITAN_LEAP(() -> Items.MACE),
 		/** Three ranks: the landing slams, scaling with the fall. */
 		AFTERSHOCK(() -> Items.MAGMA_BLOCK),
-		/** The landing drags and holds instead of hitting. */
-		GRAVITY_WELL(() -> Items.ENDER_PEARL),
-		/** Nothing shoves, launches or drops you. */
-		IMMOVABLE(() -> Items.ANVIL),
+		/** Two ranks: every blow taken plates the body a little more. */
+		HARDENED(() -> Items.IRON_INGOT),
 		/** Two ranks riding Battle Trance's banked health. */
 		BULWARK(() -> Items.IRON_CHESTPLATE),
 		/** Mace and unarmed hits cannot be blocked (lang name: Unstoppable force). */
@@ -63,19 +61,22 @@ public final class ColossusCrusherNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
+		// The foot: the leap alone in the middle of the bottom row, reaching
+		// both columns on the constellation's two explicit edges.
 		byCell.put(cell(2, 0), new Def(Family.TITAN_LEAP, 1));
 
 		// Left column: the landing that hits, bottom-up.
-		byCell.put(cell(1, 1), new Def(Family.AFTERSHOCK, 1));
-		byCell.put(cell(0, 2), new Def(Family.AFTERSHOCK, 2));
-		byCell.put(cell(0, 3), new Def(Family.AFTERSHOCK, 3));
-		byCell.put(cell(0, 4), new Def(Family.SIEGEBREAKER, 1));
+		byCell.put(cell(0, 0), new Def(Family.AFTERSHOCK, 1));
+		byCell.put(cell(0, 1), new Def(Family.AFTERSHOCK, 2));
+		byCell.put(cell(0, 2), new Def(Family.AFTERSHOCK, 3));
+		byCell.put(cell(0, 3), new Def(Family.SIEGEBREAKER, 1));
 
-		// Right column: the landing that holds, then the body, bottom-up.
-		byCell.put(cell(3, 1), new Def(Family.GRAVITY_WELL, 1));
-		byCell.put(cell(4, 2), new Def(Family.IMMOVABLE, 1));
-		byCell.put(cell(4, 3), new Def(Family.BULWARK, 1));
-		byCell.put(cell(4, 4), new Def(Family.BULWARK, 2));
+		// Right column: the body that hardens under fire, then the body that
+		// banks what it survives, bottom-up.
+		byCell.put(cell(4, 0), new Def(Family.HARDENED, 1));
+		byCell.put(cell(4, 1), new Def(Family.HARDENED, 2));
+		byCell.put(cell(4, 2), new Def(Family.BULWARK, 1));
+		byCell.put(cell(4, 3), new Def(Family.BULWARK, 2));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.COLOSSUS_CRUSHER.nodes();
