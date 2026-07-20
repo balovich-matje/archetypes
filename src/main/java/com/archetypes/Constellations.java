@@ -281,4 +281,87 @@ public final class Constellations {
 			.withEdge(1, 1, 0, 3)
 			.withEdge(3, 1, 4, 3);
 
+	/**
+	 * Nemesis Marksman (epic, draft nemesis-marksman): Deadeye alone at the
+	 * foot, two columns carrying the window's two questions — how you move
+	 * (Fleet, Vault, On the Wing) up the left, how the arrow lands (Long Shot's
+	 * two rungs, Punch Through) up the right — and a crown row where Evasion,
+	 * Long Watch and Siege sit apart. Row 2 is deliberately empty, so both
+	 * columns cross the gap on explicit edges; Long Watch at the crown's centre
+	 * touches neither neighbour by grid adjacency and takes two more.
+	 */
+	public static final Constellation NEMESIS_MARKSMAN = Constellation.of(
+			"#.#.#",
+			"#...#",
+			"#...#",
+			".....",
+			".#.#.",
+			"..#..")
+			.withEdge(1, 1, 0, 3)
+			.withEdge(3, 1, 4, 3)
+			.withEdge(0, 4, 2, 5)
+			.withEdge(4, 4, 2, 5);
+
+	/**
+	 * Nemesis Assassin (epic, draft nemesis-assassin): Death Mark at the foot
+	 * forking into the two columns that spend it — Stalk into Headhunter's two
+	 * rungs and Coup de Grace up the left (what you do to the mark), Contagion
+	 * into Carrier, Vanishing Act and Death's Head up the right (what the mark
+	 * does to everything near it). Fully grid-connected — no explicit edges.
+	 */
+	public static final Constellation NEMESIS_ASSASSIN = Constellation.of(
+			"#...#",
+			"#...#",
+			"#...#",
+			".#.#.",
+			"..#..");
+
+	/**
+	 * Colossus Protector (epic, user sketch colossus-protector-suggested-edits-
+	 * 20260720): the armour root alone at the foot, two columns up the sides —
+	 * the fed body on the left, the guard that never drops on the right — joined
+	 * at the crown by a node the sketch hangs between them. Row 1 is
+	 * deliberately empty, so the root reaches both columns on explicit edges;
+	 * the crown node is grid-adjacent to neither side and takes two more.
+	 */
+	public static final Constellation COLOSSUS_PROTECTOR = Constellation.of(
+			"#.#.#",
+			"#...#",
+			"#...#",
+			".....",
+			"..#..")
+			.withEdge(2, 0, 0, 2)
+			.withEdge(2, 0, 4, 2)
+			.withEdge(2, 4, 0, 4)
+			.withEdge(2, 4, 4, 4);
+
+	/**
+	 * Colossus Slayer (epic, user sketch colossus-slayer-suggested-edits-
+	 * 20260720): an hourglass pinched at Parry. Two roots at the foot — the
+	 * left one the body that shrugs off magic, the right one the hands that
+	 * know the blade — meeting at Parry in the middle, which then opens back
+	 * out into what a parry pays: Strength up the left, temporary hearts and
+	 * spell reflection up the right. Fully grid-connected — no explicit edges.
+	 */
+	public static final Constellation COLOSSUS_SLAYER = Constellation.of(
+			"#...#",
+			".#.#.",
+			"..#..",
+			".#.#.",
+			"#...#");
+
+	/**
+	 * Colossus Crusher (epic, user sketch colossus-crusher-suggested-edits-
+	 * 20260720): Titan's Leap at the foot forking into the two things a landing
+	 * can be — Aftershock's three rungs up the left (it hits) and Gravity Well
+	 * up the right (it holds) — with the right column continuing into what the
+	 * body itself becomes. Fully grid-connected — no explicit edges.
+	 */
+	public static final Constellation COLOSSUS_CRUSHER = Constellation.of(
+			"#...#",
+			"#...#",
+			"#...#",
+			".#.#.",
+			"..#..");
+
 }

@@ -40,11 +40,22 @@ public enum SubTree {
 			Constellations.ORACLE_WIZARD, true),
 	ORACLE_PRIEST(Archetype.INTELLECT, "oracle_priest", () -> Items.BEACON,
 			Constellations.ORACLE_PRIEST, true),
+	NEMESIS_MARKSMAN(Archetype.AGILITY, "nemesis_marksman", () -> Items.SPYGLASS,
+			Constellations.NEMESIS_MARKSMAN, true),
+	NEMESIS_ASSASSIN(Archetype.AGILITY, "nemesis_assassin", () -> Items.WITHER_ROSE,
+			Constellations.NEMESIS_ASSASSIN, true),
 	// The Cutpurse's first epic tree: the Shadow's dark taken all the way to a
 	// night form. Agility's, so the epic switcher finally lights up outside
 	// Intellect.
 	NEMESIS_SHADOW(Archetype.AGILITY, "nemesis_shadow", () -> Items.WITHER_SKELETON_SKULL,
-			Constellations.NEMESIS_SHADOW, true);
+			Constellations.NEMESIS_SHADOW, true),
+
+	COLOSSUS_PROTECTOR(Archetype.STRENGTH, "colossus_protector", () -> Items.DIAMOND_CHESTPLATE,
+			Constellations.COLOSSUS_PROTECTOR, true),
+	COLOSSUS_SLAYER(Archetype.STRENGTH, "colossus_slayer", () -> Items.NETHERITE_SWORD,
+			Constellations.COLOSSUS_SLAYER, true),
+	COLOSSUS_CRUSHER(Archetype.STRENGTH, "colossus_crusher", () -> Items.ANVIL,
+			Constellations.COLOSSUS_CRUSHER, true);
 
 	private final Archetype archetype;
 	private final String id;
@@ -82,6 +93,11 @@ public enum SubTree {
 			case WIZARD -> ORACLE_WIZARD;
 			case PRIEST -> ORACLE_PRIEST;
 			case SHADOW -> NEMESIS_SHADOW;
+			case MARKSMAN -> NEMESIS_MARKSMAN;
+			case ASSASSIN -> NEMESIS_ASSASSIN;
+			case PROTECTOR -> COLOSSUS_PROTECTOR;
+			case SLAYER -> COLOSSUS_SLAYER;
+			case CRUSHER -> COLOSSUS_CRUSHER;
 			default -> null;
 		};
 	}
@@ -93,6 +109,11 @@ public enum SubTree {
 			case ORACLE_WIZARD -> WIZARD;
 			case ORACLE_PRIEST -> PRIEST;
 			case NEMESIS_SHADOW -> SHADOW;
+			case NEMESIS_MARKSMAN -> MARKSMAN;
+			case NEMESIS_ASSASSIN -> ASSASSIN;
+			case COLOSSUS_PROTECTOR -> PROTECTOR;
+			case COLOSSUS_SLAYER -> SLAYER;
+			case COLOSSUS_CRUSHER -> CRUSHER;
 			default -> null;
 		};
 	}

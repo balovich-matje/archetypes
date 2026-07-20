@@ -156,17 +156,22 @@ excluded by a capstone, under the per-tree cap, and the player has a point free.
   no budget covers its own tree.
 - **Epic tier**: levels 46–`MAX_LEVEL = 60` each grant one **epic point** instead
   of a normal one (`EPIC_SPENT_POINTS` tracks the spends; the pools never mix —
-  `check`/`buy` pick pool and cap off `SubTree.isEpic()`). Epic sub-trees
-  (`ORACLE_ELEMENTALIST`, `ORACLE_WIZARD`, `ORACLE_PRIEST` on Intellect and
-  `NEMESIS_SHADOW` on Agility) are upgraded
-  siblings of base trees (`epicCounterpart()`/`baseCounterpart()`), capped at
+  `check`/`buy` pick pool and cap off `SubTree.isEpic()`). Every base tree now
+  has an epic sub-tree: `ORACLE_ELEMENTALIST`/`ORACLE_WIZARD`/`ORACLE_PRIEST` on
+  Intellect, `NEMESIS_MARKSMAN`/`NEMESIS_ASSASSIN`/`NEMESIS_SHADOW` on Agility,
+  `COLOSSUS_PROTECTOR`/`COLOSSUS_SLAYER`/`COLOSSUS_CRUSHER` on Strength. They are
+  upgraded siblings of base trees (`epicCounterpart()`/`baseCounterpart()`), capped at
   `MAX_POINTS_PER_EPIC_SUB_TREE = 5` each, reached via the per-section switcher
   on the tree screen, and excluded from `SubTree.of` so the picker, legends and
   slot dispatch stay on the three base trees. Their actives ride
-  `ActiveAbilityPayload` slots 4–6 (Lightning Strike, Magic Armaments, the Dark
-  Ritual), so there are seven ability keys, not four. Oracle Priest claims no
-  key: Aura of Radiance is painted `ACTIVE` on the tree but fires off a Holy
-  Light cast.
+  `ActiveAbilityPayload` slots 4–6, so there are seven ability keys, not four:
+  an epic tree takes slot `4 + N` where `N` is its base tree's place in
+  `SubTree.of`, and archetypes share those three keys (slot 4 is Lightning
+  Strike or Deadeye, slot 5 Magic Armaments or Death Mark, slot 6 the Dark
+  Ritual or Titan's Leap — the dispatch picks on archetype). Three epic trees
+  claim no key: Oracle Priest's Aura of Radiance is painted `ACTIVE` but fires
+  off a Holy Light cast, Colossus Protector's root is a flat passive, and
+  Colossus Slayer's Parry is an attack+block input combo.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
@@ -183,9 +188,8 @@ for its flash), which walks this order:
    stop. This is where the per-tree branching lives:
    - **`familySprite(tree, family)`** points at a 32px sprite in
      `textures/node/<tree>/<family>.png` (one complete set per tree; `null` for
-     `MINOR`). For MARKSMAN/ASSASSIN/WIZARD/PRIEST/ELEMENTALIST and the four
-     epic trees (ORACLE_ELEMENTALIST/ORACLE_WIZARD/ORACLE_PRIEST/
-     NEMESIS_SHADOW), `iconSprite` is *only* this per-tree set.
+     `MINOR`). For MARKSMAN/ASSASSIN/WIZARD/PRIEST/ELEMENTALIST and all nine
+     epic trees, `iconSprite` is *only* this per-tree set.
    - The Strength trees (SLAYER/CRUSHER/PROTECTOR) try `familySprite` first, then
      fall back to the family's hand-made `sprite()`. SHADOW reverses that (its
      hand-made sprites outrank the set).

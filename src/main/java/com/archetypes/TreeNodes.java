@@ -29,6 +29,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().nameKey();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family().nameKey();
 			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family().nameKey();
+			case NEMESIS_MARKSMAN -> NemesisMarksmanNodes.def(tree, index).family().nameKey();
+			case NEMESIS_ASSASSIN -> NemesisAssassinNodes.def(tree, index).family().nameKey();
+			case COLOSSUS_PROTECTOR -> ColossusProtectorNodes.def(tree, index).family().nameKey();
+			case COLOSSUS_SLAYER -> ColossusSlayerNodes.def(tree, index).family().nameKey();
+			case COLOSSUS_CRUSHER -> ColossusCrusherNodes.def(tree, index).family().nameKey();
 		};
 	}
 
@@ -47,6 +52,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().descriptionKey();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family().descriptionKey();
 			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family().descriptionKey();
+			case NEMESIS_MARKSMAN -> NemesisMarksmanNodes.def(tree, index).family().descriptionKey();
+			case NEMESIS_ASSASSIN -> NemesisAssassinNodes.def(tree, index).family().descriptionKey();
+			case COLOSSUS_PROTECTOR -> ColossusProtectorNodes.def(tree, index).family().descriptionKey();
+			case COLOSSUS_SLAYER -> ColossusSlayerNodes.def(tree, index).family().descriptionKey();
+			case COLOSSUS_CRUSHER -> ColossusCrusherNodes.def(tree, index).family().descriptionKey();
 		};
 	}
 
@@ -65,6 +75,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family().icon();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family().icon();
 			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family().icon();
+			case NEMESIS_MARKSMAN -> NemesisMarksmanNodes.def(tree, index).family().icon();
+			case NEMESIS_ASSASSIN -> NemesisAssassinNodes.def(tree, index).family().icon();
+			case COLOSSUS_PROTECTOR -> ColossusProtectorNodes.def(tree, index).family().icon();
+			case COLOSSUS_SLAYER -> ColossusSlayerNodes.def(tree, index).family().icon();
+			case COLOSSUS_CRUSHER -> ColossusCrusherNodes.def(tree, index).family().icon();
 		};
 	}
 
@@ -117,6 +132,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> familySprite(tree, OracleWizardNodes.def(tree, index).family());
 			case ORACLE_PRIEST -> familySprite(tree, OraclePriestNodes.def(tree, index).family());
 			case NEMESIS_SHADOW -> familySprite(tree, NemesisShadowNodes.def(tree, index).family());
+			case NEMESIS_MARKSMAN -> familySprite(tree, NemesisMarksmanNodes.def(tree, index).family());
+			case NEMESIS_ASSASSIN -> familySprite(tree, NemesisAssassinNodes.def(tree, index).family());
+			case COLOSSUS_PROTECTOR -> familySprite(tree, ColossusProtectorNodes.def(tree, index).family());
+			case COLOSSUS_SLAYER -> familySprite(tree, ColossusSlayerNodes.def(tree, index).family());
+			case COLOSSUS_CRUSHER -> familySprite(tree, ColossusCrusherNodes.def(tree, index).family());
 		};
 	}
 
@@ -135,6 +155,8 @@ public final class TreeNodes {
 			}
 			case MARKSMAN, ASSASSIN, WIZARD, PRIEST, ELEMENTALIST -> 32;
 			case ORACLE_ELEMENTALIST, ORACLE_WIZARD, ORACLE_PRIEST, NEMESIS_SHADOW -> 32;
+			case NEMESIS_MARKSMAN, NEMESIS_ASSASSIN -> 32;
+			case COLOSSUS_PROTECTOR, COLOSSUS_SLAYER, COLOSSUS_CRUSHER -> 32;
 		};
 	}
 
@@ -181,6 +203,16 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family() == OracleWizardNodes.Family.MINOR;
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family() == OraclePriestNodes.Family.MINOR;
 			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family() == NemesisShadowNodes.Family.MINOR;
+			case NEMESIS_MARKSMAN -> NemesisMarksmanNodes.def(tree, index).family()
+					== NemesisMarksmanNodes.Family.MINOR;
+			case NEMESIS_ASSASSIN -> NemesisAssassinNodes.def(tree, index).family()
+					== NemesisAssassinNodes.Family.MINOR;
+			case COLOSSUS_PROTECTOR -> ColossusProtectorNodes.def(tree, index).family()
+					== ColossusProtectorNodes.Family.MINOR;
+			case COLOSSUS_SLAYER -> ColossusSlayerNodes.def(tree, index).family()
+					== ColossusSlayerNodes.Family.MINOR;
+			case COLOSSUS_CRUSHER -> ColossusCrusherNodes.def(tree, index).family()
+					== ColossusCrusherNodes.Family.MINOR;
 		};
 	}
 
@@ -199,6 +231,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).rank();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).rank();
 			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).rank();
+			case NEMESIS_MARKSMAN -> NemesisMarksmanNodes.def(tree, index).rank();
+			case NEMESIS_ASSASSIN -> NemesisAssassinNodes.def(tree, index).rank();
+			case COLOSSUS_PROTECTOR -> ColossusProtectorNodes.def(tree, index).rank();
+			case COLOSSUS_SLAYER -> ColossusSlayerNodes.def(tree, index).rank();
+			case COLOSSUS_CRUSHER -> ColossusCrusherNodes.def(tree, index).rank();
 		};
 	}
 
@@ -295,6 +332,30 @@ public final class TreeNodes {
 				case INCORPOREAL -> NodeKind.CAPSTONE;
 				default -> NodeKind.NORMAL;
 			};
+			// The five 20260720 sketches carry no capstone: their point cap
+			// does the choosing and no pair is exclusive, so each of these
+			// trees rings only the root the sketch itself marks active.
+			case NEMESIS_MARKSMAN -> switch (NemesisMarksmanNodes.def(tree, index).family()) {
+				case DEADEYE -> NodeKind.ACTIVE;
+				default -> NodeKind.NORMAL;
+			};
+			case NEMESIS_ASSASSIN -> switch (NemesisAssassinNodes.def(tree, index).family()) {
+				case DEATH_MARK -> NodeKind.ACTIVE;
+				default -> NodeKind.NORMAL;
+			};
+			case COLOSSUS_PROTECTOR -> switch (ColossusProtectorNodes.def(tree, index).family()) {
+				// Passive and key-less — the sketch still marks the root
+				// active, so it keeps the root halo the other epic trees wear.
+				case IRONCLAD -> NodeKind.ACTIVE;
+				default -> NodeKind.NORMAL;
+			};
+			// Parry is an input combo, not a key, and the sketch marks it
+			// normal — this tree wears no halo at all.
+			case COLOSSUS_SLAYER -> NodeKind.NORMAL;
+			case COLOSSUS_CRUSHER -> switch (ColossusCrusherNodes.def(tree, index).family()) {
+				case TITAN_LEAP -> NodeKind.ACTIVE;
+				default -> NodeKind.NORMAL;
+			};
 		};
 	}
 
@@ -326,6 +387,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> indicesOf(tree, OracleWizardNodes.Family.MAGIC_ARMAMENTS);
 			case ORACLE_PRIEST -> indicesOf(tree, OraclePriestNodes.Family.AURA_OF_RADIANCE);
 			case NEMESIS_SHADOW -> indicesOf(tree, NemesisShadowNodes.Family.DARK_RITUAL);
+			case NEMESIS_MARKSMAN -> indicesOf(tree, NemesisMarksmanNodes.Family.DEADEYE);
+			case NEMESIS_ASSASSIN -> indicesOf(tree, NemesisAssassinNodes.Family.DEATH_MARK);
+			case COLOSSUS_PROTECTOR -> indicesOf(tree, ColossusProtectorNodes.Family.IRONCLAD);
+			case COLOSSUS_SLAYER -> indicesOf(tree, ColossusSlayerNodes.Family.PARRY);
+			case COLOSSUS_CRUSHER -> indicesOf(tree, ColossusCrusherNodes.Family.TITAN_LEAP);
 		};
 	}
 
@@ -344,6 +410,11 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> OracleWizardNodes.def(tree, index).family();
 			case ORACLE_PRIEST -> OraclePriestNodes.def(tree, index).family();
 			case NEMESIS_SHADOW -> NemesisShadowNodes.def(tree, index).family();
+			case NEMESIS_MARKSMAN -> NemesisMarksmanNodes.def(tree, index).family();
+			case NEMESIS_ASSASSIN -> NemesisAssassinNodes.def(tree, index).family();
+			case COLOSSUS_PROTECTOR -> ColossusProtectorNodes.def(tree, index).family();
+			case COLOSSUS_SLAYER -> ColossusSlayerNodes.def(tree, index).family();
+			case COLOSSUS_CRUSHER -> ColossusCrusherNodes.def(tree, index).family();
 		};
 	}
 

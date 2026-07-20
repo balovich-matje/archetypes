@@ -39,9 +39,10 @@ public class ArchetypesClient implements ClientModInitializer {
 	private static final String SPECIALITIES = "specialities";
 
 	/** The ability binds: slots 0-2 are the sub-trees left to right, slot 3
-	 * is the Elementalist's capstone, slots 4-6 are the epic actives (Lightning
-	 * Strike, Magic Armaments, Dark Ritual). Exposed so the cooldown bar can
-	 * label its slots. */
+	 * is the Elementalist's capstone, slots 4-6 are the epic actives, shared
+	 * across archetypes — 4 is Lightning Strike or Deadeye, 5 is Magic
+	 * Armaments or Death Mark, 6 is the Dark Ritual or Titan's Leap. Exposed so
+	 * the cooldown bar can label its slots. */
 	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[7];
 
 	/** Our own section in the controls screen, not vanilla's Gameplay. */

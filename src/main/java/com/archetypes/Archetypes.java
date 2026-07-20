@@ -81,13 +81,15 @@ public class Archetypes implements ModInitializer {
 						return;
 					}
 
-					// Slots 4 and 5 are the epic actives, in epic-tree order:
-					// Lightning Strike (Oracle Elementalist) and Magic Armaments
-					// (Oracle Wizard). Both are Intellect's; Agility's epic
-					// active is slot 6.
+					// Slots 4-6 are the epic actives, and archetypes share them:
+					// an epic tree takes slot 4 + N, where N is its base tree's
+					// place in SubTree.of. Two trees on one slot never collide,
+					// because they belong to different archetypes.
 					if (payload.slot() == 4) {
 						if (archetype == Archetype.INTELLECT) {
 							OracleSpells.lightningStrike(player);
+						} else if (archetype == Archetype.AGILITY) {
+							Deadeye.activate(player);
 						}
 
 						return;
@@ -96,16 +98,18 @@ public class Archetypes implements ModInitializer {
 					if (payload.slot() == 5) {
 						if (archetype == Archetype.INTELLECT) {
 							OracleSpells.magicArmaments(player);
+						} else if (archetype == Archetype.AGILITY) {
+							DeathMark.mark(player);
 						}
 
 						return;
 					}
 
-					// Slot 6 is the Cutpurse's epic active, the Dark Ritual —
-					// the first epic key outside Intellect.
 					if (payload.slot() == 6) {
 						if (archetype == Archetype.AGILITY) {
 							NightForm.beginRitual(player);
+						} else if (archetype == Archetype.STRENGTH) {
+							TitansLeap.leap(player);
 						}
 
 						return;
