@@ -83,7 +83,8 @@ public class Archetypes implements ModInitializer {
 
 					// Slots 4 and 5 are the epic actives, in epic-tree order:
 					// Lightning Strike (Oracle Elementalist) and Magic Armaments
-					// (Oracle Wizard). Only Intellect has epic trees for now.
+					// (Oracle Wizard). Both are Intellect's; Agility's epic
+					// active is slot 6.
 					if (payload.slot() == 4) {
 						if (archetype == Archetype.INTELLECT) {
 							OracleSpells.lightningStrike(player);

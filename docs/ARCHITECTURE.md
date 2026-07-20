@@ -157,12 +157,16 @@ excluded by a capstone, under the per-tree cap, and the player has a point free.
 - **Epic tier**: levels 46–`MAX_LEVEL = 60` each grant one **epic point** instead
   of a normal one (`EPIC_SPENT_POINTS` tracks the spends; the pools never mix —
   `check`/`buy` pick pool and cap off `SubTree.isEpic()`). Epic sub-trees
-  (`ORACLE_ELEMENTALIST`, `ORACLE_WIZARD` — Intellect only so far) are upgraded
+  (`ORACLE_ELEMENTALIST`, `ORACLE_WIZARD`, `ORACLE_PRIEST` on Intellect and
+  `NEMESIS_SHADOW` on Agility) are upgraded
   siblings of base trees (`epicCounterpart()`/`baseCounterpart()`), capped at
   `MAX_POINTS_PER_EPIC_SUB_TREE = 5` each, reached via the per-section switcher
   on the tree screen, and excluded from `SubTree.of` so the picker, legends and
   slot dispatch stay on the three base trees. Their actives ride
-  `ActiveAbilityPayload` slots 4–5.
+  `ActiveAbilityPayload` slots 4–6 (Lightning Strike, Magic Armaments, the Dark
+  Ritual), so there are seven ability keys, not four. Oracle Priest claims no
+  key: Aura of Radiance is painted `ACTIVE` on the tree but fires off a Holy
+  Light cast.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
