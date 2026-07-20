@@ -175,6 +175,7 @@ public abstract class LivingEntityMixin {
 			ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.EXECUTIONER);
 		}
 
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_GREATSWORD, amount, result);
 		return result;
 	}
 
@@ -190,8 +191,11 @@ public abstract class LivingEntityMixin {
 		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
 				&& source.getEntity() instanceof ServerPlayer player
 				&& com.archetypes.MarksmanCombat.fromMarksmanWeapon(arrow)) {
-			return com.archetypes.MarksmanCombat.onArrowHit(player, (LivingEntity) (Object) this,
-					level, arrow, amount);
+			float result = com.archetypes.MarksmanCombat.onArrowHit(player,
+					(LivingEntity) (Object) this, level, arrow, amount);
+			com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_MARKSMAN, amount,
+					result);
+			return result;
 		}
 
 		return amount;
@@ -226,18 +230,23 @@ public abstract class LivingEntityMixin {
 			return amount;
 		}
 
+		float result;
+
 		if (source.getDirectEntity() == player) {
-			return com.archetypes.MeleeSwing.isSwinging(player)
+			result = com.archetypes.MeleeSwing.isSwinging(player)
 					&& com.archetypes.ModItems.isMagicSword(player.getMainHandItem())
 							? com.archetypes.MagicArmaments.shapeHit(player, level, amount, false)
 							: amount;
+		} else {
+			result = source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
+					&& Boolean.TRUE.equals(
+							((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))
+									? com.archetypes.MagicArmaments.shapeHit(player, level, amount, true)
+									: amount;
 		}
 
-		return source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
-				&& Boolean.TRUE.equals(
-						((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))
-								? com.archetypes.MagicArmaments.shapeHit(player, level, amount, true)
-								: amount;
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_ARMAMENTS, amount, result);
+		return result;
 	}
 
 	/**
@@ -395,6 +404,7 @@ public abstract class LivingEntityMixin {
 					crippling - 1));
 		}
 
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_DAGGER, amount, result);
 		return result;
 	}
 
@@ -524,6 +534,8 @@ public abstract class LivingEntityMixin {
 					player.getX(), player.getY() + 1.0, player.getZ(), 8, 0.3, 0.5, 0.3, 0.1);
 		}
 
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_MANA_SHIELD, amount,
+				amount - absorbed);
 		return amount - absorbed;
 	}
 
@@ -553,7 +565,10 @@ public abstract class LivingEntityMixin {
 
 		int rank = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
 				NodePurchases.owned(player, SubTree.SHADOW), com.archetypes.ShadowNodes.Family.FIRST_STRIKE);
-		return rank > 0 ? amount * (1.0F + Tuning.FIRST_STRIKE_PER_RANK * rank) : amount;
+		float result = rank > 0 ? amount * (1.0F + Tuning.FIRST_STRIKE_PER_RANK * rank) : amount;
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_FIRST_STRIKE, amount,
+				result);
+		return result;
 	}
 
 	/**
@@ -636,18 +651,19 @@ public abstract class LivingEntityMixin {
 		LivingEntity victim = (LivingEntity) (Object) this;
 		int rank = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.SUNDER);
 
-		if (rank == 0) {
-			com.archetypes.CrusherCombat.onCrusherHit(player, victim, level, result, weapon,
-					owned, smashing);
-			return result;
+		if (rank > 0) {
+			int levels = rank * (weapon == com.archetypes.WeaponClass.HANDS ? 2 : 1);
+			float absorbed = Math.min(0.8F,
+					(float) victim.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
+							* 0.04F);
+
+			result = result + result * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
 		}
 
-		int levels = rank * (weapon == com.archetypes.WeaponClass.HANDS ? 2 : 1);
-		float absorbed = Math.min(0.8F,
-				(float) victim.getAttributeValue(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR)
-						* 0.04F);
-
-		result = result + result * absorbed * Tuning.SUNDER_PER_LEVEL * levels;
+		// Recorded before the batch, not after: onCrusherHit can deal its own
+		// damage (Shockwave's splash), and a trace line has to belong to the blow
+		// that produced it rather than to whatever that splash opened.
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_SUNDER, amount, result);
 		com.archetypes.CrusherCombat.onCrusherHit(player, victim, level, result, weapon,
 				owned, smashing);
 		return result;
@@ -1001,7 +1017,10 @@ public abstract class LivingEntityMixin {
 					com.archetypes.ColossusCrusherNodes.Family.BULWARK);
 		}
 
-		return amount * Math.max(0.0F, 1.0F - Tuning.COLOSSUS_BULWARK_DR_PER_RANK * rank);
+		float result = amount * Math.max(0.0F, 1.0F - Tuning.COLOSSUS_BULWARK_DR_PER_RANK * rank);
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_COLOSSUS_BULWARK, amount,
+				result);
+		return result;
 	}
 
 	/**
@@ -1016,9 +1035,12 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$instinctiveGuard(final float amount, final ServerLevel level,
 			final DamageSource source) {
-		return (Object) this instanceof ServerPlayer player
+		float result = (Object) this instanceof ServerPlayer player
 				? com.archetypes.ColossusProtector.instinctiveGuard(player, level, source, amount)
 				: amount;
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_INSTINCTIVE_GUARD, amount,
+				result);
+		return result;
 	}
 
 	/**
@@ -1050,9 +1072,11 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$barbarian(final float amount, final ServerLevel level,
 			final DamageSource source) {
-		return (Object) this instanceof ServerPlayer player
+		float result = (Object) this instanceof ServerPlayer player
 				? com.archetypes.ColossusSlayer.barbarianDamage(player, source, amount)
 				: amount;
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_BARBARIAN, amount, result);
+		return result;
 	}
 
 	/**

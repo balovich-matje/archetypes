@@ -37,6 +37,9 @@ public class Archetypes implements ModInitializer {
 		RadianceAura.initialize();
 		ColossusProtector.initialize();
 		ColossusSlayer.initialize();
+		// The op-gated dev test kit: /archetypes set|level|buy|dummy|trace.
+		// Idle until somebody with permission level 2 asks for it.
+		ArchetypeCommands.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
 		PayloadTypeRegistry.clientboundPlay().register(ParrySwingPayload.TYPE, ParrySwingPayload.CODEC);

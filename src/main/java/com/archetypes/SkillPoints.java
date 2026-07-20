@@ -249,6 +249,27 @@ public final class SkillPoints {
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, CUM[kept]);
 	}
 
+	/**
+	 * Testing only ({@code /archetypes level}): put the player exactly at
+	 * {@code level} by writing the XP the curve says that level costs.
+	 *
+	 * <p>One write rather than a loop of {@link #bank} calls, and the difference
+	 * matters: banking is scaled by the advancement multiplier at deposit time, so
+	 * awarding {@code CUM[level]} in pieces would overshoot by up to triple and
+	 * land the tester somewhere near the level they asked for. Writing the
+	 * cumulative cost lands on it, and everything downstream — {@link #available},
+	 * {@link #epicAvailable}, {@link #tier} — is derived from the bank, so the
+	 * points and the epic pool that follow are the ones the curve actually owes.
+	 *
+	 * <p>Lowering a level is allowed and is not undone here: the point pools clamp
+	 * at zero rather than going negative, and {@link #ensureBankCoversSpent} will
+	 * raise the bank back on the next join if committed points now outrun it.
+	 */
+	public static void setLevel(final Player player, final int level) {
+		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
+				CUM[Mth.clamp(level, 0, MAX_LEVEL)]);
+	}
+
 	public static void grantLevels(final Player player, final int levels) {
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
 				CUM[Math.min(level(player) + levels, MAX_LEVEL)]);
