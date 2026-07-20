@@ -279,7 +279,6 @@ public final class TreeNodes {
 			case ORACLE_WIZARD -> switch (OracleWizardNodes.def(tree, index).family()) {
 				case MAGIC_ARMAMENTS -> NodeKind.ACTIVE;
 				// The bow-variant node crowns the tree — ringed as a capstone.
-				case SPELLBOW -> NodeKind.CAPSTONE;
 				default -> NodeKind.NORMAL;
 			};
 			case ORACLE_PRIEST -> switch (OraclePriestNodes.def(tree, index).family()) {

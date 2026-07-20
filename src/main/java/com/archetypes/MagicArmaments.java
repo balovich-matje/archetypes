@@ -415,8 +415,10 @@ public final class MagicArmaments {
 
 	/**
 	 * Mind over Matter's half that vanilla can carry for us: virtual Breach on
-	 * the conjured weapon, which zeroes the victim's armor effectiveness inside
-	 * {@code CombatRules.getDamageAfterAbsorb}. The doubling is NOT here — see
+	 * the conjured weapon, which sheds 0.15 of the victim's armor effectiveness
+	 * per level inside {@code CombatRules.getDamageAfterAbsorb} — two levels,
+	 * so 30% of their armor, not all of it (a full ignore playtested as the
+	 * strongest damage-per-mana in the mod). The doubling is NOT here — see
 	 * {@link #shapeHit}: Sharpness is flat but Power (and any bonus folded into
 	 * an arrow's base) is multiplied by the full-draw velocity, so no single
 	 * enchantment doubles both weapons by the same amount.

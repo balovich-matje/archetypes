@@ -505,7 +505,7 @@ public final class Tuning {
 	public static final double LIGHTNING_TEMPEST_RADIUS = 5.0;
 	/** Tempest: mana spent for each hostile caught beyond the first; if the
 	 * pool runs short the strike covers only what it can pay for. */
-	public static final float LIGHTNING_TEMPEST_MANA_PER_EXTRA = 30.0F;
+	public static final float LIGHTNING_TEMPEST_MANA_PER_EXTRA = 25.0F;
 	/** Ceiling on the bolts one cast may schedule (targets x strikes x
 	 * chains), so a Tempest into a horde can't freeze the server. */
 	public static final int LIGHTNING_MAX_BOLTS = 64;
@@ -541,7 +541,7 @@ public final class Tuning {
 	 * bypass is exactly what vanilla's own armor_effectiveness hook does — and
 	 * the same stamp covers the bow, because an arrow's damage source reports
 	 * the bow it was fired from as its weapon item. */
-	public static final int MIND_OVER_MATTER_BREACH = 7;
+	public static final int MIND_OVER_MATTER_BREACH = 2;
 	/** Magic Armor: every point of mana the channel spends banks this much
 	 * absorption per rank (0.5/1.0), capped by the rank's ceiling (10/20). The
 	 * cap rides on MAX_ABSORPTION, so grants past it clamp away like Battle
@@ -606,14 +606,11 @@ public final class Tuning {
 	/** The aura reaches this far, blocks — the same number for the harm and
 	 * the heal, because the tooltip promises one radius. */
 	public static final double RADIANCE_AURA_RADIUS = 8.0;
-	/** The aura resolves four times a second so it reads as a field rather
-	 * than a heartbeat. Below 11 ticks LivingEntity.hurtServer's
-	 * invulnerableTime gate would swallow every repeat, so the pulse does NOT
-	 * go through the gate: {@link RadianceAura} lends the victim a zero
-	 * i-frame counter for the one call and puts the old one back (see
-	 * {@code hurt}). Must divide RADIANCE_AURA_TICKS and RADIANCE_BEACON_TICKS
-	 * exactly, or the per-second totals below stop being whole. */
-	public static final int RADIANCE_PULSE_TICKS = 5;
+	/** One pulse a second. A faster cadence was tried and reverted: in a crowd
+	 * of undead every pulse fires each victim's hurt sound, and four a second
+	 * across a dozen mobs is a wall of noise. Must divide RADIANCE_AURA_TICKS
+	 * and RADIANCE_BEACON_TICKS exactly. */
+	public static final int RADIANCE_PULSE_TICKS = 20;
 	/** Damage to the undead and healing to friends per SECOND, health points:
 	 * the bare aura, then Brilliance rank 1 and 2 (0.5 / 1 / 2 hearts). A
 	 * pulse pays RADIANCE_PULSE_TICKS/20 of this, so the advertised per-second

@@ -396,7 +396,7 @@
 	"node.archetypes.oracle_wizard.ward": "Warding",
 	"node.archetypes.oracle_wizard.ward.desc": "During the Magic Armaments channel, you are immune to negative status effects.",
 	"node.archetypes.oracle_wizard.mind_over_matter": "Mind over Matter",
-	"node.archetypes.oracle_wizard.mind_over_matter.desc": "Increases the potency of Magic Armaments: the spellsword and spellbow will ignore the target's armor and their damage is doubled.",
+	"node.archetypes.oracle_wizard.mind_over_matter.desc": "Increases the potency of Magic Armaments: the spellsword and spellbow ignore 30% of the target's armor and their damage is doubled.",
 	"node.archetypes.oracle_wizard.blink": "Blink",
 	"node.archetypes.oracle_wizard.blink.desc": "Swings with the magic sword teleport you up to 8 blocks forward when not targeting any hostile creature.",
 	"node.archetypes.oracle_wizard.spellbow": "Spellbow",
