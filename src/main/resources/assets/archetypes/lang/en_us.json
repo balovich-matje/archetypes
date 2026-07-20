@@ -425,7 +425,7 @@
 	"node.archetypes.nemesis_shadow.night_eyes": "Eyes of the Night",
 	"node.archetypes.nemesis_shadow.night_eyes.desc": "While in night form, you gain Night Vision.",
 	"node.archetypes.nemesis_shadow.feast": "Feast",
-	"node.archetypes.nemesis_shadow.feast.desc": "While in night form, all your attacks afflict victims with heavy blood loss, dealing 1/2 hearts of damage per second and healing you for the same amount, for 4 seconds.",
+	"node.archetypes.nemesis_shadow.feast.desc": "While in night form, your melee attacks afflict victims with heavy blood loss, dealing 1/2 hearts of damage per second and healing you for the same amount, for 4 seconds.",
 	"node.archetypes.nemesis_shadow.ghost_form": "Ghost Form",
 	"node.archetypes.nemesis_shadow.ghost_form.desc": "While in night form, you gain a 25/50/75% chance to negate incoming damage. You gain Slow Falling. Pressing the sprint key while sneaking will fly you 2/4/6 blocks in the direction you are facing, every 2 seconds.",
 	"node.archetypes.nemesis_shadow.incorporeal": "Incorporeal",

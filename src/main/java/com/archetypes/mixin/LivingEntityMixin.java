@@ -725,17 +725,40 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * Feast: every attack a transformed player lands opens a bleed on the
+	 * Feast: a melee swing landed by a transformed player opens a bleed on the
 	 * victim. Hung off the victim's intake rather than an AFTER_DAMAGE listener
 	 * for the usual reason — that event is gated on the victim surviving, and a
 	 * bleed opened by the blow that killed something else in the same swing
 	 * would go missing.
+	 *
+	 * <p>Melee AND swung, and neither half can be read off the damage source
+	 * alone. Requiring the player to be the direct entity is what makes it melee:
+	 * an arrow is its own direct entity, so a vampire can no more bleed someone
+	 * across a field than a Slayer can Rend them there. But "the attacker IS the
+	 * damage" is equally true of armour's Thorns and of every splash and pulse
+	 * this mod deals in a player's own name — {@code playerAttack(player)} and
+	 * {@code indirectMagic(player, player)} both name them twice, deliberately, so
+	 * that a kill still credits them. So the swing gate carries the rest: the
+	 * damage must be resolving inside {@code Player.attack} (see
+	 * {@link com.archetypes.MeleeSwing}). Without it, and staying inside the one
+	 * archetype that can own Feast at all, a Combustion detonation opened a bleed
+	 * on every creature standing near the burning one, Death's Head opened one on
+	 * everything around a detonated mark, and every Thorns reflect opened one on
+	 * whoever was hitting the vampire — none of them anything the player swung
+	 * for (author's report).
+	 *
+	 * <p>Nothing the player actually swings is lost to the gate: the archetype's
+	 * own Shadow Step strike is dealt through {@code Player.attack}
+	 * ({@code AgilityActives.strike}) and so is a swing by the only definition
+	 * that counts here.
 	 */
 	@Inject(method = "hurtServer", at = @At("HEAD"))
 	private void archetypes$feast(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if (source.getEntity() instanceof ServerPlayer player
+				&& source.getDirectEntity() == player
+				&& com.archetypes.MeleeSwing.isSwinging(player)
 				&& (Object) this instanceof LivingEntity victim) {
 			com.archetypes.NightForm.onHit(player, victim);
 		}

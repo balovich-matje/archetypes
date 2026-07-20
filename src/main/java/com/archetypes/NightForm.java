@@ -602,9 +602,19 @@ public final class NightForm {
 		BLEEDS.clear();
 	}
 
-	/** Start (or refresh) the bleed on a victim this transformed player just
-	 * hit. Refreshing rather than stacking keeps the ceiling at the advertised
-	 * rate no matter how fast the attacks land. */
+	/**
+	 * Start (or refresh) the bleed on a victim this transformed player just hit
+	 * with a melee swing. Refreshing rather than stacking keeps the ceiling at
+	 * the advertised rate no matter how fast the attacks land.
+	 *
+	 * <p>What counts as that hit is decided by the caller, not here:
+	 * {@code LivingEntityMixin.archetypes$feast} demands the player be the direct
+	 * entity of the damage (melee, so no arrows or spells) and be inside
+	 * {@code Player.attack} (a swing, so no thorns reflect and no DoT pulse — see
+	 * {@link MeleeSwing}). Any new caller owes the same two tests: a bleed that
+	 * merely damaging someone can open is one that keeps opening itself, since
+	 * its own pulses are dealt in the feeder's name.
+	 */
 	public static void onHit(final ServerPlayer player, final LivingEntity victim) {
 		int rank = rank(player, NemesisShadowNodes.Family.FEAST);
 
@@ -632,6 +642,12 @@ public final class NightForm {
 	 * it look exactly like one of that player's own attacks to {@link #onHit},
 	 * and a bleed that refreshed itself would never end. Same guard idiom as
 	 * {@code RadianceAura.isPulsing}.
+	 *
+	 * <p>Belt and braces since Feast became swing-gated: a pulse is dealt from
+	 * the ticker, never from inside {@code Player.attack}, so the mixin now
+	 * refuses it before {@link #onHit} is reached. Kept because the two guards
+	 * answer to different callers — this one holds for anything that calls
+	 * {@code onHit} directly and does not depend on the gate above it.
 	 */
 	private static boolean bleeding;
 

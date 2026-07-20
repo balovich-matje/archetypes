@@ -8,9 +8,18 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * The Seeker's casts. No cooldowns anywhere — mana is the only gate (see
@@ -312,6 +321,130 @@ public final class SeekerSpells {
 	}
 
 	/**
+	 * How long a gap in the payload stream may be before the channel counts as
+	 * ended. Three ticks is enough slack for a dropped or late packet without
+	 * letting a released key keep the stream alive for a visible moment. Both
+	 * sides read it through {@link #isChannellingFlame}, so the price the
+	 * server charges and the pose the client plays can never disagree about
+	 * when one channel stopped and the next began.
+	 */
+	private static final long FLAME_CHANNEL_GRACE_TICKS = 3L;
+
+	/**
+	 * The wand's tip while the Flamethrower pose is held, as an offset from the
+	 * eye in the player's OWN frame — right of the eye, below it, and ahead of
+	 * it. This is the fix for two complaints at once: the stream no longer
+	 * erupts out of the camera (which buried the target in fire the moment you
+	 * put the crosshair on it) and it now leaves the hand the animation put the
+	 * wand in.
+	 *
+	 * <p>The numbers are chosen against the first-person view: at 0.75 forward
+	 * a 0.38 sideways and 0.40 downward offset subtend roughly 27 and 28
+	 * degrees, which lands the muzzle in the lower-right corner of a default
+	 * 70-degree FOV — off the crosshair, still on screen. Forward is kept under
+	 * one bolt of travel (FLAME_BOLT_SPEED is 1.2/tick) so the muzzle can never
+	 * outrun the bolt it replaces, and it is clipped against terrain besides;
+	 * see {@link #flameMuzzle}.
+	 */
+	private static final double FLAME_MUZZLE_RIGHT = 0.38;
+	private static final double FLAME_MUZZLE_DOWN = 0.40;
+	private static final double FLAME_MUZZLE_FORWARD = 0.75;
+
+	/**
+	 * How far out the stream is converged on the crosshair when the crosshair
+	 * rests on nothing. Bolts are re-aimed from the muzzle at what the player
+	 * is actually looking at rather than fired parallel to the look vector,
+	 * because a parallel stream from a hand's width to the right misses a
+	 * point-blank target by exactly that hand's width — the aim must stay
+	 * honest even though the origin moved. Twenty blocks is past anything a
+	 * 1.2/tick bolt reaches before terrain stops it, so at long range the
+	 * correction is a fraction of a degree and the stream is effectively
+	 * parallel again.
+	 */
+	private static final double FLAME_AIM_RANGE = 20.0;
+
+	/**
+	 * Whether a Flamethrower channel is running right now. Client-safe and the
+	 * single definition of "still channelling": the server asks it to decide
+	 * whether a payload opens a new channel (and so pays the start cost), and
+	 * the client asks it to decide whether the aimed-wand pose plays. Reading
+	 * one synced attachment on both sides is why the channel needs no packet
+	 * of its own.
+	 */
+	public static boolean isChannellingFlame(final Player player) {
+		Long last = ((AttachmentTarget) player).getAttached(ModAttachments.FLAME_LAST_TICK);
+		return last != null
+				&& player.level().getGameTime() - last <= FLAME_CHANNEL_GRACE_TICKS;
+	}
+
+	/**
+	 * Where a Flamethrower bolt is born: the wand's tip in the aimed pose.
+	 *
+	 * <p>The offset is built from the player's own axes, never world ones. The
+	 * sideways axis is derived from yaw alone on purpose — the torso does not
+	 * roll, so the wand's offset must not tip over when the camera pitches, and
+	 * "down" in the player's frame is therefore plain world-down. A world-axis
+	 * constant would put the flame on the caster's left as soon as they turned
+	 * around.
+	 *
+	 * <p>Handedness is honoured because the wand really does render in the
+	 * off-side hand for a left-handed player, so the stream has to leave from
+	 * that side. (The pose itself is still authored for the right arm, like
+	 * every other animation in this mod.)
+	 *
+	 * <p>Finally the offset is clipped against terrain: without that, a caster
+	 * flat against a thin wall would spawn bolts on its far side and burn
+	 * whatever stood behind it through solid cover.
+	 */
+	private static Vec3 flameMuzzle(final ServerPlayer player) {
+		float yaw = player.getYRot() * Mth.DEG_TO_RAD;
+		Vec3 right = new Vec3(-Mth.cos(yaw), 0.0, -Mth.sin(yaw));
+		Vec3 forward = new Vec3(-Mth.sin(yaw), 0.0, Mth.cos(yaw));
+		Vec3 eye = player.getEyePosition();
+		Vec3 muzzle = eye
+				.add(right.scale(player.getMainArm() == HumanoidArm.LEFT
+						? -FLAME_MUZZLE_RIGHT : FLAME_MUZZLE_RIGHT))
+				.add(forward.scale(FLAME_MUZZLE_FORWARD))
+				.subtract(0.0, FLAME_MUZZLE_DOWN, 0.0);
+		BlockHitResult wall = player.level().clip(new ClipContext(eye, muzzle,
+				ClipContext.Block.COLLIDER, ClipContext.Fluid.NONE, player));
+
+		// Pulled a tenth back off the face of the block, so a muzzle that ends
+		// up flush with stone is still on the caster's side of it.
+		return wall.getType() == HitResult.Type.BLOCK
+				? wall.getLocation().subtract(muzzle.subtract(eye).normalize().scale(0.1))
+				: muzzle;
+	}
+
+	/**
+	 * The direction a bolt leaves the muzzle: from the muzzle toward whatever
+	 * the crosshair rests on — the aimed creature if there is one, else the
+	 * first wall, else a point out at {@link #FLAME_AIM_RANGE}. The ray that
+	 * finds the target is still cast from the EYE, because the crosshair is
+	 * the eye's; only the bolt's origin moved.
+	 */
+	private static Vec3 flameAim(final ServerPlayer player, final ServerLevel level,
+			final Vec3 muzzle) {
+		Vec3 eye = player.getEyePosition();
+		Vec3 to = eye.add(player.getLookAngle().scale(FLAME_AIM_RANGE));
+		HitResult blockHit = player.pick(FLAME_AIM_RANGE, 1.0F, false);
+
+		if (blockHit.getType() == HitResult.Type.BLOCK) {
+			to = blockHit.getLocation();
+		}
+
+		EntityHitResult aimed = ProjectileUtil.getEntityHitResult(level, player, eye, to,
+				player.getBoundingBox().expandTowards(to.subtract(eye)).inflate(1.0),
+				e -> e instanceof LivingEntity living && living.isAlive() && living != player, 0.5F);
+		Vec3 point = aimed != null ? aimed.getEntity().getBoundingBox().getCenter() : to;
+		Vec3 direction = point.subtract(muzzle);
+
+		// A target somehow inside the muzzle leaves nothing to normalise; fall
+		// back to the look vector rather than firing at zero.
+		return direction.lengthSqr() < 1.0E-4 ? player.getLookAngle() : direction.normalize();
+	}
+
+	/**
 	 * Flamethrower: fed by one payload per client tick while the key is held.
 	 * A gap in the stream means the channel ended, so a fresh press pays the
 	 * base cost and the stream itself pays the per-second drain. (Blizzard
@@ -332,8 +465,7 @@ public final class SeekerSpells {
 		AttachmentTarget target = (AttachmentTarget) player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
-		Long last = target.getAttached(ModAttachments.FLAME_LAST_TICK);
-		boolean fresh = last == null || now - last > 3;
+		boolean fresh = !isChannellingFlame(player);
 
 		if (!Mana.spend(player, fresh
 				? elementCost(player, Tuning.FLAME_START_COST, true, false, false)
@@ -341,10 +473,12 @@ public final class SeekerSpells {
 			return;
 		}
 
-		if (fresh) {
-			player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
-		}
-
+		// No opening swing any more. The channel now holds an aimed pose for as
+		// long as it runs (see the client's ElementalistAnimations), and a
+		// vanilla swing under it was exactly the "one swing and then the wand
+		// just sits there" the author complained about: an arm animation that
+		// announced a cast the size of a single throw and then stopped while
+		// fire kept pouring out.
 		target.setAttached(ModAttachments.FLAME_LAST_TICK, now);
 
 		if (now % Tuning.FLAME_BOLT_PERIOD_TICKS != 0) {
@@ -363,7 +497,19 @@ public final class SeekerSpells {
 			bolt.withVaporize();
 		}
 
-		bolt.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
+		// Born at the wand, not the eye, and aimed from there at the crosshair's
+		// target. The trail particles ride the projectile itself (see
+		// SpellProjectile.trail), so moving the spawn moves the fire with it —
+		// the stream and the damage cannot come apart.
+		Vec3 muzzle = flameMuzzle(player);
+		Vec3 aim = flameAim(player, level, muzzle);
+		bolt.setPos(muzzle.x, muzzle.y, muzzle.z);
+		// Back through yaw/pitch rather than straight into shoot(): only
+		// shootFromRotation also adds the caster's own movement, which is what
+		// keeps a stream fired while sprinting from trailing behind its owner.
+		bolt.shootFromRotation(player,
+				(float) (-Mth.atan2(aim.y, aim.horizontalDistance()) * Mth.RAD_TO_DEG),
+				(float) (Mth.atan2(-aim.x, aim.z) * Mth.RAD_TO_DEG), 0.0F,
 				Tuning.FLAME_BOLT_SPEED, 4.0F);
 		level.addFreshEntity(bolt);
 		// A pitch-jittered whoosh per bolt reads as a roaring stream; the

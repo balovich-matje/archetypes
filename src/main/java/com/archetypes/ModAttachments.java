@@ -216,9 +216,21 @@ public final class ModAttachments {
 	public static final AttachmentType<Integer> MISSILE_CAST_COUNT =
 			AttachmentRegistry.<Integer>create(Archetypes.id("missile_cast_count"));
 
-	/** Flamethrower channel: the last tick a channel payload arrived. */
-	public static final AttachmentType<Long> FLAME_LAST_TICK =
-			AttachmentRegistry.<Long>create(Archetypes.id("flame_last_tick"));
+	/**
+	 * Flamethrower channel: the last tick a channel payload arrived. The gap
+	 * since this tick is what tells the server a channel ended (see
+	 * {@link SeekerSpells#isChannellingFlame}), and the same question drives
+	 * the aimed-wand pose — so it is synced to EVERY client, not just the
+	 * caster's: the pose has to play for onlookers exactly the way the Dark
+	 * Ritual's does. The cost is one VAR_LONG per channelling player per tick
+	 * to their trackers, which is the price of the channel having no packet of
+	 * its own; a channel is a handful of seconds and the alternative (a
+	 * coarser "channel until" horizon synced every N ticks) would leave the
+	 * pose standing for those N ticks after the key came up.
+	 */
+	public static final AttachmentType<Long> FLAME_LAST_TICK = AttachmentRegistry.create(
+			Archetypes.id("flame_last_tick"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
 
 	/**
 	 * Magic Armaments channel: the real wand pulled out of the hand while the

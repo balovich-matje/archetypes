@@ -1,0 +1,88 @@
+{
+	"name": "dagger_stab",
+	"author": "archetypes",
+	"description": "Dagger: a seven-tick forward thrust in place of the vanilla swing",
+	"version": 3,
+	"emote": {
+		"isLoop": false,
+		"returnTick": 1,
+		"beginTick": 0,
+		"endTick": 6,
+		"stopTick": 7,
+		"degrees": true,
+		"moves": [
+			{
+				"tick": 0,
+				"easing": "EASEOUTQUAD",
+				"torso": {
+					"pitch": -4,
+					"yaw": 8
+				},
+				"rightArm": {
+					"pitch": 10,
+					"yaw": -12,
+					"roll": 8
+				},
+				"leftArm": {
+					"pitch": -10,
+					"yaw": 8,
+					"roll": -8
+				}
+			},
+			{
+				"tick": 2,
+				"easing": "EASEOUTQUAD",
+				"torso": {
+					"pitch": 8,
+					"yaw": -8
+				},
+				"rightArm": {
+					"pitch": -88,
+					"yaw": 8,
+					"roll": -6
+				},
+				"leftArm": {
+					"pitch": 20,
+					"yaw": 8,
+					"roll": -12
+				}
+			},
+			{
+				"tick": 3,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 6,
+					"yaw": -6
+				},
+				"rightArm": {
+					"pitch": -78,
+					"yaw": 6,
+					"roll": -4
+				},
+				"leftArm": {
+					"pitch": 16,
+					"yaw": 6,
+					"roll": -10
+				}
+			},
+			{
+				"tick": 6,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"rightArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				},
+				"leftArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				}
+			}
+		]
+	}
+}
