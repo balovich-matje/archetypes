@@ -76,15 +76,17 @@ public final class AssassinNodes {
 	private static Map<Integer, Def> build() {
 		Map<Long, Def> byCell = new HashMap<>();
 
-		// The pommel: the active in the centre, footwork either side.
+		// The pommel: the active in the centre, the dodge either side
+		// (user sketch assassin-new-edit-20260720).
 		byCell.put(cell(2, 0), new Def(Family.SHADOW_STEP, 1));
-		byCell.put(cell(1, 0), new Def(Family.LIGHTFOOT, 1));
-		byCell.put(cell(3, 0), new Def(Family.LIGHTFOOT, 2));
+		byCell.put(cell(1, 0), new Def(Family.SIDESTEP, 1));
+		byCell.put(cell(3, 0), new Def(Family.SIDESTEP, 2));
 
-		// The grip: the body learns to not be hit.
-		byCell.put(cell(2, 1), new Def(Family.SIDESTEP, 1));
-		byCell.put(cell(2, 2), new Def(Family.SIDESTEP, 2));
-		byCell.put(cell(2, 3), new Def(Family.SIDESTEP, 3));
+		// The grip: the legs. Three ranks now, so the climb up the handle is
+		// the speed and the two quillons at the foot are the evasion.
+		byCell.put(cell(2, 1), new Def(Family.LIGHTFOOT, 1));
+		byCell.put(cell(2, 2), new Def(Family.LIGHTFOOT, 2));
+		byCell.put(cell(2, 3), new Def(Family.LIGHTFOOT, 3));
 
 		// The five-wide guard: the per-hit steel, Crippling Poison at the
 		// right quillons.

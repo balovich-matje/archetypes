@@ -62,12 +62,13 @@ public final class SlayerCombat {
 			// Blade Dance: a manual sword strike may lash out at someone else
 			// nearby — any direction. Bladestorm's volleys are excluded; the
 			// storm already is that fantasy.
-			if (sword && !dancing
-					&& SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.BLADE_DANCE) > 0) {
+			int dance = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.BLADE_DANCE);
+
+			if (sword && !dancing && dance > 0) {
 				Long stormEnd = ((AttachmentTarget) player).getAttached(ModAttachments.BLADESTORM_END);
 
 				if ((stormEnd == null || stormEnd <= player.level().getGameTime())
-						&& player.getRandom().nextFloat() < Tuning.BLADE_DANCE_CHANCE) {
+						&& player.getRandom().nextFloat() < dance * Tuning.BLADE_DANCE_CHANCE) {
 					bladeDance(player, entity);
 				}
 			}
@@ -96,11 +97,6 @@ public final class SlayerCombat {
 				((ServerLevel) player.level()).sendParticles(ParticleTypes.HEART,
 						player.getX(), player.getY() + 1.5, player.getZ(), taste, 0.3, 0.3, 0.3, 0.0);
 				ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.TASTE_OF_BLOOD);
-			}
-
-			// Flurry: sword kills reset the lunge.
-			if (sword && SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.FLURRY) > 0) {
-				((AttachmentTarget) player).removeAttached(ModAttachments.LUNGE_READY_AT);
 			}
 
 			// Bloodlust: the momentum passive at the very tip of the sword.

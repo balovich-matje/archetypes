@@ -31,7 +31,6 @@ public final class SlayerNodes {
 		BLADE_DANCE(Archetypes.id("textures/node/blade_dance.png"), 16),
 		HEAVY(Archetypes.id("textures/node/heavy_blows.png"), 32),
 		FIRSTBLOOD(Archetypes.id("textures/node/first_blood.png"), 32),
-		FLURRY(() -> Items.SUGAR),
 		EXECUTIONER(Archetypes.id("textures/node/executioner.png"), 16),
 		BLOODLUST(() -> Items.FERMENTED_SPIDER_EYE),
 		RELENTLESS(() -> Items.CLOCK),
@@ -93,43 +92,43 @@ public final class SlayerNodes {
 		// The grip: Hamstring, the root — crowd control both weapons share.
 		// Full path economics: grip 2 + blood 3 + branch 7 + capstone +
 		// Bloodlust + Relentless = 15 exactly, either weapon.
-		byCell.put(cell(4, 0), new Def(Family.SLOWNESS, 1));
-		byCell.put(cell(4, 1), new Def(Family.SLOWNESS, 2));
+		byCell.put(cell(3, 0), new Def(Family.SLOWNESS, 1));
+		byCell.put(cell(3, 1), new Def(Family.SLOWNESS, 2));
 
 		// The crossguard, left to right: [L1][L2][T1][T2][T3][I1][I2] — the
 		// mobility ranks out the sword arm, Taste of Blood as the shared
 		// centre trio, the stability ranks out the greatsword arm. Rank is
 		// count-based, so buy order never matters mechanically.
-		byCell.put(cell(1, 2), new Def(Family.LUNGE, 1));
-		byCell.put(cell(2, 2), new Def(Family.LUNGE, 2));
-		byCell.put(cell(3, 2), new Def(Family.TASTE_OF_BLOOD, 1));
-		byCell.put(cell(4, 2), new Def(Family.TASTE_OF_BLOOD, 2));
-		byCell.put(cell(5, 2), new Def(Family.TASTE_OF_BLOOD, 3));
-		byCell.put(cell(6, 2), new Def(Family.KBRES, 1));
-		byCell.put(cell(7, 2), new Def(Family.KBRES, 2));
+		byCell.put(cell(0, 2), new Def(Family.LUNGE, 1));
+		byCell.put(cell(1, 2), new Def(Family.LUNGE, 2));
+		byCell.put(cell(2, 2), new Def(Family.TASTE_OF_BLOOD, 1));
+		byCell.put(cell(3, 2), new Def(Family.TASTE_OF_BLOOD, 2));
+		byCell.put(cell(4, 2), new Def(Family.TASTE_OF_BLOOD, 3));
+		byCell.put(cell(5, 2), new Def(Family.KBRES, 1));
+		byCell.put(cell(6, 2), new Def(Family.KBRES, 2));
 
 		// Left blade edge, bottom-up: the sword path's flavour singles first,
 		// then Rend stacked just under the capstone as the direct DPS climb.
-		byCell.put(cell(3, 3), new Def(Family.FLURRY, 1));
-		byCell.put(cell(3, 4), new Def(Family.BLADE_DANCE, 1));
-		byCell.put(cell(3, 5), new Def(Family.BLEED, 1));
-		byCell.put(cell(3, 6), new Def(Family.BLEED, 2));
-		byCell.put(cell(3, 7), new Def(Family.BLEED, 3));
+		byCell.put(cell(2, 3), new Def(Family.BLADE_DANCE, 1));
+		byCell.put(cell(2, 4), new Def(Family.BLADE_DANCE, 2));
+		byCell.put(cell(2, 5), new Def(Family.BLEED, 1));
+		byCell.put(cell(2, 6), new Def(Family.BLEED, 2));
+		byCell.put(cell(2, 7), new Def(Family.BLEED, 3));
 
 		// Right blade edge, mirroring it: the opener first, Heavy Blows as
 		// the DPS climb, Executioner against the capstone.
-		byCell.put(cell(5, 3), new Def(Family.FIRSTBLOOD, 1));
-		byCell.put(cell(5, 4), new Def(Family.HEAVY, 1));
-		byCell.put(cell(5, 5), new Def(Family.HEAVY, 2));
-		byCell.put(cell(5, 6), new Def(Family.HEAVY, 3));
-		byCell.put(cell(5, 7), new Def(Family.EXECUTIONER, 1));
+		byCell.put(cell(4, 3), new Def(Family.FIRSTBLOOD, 1));
+		byCell.put(cell(4, 4), new Def(Family.HEAVY, 1));
+		byCell.put(cell(4, 5), new Def(Family.HEAVY, 2));
+		byCell.put(cell(4, 6), new Def(Family.HEAVY, 3));
+		byCell.put(cell(4, 7), new Def(Family.EXECUTIONER, 1));
 
 		// The tip: Bloodlust sits in the crossing between the capstones, so
 		// every crown path runs through it; Relentless caps the very point.
-		byCell.put(cell(3, 8), new Def(Family.BLADESTORM, 1));
-		byCell.put(cell(5, 8), new Def(Family.DECIMATE, 1));
-		byCell.put(cell(4, 8), new Def(Family.BLOODLUST, 1));
-		byCell.put(cell(4, 9), new Def(Family.RELENTLESS, 1));
+		byCell.put(cell(2, 8), new Def(Family.BLADESTORM, 1));
+		byCell.put(cell(4, 8), new Def(Family.DECIMATE, 1));
+		byCell.put(cell(3, 8), new Def(Family.BLOODLUST, 1));
+		byCell.put(cell(3, 9), new Def(Family.RELENTLESS, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.SLAYER_SWORD.nodes();

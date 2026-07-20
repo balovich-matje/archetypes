@@ -1,7 +1,9 @@
 package com.archetypes;
 
+import java.util.ArrayList;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
@@ -144,8 +146,32 @@ public final class SlayerTicker {
 		}
 	}
 
+	/**
+	 * Every running bleed, in two passes: the walk that ages them, then the
+	 * damage.
+	 *
+	 * <p>They cannot be one pass, and the crash that proved it is worth
+	 * recording. A bleed pulse is dealt as a {@code playerAttack} from the
+	 * sword that opened the wound, which is indistinguishable from a real swing
+	 * to everything downstream — so a pulse landing on a bleeding mob re-enters
+	 * {@code SlayerCombat}'s hit handler, and Blade Dance's lash then starts a
+	 * bleed on a DIFFERENT nearby creature. That is a new key in the map this
+	 * loop is iterating, and {@code IdentityHashMap} answers a new key mid-walk
+	 * with a {@code ConcurrentModificationException} that takes the server tick
+	 * loop down with it.
+	 *
+	 * <p>A re-entry flag would have stopped that one path (it is what
+	 * {@code NightForm}'s Feast does). Collecting first is stronger: it holds
+	 * for anything the damage sets off, including whatever gets added to this
+	 * mod later, because nothing at all runs while the map is open.
+	 */
 	private static void tickBleeds() {
+		if (BLEEDS.isEmpty()) {
+			return;
+		}
+
 		Iterator<Map.Entry<LivingEntity, Bleed>> iterator = BLEEDS.entrySet().iterator();
+		List<Map.Entry<LivingEntity, Bleed>> due = new ArrayList<>();
 
 		while (iterator.hasNext()) {
 			Map.Entry<LivingEntity, Bleed> entry = iterator.next();
@@ -160,7 +186,17 @@ public final class SlayerTicker {
 
 			ticks[0]--;
 
-			if (ticks[0] % 20 != 0) {
+			if (ticks[0] % 20 == 0) {
+				due.add(Map.entry(victim, entry.getValue()));
+			}
+		}
+
+		for (Map.Entry<LivingEntity, Bleed> entry : due) {
+			LivingEntity victim = entry.getKey();
+
+			// Re-checked: an earlier pulse in this same batch may have killed
+			// it, and a bleed pulse on a corpse would credit a second kill.
+			if (victim.isRemoved() || !victim.isAlive()) {
 				continue;
 			}
 

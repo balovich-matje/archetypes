@@ -47,16 +47,16 @@ public final class Constellations {
 	 * fuller empty between them, and the capstone crown at the single tip.
 	 */
 	public static final Constellation SLAYER_SWORD = Constellation.of(
-			"....#....",
-			"...###...",
-			"...#.#...",
-			"...#.#...",
-			"...#.#...",
-			"...#.#...",
-			"...#.#...",
-			".#######.",
-			"....#....",
-			"....#....");
+			"...#...",
+			"..###..",
+			"..#.#..",
+			"..#.#..",
+			"..#.#..",
+			"..#.#..",
+			"..#.#..",
+			"#######",
+			"...#...",
+			"...#...");
 			// No explicit cross needed: Bloodlust sits in the crossing itself,
 			// adjacent to both pre-capstones, both capstones, and the tip.
 

@@ -122,6 +122,8 @@ public final class Tuning {
 
 	/** Blade Dance: chance for a manual sword strike to lash out at another
 	 * nearby foe — any direction, the back included. */
+	/** Blade Dance's lash chance PER RANK — 25% then 50%. Two ranks since the
+	 * 20260720 sketch folded Flurry's cell into it. */
 	public static final float BLADE_DANCE_CHANCE = 0.25F;
 	public static final double BLADE_DANCE_RANGE = 3.5;
 
@@ -312,7 +314,9 @@ public final class Tuning {
 
 	// --- Assassin passives ---
 	public static final float LIGHTFOOT_PER_RANK = 0.10F;
-	public static final float SIDESTEP_PER_RANK = 0.07F;
+	/** Sidestep is two ranks since the 20260720 sketch, not three, so the per-rank
+	 * share went up to keep the node worth its second point: 10/20%. */
+	public static final float SIDESTEP_PER_RANK = 0.10F;
 	/** Crippling Poison: Slowness I/II riding every dagger hit, 4s. */
 	public static final int CRIPPLING_SLOW_TICKS = 80;
 	public static final float RAZOR_EDGE_PER_RANK = 0.08F;
