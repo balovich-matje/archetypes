@@ -64,50 +64,30 @@ public abstract class MinecraftMixin {
 	}
 
 	/**
-	 * Free Hand and Immovable Object: the two nodes that only ever needed the
-	 * input lock taken off.
+	 * Free Hand: the node that only ever needed the input lock taken off.
 	 *
-	 * <p>Nothing on the server forbids either — {@code Player.attack},
-	 * {@code handleUseItemOn} and {@code handleUseItem} all run while an item
-	 * is in use, and none of them ends the use. The whole prohibition is the
-	 * {@code if (this.player.isUsingItem())} arm of {@code handleKeybinds},
-	 * which drains the attack and use click queues into empty {@code while}
-	 * loops and throws them away.
+	 * <p>Nothing on the server forbids swinging while blocking —
+	 * {@code Player.attack} runs while an item is in use and does not end the
+	 * use. The whole prohibition is the {@code if (this.player.isUsingItem())}
+	 * arm of {@code handleKeybinds}, which drains the attack-click queue into an
+	 * empty {@code while} loop and throws it away.
 	 *
 	 * <p>So the clicks are spent here, at the head, before that arm can eat
-	 * them — one queue per owned node, and only while a shield is actually up.
-	 * The arm itself is left alone, which is the point: it is also what
-	 * releases the shield when the use key comes up, and a player who could
-	 * never lower their guard would be worse off than one who could not eat.
-	 *
-	 * <p>Free Hand needs no hand-picking. To be blocking at all, the hand
-	 * {@code startUseItem} tries first must have had nothing to use — so the
-	 * food, the potion or the block in the other hand is what the click
-	 * reaches, and {@code getItemBlockingWith} keeps the shield up for the
-	 * length of it (see {@code LivingEntityMixin}).
+	 * them — and only while a shield is actually up. The arm itself is left
+	 * alone, which is the point: it is also what releases the shield when the
+	 * use key comes up, and a player who could never lower their guard would be
+	 * worse off than one who could not swing.
 	 */
 	@Inject(method = "handleKeybinds", at = @At("HEAD"))
-	private void archetypes$freeHands(final CallbackInfo ci) {
-		if (this.player == null) {
-			return;
-		}
-
-		if (com.archetypes.ColossusProtector.canAttackWhileBlocking(this.player)) {
+	private void archetypes$freeHand(final CallbackInfo ci) {
+		if (this.player != null
+				&& com.archetypes.ColossusProtector.canAttackWhileBlocking(this.player)) {
 			while (((Minecraft) (Object) this).options.keyAttack.consumeClick()) {
 				this.archetypes$startAttack();
-			}
-		}
-
-		if (com.archetypes.ColossusProtector.canUseWhileBlocking(this.player)) {
-			while (((Minecraft) (Object) this).options.keyUse.consumeClick()) {
-				this.archetypes$startUseItem();
 			}
 		}
 	}
 
 	@org.spongepowered.asm.mixin.gen.Invoker("startAttack")
 	abstract boolean archetypes$startAttack();
-
-	@org.spongepowered.asm.mixin.gen.Invoker("startUseItem")
-	abstract void archetypes$startUseItem();
 }

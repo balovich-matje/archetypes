@@ -265,8 +265,9 @@ public final class Tuning {
 	/**
 	 * The damage fraction one armour point eats, used to hand that fraction
 	 * back so a shot lands as if the armour were not there — Piercing Tips
-	 * pretends away {@link #PIERCING_TIPS_ARMOR} points, Punch Through all of
-	 * them. An approximation of vanilla's own curve
+	 * pretends away {@link #PIERCING_TIPS_ARMOR} points, Punch Through
+	 * {@link #PUNCH_THROUGH_ARMOUR_IGNORE} of the target's. An approximation of
+	 * vanilla's own curve
 	 * ({@code CombatRules.getDamageAfterAbsorb}), which is exactly 4% per point
 	 * only at zero armour toughness; against toughness the compensation
 	 * slightly overshoots, and {@link #DEADEYE_MAX_MULTIPLIER} is the fence
@@ -756,6 +757,11 @@ public final class Tuning {
 	 * pierceLevel + 1 entities are in its ignore set). One below Piercing IV,
 	 * so an enchanted crossbow still does something the tree does not. */
 	public static final byte PUNCH_THROUGH_PIERCE_LEVEL = 2;
+	/** Punch Through: the share of the target's armour the arrow ignores.
+	 * Half, not all — the node used to hand back every armour point's worth
+	 * ({@link #ARMOUR_POINT_DAMAGE_FRACTION} x armour) and against a netherite
+	 * target that was an 80% damage bonus on a stream of arrows. */
+	public static final float PUNCH_THROUGH_ARMOUR_IGNORE = 0.5F;
 	/** Siege: the planted multiplier, and how long standing still takes to
 	 * arm it. Snap Shot's x4.0 halved, because unlike Snap Shot it applies to
 	 * every arrow. */
@@ -933,6 +939,33 @@ public final class Tuning {
 	public static final float UNSTOPPABLE_DISABLE_SECONDS = 5.0F;
 
 	/**
+	 * The clash: an Unstoppable Force landing on an Immovable Object. Neither
+	 * node wins — the blow is voided, the shield holds, and the meeting point
+	 * detonates. A 10x10x3 box of everything stone-soft or softer, centred
+	 * between the two of them.
+	 */
+	public static final int CLASH_RADIUS = 5;
+	public static final int CLASH_HEIGHT = 3;
+	/** Stone's own hardness: the ceiling on what the blast takes with it, so
+	 * dirt, wood and stone go and obsidian, ore and iron stay. Negative
+	 * hardness (bedrock, portal frame) is unbreakable and never counted. */
+	public static final float CLASH_MAX_HARDNESS = 1.5F;
+	/** Damage to BOTH players, before armour and resistance — the author's
+	 * "moderate, around 5 hearts". */
+	public static final float CLASH_DAMAGE = 10.0F;
+	/**
+	 * The shove, as a velocity written straight onto both players rather than
+	 * a {@code knockback} call: the whole point is that it ignores knockback
+	 * resistance, and both nodes' owners are exactly the builds that have it.
+	 *
+	 * <p>Horizontal drag is 0.91 a tick, so an opening 0.5 carries about
+	 * {@code 0.5 x 0.91 / (1 - 0.91)} = 5 blocks. The lift is vanilla's own
+	 * jump velocity, enough to break ground contact so the drag figure holds.
+	 */
+	public static final double CLASH_PUSH = 0.5;
+	public static final double CLASH_LIFT = 0.42;
+
+	/**
 	 * Ironclad: +50% armour and armour toughness, as an
 	 * {@code ADD_MULTIPLIED_TOTAL} amount, so the number here IS the "final
 	 * multiplier" the sketch asked for.
@@ -986,20 +1019,23 @@ public final class Tuning {
 	// --- Colossus Slayer (epic) ---
 
 	/**
-	 * The parry window: 0.3 seconds from the attack+block press, the author's
-	 * "generous window". Six ticks is generous by fighting-game standards and
+	 * The parry window: 0.4 seconds from the ability key, the author's
+	 * "generous window". Eight ticks is generous by fighting-game standards and
 	 * still under the ~100ms round trip a hit takes to arrive, so a parry
 	 * timed against a mob's wind-up lands and a mashed one does not.
+	 *
+	 * <p>Two ticks wider than the attack+block combo it replaced, because the
+	 * price of a wrong guess is no longer one slow swing but
+	 * {@link #PARRY_COOLDOWN_TICKS}.
 	 */
-	public static final int PARRY_WINDOW_TICKS = 6;
+	public static final int PARRY_WINDOW_TICKS = 8;
 
 	/**
-	 * What a missed parry costs: the swing timer is set back so full charge
-	 * arrives {@code 2.0 x} the weapon's normal delay after the press. This is
-	 * the whole anti-spam fence — Parry has no cooldown of its own, so the
-	 * only price of a wrong guess is the swing you cannot make.
+	 * What a missed parry costs: eight seconds before the key answers again.
+	 * A landed parry costs nothing at all — the node is a read of the enemy's
+	 * wind-up, and reading it right is supposed to let you read the next one.
 	 */
-	public static final float PARRY_MISS_SWING_FACTOR = 2.0F;
+	public static final int PARRY_COOLDOWN_TICKS = 160;
 
 	/**
 	 * Barbarian: 37.5% of magical damage AND magical healing cut per rank, so

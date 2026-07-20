@@ -29,10 +29,10 @@ public final class ColossusProtectorNodes {
 		HEARTY_MEAL(() -> Items.MILK_BUCKET),
 		/** Two ranks of blocking that costs no button — the shield still pays. */
 		INSTINCTIVE_GUARD(() -> Items.SHIELD),
-		/** Every one-handed action stays available while blocking. */
-		FREE_HAND(() -> Items.POTION),
-		/** Block and swing at once (author's name: Immovable object). */
-		IMMOVABLE_OBJECT(() -> Items.IRON_SWORD),
+		/** The shield arm no longer costs the sword arm: block and swing at once. */
+		FREE_HAND(() -> Items.IRON_SWORD),
+		/** A raised guard normal means cannot break — no axe, no Warden, disables it. */
+		IMMOVABLE_OBJECT(() -> Items.ANVIL),
 		MINOR((Supplier<Item>) null);
 
 		private final @Nullable Supplier<Item> icon;
@@ -75,10 +75,10 @@ public final class ColossusProtectorNodes {
 		// Right column: the guard that never drops, bottom-up.
 		byCell.put(cell(4, 2), new Def(Family.INSTINCTIVE_GUARD, 1));
 		byCell.put(cell(4, 3), new Def(Family.INSTINCTIVE_GUARD, 2));
-		byCell.put(cell(4, 4), new Def(Family.IMMOVABLE_OBJECT, 1));
+		byCell.put(cell(4, 4), new Def(Family.FREE_HAND, 1));
 
 		// The crown, hung between the two columns on explicit edges.
-		byCell.put(cell(2, 4), new Def(Family.FREE_HAND, 1));
+		byCell.put(cell(2, 4), new Def(Family.IMMOVABLE_OBJECT, 1));
 
 		Map<Integer, Def> byIndex = new HashMap<>();
 		var nodes = Constellations.COLOSSUS_PROTECTOR.nodes();

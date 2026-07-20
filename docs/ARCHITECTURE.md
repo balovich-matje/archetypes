@@ -55,17 +55,16 @@ in `Archetypes.onInitialize`:
 | `PickArchetypePayload` | choose an archetype (ignored if one is already set) |
 | `ResetArchetypePayload` | creative-only wipe of the choice |
 | `BuyNodePayload` | spend a point into `(subTreeId, node)` |
-| `ActiveAbilityPayload(slot)` | fire ability key `slot` (0–3) |
+| `ActiveAbilityPayload(slot)` | fire ability key `slot` (0–6) |
 | `SpellChannelPayload` | one Flamethrower channel tick while the key is held |
 | `MeleeSwingPayload` | announce a charged swing (the greatsword whoosh) |
 | `RushPayload` / `DisengagePayload` | Shield Rush / the Marksman's Acrobatics roll (`AgilityActives.acrobatics`; the payload keeps its older Disengage name) |
-| `ParryPayload` | attack and block went down together (Colossus Slayer's Parry); the client reports the key edge and consumes no clicks |
 
 Clientbound (server → client): `PassiveProcPayload` — a fire-and-forget "this
 passive just fired" flash for `ProcIndicatorHud` — and `ParrySwingPayload`, the
-raw `attackStrengthTicker` a parry earned or a missed parry cost, which the
-client installs verbatim (the server is the only side that knows whether the hit
-paying for a parry ever arrived, so this one number cannot be derived).
+raw `attackStrengthTicker` a landed parry earned, which the client installs
+verbatim (the server is the only side that knows whether the hit paying for a
+parry ever arrived, so this one number cannot be derived).
 Everything else the client needs (levels, cooldowns, mana) rides the synced
 attachments, so there is no bespoke state packet.
 
@@ -176,13 +175,11 @@ excluded by a capstone, under the per-tree cap, and the player has a point free.
   `ActiveAbilityPayload` slots 4–6, so there are seven ability keys, not four:
   an epic tree takes slot `4 + N` where `N` is its base tree's place in
   `SubTree.of`, and archetypes share those three keys (slot 4 is Lightning
-  Strike or Deadeye, slot 5 Magic Armaments or Death Mark, slot 6 the Dark
-  Ritual or Titan's Leap — the dispatch picks on archetype). Three epic trees
-  claim no key: Oracle Priest's Aura of Radiance is painted `ACTIVE` but fires
-  off a Holy Light cast, Colossus Protector's root is a flat passive, and
-  Colossus Slayer's Parry is an attack+block input combo (`ParryPayload`, on the
-  rising edge of both keys being *down* — it consumes no clicks, so normal
-  attacking and normal blocking are untouched).
+  Strike or Deadeye, slot 5 Magic Armaments, Death Mark or the Colossus
+  Slayer's Parry, slot 6 the Dark Ritual or Titan's Leap — the dispatch picks
+  on archetype). Two epic trees claim no key: Oracle Priest's Aura of Radiance
+  is painted `ACTIVE` but fires off a Holy Light cast, and Colossus Protector's
+  root is a flat passive.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
@@ -308,20 +305,15 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    check in `applyItemBlocking`) forces the angle to 0 so a Bulwark holder blocks
    from every direction.
 
-**Blocking without holding block.** `getItemBlockingWith` is vanilla's single
-definition of "is this entity blocking, and with what" — `isBlocking`,
-`applyItemBlocking` and every pose read it — so Free Hand answers *it* rather
-than re-implementing blocking. `archetypes$freeHand` returns the shield in the
-player's other hand while the used-item slot is busy with something else
-(vanilla has one such slot per entity, so eating and blocking cannot both be
-"the item I am using"), which puts the arc test, the durability, the block
-sound and Iron Spikes/Braced back on unchanged. Two companion
-`@ModifyExpressionValue`s repair vanilla's assumption that the blocking item
-and the item in use are the same one: `archetypes$freeHandDurability` charges
-`applyItemBlocking`'s wear to the shield's hand, and
-`archetypes$freeHandBlockSound` hands `hurtServer` the shield to read
-`onBlocked` off. The mixin is common because the client asks the same question
-to pose the player.
+**A guard that cannot be broken.** Every way vanilla knocks a shield aside —
+an axe hit through `Player.blockUsingItem`, the Warden's own five seconds, and
+this mod's Unstoppable Force — ends at one call, `BlocksAttacks.disable`.
+Colossus Protector's Immovable Object refuses it there (`BlocksAttacksMixin`,
+`HEAD`, cancellable, asking `ColossusProtector.immovableObject`), which is what
+lets the node promise "by normal means" without keeping a list of attackers.
+Our own Unstoppable Force is deliberately not exempted: the two absolutes meet
+as the clash instead (`ProtectorClash`, fired from
+`archetypes$unstoppableForce`).
 
 Other mixins: `PlayerMixin` (XP mirror, the `canGlide` hook that lets a
 Magic Armaments channel glide in an elytra's place — declared common because
@@ -345,9 +337,9 @@ around vanilla's ticked and instantaneous effect application), and
 `LivingEntityAccessor`.
 Client-side: `AvatarRendererMixin` (armor hiding,
 ability poses), `LocalPlayerMixin`, `MinecraftMixin` (charged-swing announce,
-plus the `handleKeybinds` head that spends attack and use clicks before the
-`isUsingItem()` arm swallows them — the whole of Free Hand and Immovable
-Object, since nothing server-side forbids either), `HudMixin` (the night
+plus the `handleKeybinds` head that spends the attack click before the
+`isUsingItem()` arm swallows it — the whole of Free Hand, since nothing
+server-side forbids attacking while blocking), `HudMixin` (the night
 form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
@@ -393,7 +385,7 @@ tick.
 | `DeadeyeOverlay` | the Deadeye stance's concentration vignette, drawn as nested fills rather than a texture |
 | `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours *and* Stalk's bone-white mark outline (the mark wins over ESP), and the two empowered active identities |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
-| `BankedHungerHud` | Well Fed's hunger above 20, gilded over the vanilla drumstick row — absorption's language, capacity past the normal maximum on the existing row |
+| `BankedHungerHud` | Well Fed's hunger above 20, as a bevelled 1px halo around the vanilla drumsticks that bank is currently backing (leftmost first, the end vanilla drains first). Anchored after `FOOD_BAR`, not `HOTBAR`, or it would draw under the row it marks; hidden in creative and spectator |
 
 **The night form's client half.** Everything the Nemesis Shadow's night form
 looks and sounds like reads the synced attachments through `NightForm`'s static

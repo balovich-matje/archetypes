@@ -365,13 +365,14 @@ public final class Deadeye {
 		}
 
 		// Punch Through: Piercing Tips' compensation with the two-point clamp
-		// removed — each armour point eats about 4%, so hand all of it back and
-		// the shot lands as if the armour were not there. Nothing against an
-		// unarmoured target, the same shape the base node has.
+		// removed — each armour point eats about 4%, so hand half of that back
+		// and the shot lands as if half the armour were not there. Nothing
+		// against an unarmoured target, the same shape the base node has.
 		if (NemesisMarksmanNodes.rank(SubTree.NEMESIS_MARKSMAN, owned,
 				NemesisMarksmanNodes.Family.PUNCH_THROUGH) > 0) {
 			float armor = (float) victim.getAttributeValue(Attributes.ARMOR);
-			multiplier *= 1.0F + Tuning.ARMOUR_POINT_DAMAGE_FRACTION * armor;
+			multiplier *= 1.0F + Tuning.ARMOUR_POINT_DAMAGE_FRACTION
+					* Tuning.PUNCH_THROUGH_ARMOUR_IGNORE * armor;
 		}
 
 		return amount * Math.min(multiplier, Tuning.DEADEYE_MAX_MULTIPLIER);

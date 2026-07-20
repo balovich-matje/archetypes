@@ -39,27 +39,35 @@ import net.minecraft.world.item.ItemStack;
  *
  * <h2>The parry, end to end</h2>
  * <ol>
- * <li>The client sees attack and block go down on the same tick and sends one
- *     {@link ParryPayload}. It consumes no clicks, so normal attacking and
- *     normal blocking are untouched — see {@code ArchetypesClient}.</li>
- * <li>{@link #open} validates the node, the archetype and the blade, and
- *     stamps a {@link Tuning#PARRY_WINDOW_TICKS}-tick window.</li>
+ * <li>The ability key goes down and the client sends the same
+ *     {@code ActiveAbilityPayload} every active rides — slot 5, the Colossus
+ *     Slayer's place among the epic keys. The dispatch in {@code Archetypes}
+ *     hands a Brawler's slot 5 to {@link #parry}. It was an attack+block combo
+ *     in the first implementation; that read the attack and use keys and so
+ *     stood between the player and normal weapon use, which is why it is a key
+ *     of its own now.</li>
+ * <li>{@link #parry} validates the node, the archetype, the blade and the
+ *     cooldown, and stamps a {@link Tuning#PARRY_WINDOW_TICKS}-tick window.</li>
  * <li>A hit arriving inside the window is a parry: {@link #tryParry}, hung off
  *     the victim's {@code hurtServer} intake next to Ghost Form and Sidestep,
  *     voids it and pays. A spell arriving inside the window never reaches
  *     {@code hurtServer} at all — {@link #parriesSpell} answers vanilla's own
  *     {@code Entity.deflection} and the shot turns around before it lands.</li>
- * <li>{@link #tickParry} lapses an unpaid window and charges the miss.</li>
+ * <li>{@link #tickParry} lapses an unpaid window and starts the cooldown.</li>
  * </ol>
  *
- * <h2>Both swing consequences are one number</h2>
- * "It will not incur a swing cooldown" and "missing a parry will incur a x2.0
- * swing cooldown" are the same field, vanilla's {@code attackStrengthTicker}:
- * set to full charge, the next swing is free; set negative, the swing has that
- * much further to climb. The server writes its own copy and sends the value to
- * the client as a {@link ParrySwingPayload} rather than letting the client
- * derive it — only the server knows whether the hit that pays for a parry ever
- * arrived.
+ * <h2>What a guess costs</h2>
+ * Read right, nothing: {@link #pay} clears {@code PARRY_READY_AT} outright, so
+ * the key answers the very next wind-up. Read wrong,
+ * {@link Tuning#PARRY_COOLDOWN_TICKS} — eight seconds off the key, and nothing
+ * done to the swing at all.
+ *
+ * <p>So only the success side touches vanilla's {@code attackStrengthTicker},
+ * and it fills it to full charge: that is the node's "no swing cooldown" half,
+ * a reward rather than the other end of a punishment. The server writes its own
+ * copy and sends the value to the client as a {@link ParrySwingPayload} rather
+ * than letting the client derive it — only the server knows whether the hit
+ * that pays for a parry ever arrived.
  */
 public final class ColossusSlayer {
 	/**
@@ -224,12 +232,11 @@ public final class ColossusSlayer {
 	// ------------------------------------------------------------------
 
 	/**
-	 * Whether this player could parry right now, i.e. whether the client
-	 * should bother sending the press at all. Decided from the SAME synced
-	 * node set the server re-validates with, the mod's rule for every
-	 * client-side input gate.
+	 * Whether this player could parry right now: the archetype, the node, and a
+	 * blade to parry with. The weapon gate is the same {@code ModItems} pair the
+	 * riposte branches on, so nothing can open a window it has no answer for.
 	 */
-	public static boolean canParry(final Player player) {
+	private static boolean canParry(final Player player) {
 		if (ModAttachments.get(player) != Archetype.STRENGTH
 				|| rank(player, Family.PARRY) <= 0) {
 			return false;
@@ -239,32 +246,33 @@ public final class ColossusSlayer {
 		return ModItems.isSword(held) || ModItems.isGreatsword(held);
 	}
 
-	/** Attack and block came down together: open the window, or ignore the
-	 * press if one is already open (a held combo is one parry, not sixty). */
-	public static void open(final ServerPlayer player) {
-		if (!canParry(player) || isWindowOpen(player) || lockedOut(player)) {
+	/**
+	 * The ability key: open the window. Ignored while one is already open — a
+	 * held key is one parry, not sixty — and while the miss cooldown runs.
+	 */
+	public static void parry(final ServerPlayer player) {
+		if (!canParry(player) || isWindowOpen(player) || onCooldown(player)) {
 			return;
 		}
 
 		AttachmentTarget target = (AttachmentTarget) player;
-		long now = player.level().getGameTime();
-		target.setAttached(ModAttachments.PARRY_AT, now);
-		target.setAttached(ModAttachments.PARRY_UNTIL, now + Tuning.PARRY_WINDOW_TICKS);
+		target.setAttached(ModAttachments.PARRY_UNTIL,
+				player.level().getGameTime() + Tuning.PARRY_WINDOW_TICKS);
 	}
 
-	/** A missed parry locks the input out for one penalised swing. The swing
-	 * penalty alone is not a fence: a client that presses every tick would
-	 * re-open the window the moment it lapsed and never be hittable. */
-	private static boolean lockedOut(final Player player) {
+	/** Whether the miss cooldown is still running. Re-checked server-side even
+	 * though the cooldown bar shows it: the stamp is the only fence there is,
+	 * and a client that presses every tick would otherwise stand in a permanent
+	 * window. */
+	private static boolean onCooldown(final Player player) {
 		Long readyAt = ((AttachmentTarget) player).getAttached(ModAttachments.PARRY_READY_AT);
 		return readyAt != null && player.level().getGameTime() < readyAt;
 	}
 
-	/** Drop a running window and its lockout — the respec path. */
+	/** Drop a running window and its cooldown — the respec path. */
 	public static void clearWindow(final ServerPlayer player) {
 		AttachmentTarget target = (AttachmentTarget) player;
 		target.removeAttached(ModAttachments.PARRY_UNTIL);
-		target.removeAttached(ModAttachments.PARRY_AT);
 		target.removeAttached(ModAttachments.PARRY_READY_AT);
 	}
 
@@ -273,7 +281,9 @@ public final class ColossusSlayer {
 		return until != null && player.level().getGameTime() < until;
 	}
 
-	/** The window lapsed unpaid: charge the miss. */
+	/** The window lapsed unpaid: start the cooldown. The whole price of a wrong
+	 * guess — the swing is not touched, so a miss costs the key and not the
+	 * fight. */
 	private static void tickParry(final ServerPlayer player) {
 		AttachmentTarget target = (AttachmentTarget) player;
 		Long until = target.getAttached(ModAttachments.PARRY_UNTIL);
@@ -282,31 +292,20 @@ public final class ColossusSlayer {
 			return;
 		}
 
-		long started = closeWindow(player);
-		float delay = player.getCurrentItemAttackStrengthDelay();
+		closeWindow(player);
+		target.setAttached(ModAttachments.PARRY_READY_AT,
+				player.level().getGameTime() + Tuning.PARRY_COOLDOWN_TICKS);
 
-		// Full charge must arrive at (press + factor x delay). The ticker
-		// climbs one a tick, so the value that lands it exactly there is
-		// now - press - delay — a negative number, and the deeper the window
-		// ran the deeper it starts.
-		setSwingTicker(player, (int) (player.level().getGameTime() - started
-				- delay * (Tuning.PARRY_MISS_SWING_FACTOR - 1.0F)));
-
-		// The same beat the swing needs to recover, as an input fence.
-		((AttachmentTarget) player).setAttached(ModAttachments.PARRY_READY_AT,
-				player.level().getGameTime() + (long) (delay * Tuning.PARRY_MISS_SWING_FACTOR));
-
+		// The whiff: the only thing that tells the player the guess was wrong
+		// before the cooldown tile starts draining.
 		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_NODAMAGE, SoundSource.PLAYERS, 0.7F, 0.6F);
 	}
 
-	/** Clears the window and returns the tick it opened on. */
-	private static long closeWindow(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long started = target.getAttached(ModAttachments.PARRY_AT);
-		target.removeAttached(ModAttachments.PARRY_UNTIL);
-		target.removeAttached(ModAttachments.PARRY_AT);
-		return started == null ? player.level().getGameTime() : started;
+	/** Drops the window without touching the cooldown, so the paid and unpaid
+	 * ends can each write their own. */
+	private static void closeWindow(final ServerPlayer player) {
+		((AttachmentTarget) player).removeAttached(ModAttachments.PARRY_UNTIL);
 	}
 
 	// ------------------------------------------------------------------
@@ -390,11 +389,17 @@ public final class ColossusSlayer {
 	}
 
 	/**
-	 * Everything a successful parry is worth, whatever was parried: the waived
-	 * swing cooldown, Riposte's Strength, Stalwart's temporary hearts, and the
-	 * blade's own voice.
+	 * Everything a successful parry is worth, whatever was parried: the key
+	 * handed straight back, the waived swing cooldown, Riposte's Strength,
+	 * Stalwart's temporary hearts, and the blade's own voice.
+	 *
+	 * <p>The cooldown stamp is REMOVED rather than left alone. Nothing sets it
+	 * on this path today, but a parry landing is exactly the moment the key must
+	 * be free, and reading that from the code should not require knowing which
+	 * other branch last wrote the stamp.
 	 */
 	private static void pay(final ServerPlayer player, final ServerLevel level) {
+		((AttachmentTarget) player).removeAttached(ModAttachments.PARRY_READY_AT);
 		setSwingTicker(player, (int) Math.ceil(player.getCurrentItemAttackStrengthDelay()));
 
 		int riposte = rank(player, Family.RIPOSTE);
@@ -502,9 +507,9 @@ public final class ColossusSlayer {
 
 	/**
 	 * Install a raw {@code attackStrengthTicker}, server-side, and tell the
-	 * owning client the same number. Vanilla only ever offers to reset the
-	 * ticker to zero — its weakest state — so both of this node's swing
-	 * consequences have to write it directly.
+	 * owning client the same number. Vanilla only ever offers to RESET the
+	 * ticker to zero — its weakest state — and a parry's reward is the opposite,
+	 * a swing already at full charge, so the field is written directly.
 	 */
 	private static void setSwingTicker(final ServerPlayer player, final int ticker) {
 		applySwingTicker(player, ticker);

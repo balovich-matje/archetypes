@@ -328,13 +328,12 @@ public final class TreeNodes {
 			};
 			case NEMESIS_SHADOW -> switch (NemesisShadowNodes.def(tree, index).family()) {
 				case DARK_RITUAL -> NodeKind.ACTIVE;
-				// The crown of the left line — ringed as a capstone.
-				case INCORPOREAL -> NodeKind.CAPSTONE;
 				default -> NodeKind.NORMAL;
 			};
-			// The five 20260720 sketches carry no capstone: their point cap
-			// does the choosing and no pair is exclusive, so each of these
-			// trees rings only the root the sketch itself marks active.
+			// The five 20260720 sketches carry no capstone, and Nemesis
+			// Shadow's ring came off with them at the author's request: the
+			// five-point cap does the choosing, and no pair in these trees is
+			// exclusive, so each rings only the root that is actually a key.
 			case NEMESIS_MARKSMAN -> switch (NemesisMarksmanNodes.def(tree, index).family()) {
 				case DEADEYE -> NodeKind.ACTIVE;
 				default -> NodeKind.NORMAL;
@@ -349,9 +348,12 @@ public final class TreeNodes {
 				case IRONCLAD -> NodeKind.ACTIVE;
 				default -> NodeKind.NORMAL;
 			};
-			// Parry is an input combo, not a key, and the sketch marks it
-			// normal — this tree wears no halo at all.
-			case COLOSSUS_SLAYER -> NodeKind.NORMAL;
+			case COLOSSUS_SLAYER -> switch (ColossusSlayerNodes.def(tree, index).family()) {
+				// The tree's one key, since the parry stopped being an
+				// attack+block combo and took slot 5 for itself.
+				case PARRY -> NodeKind.ACTIVE;
+				default -> NodeKind.NORMAL;
+			};
 			case COLOSSUS_CRUSHER -> switch (ColossusCrusherNodes.def(tree, index).family()) {
 				case TITAN_LEAP -> NodeKind.ACTIVE;
 				default -> NodeKind.NORMAL;

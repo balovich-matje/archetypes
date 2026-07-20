@@ -513,34 +513,37 @@ public final class ModAttachments {
 	public static final AttachmentType<Long> IMMOVABLE_CUE_AT =
 			AttachmentRegistry.<Long>create(Archetypes.id("immovable_cue_at"));
 
-	// --- Colossus Slayer (epic): the parry window ---
+	/** The Protector's Immovable Object has a stamp of its own rather than
+	 * sharing the one above, and it has to: a Brawler can afford both nodes,
+	 * and the two cues sit on the same call chain in the wrong order. An axe on
+	 * a raised shield reaches {@code blockedByItem} → {@code knockback} — which
+	 * stamps the Crusher's cue — BEFORE it reaches the shield disable this one
+	 * answers, so one shared budget is not "one anvil a second between them",
+	 * it is silence for the Protector node forever. Server-side only. */
+	public static final AttachmentType<Long> IMMOVABLE_OBJECT_CUE_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("immovable_object_cue_at"));
+
+	// --- Colossus Slayer (epic): the parry ---
 	/**
-	 * Game tick a missed parry stops locking the input out. Without it a
-	 * modified client could re-open the window the tick it lapses and stand in
-	 * a permanent parry; the swing penalty alone only slows attacking, it does
-	 * not stop the next press. Server-authoritative, synced for symmetry.
+	 * Game tick the Parry key answers again — the whole price of a missed
+	 * parry, and nothing at all after a landed one. Synced like every other
+	 * ready-at stamp because the cooldown bar draws a tile from it; the server
+	 * still re-checks it, since the stamp is the only thing stopping a client
+	 * that presses every tick from standing in a permanent window.
 	 */
 	public static final AttachmentType<Long> PARRY_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("parry_ready_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
 
-	// Both are server-side only and transient, and both are read through
-	// {@link ColossusSlayer}, never directly. Nothing about a 0.3-second
-	// window is worth syncing: the client already knows it pressed the combo,
-	// and what the press was WORTH comes back as one {@link ParrySwingPayload}.
-
-	/** The game tick the open parry window closes; absent means no window. */
+	/**
+	 * The game tick the open parry window closes; absent means no window.
+	 * Server-side only and transient, and read through {@link ColossusSlayer},
+	 * never directly — nothing about a 0.4-second window is worth syncing: the
+	 * client already knows it pressed the key, and what the press was WORTH
+	 * comes back as one {@link ParrySwingPayload}.
+	 */
 	public static final AttachmentType<Long> PARRY_UNTIL =
 			AttachmentRegistry.<Long>create(Archetypes.id("parry_until"));
-
-	/**
-	 * The game tick the window opened. Kept because the miss penalty is
-	 * measured from the PRESS, not from the moment the window lapses — a
-	 * doubled swing cooldown that started six ticks late would be 2x plus the
-	 * window.
-	 */
-	public static final AttachmentType<Long> PARRY_AT =
-			AttachmentRegistry.<Long>create(Archetypes.id("parry_at"));
 
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(

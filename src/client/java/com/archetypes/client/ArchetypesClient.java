@@ -41,8 +41,9 @@ public class ArchetypesClient implements ClientModInitializer {
 	/** The ability binds: slots 0-2 are the sub-trees left to right, slot 3
 	 * is the Elementalist's capstone, slots 4-6 are the epic actives, shared
 	 * across archetypes — 4 is Lightning Strike or Deadeye, 5 is Magic
-	 * Armaments or Death Mark, 6 is the Dark Ritual or Titan's Leap. Exposed so
-	 * the cooldown bar can label its slots. */
+	 * Armaments, Death Mark or the Colossus Slayer's Parry, 6 is the Dark
+	 * Ritual or Titan's Leap. Exposed so the cooldown bar can label its
+	 * slots. */
 	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[7];
 
 	/** Our own section in the controls screen, not vanilla's Gameplay. */
@@ -66,12 +67,6 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * channel several times a second, which is the sound the author heard.
 	 * Clicks made while the key was already down are dropped here. */
 	private static final boolean[] ABILITY_KEY_HELD = new boolean[ABILITY_KEYS.length];
-
-	/** Whether attack and block were both down last tick — the Colossus
-	 * Slayer's parry combo. Read with {@code isDown}, never
-	 * {@code consumeClick}: a parry must not swallow the attack or the block,
-	 * because it happens WITH them, and the click queues belong to vanilla. */
-	private static boolean wasParryCombo;
 
 	@Override
 	public void onInitializeClient() {
@@ -195,23 +190,6 @@ public class ArchetypesClient implements ClientModInitializer {
 			}
 
 			wasDrawingBow = drawingBow;
-
-			// Parry: attack and block down on the same tick. The rising edge of
-			// the PAIR, so holding the combo is one parry and not sixty, and
-			// so a player already mining or already blocking parries the
-			// moment the second key joins. Nothing is consumed — the swing
-			// still swings and the shield still comes up — which is also why
-			// the auto-repeat trap the ability keys have does not apply here:
-			// isDown reports a state, not a queue.
-			boolean parryCombo = client.player != null
-					&& client.options.keyAttack.isDown() && client.options.keyUse.isDown();
-
-			if (parryCombo && !wasParryCombo && client.player != null
-					&& com.archetypes.ColossusSlayer.canParry(client.player)) {
-				ClientPlayNetworking.send(new com.archetypes.ParryPayload());
-			}
-
-			wasParryCombo = parryCombo;
 		});
 
 		// Seeker spells render as thrown items — the projectile carries which,
@@ -229,10 +207,14 @@ public class ArchetypesClient implements ClientModInitializer {
 		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
 				com.archetypes.Archetypes.id("mana_bar"), ManaHud::render);
 
-		// Well Fed's bank, gilded over the hunger row vanilla stops filling at
-		// twenty. Attached rather than replacing FOOD_BAR: the row underneath
-		// is still vanilla's and still says everything it always said.
-		HudElementRegistry.attachElementAfter(VanillaHudElements.HOTBAR,
+		// Well Fed's bank: a halo around the drumsticks vanilla stops filling at
+		// twenty. Attached rather than replacing FOOD_BAR, because the row
+		// underneath is still vanilla's and still says everything it always
+		// said — but attached after FOOD_BAR specifically, not after HOTBAR
+		// like the bars above. The vanilla elements run in registry order
+		// (HOTBAR, ARMOR_BAR, HEALTH_BAR, FOOD_BAR, AIR_BAR), so anchoring to
+		// the hotbar would have drawn the mark UNDER the icons it marks.
+		HudElementRegistry.attachElementAfter(VanillaHudElements.FOOD_BAR,
 				com.archetypes.Archetypes.id("banked_hunger"), BankedHungerHud::render);
 
 		// Sunlight through a vampire's eyes. On MISC_OVERLAYS like Specialities'

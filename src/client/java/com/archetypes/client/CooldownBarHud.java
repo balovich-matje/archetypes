@@ -369,6 +369,19 @@ public final class CooldownBarHud {
 					ModAttachments.LEAP_READY_AT, Tuning.TITAN_LEAP_COOLDOWN_TICKS));
 		}
 
+		// The Parry shares slot 5 with Death Mark and Magic Armaments, and its
+		// tile is bright far more often than the others: a landed parry costs
+		// nothing, so only a missed one starts the eight seconds this drains.
+		var colossusSlayer = NodePurchases.owned(player, SubTree.COLOSSUS_SLAYER);
+
+		if (com.archetypes.ColossusSlayerNodes.rank(SubTree.COLOSSUS_SLAYER, colossusSlayer,
+				com.archetypes.ColossusSlayerNodes.Family.PARRY) > 0) {
+			abilities.add(new Ability(SubTree.COLOSSUS_SLAYER,
+					com.archetypes.ColossusSlayerNodes.Family.PARRY,
+					ArchetypesClient.ABILITY_KEYS[5],
+					ModAttachments.PARRY_READY_AT, Tuning.PARRY_COOLDOWN_TICKS));
+		}
+
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
 
 		if (com.archetypes.OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, oracleWiz,

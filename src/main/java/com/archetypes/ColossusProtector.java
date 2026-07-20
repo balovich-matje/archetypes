@@ -26,15 +26,17 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BlocksAttacks;
 
+import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import org.jspecify.annotations.Nullable;
 
 /**
  * Every node of the epic Colossus-Protector tree. The sketch dropped the
  * planted-Aegis active the design doc drafted, so this tree has no ability key
- * and no timed window: it is six passives that are simply always on, and the
- * whole class is stateless — nothing here allocates an attachment, and every
- * answer is recomputed from node ownership and what is in the player's hands.
+ * and no timed window: it is six passives that are simply always on, and every
+ * answer here is recomputed from node ownership and what is in the player's
+ * hands. The one piece of state is Immovable Object's cue stamp, and even that
+ * is borrowed rather than owned (see {@link #immovableObject}).
  *
  * <p>The hooks that call in live where the mod already keeps hooks of their
  * shape: the armour multiplier is a transient attribute modifier asserted from
@@ -261,91 +263,77 @@ public final class ColossusProtector {
 		return null;
 	}
 
-	/**
-	 * Free Hand: the shield a player is no longer holding up, because both
-	 * hands went to do something else.
-	 *
-	 * <p>This is the half of the node the server owns. Vanilla has exactly one
-	 * item-in-use slot per entity, so eating and blocking cannot both be "the
-	 * item I am using" — starting the meal is what drops the guard. Rather than
-	 * fake a second use, {@code getItemBlockingWith} is answered with the
-	 * shield in the other hand for as long as the meal runs, which puts the
-	 * whole of vanilla's blocking back on: the arc, the durability, the block
-	 * sound, Iron Spikes and Braced, and the shield-up pose every client draws.
-	 *
-	 * <p>The shield's own {@code block_delay_seconds} is still paid, measured
-	 * on the action that displaced it — a quarter second of chewing before the
-	 * guard is up again, exactly as if it had been raised.
-	 *
-	 * @return the shield that is still blocking, or null if none is
-	 */
-	public static @Nullable ItemStack freeHandBlock(final Player player) {
-		InteractionHand hand = freeHandBlockHand(player);
-		return hand == null ? null : player.getItemInHand(hand);
-	}
-
-	/**
-	 * Which hand {@link #freeHandBlock}'s shield is in — the hand that is NOT
-	 * the one in use.
-	 *
-	 * <p>Two places downstream need it and both get it wrong without it,
-	 * because vanilla assumes the blocking item and the item in use are the
-	 * same one: {@code applyItemBlocking} charges the durability to
-	 * {@code getUsedItemHand}'s equipment slot, which would report a broken
-	 * shield against the hand holding the sandwich, and {@code hurtServer}
-	 * reads the block sound off {@code getUseItem} rather than off what
-	 * actually blocked.
-	 */
-	public static @Nullable InteractionHand freeHandBlockHand(final Player player) {
-		// Cheapest test first, and deliberately: this runs inside
-		// isBlocking(), which every render frame asks of every player, while
-		// the node lookup allocates.
-		if (!player.isUsingItem()) {
-			return null;
-		}
-
-		InteractionHand busy = player.getUsedItemHand();
-
-		// A player who is simply blocking is vanilla's business, not ours.
-		if (player.getItemInHand(busy).has(DataComponents.BLOCKS_ATTACKS)
-				|| rank(player, Family.FREE_HAND) <= 0) {
-			return null;
-		}
-
-		InteractionHand free = busy == InteractionHand.MAIN_HAND
-				? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
-		ItemStack other = player.getItemInHand(free);
-		BlocksAttacks blocksAttacks = other.get(DataComponents.BLOCKS_ATTACKS);
-
-		if (blocksAttacks == null || player.getCooldowns().isOnCooldown(other)
-				|| player.getTicksUsingItem() < blocksAttacks.blockDelayTicks()) {
-			return null;
-		}
-
-		return free;
-	}
-
-	/**
-	 * Whether this player's hands stay free while they block — the client-side
-	 * half of Free Hand and of Immovable Object.
-	 *
-	 * <p>Blocking locks nothing out on the server: {@code Player.attack},
-	 * {@code handleUseItemOn} and {@code handleUseItem} all run happily while
-	 * an item is in use, and nothing in them stops the use. The lockout is
-	 * purely {@code Minecraft.handleKeybinds}, which swallows every attack and
-	 * use click while {@code isUsingItem()}. So these two nodes are input
-	 * permissions, checked against the client's synced copy of {@code
-	 * PURCHASED} — the same mirror that paints a node buyable.
-	 */
+	/** Whether this player is blocking at all, by vanilla's single definition of
+	 * it — {@code getItemBlockingWith} is what {@code isBlocking}, the block
+	 * arc and every blocking pose read. */
 	public static boolean blocking(final Player player) {
 		return player.getItemBlockingWith() != null;
 	}
 
-	public static boolean canUseWhileBlocking(final Player player) {
+	/**
+	 * Free Hand: a raised shield no longer costs the sword arm.
+	 *
+	 * <p>There is nothing to lift on the server, because the server never
+	 * forbade it: {@code Player.attack} runs happily while an item is in use,
+	 * and nothing in it ends the use. The whole prohibition is the {@code
+	 * if (isUsingItem())} arm of {@code Minecraft.handleKeybinds}, which drains
+	 * the attack-click queue into an empty loop and throws it away. So the node
+	 * is an input permission and nothing else, answered against the client's
+	 * synced copy of {@code PURCHASED} — the same mirror that paints a node
+	 * buyable — and consumed by {@code MinecraftMixin}.
+	 */
+	public static boolean canAttackWhileBlocking(final Player player) {
 		return rank(player, Family.FREE_HAND) > 0 && blocking(player);
 	}
 
-	public static boolean canAttackWhileBlocking(final Player player) {
-		return rank(player, Family.IMMOVABLE_OBJECT) > 0 && blocking(player);
+	/**
+	 * Immovable Object: a guard that normal means cannot break.
+	 *
+	 * <p>Asked from the head of {@link BlocksAttacks#disable}, which is the one
+	 * choke point every shield-disable in the game passes through: vanilla
+	 * reaches it from {@code Player.blockUsingItem}, fed by whatever the
+	 * attacker's {@code getSecondsToDisableBlocking} returns — an axe's, the
+	 * Warden's — and this mod's Unstoppable Force calls it by hand for the same
+	 * reason. Refusing there is what lets the node promise "by normal means"
+	 * without naming a single attacker: it is not a list of exceptions to keep
+	 * up to date, and anything that learns to break a guard later is covered
+	 * the day it lands.
+	 *
+	 * <p>Our own Colossus Crusher is deliberately NOT exempted. Two epic
+	 * capstones that both claim to be absolute have to meet somewhere, and the
+	 * meeting is authored as its own event on the Crusher's hook rather than as
+	 * a quiet win for whoever we special-cased here.
+	 *
+	 * <p>Cued, and rate-limited, for {@code TitansLeap.immovableCue}'s reason:
+	 * a node whose whole effect is that nothing happened is invisible without
+	 * one. On a stamp of its own, not the Crusher Immovable's: the two nodes
+	 * are both affordable out of one epic pool, and the shield-block path
+	 * stamps the Crusher's cue first, so sharing meant this cue never fired at
+	 * all for the player who owned both.
+	 *
+	 * @return true if the disable must not happen
+	 */
+	public static boolean immovableObject(final ServerPlayer player, final ServerLevel level) {
+		if (rank(player, Family.IMMOVABLE_OBJECT) <= 0) {
+			return false;
+		}
+
+		AttachmentTarget target = (AttachmentTarget) player;
+		long now = level.getGameTime();
+		Long last = target.getAttached(ModAttachments.IMMOVABLE_OBJECT_CUE_AT);
+
+		if (last == null || now - last >= Tuning.IMMOVABLE_CUE_PERIOD_TICKS) {
+			target.setAttached(ModAttachments.IMMOVABLE_OBJECT_CUE_AT, now);
+
+			// The shield's own note, dropped an octave: the guard held, and it
+			// held harder than a block normally does.
+			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.9F, 0.5F);
+			level.sendParticles(ParticleTypes.CRIT,
+					player.getX(), player.getY() + 1.0, player.getZ(), 10, 0.3, 0.3, 0.3, 0.1);
+			ProcIndicators.send(player, SubTree.COLOSSUS_PROTECTOR, Family.IMMOVABLE_OBJECT);
+		}
+
+		return true;
 	}
 }
