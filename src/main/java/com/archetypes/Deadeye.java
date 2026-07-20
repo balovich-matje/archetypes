@@ -371,7 +371,7 @@ public final class Deadeye {
 		if (NemesisMarksmanNodes.rank(SubTree.NEMESIS_MARKSMAN, owned,
 				NemesisMarksmanNodes.Family.PUNCH_THROUGH) > 0) {
 			float armor = (float) victim.getAttributeValue(Attributes.ARMOR);
-			multiplier *= 1.0F + 0.04F * armor;
+			multiplier *= 1.0F + Tuning.ARMOUR_POINT_DAMAGE_FRACTION * armor;
 		}
 
 		return amount * Math.min(multiplier, Tuning.DEADEYE_MAX_MULTIPLIER);

@@ -106,7 +106,8 @@ public final class MarksmanCombat {
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.PIERCING_TIPS) > 0) {
 			float armor = (float) victim.getAttributeValue(
 					net.minecraft.world.entity.ai.attributes.Attributes.ARMOR);
-			result += amount * 0.04F * Math.min(Tuning.PIERCING_TIPS_ARMOR, armor);
+			result += amount * Tuning.ARMOUR_POINT_DAMAGE_FRACTION
+					* Math.min(Tuning.PIERCING_TIPS_ARMOR, armor);
 		}
 
 		int pinning = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.PINNING);

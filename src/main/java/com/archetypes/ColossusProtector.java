@@ -62,9 +62,11 @@ public final class ColossusProtector {
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				if (ModAttachments.get(player) == Archetype.STRENGTH) {
-					ironclad(player);
-				}
+				// Every player, not just Brawlers: revoking the multiplier is
+				// this call's job, and a player whose archetype was wiped
+				// (Amnesia II, the creative reset) would never be visited
+				// again and would keep x1.5 armour for the session.
+				ironclad(player);
 			}
 		});
 	}

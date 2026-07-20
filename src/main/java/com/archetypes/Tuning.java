@@ -262,6 +262,17 @@ public final class Tuning {
 	public static final int FOCUS_REFUND_TICKS = 200;
 	/** Piercing Tips: how many armor points ranged shots pretend away. */
 	public static final float PIERCING_TIPS_ARMOR = 2.0F;
+	/**
+	 * The damage fraction one armour point eats, used to hand that fraction
+	 * back so a shot lands as if the armour were not there — Piercing Tips
+	 * pretends away {@link #PIERCING_TIPS_ARMOR} points, Punch Through all of
+	 * them. An approximation of vanilla's own curve
+	 * ({@code CombatRules.getDamageAfterAbsorb}), which is exactly 4% per point
+	 * only at zero armour toughness; against toughness the compensation
+	 * slightly overshoots, and {@link #DEADEYE_MAX_MULTIPLIER} is the fence
+	 * around the product.
+	 */
+	public static final float ARMOUR_POINT_DAMAGE_FRACTION = 0.04F;
 
 	// --- Agility: Invisibility ---
 	public static final int INVIS_TICKS = 160;
@@ -997,7 +1008,7 @@ public final class Tuning {
 	 * it being a free 75% resistance in a party.
 	 *
 	 * <p>What counts as magical is the {@code archetypes:magical} damage-type
-	 * tag and, for healing, {@link ColossusSlayer#isMagicalHealing}.
+	 * tag and, for healing, {@link ColossusSlayer#barbarianHealing}.
 	 */
 	public static final float BARBARIAN_MAGIC_CUT_PER_RANK = 0.375F;
 

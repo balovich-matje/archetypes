@@ -106,10 +106,13 @@ public final class ColossusSlayer {
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				if (ModAttachments.get(player) == Archetype.STRENGTH) {
-					tickStance(player);
-					tickParry(player);
-				}
+				// Run for every player, not just Brawlers: revoking Blade
+				// Master is this call's job, and an archetype dropped by
+				// Amnesia II or the creative reset would otherwise skip the
+				// player forever and strand both modifiers (AgilityTicker's
+				// lesson, and RadianceAura's before it).
+				tickStance(player);
+				tickParry(player);
 			}
 		});
 	}
