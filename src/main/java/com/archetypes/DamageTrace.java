@@ -510,8 +510,13 @@ public final class DamageTrace {
 		int flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned,
 				AssassinNodes.Family.SHADOW_FLURRY);
 		float flurryFactor = stepping && flurry > 0 ? Tuning.SHADOW_FLURRY_MULTIPLIER : 1.0F;
+		// Three-way, like Twin Fangs below it: unowned, owned-but-not-stepping,
+		// and fired. The two-way version claimed "not a Shadow Step strike" on
+		// the line where it HAD fired off a Shadow Step, which is the one thing
+		// a trace must never do — contradict its own verdict.
 		factor(frame, AssassinNodes.Family.SHADOW_FLURRY.nameKey(), stepping && flurry > 0,
-				flurryFactor, flurry > 0 ? notStepped : note("unowned"));
+				flurryFactor, flurry <= 0 ? note("unowned")
+						: !stepping ? notStepped : note("stepped"));
 		product *= flurryFactor;
 
 		int fangs = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.TWIN_FANGS);

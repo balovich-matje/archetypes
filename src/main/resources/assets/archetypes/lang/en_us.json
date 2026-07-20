@@ -541,6 +541,7 @@
 	"commands.archetypes.trace.note.player": "target is a player",
 	"commands.archetypes.trace.note.player_only": "target is not a player and is above the execute gate",
 	"commands.archetypes.trace.note.not_step": "not a Shadow Step strike",
+	"commands.archetypes.trace.note.stepped": "Shadow Step strike",
 	"commands.archetypes.trace.note.night_form": "night form active",
 	"commands.archetypes.trace.note.no_night_form": "not in night form",
 	"commands.archetypes.trace.note.offhand": "off-hand %s vs main %s",
