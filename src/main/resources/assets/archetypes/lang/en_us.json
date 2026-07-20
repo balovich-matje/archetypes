@@ -502,5 +502,11 @@
 	"node.archetypes.colossus_crusher.bulwark": "Bulwark",
 	"node.archetypes.colossus_crusher.bulwark.desc": "While Battle Trance has any health banked: incoming damage reduced 20/40%. Battle Trance's cap increased by 3/6 hearts.",
 	"node.archetypes.colossus_crusher.siegebreaker": "Unstoppable Force",
-	"node.archetypes.colossus_crusher.siegebreaker.desc": "Your mace and unarmed attacks cannot be blocked, and the shield raised against them is knocked aside for 5 seconds."
+	"node.archetypes.colossus_crusher.siegebreaker.desc": "Your mace and unarmed attacks cannot be blocked, and the shield raised against them is knocked aside for 5 seconds.",
+
+	"tag.item.archetypes.daggers": "Daggers",
+	"tag.item.archetypes.greatswords": "Greatswords",
+	"tag.item.archetypes.wands": "Wands",
+	"tag.item.archetypes.meat": "Meat",
+	"tag.item.archetypes.fruit": "Fruit"
 }
