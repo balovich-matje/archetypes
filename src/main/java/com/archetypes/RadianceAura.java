@@ -205,7 +205,7 @@ public final class RadianceAura {
 					// Friendly means anything not hostile — other players and
 					// tamed animals included, and the caster standing at the
 					// centre of their own aura.
-					creature.heal(amount);
+					ColossusSlayer.magicalHeal(creature, amount);
 				}
 			}
 		} finally {

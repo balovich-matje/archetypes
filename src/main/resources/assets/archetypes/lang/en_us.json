@@ -480,7 +480,7 @@
 	"node.archetypes.colossus_protector.immovable_object": "Immovable Object",
 	"node.archetypes.colossus_protector.immovable_object.desc": "You can hold your shield up and swing your weapon at the same time.",
 	"node.archetypes.colossus_slayer.parry": "Parry",
-	"node.archetypes.colossus_slayer.parry.desc": "You can now parry melee attackers by pressing the attack and block buttons at the same time. Sword parries reflect damage back to melee attackers and hit them with your normal attack. Greatsword parries automatically use a Decimate instead.",
+	"node.archetypes.colossus_slayer.parry.desc": "You can now parry melee attackers by pressing the attack and block buttons at the same time. Sword parries reflect damage back to melee attackers and hit them with your normal attack. Greatsword parries automatically use a Decimate instead. A parry leaves you no swing cooldown; a miss doubles the next one.",
 	"node.archetypes.colossus_slayer.barbarian": "Barbarian",
 	"node.archetypes.colossus_slayer.barbarian.desc": "You take 37.5/75% less magical damage and healing from all sources.",
 	"node.archetypes.colossus_slayer.blade_master": "Blade Master",

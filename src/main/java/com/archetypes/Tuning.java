@@ -972,4 +972,60 @@ public final class Tuning {
 	 */
 	public static final float INSTINCTIVE_GUARD_PER_RANK = 0.25F;
 
+	// --- Colossus Slayer (epic) ---
+
+	/**
+	 * The parry window: 0.3 seconds from the attack+block press, the author's
+	 * "generous window". Six ticks is generous by fighting-game standards and
+	 * still under the ~100ms round trip a hit takes to arrive, so a parry
+	 * timed against a mob's wind-up lands and a mashed one does not.
+	 */
+	public static final int PARRY_WINDOW_TICKS = 6;
+
+	/**
+	 * What a missed parry costs: the swing timer is set back so full charge
+	 * arrives {@code 2.0 x} the weapon's normal delay after the press. This is
+	 * the whole anti-spam fence — Parry has no cooldown of its own, so the
+	 * only price of a wrong guess is the swing you cannot make.
+	 */
+	public static final float PARRY_MISS_SWING_FACTOR = 2.0F;
+
+	/**
+	 * Barbarian: 37.5% of magical damage AND magical healing cut per rank, so
+	 * rank 2 is the author's 75%. It is deliberately symmetrical — the node
+	 * that shrugs off a Seeker also shrugs off a Priest, which is what stops
+	 * it being a free 75% resistance in a party.
+	 *
+	 * <p>What counts as magical is the {@code archetypes:magical} damage-type
+	 * tag and, for healing, {@link ColossusSlayer#isMagicalHealing}.
+	 */
+	public static final float BARBARIAN_MAGIC_CUT_PER_RANK = 0.375F;
+
+	/**
+	 * Blade Master: 20% off a greatsword's swing time per rank. Applied as an
+	 * ATTACK_SPEED multiplier of {@code 1 / (1 - cut) - 1}, so the number here
+	 * is the swing time the description names, not the attack speed — rank 2
+	 * is 40% off the time, i.e. x1.667 the rate.
+	 */
+	public static final float BLADE_MASTER_SWING_CUT_PER_RANK = 0.20F;
+
+	/** Blade Master: +20% sword attack damage per rank. An ATTACK_DAMAGE
+	 * modifier held while a sword is in hand, so Bladestorm, Blade Dance and
+	 * every other active that reads the attribute inherits it. */
+	public static final float BLADE_MASTER_SWORD_DAMAGE_PER_RANK = 0.20F;
+
+	/** Riposte: two seconds of Strength off a successful parry. */
+	public static final int RIPOSTE_STRENGTH_TICKS = 40;
+	/** Riposte: Strength V at rank 1, X at rank 2 — amplifier {@code 5 x rank
+	 * - 1}. Two seconds is the fence: it is one follow-up swing, not a buff. */
+	public static final int RIPOSTE_AMPLIFIER_STEP = 5;
+
+	/** Stalwart: eight seconds of temporary hearts off a successful parry. */
+	public static final int STALWART_TICKS = 160;
+	/** Stalwart: Absorption's own step is 4 health per amplifier, i.e. exactly
+	 * the author's 2 hearts a parry. */
+	public static final float STALWART_ABSORPTION_STEP = 4.0F;
+	/** Stalwart: amplifier 4 is 20 health — the author's 10-heart ceiling. */
+	public static final int STALWART_MAX_AMPLIFIER = 4;
+
 }

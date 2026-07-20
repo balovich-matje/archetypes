@@ -36,8 +36,10 @@ public class Archetypes implements ModInitializer {
 		NightFormTicker.initialize();
 		RadianceAura.initialize();
 		ColossusProtector.initialize();
+		ColossusSlayer.initialize();
 
 		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
+		PayloadTypeRegistry.clientboundPlay().register(ParrySwingPayload.TYPE, ParrySwingPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(BuyNodePayload.TYPE, BuyNodePayload.CODEC);
@@ -47,6 +49,7 @@ public class Archetypes implements ModInitializer {
 		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(DisengagePayload.TYPE, DisengagePayload.CODEC);
 		PayloadTypeRegistry.serverboundPlay().register(NightDashPayload.TYPE, NightDashPayload.CODEC);
+		PayloadTypeRegistry.serverboundPlay().register(ParryPayload.TYPE, ParryPayload.CODEC);
 
 		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
@@ -152,6 +155,11 @@ public class Archetypes implements ModInitializer {
 
 		ServerPlayNetworking.registerGlobalReceiver(NightDashPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> NightForm.dash(context.player())));
+
+		// Parry: attack and block reported together. The client consumes no
+		// clicks to say so, so a press that buys nothing costs nothing either.
+		ServerPlayNetworking.registerGlobalReceiver(ParryPayload.TYPE, (payload, context) -> context
+				.server().execute(() -> ColossusSlayer.open(context.player())));
 
 		// The greatsword is strictly two-handed: while it's in the main hand
 		// the offhand is dead weight — no shields, no food, no blocks from it.

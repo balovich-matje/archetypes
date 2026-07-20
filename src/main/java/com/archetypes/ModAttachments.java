@@ -513,6 +513,25 @@ public final class ModAttachments {
 	public static final AttachmentType<Long> IMMOVABLE_CUE_AT =
 			AttachmentRegistry.<Long>create(Archetypes.id("immovable_cue_at"));
 
+	// --- Colossus Slayer (epic): the parry window ---
+	// Both are server-side only and transient, and both are read through
+	// {@link ColossusSlayer}, never directly. Nothing about a 0.3-second
+	// window is worth syncing: the client already knows it pressed the combo,
+	// and what the press was WORTH comes back as one {@link ParrySwingPayload}.
+
+	/** The game tick the open parry window closes; absent means no window. */
+	public static final AttachmentType<Long> PARRY_UNTIL =
+			AttachmentRegistry.<Long>create(Archetypes.id("parry_until"));
+
+	/**
+	 * The game tick the window opened. Kept because the miss penalty is
+	 * measured from the PRESS, not from the moment the window lapses — a
+	 * doubled swing cooldown that started six ticks late would be 2x plus the
+	 * window.
+	 */
+	public static final AttachmentType<Long> PARRY_AT =
+			AttachmentRegistry.<Long>create(Archetypes.id("parry_at"));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),

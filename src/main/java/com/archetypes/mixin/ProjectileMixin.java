@@ -89,8 +89,17 @@ public abstract class ProjectileMixin {
 			return;
 		}
 
-		if (ProtectorNodes.rank(SubTree.PROTECTOR, NodePurchases.owned(player, SubTree.PROTECTOR),
-				ProtectorNodes.Family.REFLECT) <= 0) {
+		// Two nodes reach this hook and they agree about what a returned shot
+		// is: the Protector's Reflection off a raised shield, and the Colossus
+		// Slayer's Spell Reflect off an open parry window (EntityMixin answers
+		// vanilla's deflection test so the spell is deflected in the first
+		// place). Only the aftermath differs.
+		boolean reflect = ProtectorNodes.rank(SubTree.PROTECTOR,
+				NodePurchases.owned(player, SubTree.PROTECTOR),
+				ProtectorNodes.Family.REFLECT) > 0;
+		boolean parried = com.archetypes.ColossusSlayer.parriesSpell(player, self);
+
+		if (!reflect && !parried) {
 			return;
 		}
 
@@ -108,6 +117,15 @@ public abstract class ProjectileMixin {
 				.setAttached(com.archetypes.ModAttachments.REFLECT_AIM, aim.scale(speed));
 		self.setOwner(player);
 
+		// A parried spell is deflected BEFORE its hit handler runs, so there is
+		// no post-deflect drop to dodge and the aim can simply be flown — the
+		// attachment above is an arrow's contract with AbstractArrowMixin and
+		// nothing else consumes it.
+		if (parried && !(self instanceof AbstractArrow)) {
+			self.setDeltaMovement(aim.scale(speed));
+			self.needsSync = true;
+		}
+
 		ServerLevel level = (ServerLevel) self.level();
 		level.sendParticles(ParticleTypes.CRIT, self.getX(), self.getY(), self.getZ(),
 				6, 0.1, 0.1, 0.1, 0.05);
@@ -119,6 +137,13 @@ public abstract class ProjectileMixin {
 					* Tuning.REFLECT_DAMAGE_FACTOR);
 		}
 
-		com.archetypes.ProcIndicators.send(player, SubTree.PROTECTOR, ProtectorNodes.Family.REFLECT);
+		if (reflect) {
+			com.archetypes.ProcIndicators.send(player, SubTree.PROTECTOR,
+					ProtectorNodes.Family.REFLECT);
+		}
+
+		if (parried) {
+			com.archetypes.ColossusSlayer.onSpellParried(player, level);
+		}
 	}
 }

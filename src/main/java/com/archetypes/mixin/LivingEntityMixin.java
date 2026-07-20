@@ -890,6 +890,55 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * Parry: a hit landing inside the Colossus Slayer's window is voided, and
+	 * pays. A cancelling inject rather than a shaper because a parry is not a
+	 * discount — the blow does not happen.
+	 *
+	 * <p>Ordered after the shapers only by accident of file position; it does
+	 * not matter, because the amount a sword parry sends back is read from the
+	 * argument at HEAD either way, and every shaper on this funnel that could
+	 * touch it belongs to a different archetype.
+	 */
+	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	private void archetypes$parry(final ServerLevel level, final DamageSource source,
+			final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if ((Object) this instanceof ServerPlayer player
+				&& com.archetypes.ColossusSlayer.tryParry(player, level, source, amount)) {
+			cir.setReturnValue(false);
+		}
+	}
+
+	/**
+	 * Barbarian's damage half: a share of every magical hit, gone. Mana
+	 * Shield's shape — a victim-side shaper on the shared {@code amount}, so it
+	 * composes multiplicatively with whatever else shaped the blow.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$barbarian(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		return (Object) this instanceof ServerPlayer player
+				? com.archetypes.ColossusSlayer.barbarianDamage(player, source, amount)
+				: amount;
+	}
+
+	/**
+	 * Barbarian's healing half. {@code heal} is vanilla's single healing
+	 * funnel, so the node lands on potions, Priest light and Oracle mending at
+	 * once — but only on the heals declared magical (see
+	 * {@code ColossusSlayer}'s magical-heal flag), which is what leaves food,
+	 * natural regeneration and Taste of Blood whole.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "heal",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$barbarianHealing(final float amount) {
+		return (Object) this instanceof ServerPlayer player
+				? com.archetypes.ColossusSlayer.barbarianHealing(player, amount)
+				: amount;
+	}
+
+	/**
 	 * Free Hand: the shield stays up while the hands eat.
 	 *
 	 * <p>Cancelling at the head of {@code getItemBlockingWith} rather than

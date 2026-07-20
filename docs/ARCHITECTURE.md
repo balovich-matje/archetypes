@@ -59,11 +59,15 @@ in `Archetypes.onInitialize`:
 | `SpellChannelPayload` | one Flamethrower channel tick while the key is held |
 | `MeleeSwingPayload` | announce a charged swing (the greatsword whoosh) |
 | `RushPayload` / `DisengagePayload` | Shield Rush / the Marksman's Acrobatics roll (`AgilityActives.acrobatics`; the payload keeps its older Disengage name) |
+| `ParryPayload` | attack and block went down together (Colossus Slayer's Parry); the client reports the key edge and consumes no clicks |
 
 Clientbound (server → client): `PassiveProcPayload` — a fire-and-forget "this
-passive just fired" flash for `ProcIndicatorHud`. Everything else the client
-needs (levels, cooldowns, mana) rides the synced attachments, so there is no
-bespoke state packet.
+passive just fired" flash for `ProcIndicatorHud` — and `ParrySwingPayload`, the
+raw `attackStrengthTicker` a parry earned or a missed parry cost, which the
+client installs verbatim (the server is the only side that knows whether the hit
+paying for a parry ever arrived, so this one number cannot be derived).
+Everything else the client needs (levels, cooldowns, mana) rides the synced
+attachments, so there is no bespoke state packet.
 
 `ActiveAbilityPayload` carries a **slot index, not an ability id**: slots 0–2 are
 the archetype's three sub-trees in screen order, slot 3 is the capstone key. The
@@ -176,7 +180,9 @@ excluded by a capstone, under the per-tree cap, and the player has a point free.
   Ritual or Titan's Leap — the dispatch picks on archetype). Three epic trees
   claim no key: Oracle Priest's Aura of Radiance is painted `ACTIVE` but fires
   off a Holy Light cast, Colossus Protector's root is a flat passive, and
-  Colossus Slayer's Parry is an attack+block input combo.
+  Colossus Slayer's Parry is an attack+block input combo (`ParryPayload`, on the
+  rising edge of both keys being *down* — it consumes no clicks, so normal
+  attacking and normal blocking are untouched).
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
@@ -330,7 +336,13 @@ hardcoded 20 and holds no reference to its owner, so the top-up is wrapped
 around `FoodData.eat` where the player is a parameter), `ConsumableMixin`
 (Hearty Meal, injected at `onConsume`'s `stack.consume` call: late enough that
 milk's clear-everything cannot wipe the Regeneration it grants, early enough
-that the stack still knows what it is), and `LivingEntityAccessor`.
+that the stack still knows what it is), `EntityMixin` (Spell Reflect answers
+vanilla's own `Entity.deflection`, so a parried spell turns around before it
+lands and the return-to-sender is the Protector's Reflection unchanged),
+`MobEffectInstanceMixin` and `HealOrHarmMobEffectMixin` (which heals count as
+magic for Barbarian — healing carries no `DamageSource`, so the flag is raised
+around vanilla's ticked and instantaneous effect application), and
+`LivingEntityAccessor`.
 Client-side: `AvatarRendererMixin` (armor hiding,
 ability poses), `LocalPlayerMixin`, `MinecraftMixin` (charged-swing announce,
 plus the `handleKeybinds` head that spends attack and use clicks before the

@@ -29,6 +29,18 @@ public final class SlayerActives {
 	 * inside your own base must never redecorate it.
 	 */
 	public static void decimate(final ServerPlayer player) {
+		decimate(player, false);
+	}
+
+	/**
+	 * @param free the Colossus Slayer's greatsword parry, which the author
+	 *     spelled out: "automatically cast Decimates will not incur a cooldown,
+	 *     and can happen while the skill is already on cooldown". So a free
+	 *     cast neither reads nor writes {@code DECIMATE_READY_AT} — a parry is
+	 *     never the swing you could not afford, and it never eats the swing you
+	 *     were saving.
+	 */
+	public static void decimate(final ServerPlayer player, final boolean free) {
 		var owned = NodePurchases.owned(player, SubTree.SLAYER);
 
 		if (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.DECIMATE) == 0
@@ -40,14 +52,16 @@ public final class SlayerActives {
 		long now = player.level().getGameTime();
 		Long readyAt = target.getAttached(ModAttachments.DECIMATE_READY_AT);
 
-		if (readyAt != null && now < readyAt) {
-			return;
-		}
+		if (!free) {
+			if (readyAt != null && now < readyAt) {
+				return;
+			}
 
-		int decimateCooldown = Tuning.DECIMATE_COOLDOWN_TICKS
-				- (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.RELENTLESS) > 0
-						? Tuning.RELENTLESS_REDUCTION_TICKS : 0);
-		target.setAttached(ModAttachments.DECIMATE_READY_AT, now + decimateCooldown);
+			int decimateCooldown = Tuning.DECIMATE_COOLDOWN_TICKS
+					- (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.RELENTLESS) > 0
+							? Tuning.RELENTLESS_REDUCTION_TICKS : 0);
+			target.setAttached(ModAttachments.DECIMATE_READY_AT, now + decimateCooldown);
+		}
 
 		ServerLevel level = (ServerLevel) player.level();
 		Vec3 look = player.getLookAngle();

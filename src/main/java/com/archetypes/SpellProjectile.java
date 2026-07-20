@@ -666,7 +666,10 @@ public class SpellProjectile extends ThrowableItemProjectile {
 							Tuning.JUDGEMENT_WEAKNESS_TICKS, this.judgementRank - 1));
 				}
 			} else {
-				creature.heal(this.healOverride > 0.0F ? this.healOverride : Tuning.HOLY_AMOUNT);
+				// Declared magical so a Colossus Slayer's Barbarian can cut it —
+				// the author listed "healing from priest" by name.
+				ColossusSlayer.magicalHeal(creature,
+						this.healOverride > 0.0F ? this.healOverride : Tuning.HOLY_AMOUNT);
 			}
 
 			if (!(creature instanceof Enemy)) {

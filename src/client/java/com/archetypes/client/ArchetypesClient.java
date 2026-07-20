@@ -67,6 +67,12 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * Clicks made while the key was already down are dropped here. */
 	private static final boolean[] ABILITY_KEY_HELD = new boolean[ABILITY_KEYS.length];
 
+	/** Whether attack and block were both down last tick — the Colossus
+	 * Slayer's parry combo. Read with {@code isDown}, never
+	 * {@code consumeClick}: a parry must not swallow the attack or the block,
+	 * because it happens WITH them, and the click queues belong to vanilla. */
+	private static boolean wasParryCombo;
+
 	@Override
 	public void onInitializeClient() {
 		SlayerAnimations.initialize();
@@ -190,6 +196,22 @@ public class ArchetypesClient implements ClientModInitializer {
 
 			wasDrawingBow = drawingBow;
 
+			// Parry: attack and block down on the same tick. The rising edge of
+			// the PAIR, so holding the combo is one parry and not sixty, and
+			// so a player already mining or already blocking parries the
+			// moment the second key joins. Nothing is consumed — the swing
+			// still swings and the shield still comes up — which is also why
+			// the auto-repeat trap the ability keys have does not apply here:
+			// isDown reports a state, not a queue.
+			boolean parryCombo = client.player != null
+					&& client.options.keyAttack.isDown() && client.options.keyUse.isDown();
+
+			if (parryCombo && !wasParryCombo && client.player != null
+					&& com.archetypes.ColossusSlayer.canParry(client.player)) {
+				ClientPlayNetworking.send(new com.archetypes.ParryPayload());
+			}
+
+			wasParryCombo = parryCombo;
 		});
 
 		// Seeker spells render as thrown items — the projectile carries which,
@@ -250,6 +272,17 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.PassiveProcPayload.TYPE,
 				(payload, context) -> context.client().execute(() -> ProcIndicatorHud.push(payload)));
+
+		// What a parry did to the swing timer. The server already wrote its own
+		// copy; this keeps the crosshair's charge indicator, and the mod's own
+		// "no half-charged flicks" gate in MinecraftMixin, telling the truth.
+		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.ParrySwingPayload.TYPE,
+				(payload, context) -> context.client().execute(() -> {
+					if (context.player() != null) {
+						com.archetypes.ColossusSlayer.applySwingTicker(context.player(),
+								payload.ticker());
+					}
+				}));
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
 			if (screen instanceof InventoryScreen) {
