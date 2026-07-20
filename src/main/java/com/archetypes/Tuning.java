@@ -778,4 +778,58 @@ public final class Tuning {
 	 * percent: it must read as focus, not as damage. */
 	public static final float DEADEYE_VIGNETTE_ALPHA = 0.15F;
 
+	// --- Nemesis Assassin (epic): Death Mark and its two branches ---
+	/** How far a mark can be named, and how far a marked Shadow Step reaches.
+	 * One number for both: double SHADOW_STEP_RANGE, and the same 32 Extra
+	 * Sensory Perception senses at, so a mark can never sit outside the range
+	 * you could already have seen it at. */
+	public static final double DEATH_MARK_RANGE = 32.0;
+	/** The mark's own minute, and the 45 seconds before another can be named.
+	 * The mark deliberately OUTLIVES its cooldown by 15s: an assassin who keeps
+	 * killing never waits, one who lets the mark walk eats the full clock. */
+	public static final int DEATH_MARK_TICKS = 1200;
+	public static final int DEATH_MARK_COOLDOWN_TICKS = 900;
+	/** The root's own dagger bonus on the mark, and Headhunter's per rank.
+	 * Together at rank 2 that is 1.25 x 1.5 = x1.875 on a finished base
+	 * Assassin's ~26.8 Shadow Step strike, i.e. ~50 damage on one named
+	 * target — the ceiling the design sets against Lightning Strike's 20
+	 * hearts. Raise either and the epic Hunt line passes the Oracle actives. */
+	public static final float DEATH_MARK_DAMAGE_FACTOR = 0.25F;
+	public static final float HEADHUNTER_PER_RANK = 0.25F;
+	/**
+	 * Coup de Grace's execute threshold. Deliberately NOT
+	 * {@link #EXECUTE_THRESHOLD}: the Slayer's Executioner finishes at 15% and
+	 * the author's draft says 30% for this one, so reusing the constant would
+	 * silently halve the node and contradict its own description.
+	 */
+	public static final float COUP_DE_GRACE_THRESHOLD = 0.30F;
+	/** What a marked PLAYER takes instead of the execute. A guaranteed delete
+	 * on a 45s clock is not a skill node (the rule Executioner already follows),
+	 * so the execute pays out as a doubling against players. */
+	public static final float COUP_DE_GRACE_PLAYER_MULTIPLIER = 2.0F;
+	/** Stalk: beyond this, a sneaking hunter is dropped by their own mark. Eight
+	 * blocks is inside a dagger's opening range, so the node hides the approach
+	 * and never the kill. */
+	public static final double STALK_UNAWARE_BLOCKS = 8.0;
+	/** Contagion's reach for the hop. Half the cast range: the mark travels
+	 * through a pack, not across the field. */
+	public static final double CONTAGION_HOP_RADIUS = 16.0;
+	/** Carrier's spread radius and beat. Aura of Radiance's eight blocks, once
+	 * a second — copying effects is free, so the beat is about readability. */
+	public static final double CARRIER_RADIUS = 8.0;
+	public static final int CARRIER_PERIOD_TICKS = 20;
+	/** Vanishing Act: four seconds of Invisibility and Speed II on the kill,
+	 * the mobility twin of the Shadow tree's Bloodrush. Amplifier 1 is the
+	 * numeral II. */
+	public static final int VANISHING_ACT_TICKS = 80;
+	public static final int VANISHING_ACT_SPEED_AMPLIFIER = 1;
+	/** Death's Head: the detonation's radius and its 5 hearts. Ten damage is
+	 * about one un-multiplied Shadow Flurry strike — worth chaining, not worth
+	 * building around on its own. */
+	public static final double DEATHS_HEAD_RADIUS = 8.0;
+	public static final float DEATHS_HEAD_DAMAGE = 10.0F;
+	/** How often the mark drips smoke over its head. Twice a second: the tell
+	 * is load-bearing in PvP and must read as continuous, not as a proc. */
+	public static final int DEATH_MARK_SMOKE_PERIOD_TICKS = 10;
+
 }

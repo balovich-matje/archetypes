@@ -344,6 +344,19 @@ public final class CooldownBarHud {
 					ModAttachments.DEADEYE_READY_AT, Tuning.DEADEYE_COOLDOWN_TICKS));
 		}
 
+		// Death Mark's tile drains its 45 seconds. It empties early rather than
+		// counting down to zero — a mark that dies hands the key straight back
+		// — which is the one thing the tile has to show.
+		var nemesisAssassin = NodePurchases.owned(player, SubTree.NEMESIS_ASSASSIN);
+
+		if (com.archetypes.NemesisAssassinNodes.rank(SubTree.NEMESIS_ASSASSIN, nemesisAssassin,
+				com.archetypes.NemesisAssassinNodes.Family.DEATH_MARK) > 0) {
+			abilities.add(new Ability(SubTree.NEMESIS_ASSASSIN,
+					com.archetypes.NemesisAssassinNodes.Family.DEATH_MARK,
+					ArchetypesClient.ABILITY_KEYS[5],
+					ModAttachments.DEATH_MARK_READY_AT, Tuning.DEATH_MARK_COOLDOWN_TICKS));
+		}
+
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);
 
 		if (com.archetypes.OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, oracleWiz,

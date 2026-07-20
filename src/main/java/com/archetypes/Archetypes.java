@@ -218,6 +218,10 @@ public class Archetypes implements ModInitializer {
 					// persisting, and a stance stamp restored without its
 					// ticker would hand out free arrows until it lapsed.
 					Deadeye.end(handler.player);
+					// And the mark: a minute is not worth persisting, and an
+					// entity id is not stable across a relog anyway — a restored
+					// stamp would name whatever wears that id now.
+					DeathMark.clear(handler.player);
 				});
 
 		// A player dying mid-channel: end it before drops so the real wand

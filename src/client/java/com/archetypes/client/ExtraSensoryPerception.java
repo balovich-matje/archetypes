@@ -2,6 +2,8 @@ package com.archetypes.client;
 
 import java.util.List;
 
+import com.archetypes.DeathMark;
+import com.archetypes.NemesisAssassinNodes;
 import com.archetypes.NightForm;
 
 import net.minecraft.client.Minecraft;
@@ -11,13 +13,18 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 /**
- * Extra Sensory Perception's colours, and the one question its two client
- * mixins ask: is this entity on the local player's roster, and in which of the
- * two colours.
+ * The two things that outline a creature for the local player — Extra Sensory
+ * Perception's rosters and the Nemesis Assassin's Stalk — and the one question
+ * the two client mixins ask: should this entity be outlined, and in what
+ * colour.
  *
- * <p>The rosters are rebuilt server-side twice a second and synced to their
- * owner only, so nothing here scans the world — it is a membership test against
- * a list that is never longer than the creatures inside 32 blocks.
+ * <p>Both answers are membership tests against synced state, never world scans.
+ * ESP's rosters are rebuilt server-side twice a second and synced to their owner
+ * only; the mark is a single id on the marked body itself, synced to everyone.
+ *
+ * <p><b>Precedence: the mark wins.</b> A vampire assassin can hold both, and a
+ * mark that disappeared into a roster of thirty violet outlines would not be a
+ * mark.
  */
 public final class ExtraSensoryPerception {
 	/** Players read RED (author's spec): the thing that can plan against you is
@@ -26,16 +33,29 @@ public final class ExtraSensoryPerception {
 	/** Everything else in a cold violet — far enough from red to be told apart
 	 * at a glance and from vanilla's white team outline. */
 	private static final int CREATURE_COLOR = ARGB.opaque(0x9A5CFF);
+	/** The mark: bone white, the one colour neither ESP tone is near. */
+	private static final int MARK_COLOR = ARGB.opaque(0xFFF3D0);
 
 	private ExtraSensoryPerception() {
 	}
 
 	/** The outline this entity should wear for the local player, or
-	 * {@link EntityRenderState#NO_OUTLINE} when it is not sensed. */
+	 * {@link EntityRenderState#NO_OUTLINE} when nothing marks or senses it. */
 	public static int outlineColor(final Entity entity) {
 		Player self = Minecraft.getInstance().player;
 
-		if (self == null || entity == self || !NightForm.isActive(self)) {
+		if (self == null || entity == self) {
+			return EntityRenderState.NO_OUTLINE;
+		}
+
+		// Stalk: the mark is outlined through walls at any distance, and only
+		// for the assassin who named it.
+		if (DeathMark.isMarkedBy(entity, self)
+				&& DeathMark.rank(self, NemesisAssassinNodes.Family.STALK) > 0) {
+			return MARK_COLOR;
+		}
+
+		if (!NightForm.isActive(self)) {
 			return EntityRenderState.NO_OUTLINE;
 		}
 
@@ -49,8 +69,9 @@ public final class ExtraSensoryPerception {
 				: EntityRenderState.NO_OUTLINE;
 	}
 
-	/** Whether this entity is sensed at all — the question the visibility hook
-	 * asks before it lets a walled-off creature through the occlusion test. */
+	/** Whether this entity is sensed or marked at all — the question the
+	 * visibility hook asks before it lets a walled-off creature through the
+	 * occlusion test. Stalk's "through walls" is this call, not a second one. */
 	public static boolean senses(final Entity entity) {
 		return outlineColor(entity) != EntityRenderState.NO_OUTLINE;
 	}

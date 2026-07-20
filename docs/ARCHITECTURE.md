@@ -28,8 +28,11 @@ synced copy. Two sync scopes are used:
 - `AttachmentSyncPredicate.all()` — synced to everyone. Used for state other
   players' renderers need: `BULWARK_ACTIVE`, `ARMOR_HIDDEN`, `DECIMATE_SWING_AT`,
   `BLADESTORM_END`, `QUAKE_CHARGE_END`, `RADIANCE_END`, `DEADEYE_END` (which the
-  owner's client also needs, because it predicts a crossbow's charge time) and
-  the per-arrow `DEADEYE_ARROW`.
+  owner's client also needs, because it predicts a crossbow's charge time), the
+  per-arrow `DEADEYE_ARROW`, and `MARKED_BY` — which is the one attachment that
+  lives on a *non-player* entity to describe it: Death Mark writes the assassin's
+  entity id onto the marked creature, so a client asks the body who is hunting it
+  instead of being handed anyone's roster.
 
 Some attachments are `.persistent(codec)` and `.copyOnDeath()` (the archetype,
 its XP, owned nodes, mana); others are transient (cooldown timestamps, proc
@@ -345,7 +348,7 @@ tick.
 | `NightAnimations`, `NightFormFx`, `NightAuraLayer` | the Dark Ritual's pose, its particle column and quickening heartbeat plus the transformed body's trail, and the violet energy-swirl aura onlookers see on a vampire |
 | `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its grey hearts and its hidden hunger row |
 | `DeadeyeOverlay` | the Deadeye stance's concentration vignette, drawn as nested fills rather than a texture |
-| `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours, and the two empowered active identities |
+| `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours *and* Stalk's bone-white mark outline (the mark wins over ESP), and the two empowered active identities |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 
 **The night form's client half.** Everything the Nemesis Shadow's night form

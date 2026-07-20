@@ -161,15 +161,21 @@ public final class AgilityActives {
 		}
 
 		ServerLevel level = (ServerLevel) player.level();
-		Vec3 from = player.getEyePosition();
-		Vec3 to = from.add(player.getLookAngle().scale(Tuning.SHADOW_STEP_RANGE));
-		EntityHitResult hit = ProjectileUtil.getEntityHitResult(level, player, from, to,
-				player.getBoundingBox().expandTowards(to.subtract(from)).inflate(1.0),
-				entity -> entity instanceof LivingEntity living && living.isAlive()
-						&& !living.isSpectator() && living != player, 0.3F);
+		LivingEntity victim = markedVictim(player);
 
-		if (hit == null || !(hit.getEntity() instanceof LivingEntity victim)) {
-			return;
+		if (victim == null) {
+			Vec3 from = player.getEyePosition();
+			Vec3 to = from.add(player.getLookAngle().scale(Tuning.SHADOW_STEP_RANGE));
+			EntityHitResult hit = ProjectileUtil.getEntityHitResult(level, player, from, to,
+					player.getBoundingBox().expandTowards(to.subtract(from)).inflate(1.0),
+					entity -> entity instanceof LivingEntity living && living.isAlive()
+							&& !living.isSpectator() && living != player, 0.3F);
+
+			if (hit == null || !(hit.getEntity() instanceof LivingEntity target)) {
+				return;
+			}
+
+			victim = target;
 		}
 
 		// Behind means behind THEIR back: step out along the reverse of the
@@ -181,6 +187,17 @@ public final class AgilityActives {
 		if (!level.noCollision(player, player.getBoundingBox()
 				.move(dest.subtract(player.position())))) {
 			dest = dest.add(0.0, 1.0, 0.0);
+
+			// Third probe, for the marked jump: 32 blocks lands inside a build
+			// far more often than 16 did, and stepping back along the approach
+			// is the one spot the assassin is known to have come through.
+			if (!level.noCollision(player, player.getBoundingBox()
+					.move(dest.subtract(player.position())))) {
+				Vec3 approach = victim.position().subtract(player.position());
+				dest = approach.horizontalDistanceSqr() < 1.0E-4 ? victim.position()
+						: victim.position().subtract(new Vec3(approach.x, 0.0, approach.z)
+								.normalize().scale(victim.getBbWidth() + 0.75));
+			}
 
 			if (!level.noCollision(player, player.getBoundingBox()
 					.move(dest.subtract(player.position())))) {
@@ -209,6 +226,21 @@ public final class AgilityActives {
 				+ (flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS));
 
 		strike(player, victim);
+	}
+
+	/**
+	 * Death Mark's retarget: with a live mark inside 32 blocks, that body IS
+	 * the Shadow Step's victim — no crosshair, no line of sight, twice the
+	 * range. Null when there is no mark or it has walked out of range, and the
+	 * step falls back to today's raycast.
+	 */
+	private static @org.jspecify.annotations.Nullable LivingEntity markedVictim(
+			final ServerPlayer player) {
+		LivingEntity mark = DeathMark.target(player);
+
+		return mark != null && mark.level() == player.level()
+				&& mark.distanceToSqr(player) <= Tuning.DEATH_MARK_RANGE * Tuning.DEATH_MARK_RANGE
+						? mark : null;
 	}
 
 	/**

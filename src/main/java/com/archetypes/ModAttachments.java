@@ -432,6 +432,52 @@ public final class ModAttachments {
 	public static final AttachmentType<Boolean> DEADEYE_PHASED =
 			AttachmentRegistry.<Boolean>create(Archetypes.id("deadeye_phased"));
 
+	// --- Nemesis Assassin (epic): Death Mark ---
+	// Read all four through {@link DeathMark}, never directly.
+
+	/**
+	 * The entity id of the creature this player has marked, and the game tick
+	 * the mark lapses; both absent means no mark. Id rather than UUID because
+	 * the client-side indicator is an id test and the server resolves the body
+	 * with {@code level.getEntity(int)} each time it needs it.
+	 *
+	 * <p>Target-only: this pair is the OWNER's copy of the mark. What every
+	 * other client needs rides on the marked entity itself
+	 * ({@link #MARKED_BY}), so nobody has to be told another player's roster.
+	 *
+	 * <p>Transient: a minute cannot meaningfully survive a relog, and an entity
+	 * id is not stable across one anyway — {@code Archetypes}' JOIN handler
+	 * clears the mark the way it clears the Deadeye stance.
+	 */
+	public static final AttachmentType<Integer> MARK_TARGET = AttachmentRegistry.create(
+			Archetypes.id("mark_target"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly()));
+
+	public static final AttachmentType<Long> MARK_END = AttachmentRegistry.create(
+			Archetypes.id("mark_end"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/** Death Mark's cooldown, same shape as the bash's. */
+	public static final AttachmentType<Long> DEATH_MARK_READY_AT = AttachmentRegistry.create(
+			Archetypes.id("death_mark_ready_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.targetOnly()));
+
+	/**
+	 * On the MARKED entity: the entity id of the assassin who named it, absent
+	 * when nothing has. This is the mark's client-visible channel and the same
+	 * one {@code BULWARK_ACTIVE} and {@code DEADEYE_ARROW} already use — state
+	 * written onto the entity it describes and synced to everyone, so a
+	 * renderer can ask the body rather than be handed a roster. Stalk's
+	 * through-wall outline is one id comparison against it.
+	 *
+	 * <p>Server-side writers only, and always in step with the owner's
+	 * {@link #MARK_TARGET} — {@link DeathMark} is the only class that touches
+	 * either.
+	 */
+	public static final AttachmentType<Integer> MARKED_BY = AttachmentRegistry.create(
+			Archetypes.id("marked_by"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.all()));
+
 	/** Owned nodes, per sub-tree id, as indices into its constellation's node list. */
 	public static final AttachmentType<Map<String, List<Integer>>> PURCHASED = AttachmentRegistry.create(
 			Archetypes.id("purchased"),
@@ -506,6 +552,9 @@ public final class ModAttachments {
 			// ticker, which is gated on the node — so a respec mid-stance would
 			// leave the stance's stamp standing and the arrows still free.
 			Deadeye.end(serverPlayer);
+			// A mark outlives a respec the same way: the flag lives on ANOTHER
+			// entity, so nothing but this call would ever take it back off.
+			DeathMark.clear(serverPlayer);
 		}
 
 		((AttachmentTarget) player).removeAttached(NIGHT_CHANNEL_END);

@@ -270,9 +270,53 @@ public abstract class LivingEntityMixin {
 			result = result * (1.0F - absorbed * (1.0F - ignored)) / (1.0F - absorbed);
 		}
 
+		// Death Mark: the root's quarter and Headhunter's ranks, and only on the
+		// one creature this player named. Multiplied separately rather than
+		// summed — the design prices the Hunt line at 1.25 x 1.5 = x1.875, not
+		// x1.75. Both stamps are checked, not just the flag on the body: the
+		// ticker takes a lapsed mark off a tick later than it expires.
+		boolean marked = com.archetypes.DeathMark.isMarkedBy(victim, player)
+				&& com.archetypes.DeathMark.hasMark(player);
+
+		if (marked) {
+			result *= 1.0F + Tuning.DEATH_MARK_DAMAGE_FACTOR;
+			result *= 1.0F + Tuning.HEADHUNTER_PER_RANK
+					* com.archetypes.NemesisAssassinNodes.rank(player,
+							com.archetypes.NemesisAssassinNodes.Family.HEADHUNTER);
+		}
+
 		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
 
 		if (stepStrike != null && stepStrike == level.getGameTime()) {
+			// Coup de Grace, on the Shadow Step strike only. Players are never
+			// deleted outright — the rule Executioner already follows — so the
+			// execute pays them out as a doubling, and unconditionally: an
+			// execute a player only ever meets under a third health would be no
+			// node at all in the fight the branch is built for.
+			if (marked && com.archetypes.NemesisAssassinNodes.rank(player,
+					com.archetypes.NemesisAssassinNodes.Family.COUP_DE_GRACE) > 0) {
+				boolean isPlayer = victim instanceof net.minecraft.world.entity.player.Player;
+
+				if (isPlayer) {
+					result *= Tuning.COUP_DE_GRACE_PLAYER_MULTIPLIER;
+				} else if (victim.getHealth()
+						<= victim.getMaxHealth() * Tuning.COUP_DE_GRACE_THRESHOLD) {
+					// Executioner's idiom verbatim: past every resistance.
+					result = Math.max(result, victim.getHealth() + 100.0F);
+				}
+
+				if (isPlayer || victim.getHealth()
+						<= victim.getMaxHealth() * Tuning.COUP_DE_GRACE_THRESHOLD) {
+					// The Executioner's own cue, dropped a fifth, so the player
+					// learns which blow was the execute.
+					level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
+							net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_CRIT,
+							net.minecraft.sounds.SoundSource.PLAYERS, 1.0F, 0.6F);
+					ProcIndicators.send(player, SubTree.NEMESIS_ASSASSIN,
+							com.archetypes.NemesisAssassinNodes.Family.COUP_DE_GRACE);
+				}
+			}
+
 			// Stalker's Step: the same blink and strike, landing half again
 			// harder while the night form holds.
 			if (com.archetypes.NightForm.isActive(player)) {

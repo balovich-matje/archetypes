@@ -79,6 +79,13 @@ public final class AgilityCombat {
 			}
 		});
 
+		// A mark dying is its own event and not only a player's kill: the
+		// cooldown clears whoever landed the blow, and Death's Head and
+		// Contagion fire either way. Registered separately from the capstone
+		// hook below because that one refuses every non-player kill.
+		ServerLivingEntityEvents.AFTER_DEATH.register((victim, source) ->
+				DeathMark.onDeath(victim, source.getEntity()));
+
 		// Kills feed two capstones: Predator refreshes a running invisibility,
 		// Momentum hands Shadow Step straight back.
 		ServerLivingEntityEvents.AFTER_DEATH.register((victim, source) -> {

@@ -24,6 +24,10 @@ public final class AgilityTicker {
 				// the strand-guard inside it is what ends a stance whose
 				// archetype went away (NightFormTicker's lesson).
 				Deadeye.tick(player);
+				// The mark's own beat: the lapse, the smoke tell, Stalk and
+				// Carrier. Same reason it runs for every player — the guards
+				// inside it are what drop a mark whose owner lost the node.
+				DeathMark.tick(player);
 
 				boolean dagger = ModItems.isDagger(player.getMainHandItem());
 				var owned = NodePurchases.owned(player, SubTree.ASSASSIN);
