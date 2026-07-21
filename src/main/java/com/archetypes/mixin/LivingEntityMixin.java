@@ -142,7 +142,24 @@ public abstract class LivingEntityMixin {
 	/**
 	 * The greatsword's damage shaping, all in one place on the victim's intake:
 	 * Heavy Blows' flat bonus, First Blood's opener bonus against the unhurt,
-	 * and the Executioner's finisher on anything already below the threshold.
+	 * the Executioner's finisher on anything already below the threshold, and
+	 * Blade Master's armour penetration.
+	 *
+	 * <p>Blade Master runs LAST, Flense's placement and for Flense's reason: the
+	 * node ignores a share of the victim's armour, and what armour is worth
+	 * depends on how big the blow is — vanilla degrades it by
+	 * {@code damage/toughness} before applying it. The value fed to the curve has
+	 * to be the damage that will actually arrive, which is everything above this
+	 * line and nothing below it.
+	 *
+	 * <p>Its interaction with the Executioner clamp is deliberate and worth
+	 * naming: the clamp writes {@code health + 100} as a RAW number that vanilla
+	 * then mitigates, so against a full suit the finisher used to deliver a
+	 * couple of points and fail to finish. Compensating it afterwards is what
+	 * makes the clamp mean what it says.
+	 *
+	 * <p>A Decimate reaches this hook too — {@code SlayerActives.resolve} opens
+	 * a {@code MeleeSwing} around its damage precisely so it does.
 	 */
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
 			at = @At("HEAD"), argsOnly = true)
@@ -174,6 +191,11 @@ public abstract class LivingEntityMixin {
 			result = Math.max(result, victim.getHealth() + 100.0F);
 			ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.EXECUTIONER);
 		}
+
+		// Blade Master, LAST — see the class comment above and Flense's twin in
+		// archetypes$daggerDamage.
+		result *= com.archetypes.ColossusSlayer.bladeMasterFactor(player, level, victim, source,
+				result);
 
 		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_GREATSWORD, amount, result);
 		return result;

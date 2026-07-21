@@ -12,10 +12,10 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 
@@ -83,11 +83,11 @@ public final class SlayerActives {
 
 	/**
 	 * Decimate: one massive tilted cleave, a second after you commit to it.
-	 * Every living thing left in the front arc when it lands takes a share of
-	 * its own maximum health on {@code archetypes:decimate} — through armour,
-	 * through Protection, through a shield — and instant-break clutter is swept
-	 * from its path. Nothing sturdier: swinging this inside your own base must
-	 * never redecorate it.
+	 * Every living thing left in the front arc when it lands takes the
+	 * greatsword's biggest swing — {@link Tuning#DECIMATE_DAMAGE_MULTIPLIER}
+	 * times attack damage, through the tree's own chain — and instant-break
+	 * clutter is swept from its path. Nothing sturdier: swinging this inside
+	 * your own base must never redecorate it.
 	 *
 	 * @return whether the cast was accepted (node, weapon and cooldown all
 	 *     satisfied), so the parry's riposte can fall back to the sword's answer
@@ -111,8 +111,8 @@ public final class SlayerActives {
 	 *     not owe a second one. And it answers to a clock of its own,
 	 *     {@link Tuning#DECIMATE_FREE_COOLDOWN_TICKS}, because a landed parry
 	 *     refunds its own key ({@code ColossusSlayer.pay}); without that fence
-	 *     the riposte is an unbounded armour-ignoring nuke whose rate is set by
-	 *     how often someone swings at you.
+	 *     the riposte is an unbounded capstone whose rate is set by how often
+	 *     someone swings at you.
 	 */
 	public static boolean decimate(final ServerPlayer player, final boolean free) {
 		var owned = NodePurchases.owned(player, SubTree.SLAYER);
@@ -212,27 +212,31 @@ public final class SlayerActives {
 	 * target who spent the wind-up leaving is genuinely gone — that is what the
 	 * wind-up is for.
 	 *
-	 * <h2>What is deliberately not here</h2>
-	 * There is no {@code MeleeSwing.begin/end} around the damage any more, and
-	 * that is the point rather than an oversight. Wrapped, Decimate rode
-	 * {@code LivingEntityMixin.archetypes$greatswordDamage} — Heavy Blows,
-	 * First Blood and the Executioner clamp — on top of a number the attacker
-	 * already inflated through {@code ATTACK_DAMAGE} (the item, Blade Master,
-	 * Strength). A hit that reads differently to every attacker cannot be given
-	 * a single tunable number, and "you don't want to be near it when it's cast"
-	 * has to be true of everyone. (Sharpness and Specialities' Combat multiplier
-	 * never rode it in the first place: both are gated on {@code Player.attack},
-	 * which a Decimate has never gone through. Rend, Blade Dance, Expose and
-	 * Flense are sword- or dagger-gated and never saw a greatsword.)
+	 * <h2>Why the swing wrapper is back</h2>
+	 * {@code MeleeSwing.begin/end} is what makes this a swing to the rest of the
+	 * mod, and the author's reversal is what put it back: the greatsword's answer
+	 * to heavy armour is now Blade Master, a node whose penetration is resolved
+	 * in {@code LivingEntityMixin.archetypes$greatswordDamage}. Unwrapped,
+	 * Decimate would be the one greatsword blow in the game that a full suit
+	 * still stopped dead — the capstone weaker against plate than an ordinary
+	 * click. So it rides the whole greatsword chain again: Heavy Blows, First
+	 * Blood, the Executioner clamp and Blade Master, on {@code player_attack}.
 	 *
-	 * <p>What the wrapper WAS buying Decimate besides that is the Slayer's own
-	 * greatsword-legal on-hit and on-kill passives, and those are unrelated to
-	 * the damage chain, so they are re-applied by hand in {@link #slayerPassives}
-	 * rather than lost.
+	 * <p>The same wrapper is what {@code SlayerCombat} reads, so Hamstring,
+	 * Taste of Blood and Bloodlust come back to Decimate through their own event
+	 * hooks and need no hand-written copy here. Rend and Blade Dance stay off it
+	 * because they are sword-only in {@code SlayerCombat}, which is where that
+	 * decision belongs.
+	 *
+	 * <p>Sharpness and Specialities' Combat multiplier still do not ride it:
+	 * both are gated on {@code Player.attack}, which a Decimate does not go
+	 * through. So the number here is {@code ATTACK_DAMAGE} — the item, Strength,
+	 * the tree — and not the +3 a Sharpness V click also carries.
 	 */
 	private static void resolve(final ServerPlayer player, final ServerLevel level, final Vec3 flat) {
-		var owned = NodePurchases.owned(player, SubTree.SLAYER);
 		double range = Tuning.DECIMATE_RANGE;
+		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
+				* Tuning.DECIMATE_DAMAGE_MULTIPLIER);
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.6F);
@@ -245,22 +249,22 @@ public final class SlayerActives {
 				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
 						&& inFront(player, entity, flat));
 
-		for (LivingEntity victim : victims) {
-			// The whole number, read off the victim: their own bar and nothing
-			// of the attacker's. Above 1.0 so full health is not a survivable
-			// state, floored so a small pool is not a cheap one, capped so a
-			// figure calibrated against a 40 HP player does not delete a Warden.
-			float damage = Mth.clamp(victim.getMaxHealth() * Tuning.DECIMATE_MAX_HEALTH_FRACTION,
-					Tuning.DECIMATE_MIN_DAMAGE, Tuning.DECIMATE_MAX_DAMAGE);
-			// The return value is the old AFTER_DAMAGE gate's "taken > 0": a hit
-			// a parry, Ghost Form or Sidestep voided must not still cripple.
-			if (victim.hurtServer(level, ModDamageTypes.decimate(level, player), damage)) {
-				slayerPassives(player, level, victim, owned);
-			}
+		// Marked as a swing: a Decimate is the greatsword's biggest one, and the
+		// tree's on-hit passives and Blade Master's penetration are supposed to
+		// ride it exactly as they ride a click (see MeleeSwing — the gate exists
+		// to exclude thorns and bleed pulses, not the tree's own weapon actives).
+		var previousSwing = MeleeSwing.begin(player);
 
-			Vec3 away = victim.position().subtract(player.position());
-			Vec3 push = new Vec3(away.x, 0.0, away.z).normalize();
-			victim.push(push.x * 0.8, 0.2, push.z * 0.8);
+		try {
+			for (LivingEntity victim : victims) {
+				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+
+				Vec3 away = victim.position().subtract(player.position());
+				Vec3 push = new Vec3(away.x, 0.0, away.z).normalize();
+				victim.push(push.x * 0.8, 0.2, push.z * 0.8);
+			}
+		} finally {
+			MeleeSwing.end(previousSwing);
 		}
 
 		sweepBlocks(player, level, flat, range);
@@ -275,45 +279,6 @@ public final class SlayerActives {
 				player.getY() + 1.35,
 				player.getZ() + flat.z * 2.6,
 				0, -flat.z, 0.0, flat.x, 1.0);
-	}
-
-	/**
-	 * The Slayer's greatsword-legal on-hit and on-kill passives, applied by hand
-	 * because Decimate no longer opens a {@code MeleeSwing} for
-	 * {@code SlayerCombat}'s event hooks to recognise.
-	 *
-	 * <p>This is a deliberate copy of the greatsword-eligible half of
-	 * {@code SlayerCombat}: Hamstring, Taste of Blood and Bloodlust. Rend and
-	 * Blade Dance are not here because they are sword-only there, so a Decimate
-	 * has never applied them. Note that {@code AFTER_DAMAGE} never fired on a
-	 * lethal blow anyway (Fabric gates it on {@code !isDeadOrDying}), so
-	 * Hamstring on a survivor is the only on-hit half that ever ran.
-	 */
-	private static void slayerPassives(final ServerPlayer player, final ServerLevel level,
-			final LivingEntity victim, final java.util.Set<Integer> owned) {
-		if (victim.isAlive()) {
-			int slow = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.SLOWNESS);
-
-			if (slow > 0) {
-				victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, Tuning.SLOWNESS_TICKS,
-						slow - 1), player);
-			}
-
-			return;
-		}
-
-		int taste = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.TASTE_OF_BLOOD);
-
-		if (taste > 0) {
-			player.heal(taste * Tuning.TASTE_OF_BLOOD_HEAL_PER_RANK);
-			level.sendParticles(ParticleTypes.HEART, player.getX(), player.getY() + 1.5,
-					player.getZ(), taste, 0.3, 0.3, 0.3, 0.0);
-			ProcIndicators.send(player, SubTree.SLAYER, SlayerNodes.Family.TASTE_OF_BLOOD);
-		}
-
-		if (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.BLOODLUST) > 0) {
-			player.addEffect(new MobEffectInstance(MobEffects.SPEED, Tuning.BLOODLUST_TICKS, 0));
-		}
 	}
 
 	/** Blocks: only instant-break clutter is swept. destroyBlock drops loot and

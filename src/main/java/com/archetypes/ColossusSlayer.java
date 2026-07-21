@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.TagKey;
+import net.minecraft.util.Mth;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.effect.MobEffectInstance;
@@ -28,6 +29,7 @@ import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.hurtingprojectile.AbstractHurtingProjectile;
 import net.minecraft.world.entity.projectile.hurtingprojectile.windcharge.AbstractWindCharge;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
 /**
  * Every node of the epic Colossus-Slayer tree. The sketch rebuilt this tree
@@ -82,7 +84,6 @@ public final class ColossusSlayer {
 			TagKey.create(Registries.DAMAGE_TYPE, Archetypes.id("magical"));
 
 	private static final Identifier BLADE_MASTER_SPEED_ID = Archetypes.id("blade_master_speed");
-	private static final Identifier BLADE_MASTER_DAMAGE_ID = Archetypes.id("blade_master_damage");
 
 	/**
 	 * True while a parry is paying itself out, so the riposte's own damage can
@@ -126,27 +127,29 @@ public final class ColossusSlayer {
 	}
 
 	// ------------------------------------------------------------------
-	// Blade Master — two transient attribute modifiers, held by the hand.
+	// Blade Master — the greatsword lane: swing time, and armour.
 	// ------------------------------------------------------------------
 
 	/**
-	 * Blade Master, asserted and revoked every tick in
-	 * {@code SlayerTicker.tickStance}'s shape so no respec can leave either
+	 * Blade Master's swing-time half, asserted and revoked every tick in
+	 * {@code SlayerTicker.tickStance}'s shape so no respec can leave the
 	 * modifier standing.
 	 *
-	 * <p>Both halves are attributes rather than damage hooks on purpose. The
-	 * swing-time cut has to be an attribute — {@code
-	 * getCurrentItemAttackStrengthDelay} reads {@code ATTACK_SPEED} and nothing
-	 * else — and routing the sword's damage the same way means Bladestorm,
-	 * Blade Dance and Decimate, which all compute from {@code
-	 * getAttributeValue(ATTACK_DAMAGE)}, inherit it without a line of their own.
-	 *
-	 * <p>The swing-time number is converted, not copied: {@code -20%} of the
+	 * <p>An attribute rather than a damage hook because it has to be one:
+	 * {@code getCurrentItemAttackStrengthDelay} reads {@code ATTACK_SPEED} and
+	 * nothing else. The number is converted, not copied: {@code -20%} of the
 	 * TIME is {@code x1.25} the rate, so the modifier carries
 	 * {@code 1 / (1 - cut) - 1}. It multiplies against Heavy Blows' own
 	 * {@code ATTACK_SPEED} cut rather than cancelling it, because vanilla
 	 * applies each {@code ADD_MULTIPLIED_TOTAL} in turn — so the description's
 	 * "-20/40%" stays true of whatever the greatsword swings at now.
+	 *
+	 * <p>The node's second half used to be +20% sword ATTACK_DAMAGE per rank and
+	 * is gone; see {@link #bladeMasterFactor} for what replaced it and
+	 * {@link Tuning#BLADE_MASTER_ARMOUR_IGNORE_PER_RANK} for why the swap. There
+	 * is deliberately no revoke path left for the retired damage modifier:
+	 * {@code addTransientModifier} is never saved to disk, so no live attribute
+	 * map can carry one across the restart this change requires.
 	 */
 	private static void tickStance(final ServerPlayer player) {
 		int rank = rank(player, Family.BLADE_MASTER);
@@ -155,9 +158,95 @@ public final class ColossusSlayer {
 
 		stance(player.getAttribute(Attributes.ATTACK_SPEED), BLADE_MASTER_SPEED_ID,
 				rank > 0 && ModItems.isGreatsword(held), 1.0 / (1.0 - cut) - 1.0);
-		stance(player.getAttribute(Attributes.ATTACK_DAMAGE), BLADE_MASTER_DAMAGE_ID,
-				rank > 0 && ModItems.isSword(held),
-				Tuning.BLADE_MASTER_SWORD_DAMAGE_PER_RANK * rank);
+	}
+
+	/**
+	 * Blade Master's armour half: the multiplier that makes a greatsword blow
+	 * land as though the victim wore {@code 1 - ignore} of their armour AND
+	 * {@code bite} fewer points of enchantment protection.
+	 *
+	 * <h2>Two mitigations, not one</h2>
+	 * "Cut through full enchanted netherite" is two separate stages of
+	 * {@code LivingEntity.actuallyHurt} and they need different answers:
+	 * <ul>
+	 * <li>{@code getDamageAfterArmorAbsorb} → {@code CombatRules
+	 *     .getDamageAfterAbsorb}. Against a Colossus with Ironclad (ARMOR 30,
+	 *     TOUGHNESS 20, so {@code t = 7}) this is {@code realArmour = clamp(30 -
+	 *     d/7, 6, 20)}, which pins at the 20 ceiling for every hit under 70 raw
+	 *     — a flat x0.20 whatever you swing. Armour ignore reaches this one.</li>
+	 * <li>{@code getDamageAfterMagicAbsorb} → {@code CombatRules
+	 *     .getDamageAfterMagicAbsorb}. Protection IV in four slots is 16 EPF, a
+	 *     flat {@code x(1 - 16/25) = x0.36}, and NO amount of armour penetration
+	 *     touches it. Vanilla lets exactly one thing out of that stage, the
+	 *     {@code #minecraft:bypasses_enchantments} tag, and a tag is a property
+	 *     of a damage TYPE — it cannot be conditioned on the attacker's nodes,
+	 *     which is precisely what a node has to be.</li>
+	 * </ul>
+	 *
+	 * <h2>The instrument</h2>
+	 * Both halves are pre-compensated in front of vanilla rather than changed
+	 * inside it, which is {@code ArmourMath}'s whole reason to exist and what
+	 * Flense already does. The armour stage is inverted exactly (it is monotone,
+	 * so the inverse is single-valued); the magic stage is a plain linear
+	 * multiply, so its compensation is the ratio of the two multipliers.
+	 *
+	 * <p>The alternatives, and why not:
+	 * <ul>
+	 * <li>A real {@code armor_effectiveness} enchantment (Breach's instrument)
+	 *     is the vanilla-shaped answer to the FIRST stage only, and it lives on
+	 *     the item. Stamping one onto a player's own greatsword would follow the
+	 *     sword out of their hands; and it would still leave x0.36 standing.</li>
+	 * <li>A partial {@code bypasses_enchantments} does not exist — the tag is
+	 *     all or nothing, and putting a greatsword's ordinary
+	 *     {@code player_attack} in it would delete Protection for every attacker
+	 *     in the game, ours or not.</li>
+	 * </ul>
+	 * So the EPF reduction is ours, and it is a subtraction rather than a
+	 * bypass: half a Protection IV suit at rank 2, nothing at all against a
+	 * target wearing none.
+	 *
+	 * @param damage the damage the blow would carry WITHOUT this node — every
+	 *     other shaper's work and none of this one's, for {@code ArmourMath
+	 *     .ignoreArmourFactor}'s reason: the share of armour vanilla will
+	 *     actually apply depends on how big the hit is, so feeding the
+	 *     post-compensation number back in would be circular. That is why the
+	 *     stage runs LAST in {@code archetypes$greatswordDamage}.
+	 */
+	public static float bladeMasterFactor(final Player player, final ServerLevel level,
+			final LivingEntity victim, final DamageSource source, final float damage) {
+		int rank = rank(player, Family.BLADE_MASTER);
+
+		if (rank <= 0 || damage <= 0.0F) {
+			return 1.0F;
+		}
+
+		float armour = ArmourMath.armour(victim);
+		float t = ArmourMath.toughnessTerm(victim);
+		float ignore = Math.min(1.0F, Tuning.BLADE_MASTER_ARMOUR_IGNORE_PER_RANK * rank);
+
+		// Where the blow would land if the plate were thinner. afterArmour hands
+		// back `damage` untouched for an unarmoured victim, so this is a no-op
+		// against one rather than a special case.
+		float ideal = ArmourMath.afterArmour(damage, armour * (1.0F - ignore), t);
+
+		// ...and where it would land if the Protection were weaker. Vanilla
+		// clamps EPF to [0, 20] before dividing by 25, so the clamp comes first
+		// and the bite is taken out of the value that will actually be spent.
+		float protection = Mth.clamp(
+				EnchantmentHelper.getDamageProtection(level, victim, source), 0.0F, 20.0F);
+		float bitten = Math.max(0.0F,
+				protection - Tuning.BLADE_MASTER_PROTECTION_BITE_PER_RANK * rank);
+		// Both denominators are >= 1 - 20/25 = 0.2, so neither can be zero.
+		ideal *= (1.0F - bitten / 25.0F) / (1.0F - protection / 25.0F);
+
+		return ArmourMath.rawForAfterArmour(ideal, armour, t) / damage;
+	}
+
+	/** The victim's clamped EPF, for the trace — so a reader can see what the
+	 * bite is being taken out of instead of a constant. */
+	public static float protectionPoints(final ServerLevel level, final LivingEntity victim,
+			final DamageSource source) {
+		return Mth.clamp(EnchantmentHelper.getDamageProtection(level, victim, source), 0.0F, 20.0F);
 	}
 
 	private static void stance(final AttributeInstance attribute, final Identifier id,

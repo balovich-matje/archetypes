@@ -150,40 +150,36 @@ public final class Tuning {
 	 * — anything sturdier survives, so a swing in your own base clears clutter
 	 * without eating the walls.
 	 *
-	 * <p>The damage is read off the VICTIM, not the attacker: {@code
-	 * clamp(maxHealth x FRACTION, MIN, MAX)} on {@code archetypes:decimate},
-	 * which bypasses armour, Protection and shields. Nothing the attacker owns
-	 * moves it — not Sharpness, not Heavy Blows, not Strength, not the swing
-	 * timer — because the whole promise is that it reads identically to every
-	 * victim. That is also the only reason a single number can be tuned at all:
-	 * see {@code SlayerActives.decimate}, which no longer opens a
-	 * {@code MeleeSwing} around its own damage.
+	 * <p>The damage is the attacker's, not the victim's: {@code ATTACK_DAMAGE x
+	 * MULTIPLIER} on an ordinary {@code player_attack}, dealt inside a
+	 * {@link MeleeSwing} so the greatsword's own chain rides it — Heavy Blows,
+	 * First Blood, the Executioner clamp, and Blade Master's armour penetration.
+	 * That last one is why the wrapper is back: the author's answer to heavy
+	 * armour is now a NODE rather than a damage type, and a capstone that did
+	 * not ride the node would be the one greatsword blow a full suit still
+	 * stopped dead.
 	 *
-	 * <p>Fraction of the victim's max health. Above 1.0 on purpose: the author's
-	 * line is "guarantees a oneshot for classes with no defensives ready", and
-	 * a fraction of exactly 1.0 is a guarantee that any 1 point of absorption —
-	 * a golden apple, a Stalwart tick — quietly repeals. 1.10 of a 40 HP player
-	 * is 44, which is that player's whole bar plus one golden apple, and leaves
-	 * a Spellsword holding Magic Armor 1's +10 temporary hearts at 6 HP: the
-	 * author's second target, "almost a oneshot that can be followed up with a
-	 * single swing", falls straight out of the same number. */
-	public static final float DECIMATE_MAX_HEALTH_FRACTION = 1.10F;
-	/** Floor, so percent-of-max-health does not under-deliver against a small
-	 * pool. Binds below 21.8 max health, i.e. essentially only the vanilla
-	 * 20 HP baseline (a player with no Defence levels) and trash mobs. 24 is
-	 * that vanilla bar plus a golden apple's 4 absorption, so the "your gear
-	 * does not save you, your archetype does" promise reads the same at the
-	 * bottom of the health curve as it does at 40. */
-	public static final float DECIMATE_MIN_DAMAGE = 24.0F;
-	/** Ceiling, so a number calibrated in PvP does not become a boss-deleter.
-	 * Binds above 63.6 max health — unreachable by any player, since Defence
-	 * tops out at +20 — so a player always sees the pure fraction and this cap
-	 * is a PvE-only guard. 70 rather than something tighter because Decimate's
-	 * old output peaked at 43.7 (24 raw x Heavy Blows 1.3 x First Blood 1.4)
-	 * and a capstone must not become a downgrade against big pools: it holds a
-	 * 500 HP Warden to 14% a cast on a 30s cooldown, a Wither to 23%, and an
-	 * Ender Dragon to 35%. */
-	public static final float DECIMATE_MAX_DAMAGE = 70.0F;
+	 * <p>The multiplier itself. 2.0 was the number before the percent-of-max-HP
+	 * detour, and it was too small to be a capstone: 24 raw x 1.30 x 1.40 =
+	 * 43.68 on a 30s cooldown is 1.6 normal swings and about 5% of the Slayer's
+	 * single-target output. 3.0 is chosen against three fences rather than one
+	 * DPS target, because a 30s AoE button is priced as burst, not as DPS:
+	 * <ul>
+	 * <li>36 raw x 1.30 Heavy Blows x 1.40 First Blood = 65.52 on an unarmoured
+	 *     40 HP player. That is a decisive one-shot with enough headroom that a
+	 *     golden apple, a Stalwart tick or Magic Armor 1's ten temporary hearts
+	 *     cannot repeal it — the guarantee the percent-of-max-HP version was
+	 *     reaching for, kept, without the true-damage type.</li>
+	 * <li>Against a full Colossus (netherite + Protection IV + Ironclad) with
+	 *     Blade Master 2 it lands 34.5 of 40: "almost a oneshot that can be
+	 *     followed up with a single swing", now landing on the ARMOURED case
+	 *     instead of reading the same as the naked one. 4.0 would have killed
+	 *     him outright, which is the outcome this revert is stepping back from.</li>
+	 * <li>PvE is held flat rather than raised: 65.52 is 13% of a Warden, against
+	 *     the 14% the reverted version's 70-damage ceiling allowed, so
+	 *     nothing about the revert is a boss-damage buff.</li>
+	 * </ul> */
+	public static final float DECIMATE_DAMAGE_MULTIPLIER = 3.0F;
 	/** The wind-up, in ticks, between the cast and the blow landing. One full
 	 * second: the entire counterplay budget, and the only reason "you don't
 	 * want to be near it when it's cast" describes a decision rather than a
@@ -1165,10 +1161,59 @@ public final class Tuning {
 	 */
 	public static final float BLADE_MASTER_SWING_CUT_PER_RANK = 0.20F;
 
-	/** Blade Master: +20% sword attack damage per rank. An ATTACK_DAMAGE
-	 * modifier held while a sword is in hand, so Bladestorm, Blade Dance and
-	 * every other active that reads the attribute inherits it. */
-	public static final float BLADE_MASTER_SWORD_DAMAGE_PER_RANK = 0.20F;
+	/**
+	 * Blade Master: the share of a victim's ARMOUR a greatsword hit ignores, per
+	 * rank. Rank 2 is half of it.
+	 *
+	 * <p>The node's other half used to be +20% sword attack damage per rank. It
+	 * is gone, and this is what replaced it: the tree's two feet are now one
+	 * lane each — Barbarian answers magic, Blade Master answers plate — and a
+	 * flat ATTACK_DAMAGE modifier was the wrong shape for the second, because it
+	 * fed Bladestorm and Blade Dance through the attribute and gave the least
+	 * where it was needed most (against 30 armour, +40% of a blow that keeps a
+	 * fifth of itself is +40% of nothing much).
+	 *
+	 * <p>Resolved in front of vanilla's curve rather than inside it, the way
+	 * Flense is: see {@code ColossusSlayer.bladeMasterFactor}. A real
+	 * {@code armor_effectiveness} enchantment would be the vanilla instrument,
+	 * but it lives on the ITEM, and this is a node — a player's own greatsword
+	 * is not ours to stamp, and the stamp would follow the sword into another
+	 * player's hands.
+	 *
+	 * <p>Why not 100%. Full penetration against a capped Colossus is a x5.0
+	 * multiplier on the armour stage alone, which is the same magnitude as the
+	 * bypassing damage type this reverts. Half leaves the suit worth roughly
+	 * what a diamond one is worth against an unpenetrated blow — a real cut, and
+	 * still a reason to wear it. */
+	public static final float BLADE_MASTER_ARMOUR_IGNORE_PER_RANK = 0.25F;
+
+	/**
+	 * Blade Master: enchantment protection points (EPF) a greatsword hit bites
+	 * off the victim, per rank. Rank 2 is 8 — exactly half of a full Protection
+	 * IV suit's 16.
+	 *
+	 * <p>This constant exists because armour penetration alone does not answer
+	 * the author's sentence. "Full enchanted netherite" is TWO mitigations:
+	 * {@code CombatRules.getDamageAfterAbsorb}, which armour ignore reaches, and
+	 * {@code getDamageAfterMagicAbsorb}, a flat x0.36 for Protection IV in four
+	 * slots that no amount of armour ignore touches — vanilla only lets a damage
+	 * type out of that stage, never a weapon or an attacker. Against ARMOR 30 /
+	 * TOUGHNESS 20 the armour stage is x0.20 and Protection is x0.36; ignoring
+	 * ALL of the armour still leaves the blow at 36% of itself.
+	 *
+	 * <p>So the node bites the EPF too, and the number is denominated in EPF
+	 * points rather than a percentage so that it reads in the same unit
+	 * Protection itself does: 8 points is two Protection IV pieces' worth, or
+	 * the whole suit halved. It is a subtraction and not a bypass on purpose —
+	 * a lightly-enchanted target loses less in absolute terms than a fully
+	 * enchanted one loses, and a target with no Protection at all loses nothing,
+	 * so the node is worth exactly zero against the unarmoured and cannot become
+	 * a general damage buff.
+	 *
+	 * <p>Vanilla clamps EPF to [0, 20] before it divides by 25, so the bite is
+	 * taken against the clamped value: a target stacked past 20 does not get to
+	 * spend the overflow soaking this node. */
+	public static final float BLADE_MASTER_PROTECTION_BITE_PER_RANK = 4.0F;
 
 	/** Riposte: two seconds of Strength off a successful parry. */
 	public static final int RIPOSTE_STRENGTH_TICKS = 40;

@@ -212,6 +212,17 @@ public final class DamageTrace {
 		private final float victimHealth;
 		private final List<Component> lines = new ArrayList<>();
 
+		/**
+		 * The blow's level and source, kept because one mirror needs to ask
+		 * vanilla a question rather than derive an answer: Blade Master's
+		 * Protection bite is denominated in the victim's EPF, and EPF is read by
+		 * {@code EnchantmentHelper.getDamageProtection(level, victim, source)}.
+		 * A mirror that guessed at it instead would be the one thing this class
+		 * exists to stop.
+		 */
+		private final ServerLevel level;
+		private final DamageSource source;
+
 		/** Cleared when a stage's derivation cannot be expressed as a product —
 		 * an Executioner clamp is not a multiplier — so the mismatch alarm knows
 		 * to hold its tongue for that stage. */
@@ -255,10 +266,13 @@ public final class DamageTrace {
 		private float expected;
 
 		private Frame(final @Nullable ServerPlayer attacker, final LivingEntity victim,
-				final float base, final float cooldownFloor) {
+				final float base, final float cooldownFloor, final ServerLevel level,
+				final DamageSource source) {
 			this.attacker = attacker;
 			this.victim = victim;
 			this.base = base;
+			this.level = level;
+			this.source = source;
 			this.victimHealth = victim.getHealth();
 			this.victimAbsorption = victim.getAbsorptionAmount();
 			this.cooldownFloor = cooldownFloor;
@@ -315,7 +329,7 @@ public final class DamageTrace {
 
 		ServerPlayer attacker = source.getEntity() instanceof ServerPlayer player
 				&& WATCHED.contains(player.getUUID()) ? player : null;
-		STACK.push(new Frame(attacker, victim, amount, cooldownFloor(source, victim)));
+		STACK.push(new Frame(attacker, victim, amount, cooldownFloor(source, victim), level, source));
 	}
 
 	/**
@@ -641,7 +655,7 @@ public final class DamageTrace {
 	private static void explain(final Frame frame, final String stage, final ServerPlayer attacker,
 			final LivingEntity victim, final float before, final float after) {
 		float derived = switch (stage) {
-			case STAGE_GREATSWORD -> explainGreatsword(frame, attacker, victim);
+			case STAGE_GREATSWORD -> explainGreatsword(frame, attacker, victim, before);
 			case STAGE_DAGGER -> explainDagger(frame, attacker, victim, before);
 			case STAGE_SUNDER -> explainSunder(frame, attacker, victim);
 			default -> Float.NaN;
@@ -660,9 +674,14 @@ public final class DamageTrace {
 		}
 	}
 
-	/** Mirror of {@code archetypes$greatswordDamage}. */
+	/**
+	 * Mirror of {@code archetypes$greatswordDamage}. Takes the incoming amount
+	 * because the last stage needs it: Blade Master, like Flense, is computed
+	 * against the damage the rest of the chain produced rather than off ranks
+	 * alone.
+	 */
 	private static float explainGreatsword(final Frame frame, final ServerPlayer attacker,
-			final LivingEntity victim) {
+			final LivingEntity victim, final float before) {
 		Set<Integer> owned = NodePurchases.owned(attacker, SubTree.SLAYER);
 		float product = 1.0F;
 
@@ -681,16 +700,59 @@ public final class DamageTrace {
 
 		int executioner = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.EXECUTIONER);
 		boolean finishable = victim.getHealth() <= victim.getMaxHealth() * Tuning.EXECUTE_THRESHOLD;
+		// What Blade Master will actually be handed. Normally the chain's own
+		// product, but the Executioner clamp is a floor rather than a factor, so
+		// on an execute it is the clamp that Blade Master compensates — and a
+		// trace that reported the pre-clamp factor would understate by an order
+		// of magnitude on precisely the blow the author would be inspecting.
+		float chained = before * product;
 
 		if (executioner > 0 && finishable) {
 			clamp(frame, SlayerNodes.Family.EXECUTIONER.nameKey(),
 					healthNote(victim, Tuning.EXECUTE_THRESHOLD));
+			chained = Math.max(chained, victim.getHealth() + 100.0F);
 		} else {
 			factor(frame, SlayerNodes.Family.EXECUTIONER.nameKey(), false, 1.0F,
 					executioner > 0 ? healthNote(victim, Tuning.EXECUTE_THRESHOLD) : note("unowned"));
 		}
 
-		return product;
+		return product * explainBladeMaster(frame, attacker, victim, chained);
+	}
+
+	/**
+	 * Mirror of the Blade Master stage, which the handler runs LAST and against
+	 * the damage the rest of the chain produced — so this one takes that number
+	 * rather than deriving it from ranks, exactly like {@link #explainFlense}.
+	 *
+	 * <p>The note reports BOTH mitigations side by side, because the node
+	 * answers both and reading only one of them is how "cut through full
+	 * enchanted netherite" gets believed too early: the armour share at this
+	 * blow's magnitude with and without the ignored plate, then the victim's
+	 * clamped EPF and what is left of it after the bite.
+	 */
+	private static float explainBladeMaster(final Frame frame, final ServerPlayer attacker,
+			final LivingEntity victim, final float damage) {
+		int rank = ColossusSlayer.rank(attacker, ColossusSlayerNodes.Family.BLADE_MASTER);
+
+		if (rank <= 0) {
+			factor(frame, ColossusSlayerNodes.Family.BLADE_MASTER.nameKey(), false, 1.0F,
+					note("unowned"));
+			return 1.0F;
+		}
+
+		float ignore = Math.min(1.0F, Tuning.BLADE_MASTER_ARMOUR_IGNORE_PER_RANK * rank);
+		float armour = ArmourMath.armour(victim);
+		float protection = ColossusSlayer.protectionPoints(frame.level, victim, frame.source);
+		float bitten = Math.max(0.0F,
+				protection - Tuning.BLADE_MASTER_PROTECTION_BITE_PER_RANK * rank);
+		float value = ColossusSlayer.bladeMasterFactor(attacker, frame.level, victim, frame.source,
+				damage);
+		factor(frame, ColossusSlayerNodes.Family.BLADE_MASTER.nameKey(), true, value,
+				note("blade_master", num(armour), pct(ignore),
+						pct(ArmourMath.mitigation(victim, damage, armour)),
+						pct(ArmourMath.mitigation(victim, damage, armour * (1.0F - ignore))),
+						num(protection), num(bitten)));
+		return value;
 	}
 
 	/**
