@@ -63,9 +63,21 @@ public final class ArmourMath {
 	private ArmourMath() {
 	}
 
-	/** The victim's armour points, as {@code getArmorValue} would report them. */
+	/**
+	 * The victim's armour points, as {@code getArmorValue} would report them —
+	 * and it reports them FLOORED ({@code LivingEntity.getArmorValue} is
+	 * {@code Mth.floor(getAttributeValue(ARMOR))}), which is the number vanilla
+	 * hands {@code CombatRules.getDamageAfterAbsorb}.
+	 *
+	 * <p>The floor was missing and is worth nothing on any vanilla mob or armour
+	 * set, all of which carry integral armour. It matters for a modded or
+	 * equipment-bearing victim with a fractional attribute: this class's whole
+	 * job is to predict vanilla's own arithmetic, and predicting it from an
+	 * input vanilla does not use makes the trace's mismatch alarm fire on a
+	 * stage that is arithmetically fine.
+	 */
 	public static float armour(final LivingEntity victim) {
-		return (float) victim.getAttributeValue(Attributes.ARMOR);
+		return Mth.floor(victim.getAttributeValue(Attributes.ARMOR));
 	}
 
 	/** The divisor the shred term uses: {@code 2 + toughness / 4}. */

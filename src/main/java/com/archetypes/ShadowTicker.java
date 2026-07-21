@@ -24,15 +24,51 @@ import net.minecraft.world.entity.monster.Monster;
 public final class ShadowTicker {
 	private static final Identifier SWIFT_ID = Archetypes.id("swift_shadow");
 
+	/**
+	 * Bloodrush's window: player uuid to the game tick it closes.
+	 *
+	 * <p>A plain static map rather than an attachment, and the reason is what
+	 * the window is FOR: it is read once, by {@code archetypes$daggerDamage} on
+	 * the server thread, in the same tick loop that writes it, and no client
+	 * renders it. It is transient by intent — a killing spree does not survive a
+	 * restart — and {@link #initialize} drops closed entries every tick, so it
+	 * is bounded by the number of players currently mid-spree.
+	 */
+	private static final java.util.Map<java.util.UUID, Long> BLOODRUSH_UNTIL =
+			new java.util.HashMap<>();
+
 	private ShadowTicker() {
 	}
 
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			long now = server.overworld().getGameTime();
+			BLOODRUSH_UNTIL.values().removeIf(until -> until <= now);
+
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 				tick(player);
 			}
 		});
+	}
+
+	/**
+	 * Bloodrush's term in the ambush box: its per-rank value while the window a
+	 * kill from the dark opened is still open, zero otherwise.
+	 *
+	 * <p>Deliberately NOT gated on still being invisible. The kill is what the
+	 * node is about — Predator refreshes the dark on a kill anyway, so an
+	 * invisibility test would either be redundant or would silently delete the
+	 * node for a Shadow who has not bought Predator.
+	 */
+	public static float bloodrushBonus(final ServerPlayer player) {
+		Long until = BLOODRUSH_UNTIL.get(player.getUUID());
+
+		if (until == null || player.level().getGameTime() >= until) {
+			return 0.0F;
+		}
+
+		return Tuning.BLOODRUSH_PER_RANK * ShadowNodes.rank(SubTree.SHADOW,
+				NodePurchases.owned(player, SubTree.SHADOW), ShadowNodes.Family.BLOODRUSH);
 	}
 
 	private static void tick(final ServerPlayer player) {
@@ -72,29 +108,19 @@ public final class ShadowTicker {
 			}
 		}
 
-		// First Strike: Strength I at rank one, II at rank two, held for
-		// exactly as long as the dark is. It used to be a damage MULTIPLIER on
-		// the hurtServer funnel, which meant it multiplied a number the ambush
-		// box was about to multiply again; as a flat ATTACK_DAMAGE grant it is
-		// one term the rest of the chain scales, which is the whole point of
-		// the move.
+		// First Strike is no longer asserted here, and nothing replaces it in
+		// this file. It was Strength I/II for as long as the dark held, and
+		// before that a damage multiplier on the hurtServer funnel; it is now a
+		// SUMMAND in the ambush box (archetypes$daggerDamage), gated on the same
+		// invisibility this ticker used to test.
 		//
-		// Asserted here rather than removed on the way out, for the reason
-		// Night Stalker's comment below spells out: an explicit removeEffect
-		// would take a potion's or Riposte's Strength buried under ours with
-		// it. Letting a five-tick instance lapse cannot strand anything — a
-		// respec, a dispelled invisibility or a logout all end it inside a
-		// quarter second, because nothing has to notice they happened.
-		int firstStrike = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.FIRST_STRIKE);
-
-		if (invisible && firstStrike > 0) {
-			// ambient + invisible + showIcon: no particles, because a stealth
-			// tree must not paint the player it just hid, and ambient is what
-			// keeps the HUD icon steady at this duration (Hud only flickers a
-			// non-ambient effect inside its last 200 ticks).
-			player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, Tuning.FIRST_STRIKE_TICKS,
-					firstStrike - 1, true, false, true));
-		}
+		// The Strength form was the worse of the three, not the better:
+		// MobEffects.STRENGTH is +3.0 ADD_VALUE per level, so rank 2 was +6.0 on
+		// a weapon whose entire ATTACK_DAMAGE is 4.8, and it sat BELOW the box —
+		// which then multiplied it by up to 7.55. A flat term underneath a
+		// multiplier is exactly the shape the box was built to abolish, and it
+		// alone was eating ~44% of the PvE damage budget. See
+		// Tuning.FIRST_STRIKE_PER_RANK.
 
 		// Night Stalker: invisible under a night sky, you move like a hunter —
 		// Jump Boost II and Slow Falling. Re-asserted each tick while the hunt
@@ -189,8 +215,18 @@ public final class ShadowTicker {
 		int bloodrush = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.BLOODRUSH);
 
 		if (bloodrush > 0) {
-			player.addEffect(new MobEffectInstance(
-					MobEffects.STRENGTH, Tuning.BLOODRUSH_TICKS, bloodrush - 1));
+			// A stamp, not a Strength grant. Bloodrush was
+			// addEffect(STRENGTH, 80, rank - 1) — the identical construct to the
+			// one First Strike just lost, on the identical arc, and it broke the
+			// ambush box's declared ceilings the same way: Strength II is +6.0
+			// on a 4.8 dagger, so the amount entering the funnel became 13.8
+			// rather than 7.8 and the crouched opener reached 320 raw, which
+			// one-shots the 300 HP Wither the PvE window exists to protect.
+			// The node now pays as a summand inside the box (Tuning.
+			// BLOODRUSH_PER_RANK), which is worth its face value instead of its
+			// face value times everything else.
+			BLOODRUSH_UNTIL.put(player.getUUID(),
+					player.level().getGameTime() + Tuning.BLOODRUSH_TICKS);
 		}
 
 		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.REAPER) > 0) {

@@ -112,9 +112,21 @@ public final class DamageTrace {
 	/** {@code archetypes$daggerDamage}: the whole Assassin/Nemesis Assassin chain. */
 	public static final String STAGE_DAGGER = "dagger";
 
-	// First Strike has no stage: it is Strength on the ATTACK_DAMAGE attribute
-	// now, so it is already inside the amount this trace starts from, the same
-	// way Blade Master and Bare-Knuckle are.
+	/**
+	 * {@code archetypes$flense}: Flense alone, its own mixin at priority 1500 so
+	 * it runs after every other HEAD shaper on the funnel — this mod's and a
+	 * sibling's alike. It is a stage rather than a tail on {@link #STAGE_DAGGER}
+	 * for exactly the reason it is its own mixin: the number it is fed is not
+	 * the dagger stage's output, so a mirror deriving it from that output would
+	 * disagree with the handler on every armoured hit and print a red mismatch
+	 * on all of them.
+	 */
+	public static final String STAGE_FLENSE = "flense";
+
+	// First Strike and Bloodrush have no stage of their own: they are summands
+	// inside the dagger stage's ambush box now (they were Strength on the
+	// ATTACK_DAMAGE attribute, which is what let them multiply by the box), so
+	// explainDagger prints them as box terms next to Death Mark and Headhunter.
 
 	/** {@code archetypes$sunderDamage}: Meteor's smash bonus and Sunder's shred. */
 	public static final String STAGE_SUNDER = "sunder";
@@ -649,7 +661,7 @@ public final class DamageTrace {
 	/** Whether a stage has anything to say beyond its own before/after. */
 	private static boolean hasBreakdown(final String stage) {
 		return STAGE_GREATSWORD.equals(stage) || STAGE_DAGGER.equals(stage)
-				|| STAGE_SUNDER.equals(stage);
+				|| STAGE_SUNDER.equals(stage) || STAGE_FLENSE.equals(stage);
 	}
 
 	private static void explain(final Frame frame, final String stage, final ServerPlayer attacker,
@@ -658,6 +670,11 @@ public final class DamageTrace {
 			case STAGE_GREATSWORD -> explainGreatsword(frame, attacker, victim, before);
 			case STAGE_DAGGER -> explainDagger(frame, attacker, victim, before);
 			case STAGE_SUNDER -> explainSunder(frame, attacker, victim);
+			// Handed the same `before` the handler was handed, which is the
+			// whole point of the split: the mirror no longer has to guess what
+			// the chain looked like by the time Flense saw it.
+			case STAGE_FLENSE -> explainFlense(frame, attacker, victim,
+					NodePurchases.owned(attacker, SubTree.ASSASSIN), before);
 			default -> Float.NaN;
 		};
 
@@ -796,6 +813,29 @@ public final class DamageTrace {
 				headhunter > 0 ? note(marked ? "marked" : "unmarked") : note("unowned"));
 		ambush += huntBonus;
 
+		// The dark's two terms. Both were Strength grants and neither had a
+		// line here, because a term on the ATTACK_DAMAGE attribute is already
+		// inside the base the header prints. They are box summands now, so they
+		// are printed exactly like Death Mark's and Headhunter's — and the
+		// gates are read the same way the handler reads them, from the live
+		// player, not reconstructed.
+		int firstStrike = ShadowNodes.rank(SubTree.SHADOW,
+				NodePurchases.owned(attacker, SubTree.SHADOW), ShadowNodes.Family.FIRST_STRIKE);
+		boolean dark = attacker.hasEffect(net.minecraft.world.effect.MobEffects.INVISIBILITY);
+		float strikeBonus = firstStrike > 0 && dark
+				? Tuning.FIRST_STRIKE_PER_RANK * firstStrike : 0.0F;
+		bonus(frame, ShadowNodes.Family.FIRST_STRIKE.nameKey(), strikeBonus > 0.0F, strikeBonus,
+				firstStrike <= 0 ? note("unowned") : dark ? note("invisible") : note("visible"));
+		ambush += strikeBonus;
+
+		int bloodrush = ShadowNodes.rank(SubTree.SHADOW,
+				NodePurchases.owned(attacker, SubTree.SHADOW), ShadowNodes.Family.BLOODRUSH);
+		float rushBonus = ShadowTicker.bloodrushBonus(attacker);
+		bonus(frame, ShadowNodes.Family.BLOODRUSH.nameKey(), rushBonus > 0.0F, rushBonus,
+				bloodrush <= 0 ? note("unowned")
+						: rushBonus > 0.0F ? note("bloodrush") : note("no_recent_kill"));
+		ambush += rushBonus;
+
 		Long stepStrike = ((AttachmentTarget) attacker).getAttached(ModAttachments.STEP_STRIKE_AT);
 		boolean stepping = stepStrike != null && stepStrike == attacker.level().getGameTime();
 
@@ -807,7 +847,14 @@ public final class DamageTrace {
 				note("ambush")));
 		product *= ambush;
 
-		return product * explainFlense(frame, attacker, victim, owned, before * product);
+		// No Flense tail. It is its own stage now, with its own mirror, because
+		// it is fed a number this method cannot see: the handler runs at
+		// priority 1500, after a sibling mod has already multiplied the same
+		// amount. Deriving `before * product` and calling explainFlense on it
+		// would have been wrong by that sibling's whole factor — x1.5 on a
+		// player, x4.5 on an unaware mob — and the mismatch check a few lines up
+		// would have painted a red line on every armoured dagger hit.
+		return product;
 	}
 
 	/**
@@ -872,10 +919,17 @@ public final class DamageTrace {
 	}
 
 	/**
-	 * Mirror of the Flense stage, which the handler runs LAST and against the
-	 * damage the rest of the chain produced — so this one takes that number
-	 * rather than deriving it from ranks, and reports the armour curve at that
-	 * magnitude beside the share being ignored. Reading a Flense line on a big
+	 * Mirror of the Flense stage. The handler ({@code FlenseMixin}) runs at
+	 * priority 1500, i.e. after every other HEAD shaper on the funnel including
+	 * a sibling mod's, so the damage it is fed is the damage that will actually
+	 * LAND — not this mod's product. This mirror therefore takes that number as
+	 * its argument rather than deriving it from ranks or from the dagger stage,
+	 * and the caller is {@code explain}, which hands it the very {@code before}
+	 * the handler recorded. Anything else re-introduces the disagreement the
+	 * stage split exists to remove.
+	 *
+	 * <p>It reports the armour curve at that magnitude beside the share being
+	 * ignored. Reading a Flense line on a big
 	 * hit and a small one back to back is the clearest statement of what the
 	 * node now is: the same 60% of armour ignored both times, worth very little
 	 * on the blow that had already flattened the armour and roughly double on

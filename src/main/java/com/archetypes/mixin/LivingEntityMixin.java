@@ -274,13 +274,14 @@ public abstract class LivingEntityMixin {
 	/**
 	 * The dagger's damage shaping and DoTs, all on the victim's intake:
 	 * Razor Edge's steel, Expose's finishing bonus, one summed ambush box for
-	 * everything Death Mark and the Shadow Step are worth, Flense ignoring a
-	 * share of the armour the blow is about to meet — and the Venom/Blight
-	 * coatings applied here so they land even on killing blows.
+	 * everything Death Mark, the dark and the Shadow Step are worth — and the
+	 * Venom/Blight coatings applied here so they land even on killing blows.
 	 *
-	 * <p>The order is load-bearing in exactly one place: Flense runs last,
-	 * because the armour it discounts is only worth what the size of THIS blow
-	 * makes it worth. Everything else here commutes.
+	 * <p>Nothing left in this method is order-sensitive: two multiplies, one
+	 * sum, one multiply, and a floor. The one stage that WAS, Flense, has moved
+	 * out to {@link FlenseMixin} — it has to run after every other HEAD shaper
+	 * on this funnel including a sibling mod's, and a position inside this
+	 * method could only ever order it against our own.
 	 *
 	 * <p>Swing-gated, and this branch needed it worst of all, because the coatings
 	 * are APPLIED here rather than merely scaled. A dagger is the Nemesis Shadow's
@@ -341,6 +342,27 @@ public abstract class LivingEntityMixin {
 					* com.archetypes.NemesisAssassinNodes.rank(player,
 							com.archetypes.NemesisAssassinNodes.Family.HEADHUNTER);
 		}
+
+		// First Strike and Bloodrush, the two terms that used to be Strength on
+		// the ATTACK_DAMAGE attribute and are now summands like everything else.
+		//
+		// The move is the box's founding argument applied to its last two
+		// exceptions: a flat +6 sitting BELOW this multiply was worth +6 x 7.55,
+		// which is not a node, it is a second capstone. Their gates are
+		// unchanged — invisibility for First Strike, a kill from the dark inside
+		// the last four seconds for Bloodrush (ShadowTicker owns the window).
+		int firstStrike = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
+				NodePurchases.owned(player, SubTree.SHADOW),
+				com.archetypes.ShadowNodes.Family.FIRST_STRIKE);
+
+		// hasEffect rather than isInvisible(): the ticker's gate, kept verbatim,
+		// so the node still means "from the dark" and not "from a spectator".
+		if (firstStrike > 0
+				&& player.hasEffect(net.minecraft.world.effect.MobEffects.INVISIBILITY)) {
+			ambush += Tuning.FIRST_STRIKE_PER_RANK * firstStrike;
+		}
+
+		ambush += com.archetypes.ShadowTicker.bloodrushBonus(player);
 
 		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
 		boolean stepping = stepStrike != null && stepStrike == level.getGameTime();
@@ -406,30 +428,25 @@ public abstract class LivingEntityMixin {
 
 		if (executing) {
 			// Executioner's idiom verbatim: past every resistance.
+			//
+			// This floor is written BEFORE Skill Proficiencies' own multipliers
+			// (they run after this handler — see FlenseMixin's class comment for
+			// the whole ordering), so what actually reaches vanilla is
+			// (health + 100) x their factor. That is deliberate and it is the
+			// safe direction: the clamp exists to guarantee a kill, and a
+			// downstream multiply can only make a floor larger. Compensating it
+			// would need to predict a sibling mod's gates, which is how the
+			// execute would silently stop executing the day one of them changed.
 			result = Math.max(result, victim.getHealth() + 100.0F);
 		}
 
-		// Flense, LAST, and deliberately so.
-		//
-		// The node reads "the blow ignores this much of the target's armour",
-		// and what armour is worth depends on how big the blow is — vanilla
-		// degrades it by damage/toughness before applying it. So the value fed
-		// to the curve has to be the damage that will actually arrive, which is
-		// everything above this line and nothing below it. Feeding the HEAD
-		// amount instead would price a netherite target's armour at the 7.8 of
-		// a bare swing while dealing a hundred; feeding the post-Flense number
-		// would be circular. Running the stage last makes the input single
-		// valued, and it is what turns Flense from a switch into a curve:
-		// near-worthless on an alpha strike, because a blow that size has
-		// already shred the armour to its floor, and worth roughly double on
-		// the ordinary stab it was always supposed to be about.
-		int flense = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
-				com.archetypes.AssassinNodes.Family.FLENSE);
-
-		if (flense > 0) {
-			result *= com.archetypes.ArmourMath.ignoreArmourFactor(victim, result,
-					Tuning.FLENSE_ARMOUR_IGNORE_PER_RANK * flense);
-		}
+		// Flense USED to run here, last, and it no longer lives in this method
+		// at all — see FlenseMixin, which is the same code at priority 1500 so
+		// that it runs after every other hurtServer HEAD shaper on the funnel,
+		// this mod's and Skill Proficiencies' alike. The reason it had to move
+		// is in that class's comment: at the magnitudes this box now produces,
+		// the armour curve's answer depends on which side of a sibling's x1.5
+		// the stage is fed, to the tune of 13%.
 
 		int venom = com.archetypes.AssassinNodes.rank(SubTree.ASSASSIN, owned,
 				com.archetypes.AssassinNodes.Family.VENOM);
@@ -591,11 +608,11 @@ public abstract class LivingEntityMixin {
 		return amount - absorbed;
 	}
 
-	// First Strike no longer shapes damage here. It grants Strength I/II while
-	// the player is invisible (asserted in ShadowTicker), so it reaches the
-	// blow through the ATTACK_DAMAGE attribute — one term the ambush box then
-	// scales, instead of a seventh multiplier stacked over it. Nothing on this
-	// funnel replaces it, and DamageTrace's mirror went with the handler.
+	// First Strike has its own hook no longer, and no attribute grant either:
+	// it is a summand inside the ambush box above, next to Bloodrush. The
+	// Strength detour it took in between was the worst of the three forms —
+	// a flat +6 UNDER a x7.55 multiply — and both nodes came back into the box
+	// in the same pass. DamageTrace's mirror moved with them.
 
 	/**
 	 * Dim Presence: while sneaking, mobs notice this player 20% per rank less

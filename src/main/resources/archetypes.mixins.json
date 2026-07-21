@@ -11,6 +11,7 @@
 		"DamageTraceMixin",
 		"EntityMixin",
 		"ExperienceOrbMixin",
+		"FlenseMixin",
 		"FoodDataMixin",
 		"FoodPropertiesMixin",
 		"HealOrHarmMobEffectMixin",

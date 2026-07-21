@@ -341,16 +341,42 @@ public final class Tuning {
 	public static final float DARK_MENDING_HEAL = 2.0F;
 	public static final float DIM_PRESENCE_PER_RANK = 0.20F;
 	/**
-	 * First Strike: Strength I/II held for as long as the invisibility does,
-	 * re-asserted each tick and left to lapse the moment it ends — the same
-	 * shape (and the same reasoning) as {@link #NIGHT_STALKER_TICKS}, so a
-	 * potion's or Riposte's Strength buried under ours comes back instead of
-	 * being discarded with it. Short enough that teardown reads as immediate;
-	 * the instance is granted ambient so the HUD icon sits steady rather than
-	 * strobing the way vanilla paints an effect inside its last ten seconds.
+	 * First Strike: a summand in the ambush box, per rank, while the player is
+	 * invisible — NOT a Strength grant any more.
+	 *
+	 * <h2>Why it stopped being Strength</h2>
+	 * {@code MobEffects.STRENGTH} is +3.0 ADD_VALUE per amplifier level, so rank
+	 * 2 was +6.0 on a netherite dagger whose whole ATTACK_DAMAGE is 4.8. It sat
+	 * BELOW the box on the attribute, so the box multiplied it: at the ambush
+	 * box's ceiling a flat +6 was worth +6 x 7.55 = +45 raw, and it ate ~44% of
+	 * the PvE damage budget before a single Nemesis node fired. A summand costs
+	 * its own face value, which is the entire argument the box exists to make
+	 * (see {@link #COUP_DE_GRACE_PLAYER_BONUS}).
+	 *
+	 * <p>0.25/rank puts it level with {@link #HEADHUNTER_PER_RANK}, which is
+	 * what makes the node description writable as a number.
 	 */
-	public static final int FIRST_STRIKE_TICKS = 5;
-	/** Bloodrush: Strength I/II for this long, on kills while invisible. */
+	public static final float FIRST_STRIKE_PER_RANK = 0.25F;
+	/**
+	 * Bloodrush: a summand in the ambush box, per rank, for
+	 * {@link #BLOODRUSH_TICKS} after a kill made from inside the dark. It was a
+	 * Strength I/II grant and went the same way First Strike did, for the same
+	 * reason and by the same arithmetic — it is the identical construct on the
+	 * identical arc, and leaving it as Strength would have meant the box's
+	 * declared ceilings were not ceilings at all: with Strength II live the
+	 * amount entering the funnel is 13.8 rather than 7.8, and the crouched
+	 * opener reaches 320 raw, which ONE-SHOTS the 300 HP Wither the whole PvE
+	 * window is drawn to exclude.
+	 *
+	 * <p>Smaller per rank than {@link #FIRST_STRIKE_PER_RANK} on purpose, and
+	 * the reason is a ceiling rather than a judgement about the node: Bloodrush
+	 * is strictly additive ON TOP of First Strike (both want invisibility;
+	 * Bloodrush merely also wants a fresh kill), so the number the PvE ceiling
+	 * has to hold is the pair. +0.20 is what the Ender Dragon's head leaves —
+	 * see the window arithmetic on {@link #COUP_DE_GRACE_PLAYER_BONUS}.
+	 */
+	public static final float BLOODRUSH_PER_RANK = 0.10F;
+	/** How long Bloodrush's window stays open after a kill from the dark. */
 	public static final int BLOODRUSH_TICKS = 80;
 	public static final float REAPER_HEAL = 4.0F;
 	public static final float STILLNESS_DURATION_PER_RANK = 0.5F;
@@ -371,8 +397,21 @@ public final class Tuning {
 	 * the ambush box (see {@link #COUP_DE_GRACE_PLAYER_BONUS}), not a
 	 * multiplier of its own — it is the box's largest single term, which is
 	 * the relative standing the old x3.0 had among the step multipliers.
+	 *
+	 * <p>Was 4.5F. It is the single largest summand and therefore where the
+	 * bulk of the retune landed: together with First Strike's Strength grant
+	 * leaving the attribute, this is the /3.2 the PvE opener needed to stop
+	 * one-shotting a Wither. It stays the box's biggest term.
+	 *
+	 * <p>Known consequence, not fixed here: Shadow Flurry doubles the Shadow
+	 * Step cooldown ({@link #SHADOW_STEP_FLURRY_COOLDOWN_TICKS}). At 4.5 it took
+	 * the mob box 3.00 -> 7.50, x2.50 damage for x0.5 uptime — a clear buy. At
+	 * 1.5 it takes 2.65 -> 4.15, x1.57 for x0.5 uptime, i.e. a net LOSS for
+	 * anyone who steps more than once a fight. Cutting the flurry cooldown to
+	 * ~400 ticks puts it back on the right side and costs neither target
+	 * anything; it is left alone here because it is a pacing decision.
 	 */
-	public static final float SHADOW_FLURRY_BONUS = 4.5F;
+	public static final float SHADOW_FLURRY_BONUS = 1.5F;
 	/** Daggers shove half as hard as a sword would. */
 	public static final float DAGGER_KNOCKBACK_FACTOR = 0.5F;
 
@@ -408,8 +447,10 @@ public final class Tuning {
 	public static final float FLENSE_ARMOUR_IGNORE_PER_RANK = 0.30F;
 	/** Twin Fangs: the off-hand dagger joins the step strike, additively into
 	 * the ambush box, scaled by its damage against the main hand's — identical
-	 * daggers give the whole term. */
-	public static final float TWIN_FANGS_OFFHAND_BONUS = 1.25F;
+	 * daggers give the whole term. Was 1.25F; kept at roughly the same share of
+	 * {@link #SHADOW_FLURRY_BONUS} (28% -> 27%) so the two step-gated nodes hold
+	 * their relative worth through the retune. */
+	public static final float TWIN_FANGS_OFFHAND_BONUS = 0.40F;
 
 	// --- Mana (the Seeker's resource; Spellcasting skill in Specialities) ---
 	public static final float MANA_BASE = 100.0F;
@@ -914,19 +955,77 @@ public final class Tuning {
 	 *
 	 * <h2>The ambush box</h2>
 	 * This term, {@link #SHADOW_FLURRY_BONUS}, {@link #TWIN_FANGS_OFFHAND_BONUS},
-	 * {@link #DEATH_MARK_DAMAGE_FACTOR} and {@link #HEADHUNTER_PER_RANK} are
-	 * summed into ONE multiplier — the ambush
-	 * box — rather than multiplied one over the next. Nine multiplicative
-	 * sources with no ceiling are what turned one bad Flense constant into a
-	 * 9.4x overkill: the product of the old step chain was x25.3 and the box is
-	 * x9.75 with everything lit (x11.0 before the night form's 1.25 term left
-	 * it), and every future node added here costs its own
-	 * face value instead of its face value times everything already in the box.
-	 * Coup de Grace lives INSIDE the box deliberately; it is the only
-	 * player-exclusive term and leaving it outside is what let the collapse be
-	 * undone by the one build that takes the capstone.
+	 * {@link #DEATH_MARK_DAMAGE_FACTOR}, {@link #HEADHUNTER_PER_RANK},
+	 * {@link #FIRST_STRIKE_PER_RANK} and {@link #BLOODRUSH_PER_RANK} are summed
+	 * into ONE multiplier — the ambush box — rather than multiplied one over the
+	 * next. Nine multiplicative sources with no ceiling are what turned one bad
+	 * Flense constant into a 9.4x overkill: the product of the old step chain
+	 * was x25.3, and every node added to a sum costs its own face value instead
+	 * of its face value times everything already in the box. Coup de Grace lives
+	 * INSIDE the box deliberately; it is the only player-exclusive term and
+	 * leaving it outside is what let the collapse be undone by the one build
+	 * that takes the capstone.
+	 *
+	 * <p><b>Nothing flat may sit below the box.</b> That is the rule the two
+	 * deleted Strength grants (First Strike, Bloodrush) broke: a +6 on the
+	 * ATTACK_DAMAGE attribute is worth 6 x box, so while either was live the
+	 * ceilings below were fiction. Every term is now a summand or it is nothing.
+	 *
+	 * <h2>The declared ceilings</h2>
+	 * With every node maxed, a live mark, invisibility, a Shadow Step and (for
+	 * the "+kill" rows) Bloodrush's window open:
+	 * <pre>
+	 *   vs a mob     1 + 0.25 DM + 0.50 HH + 0.50 FS + 1.50 SF + 0.40 TF        = 4.15
+	 *                                                     + 0.20 Bloodrush      = 4.35
+	 *   vs a player  the same, + 3.40 Coup de Grace                             = 7.55
+	 *                                                     + 0.20 Bloodrush      = 7.75
+	 *   sustained    marked stab, visible   1 + 0.25 + 0.50                     = 1.75
+	 *                marked stab, invisible                     + 0.50          = 2.25
+	 * </pre>
+	 *
+	 * <h2>How 3.40 was solved (and how far it may move)</h2>
+	 * Target: a maxed opener leaves a full-netherite, Protection IV, Defence 100
+	 * player (40 max HP) alive on 2-5 HP. That chain is affine in the box —
+	 * {@code landed = box x 4.88861} — because Flense lands in
+	 * {@code ArmourMath} branch 3, whose ratio is damage-independent. So:
+	 * <pre>
+	 *   5 HP left  -> box 7.1595 -> CG 3.01
+	 *   2 HP left  -> box 7.7732 -> CG 3.62
+	 *   a kill     -> box 8.1823 -> CG 4.03
+	 * </pre>
+	 * 3.40 sits near the centre: 36.91 landed, 3.09 HP left, or 37.89 / 2.11 HP
+	 * with Bloodrush also lit — so the whole reachable band is inside the
+	 * window, and there is no state in which the opener kills. Every 0.10 of
+	 * this constant is worth 0.49 HP.
+	 *
+	 * <h2>The PvE window this is solved against</h2>
+	 * The mob box, times the fixed prefix 7.800 x 1.24 = 9.672 and Skill
+	 * Proficiencies' crouched x4.5, must one-shot a 100 HP Ravager and must not
+	 * one-shot the 300 HP Wither:
+	 * <pre>
+	 *   Ravager floor            box >= 2.30
+	 *   Ender Dragon head (200)  box &lt;  4.60   &lt;- the operative ceiling
+	 *   Wither ceiling (300)     box &lt;  6.98
+	 *   Warden  (500)            box &lt; 11.49
+	 * </pre>
+	 * 4.35 all-lit leaves the dragon's head 10.7 HP (5.3%). It is the DRAGON and
+	 * not the Wither that binds, and anyone topping a summand up should solve
+	 * against 4.60. An Iron Golem is byte-identical to a Ravager (100 HP, no
+	 * armour), so one-shotting one one-shots the other; that is accepted.
+	 *
+	 * <h2>Two things outside this mod that move these numbers</h2>
+	 * The 3.09 HP residual assumes Skill Proficiencies at its default
+	 * {@code combatDamageMaxBonus = 0.5} (Combat 100 = x1.5). Their config
+	 * permits up to 5.0, and their own javadoc invites 1.0 — at x2.0 the same
+	 * opener is lethal. And vanilla's own critical hit is NOT modelled here:
+	 * {@code AgilityActives.strike} is deliberately "one authentic full-charge
+	 * attack: enchants, crits and all", so a Shadow Step pressed while airborne
+	 * and falling multiplies the base damage (not the enchantment boost) by 1.5,
+	 * i.e. 10.2 into the funnel instead of 7.800, and the opener kills. Both are
+	 * stated rather than defended against, because defending against either
+	 * means no node can state a number in its description.
 	 */
-	public static final float COUP_DE_GRACE_PLAYER_BONUS = 2.25F;
+	public static final float COUP_DE_GRACE_PLAYER_BONUS = 3.40F;
 	/** Stalk: beyond this, a sneaking hunter is dropped by their own mark. Eight
 	 * blocks is inside a dagger's opening range, so the node hides the approach
 	 * and never the kill. */

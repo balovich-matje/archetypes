@@ -302,6 +302,16 @@ public final class AgilityActives {
 		((LivingEntityAccessor) player).archetypes$setAttackStrengthTicker(1000);
 		((AttachmentTarget) player).setAttached(ModAttachments.STEP_STRIKE_AT,
 				player.level().getGameTime());
+
+		// The step is not a fall. A teleport carries fallDistance and onGround
+		// across untouched (Entity.teleportSetPosition writes position, rotation
+		// and delta movement and nothing else), so jumping before the key and
+		// arriving mid-air handed the strike vanilla's x1.5 crit on top of the
+		// whole ambush bucket — enough to kill a full-netherite Protection IV
+		// player the bucket is tuned to leave standing. Clearing it here rather
+		// than reconstructing canCriticalAttack's private predicate inside the
+		// damage shaper keeps one number in one place.
+		player.resetFallDistance();
 		player.attack(victim);
 		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 	}
