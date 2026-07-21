@@ -1,0 +1,163 @@
+{
+	"name": "decimate_charge",
+	"author": "archetypes",
+	"description": "Decimate: a one-second greatsword wind-up whose cleave lands on tick 20",
+	"version": 3,
+	"emote": {
+		"isLoop": false,
+		"returnTick": 2,
+		"beginTick": 0,
+		"endTick": 26,
+		"stopTick": 28,
+		"degrees": true,
+		"moves": [
+			{
+				"tick": 0,
+				"easing": "EASEOUTQUAD",
+				"torso": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"rightArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				},
+				"leftArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				},
+				"rightItem": {
+					"pitch": 0
+				}
+			},
+			{
+				"tick": 3,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 8,
+					"yaw": 14
+				},
+				"rightArm": {
+					"pitch": -55,
+					"yaw": -22,
+					"roll": 8
+				},
+				"leftArm": {
+					"pitch": -48,
+					"yaw": -30,
+					"roll": -6
+				},
+				"rightItem": {
+					"pitch": -8
+				}
+			},
+			{
+				"tick": 11,
+				"easing": "EASEINOUTSINE",
+				"torso": {
+					"pitch": -16,
+					"yaw": 34
+				},
+				"rightArm": {
+					"pitch": -178,
+					"yaw": -26,
+					"roll": 12
+				},
+				"leftArm": {
+					"pitch": -160,
+					"yaw": -34,
+					"roll": -14
+				},
+				"rightItem": {
+					"pitch": -26
+				}
+			},
+			{
+				"tick": 16,
+				"easing": "EASEINCUBIC",
+				"torso": {
+					"pitch": -20,
+					"yaw": 40
+				},
+				"rightArm": {
+					"pitch": -188,
+					"yaw": -30,
+					"roll": 14
+				},
+				"leftArm": {
+					"pitch": -168,
+					"yaw": -38,
+					"roll": -16
+				},
+				"rightItem": {
+					"pitch": -34
+				}
+			},
+			{
+				"tick": 20,
+				"easing": "EASEOUTQUAD",
+				"torso": {
+					"pitch": 26,
+					"yaw": -34
+				},
+				"rightArm": {
+					"pitch": -32,
+					"yaw": 26,
+					"roll": -18
+				},
+				"leftArm": {
+					"pitch": -44,
+					"yaw": 18,
+					"roll": 14
+				},
+				"rightItem": {
+					"pitch": 30
+				}
+			},
+			{
+				"tick": 23,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 14,
+					"yaw": -18
+				},
+				"rightArm": {
+					"pitch": -20,
+					"yaw": 12,
+					"roll": -8
+				},
+				"leftArm": {
+					"pitch": -24,
+					"yaw": 8,
+					"roll": 6
+				},
+				"rightItem": {
+					"pitch": 14
+				}
+			},
+			{
+				"tick": 26,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"rightArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				},
+				"leftArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				},
+				"rightItem": {
+					"pitch": 0
+				}
+			}
+		]
+	}
+}

@@ -137,6 +137,10 @@ public final class SlayerActives {
 
 			target.setAttached(ModAttachments.DECIMATE_FREE_READY_AT,
 					now + Tuning.DECIMATE_FREE_COOLDOWN_TICKS);
+			// Marks this cast as the wind-up-less one, so every client — not
+			// just the caster's — plays the short cleave instead of a charge
+			// telegraph for a blow that has already landed.
+			target.setAttached(ModAttachments.DECIMATE_INSTANT_AT, now);
 			pose(player, now);
 			resolve(player, level, flat);
 			return true;

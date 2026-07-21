@@ -9,6 +9,8 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
+import com.archetypes.mixin.LivingEntityAccessor;
+
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
@@ -38,9 +40,10 @@ import org.jspecify.annotations.Nullable;
  * handed in — and closes it at RETURN, where the victim's remaining health is
  * final. In between, each shaping handler ends with exactly one
  * {@link #record(String, float, float)} call, and vanilla's own
- * {@code getDamageAfterArmorAbsorb} / {@code getDamageAfterMagicAbsorb} are
- * observed at their RETURN. Nothing here writes a damage number back; every
- * entry point takes floats and returns void.
+ * {@code applyItemBlocking}, {@code getDamageAfterArmorAbsorb} and
+ * {@code getDamageAfterMagicAbsorb} are observed at their RETURN through
+ * {@link #observe}. Nothing here writes a damage number back; every entry point
+ * takes floats and returns void.
  *
  * <h2>Cost when off</h2>
  * Every entry point opens with {@link #WATCHING}, one static boolean read, which
@@ -63,6 +66,40 @@ import org.jspecify.annotations.Nullable;
  * its own line. That alarm is the whole reason the duplication is safe — a gate
  * that moves in the handler and not here announces itself the first time it is
  * traced, instead of quietly lying.
+ *
+ * <h2>The two alarms, and why there have to be two</h2>
+ * They ask different questions and can fire independently on the same blow.
+ *
+ * <ul>
+ * <li><b>{@code mismatch}</b> — "<em>my mirror disagrees with my handler.</em>"
+ * Per stage, comparing the product this class re-derived against the
+ * {@code before}/{@code after} the handler actually recorded. Both numbers are
+ * this mod's. It catches a gate that moved in {@code LivingEntityMixin} and not
+ * in the mirror above.</li>
+ * <li><b>{@code unaccounted}</b> — "<em>somebody else is in this funnel.</em>"
+ * Once per blow, comparing the product of every factor the trace <em>observed</em>
+ * against what the victim demonstrably lost. Neither number is derived; both are
+ * measured. It catches damage this mod never touched at all.</li>
+ * </ul>
+ *
+ * <p>They cannot fight, because they share no term. The mismatch alarm reads
+ * {@code derived}, which the unaccounted alarm never looks at; the unaccounted
+ * alarm reads {@link Frame#clean} and the victim's health, which the mismatch
+ * alarm never looks at. A stage whose derivation is inexact (an Executioner
+ * clamp) silences the mismatch alarm for that stage only — {@link Frame#clean}
+ * still takes the handler's recorded ratio, because a clamp is still an honestly
+ * observed before/after even when it is not a multiplier.
+ *
+ * <h2>Why the unaccounted alarm exists</h2>
+ * Because the trace was not wrong, it was <em>short</em>. A fully built Nemesis
+ * ambush printed a chain ending at 126.94 and then killed a 500 HP Warden: a
+ * sibling mod's own {@code hurtServer} handlers had multiplied the same
+ * {@code amount} by another 4.5 in between, and nothing in this class was
+ * positioned to notice. A dev tool that presents a partial chain as if it were
+ * the whole chain is worse than no tool — the author used this one to verify a
+ * damage model and it silently omitted the largest factor in the blow. Every
+ * stage line it prints is still true; what it lacked was the ability to say
+ * "and something I cannot name did the rest".
  *
  * <p>Server thread only, like everything that reads {@link MeleeSwing}.
  */
@@ -94,12 +131,34 @@ public final class DamageTrace {
 	public static final String STAGE_INSTINCTIVE_GUARD = "instinctive_guard";
 	public static final String STAGE_BARBARIAN = "barbarian";
 
-	/** Vanilla's own two absorption steps, observed at their RETURN. */
+	/** Vanilla's own absorption steps, observed at their RETURN. */
 	public static final String STAGE_ARMOUR = "armour";
 	public static final String STAGE_PROTECTION = "protection";
+	public static final String STAGE_BLOCKING = "blocking";
+
+	/**
+	 * Vanilla's damage-cooldown carry-over, the one accounted step nothing
+	 * observes: inside a victim's i-frames {@code hurtServer} hands
+	 * {@code actuallyHurt} only {@code amount - lastHurt}, with no method call
+	 * around the subtraction to hang an injection on. It is reconstructed at the
+	 * armour stage instead — see {@link #account}.
+	 */
+	public static final String STAGE_COOLDOWN = "cooldown";
 
 	/** Above this relative gap the derived product is flagged as drifted. */
 	private static final float MISMATCH_TOLERANCE = 0.01F;
+
+	/**
+	 * Above this relative gap the blow is flagged as having passed through
+	 * something the trace never saw. Looser than {@link #MISMATCH_TOLERANCE},
+	 * which judges one stage in isolation: this one judges a ratio carried
+	 * through every stage of the chain, so it has a whole blow's worth of float
+	 * rounding behind it rather than one multiply's.
+	 */
+	private static final float UNACCOUNTED_TOLERANCE = 0.02F;
+
+	/** Below this, a damage figure is treated as zero and no ratio is formed. */
+	private static final float EPSILON = 1.0E-3F;
 
 	/** The flat 4%-a-point stand-in for vanilla's armour curve, capped at 80%.
 	 * Not vanilla's curve — vanilla degrades armour by {@code damage/toughness}
@@ -157,12 +216,54 @@ public final class DamageTrace {
 		 * to hold its tongue for that stage. */
 		private boolean exact = true;
 
+		/**
+		 * The victim's absorption at HEAD. Half of the landed-damage measurement:
+		 * {@code actuallyHurt} spends absorption before health, so a blow that
+		 * lands entirely on a golden-apple shield moves no health at all.
+		 */
+		private final float victimAbsorption;
+
+		/**
+		 * What vanilla will silently subtract before {@code actuallyHurt} because
+		 * the victim is still inside its i-frames — its {@code lastHurt}, read at
+		 * HEAD, or zero on the ordinary full-hit branch. Sampled here because by
+		 * the time anything downstream could ask, {@code hurtServer} has already
+		 * overwritten the field with this blow's amount.
+		 */
+		private final float cooldownFloor;
+
+		/** Whether {@link #cooldownFloor} still has to be folded into the chain. */
+		private boolean cooldownPending;
+
+		/**
+		 * The base carried through <em>only</em> the factors this trace observed:
+		 * {@code base} times every recorded {@code after / before}. Any shaping
+		 * done by a handler the trace does not know about is, by construction,
+		 * absent from this product — which is exactly what makes it comparable
+		 * against what actually landed.
+		 */
+		private float clean;
+
+		/**
+		 * The last number the trace watched vanilla carry, i.e. the most recent
+		 * stage's {@code after}. Unlike {@link #clean} this one <em>does</em>
+		 * include a stranger's work, because it is read off the funnel rather
+		 * than accumulated. The pair is the whole measurement: {@code clean} is
+		 * what the chain claims, {@code expected} is what the funnel holds.
+		 */
+		private float expected;
+
 		private Frame(final @Nullable ServerPlayer attacker, final LivingEntity victim,
-				final float base) {
+				final float base, final float cooldownFloor) {
 			this.attacker = attacker;
 			this.victim = victim;
 			this.base = base;
 			this.victimHealth = victim.getHealth();
+			this.victimAbsorption = victim.getAbsorptionAmount();
+			this.cooldownFloor = cooldownFloor;
+			this.cooldownPending = cooldownFloor > EPSILON;
+			this.clean = base;
+			this.expected = base;
 		}
 	}
 
@@ -213,7 +314,24 @@ public final class DamageTrace {
 
 		ServerPlayer attacker = source.getEntity() instanceof ServerPlayer player
 				&& WATCHED.contains(player.getUUID()) ? player : null;
-		STACK.push(new Frame(attacker, victim, amount));
+		STACK.push(new Frame(attacker, victim, amount, cooldownFloor(source, victim)));
+	}
+
+	/**
+	 * How much of this blow vanilla will throw away for the victim's damage
+	 * cooldown, decided exactly as {@code hurtServer} decides it a few lines
+	 * further down: past ten ticks of {@code invulnerableTime}, and for a damage
+	 * type that does not bypass the cooldown, only the excess over the last blow
+	 * is passed on. Read at HEAD or not at all — the branch that uses it also
+	 * overwrites {@code lastHurt} with this blow's amount.
+	 */
+	private static float cooldownFloor(final DamageSource source, final LivingEntity victim) {
+		if (victim.invulnerableTime <= 10
+				|| source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_COOLDOWN)) {
+			return 0.0F;
+		}
+
+		return Math.max(0.0F, ((LivingEntityAccessor) victim).archetypes$getLastHurt());
 	}
 
 	/**
@@ -236,6 +354,77 @@ public final class DamageTrace {
 			return;
 		}
 
+		account(frame, stage, before, after);
+	}
+
+	/**
+	 * The same as {@link #record}, for the vanilla steps {@code DamageTraceMixin}
+	 * observes rather than owns. It takes the entity whose method was observed
+	 * and drops the observation unless that entity is the innermost frame's
+	 * victim: {@code applyItemBlocking} and the two absorption helpers are public
+	 * and can be called from outside a {@code hurtServer} call, and an
+	 * observation attributed to somebody else's blow would poison the very
+	 * product the unaccounted alarm relies on.
+	 */
+	public static void observe(final LivingEntity self, final String stage, final float before,
+			final float after) {
+		if (!watching) {
+			return;
+		}
+
+		Frame frame = STACK.peek();
+
+		if (frame == null || frame.attacker == null || frame.victim != self) {
+			return;
+		}
+
+		account(frame, stage, before, after);
+	}
+
+	/**
+	 * Fold one stage into the frame: into the running products first, then into
+	 * the printed chain.
+	 *
+	 * <p>The accounting runs ahead of the "nothing changed, print nothing" gate
+	 * on purpose. A stage that multiplied by one still moves
+	 * {@link Frame#expected}, and moving it is how a stranger's contribution is
+	 * seen at all — on the Warden that started this, armour and Protection were
+	 * both x1 and printed nothing, yet the number they were handed was already
+	 * 4.5x what the chain had built.
+	 */
+	private static void account(final Frame frame, final String stage, final float before,
+			final float after) {
+		ServerPlayer attacker = frame.attacker;
+
+		if (attacker == null) {
+			return;
+		}
+
+		// The armour stage is the first thing inside actuallyHurt, so it is where
+		// vanilla's i-frame subtraction has already happened and can be undone:
+		// the amount the funnel really held was this stage's input plus the floor.
+		if (frame.cooldownPending && STAGE_ARMOUR.equals(stage)) {
+			float full = before + frame.cooldownFloor;
+
+			if (before > EPSILON && full > EPSILON) {
+				// A flat subtraction expressed as the factor it is, so that a
+				// partial hit is an ACCOUNTED shrink rather than a stranger's.
+				frame.clean *= before / full;
+				frame.lines.add(stageLine(STAGE_COOLDOWN, full, before));
+				frame.cooldownPending = false;
+			}
+
+			// Left pending on purpose when it could not be folded: a frame that
+			// still owes a subtraction it cannot express is one the unaccounted
+			// alarm declines to speak about at all.
+		}
+
+		if (before > EPSILON) {
+			frame.clean *= after / before;
+		}
+
+		frame.expected = after;
+
 		// A victim-side shaper that changed nothing is a node the victim does not
 		// own; printing it would bury the chain in blanks. An attacker-side stage
 		// that ran at all is worth a line even at x1 — that IS the finding.
@@ -246,7 +435,7 @@ public final class DamageTrace {
 		}
 
 		frame.lines.add(stageLine(stage, before, after));
-		explain(frame, stage, frame.attacker, frame.victim, before, after);
+		explain(frame, stage, attacker, frame.victim, before, after);
 	}
 
 	/**
@@ -256,8 +445,11 @@ public final class DamageTrace {
 	 * <p>Pops until it removes <em>this</em> victim's frame, which is how a leaked
 	 * frame from a hit some other injection cancelled at HEAD gets cleared out
 	 * instead of being mistaken for the caller's own.
+	 *
+	 * @param hurt {@code hurtServer}'s own return value, forwarded so the
+	 *     unaccounted alarm can tell "nothing landed" from "nothing was left".
 	 */
-	public static void finish(final LivingEntity victim) {
+	public static void finish(final LivingEntity victim, final boolean hurt) {
 		if (!watching) {
 			return;
 		}
@@ -281,14 +473,91 @@ public final class DamageTrace {
 		attacker.sendSystemMessage(Component.translatable(KEY + "header",
 				victim.getDisplayName(), num(frame.base)).withStyle(ChatFormatting.DARK_GRAY));
 
+		Component gap = unaccounted(frame, victim, hurt);
+
 		for (Component line : frame.lines) {
 			attacker.sendSystemMessage(line);
+		}
+
+		if (gap != null) {
+			attacker.sendSystemMessage(gap);
 		}
 
 		attacker.sendSystemMessage(Component.translatable(KEY + "result",
 				num(frame.victimHealth - victim.getHealth()),
 				num(victim.getHealth()), num(victim.getMaxHealth()))
 						.withStyle(ChatFormatting.DARK_GRAY));
+	}
+
+	// --- the unaccounted alarm ---
+
+	/**
+	 * The line that says the chain above is short, or null when it is not.
+	 *
+	 * <h2>Where "what landed" is sampled, and why there</h2>
+	 * Health delta alone is the obvious candidate and the wrong one: it reads
+	 * zero for a blow a golden apple ate whole, so every absorbed hit would be
+	 * denounced as a x0.00 reduction by a phantom mod. The sample taken here is
+	 * the drop in <em>health plus absorption</em> across the call, because that
+	 * is precisely the pair {@code actuallyHurt} spends — it subtracts what it
+	 * can from absorption, then puts the remainder through {@code setHealth} —
+	 * and {@code setAbsorptionAmount} clamps at zero, so the two deltas sum to
+	 * the damage applied without ever double-counting the overlap.
+	 *
+	 * <p>That sample is exact except at one edge, and the edge is a floor rather
+	 * than a fog: {@code setHealth} clamps at zero, so a blow that kills reports
+	 * only the health the victim had. When it is hit — the victim is dead or
+	 * dying, or the blow consumed their whole health-plus-absorption pool — the
+	 * measurement is replaced with {@link Frame#expected}, the last number the
+	 * trace watched the funnel carry, and the line is printed as a bound rather
+	 * than a value. The 500 HP Warden that provoked all this is exactly this
+	 * case: 500 lost, but Protection had already been handed 571.
+	 *
+	 * <h2>What is deliberately not counted</h2>
+	 * Everything the trace already prints as a stage. Vanilla's armour and
+	 * Protection steps are observed at their own RETURN and are therefore in
+	 * {@link Frame#clean} like any other factor, so they cancel out of the ratio
+	 * instead of masquerading as a stranger. So is shield blocking, and so is the
+	 * i-frame carry-over, reconstructed in {@link #account}. What is left over
+	 * after all of those is, by elimination, somebody else's.
+	 */
+	private static @Nullable Component unaccounted(final Frame frame, final LivingEntity victim,
+			final boolean hurt) {
+		// hurtServer said no: invulnerable, already dying, fire-immune, or inside
+		// i-frames with nothing to spare. Nothing landed and nothing is missing.
+		if (!hurt) {
+			return null;
+		}
+
+		// The i-frame subtraction was never reconciled because the armour step
+		// never ran, so the chain is short by an amount nobody can attribute.
+		// Silence beats a number that would be wrong in a knowable direction.
+		if (frame.cooldownPending || frame.clean <= EPSILON) {
+			return null;
+		}
+
+		float applied = Math.max(0.0F, (frame.victimHealth - victim.getHealth())
+				+ (frame.victimAbsorption - victim.getAbsorptionAmount()));
+		float pool = frame.victimHealth + frame.victimAbsorption;
+
+		// Three ways to know the measurement bottomed out. The third is the one
+		// that earns its keep: a totem fires from inside hurtServer, sets health
+		// back to 1 and hands out Absorption II, so by RETURN the victim is
+		// neither dead nor visibly emptied and the delta reads near zero — but
+		// the funnel was demonstrably carrying more than the victim owned.
+		boolean floored = victim.isDeadOrDying() || applied >= pool - EPSILON
+				|| frame.expected >= pool - EPSILON;
+		float landed = floored ? Math.max(applied, frame.expected) : applied;
+		float gap = landed / frame.clean;
+
+		if (Math.abs(gap - 1.0F) <= UNACCOUNTED_TOLERANCE) {
+			return null;
+		}
+
+		return Component.translatable(KEY + (floored ? "unaccounted_least" : "unaccounted"),
+				num(frame.clean), num(landed), num(gap),
+				note(gap > 1.0F ? "unaccounted_up" : "unaccounted_down"))
+						.withStyle(ChatFormatting.GOLD);
 	}
 
 	// --- line building ---

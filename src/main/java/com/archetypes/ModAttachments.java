@@ -109,6 +109,19 @@ public final class ModAttachments {
 			Archetypes.id("decimate_swing_at"),
 			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
 
+	/**
+	 * The tick a Decimate was cast WITHOUT its wind-up — the parry riposte's
+	 * instant path. Synced to everyone for the same reason the pose stamp is:
+	 * the client picks the charge animation or the short cleave off these two,
+	 * and an onlooker who cannot tell them apart watches a telegraph play for a
+	 * blow that already landed. Equal to {@code DECIMATE_SWING_AT} exactly when
+	 * this cast was the instant one; a stale value from an earlier riposte is
+	 * therefore harmless.
+	 */
+	public static final AttachmentType<Long> DECIMATE_INSTANT_AT = AttachmentRegistry.create(
+			Archetypes.id("decimate_instant_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
 
 	/** Game-time tick when the current bladestorm channel ends; synced to every
 	 * client so the spinning-blade renderer works for onlookers too. */

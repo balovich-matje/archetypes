@@ -11,8 +11,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * The brackets around a blow, and the two vanilla absorption steps — the only
- * part of {@link DamageTrace} that has to be a mixin.
+ * The brackets around a blow, and the vanilla steps between them — the only part
+ * of {@link DamageTrace} that has to be a mixin.
  *
  * <h2>Why its own class, and why the lowered priority</h2>
  * The trace's first line is meant to be the damage vanilla handed to
@@ -60,11 +60,44 @@ public abstract class DamageTraceMixin {
 		DamageTrace.begin(level, source, (LivingEntity) (Object) this, amount);
 	}
 
-	/** Close the frame and print it, with the health the blow actually left. */
+	/**
+	 * Close the frame and print it, with the health the blow actually left.
+	 *
+	 * <p>{@code cir.getReturnValueZ()} is forwarded because it is the only
+	 * honest way to tell "this blow landed for nothing" from "this blow never
+	 * happened". {@code hurtServer} returns false from four separate early exits
+	 * — invulnerable, already dying, fire-immune, and inside i-frames with
+	 * nothing above {@code lastHurt} to spare — and every one of them leaves a
+	 * frame whose stages all ran at HEAD and whose victim lost no health. Without
+	 * the flag the unaccounted alarm would read that as a stranger reducing the
+	 * blow to zero, and would cry wolf on every second swing of a fast weapon.
+	 *
+	 * <p>Priority 500 also decides that this runs before the other RETURN
+	 * injections on {@code hurtServer} (Hardened, and the kill bookkeeping),
+	 * which is what the landed-damage measurement needs: it samples health and
+	 * absorption, and it must sample them before anything downstream of the hit
+	 * gets to move either.
+	 */
 	@Inject(method = "hurtServer", at = @At("RETURN"))
 	private void archetypes$traceFinish(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
-		DamageTrace.finish((LivingEntity) (Object) this);
+		DamageTrace.finish((LivingEntity) (Object) this, cir.getReturnValueZ());
+	}
+
+	/**
+	 * Vanilla's shield step, observed as the first thing {@code hurtServer} does
+	 * to the amount after every HEAD shaper has had it. Here so that a blocked
+	 * blow is an accounted shrink: without it, raising a shield would make the
+	 * unaccounted alarm announce a phantom mod reducing the hit.
+	 *
+	 * <p>The method returns the amount it took off rather than what is left, so
+	 * the stage's {@code after} is the subtraction, not the return value.
+	 */
+	@Inject(method = "applyItemBlocking", at = @At("RETURN"))
+	private void archetypes$traceBlocking(final ServerLevel level, final DamageSource source,
+			final float damage, final CallbackInfoReturnable<Float> cir) {
+		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_BLOCKING,
+				damage, damage - cir.getReturnValueF());
 	}
 
 	/**
@@ -77,13 +110,15 @@ public abstract class DamageTraceMixin {
 	@Inject(method = "getDamageAfterArmorAbsorb", at = @At("RETURN"))
 	private void archetypes$traceArmor(final DamageSource source, final float damage,
 			final CallbackInfoReturnable<Float> cir) {
-		DamageTrace.record(DamageTrace.STAGE_ARMOUR, damage, cir.getReturnValueF());
+		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_ARMOUR,
+				damage, cir.getReturnValueF());
 	}
 
 	/** Vanilla's enchantment/resistance step: Protection IV lives here. */
 	@Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"))
 	private void archetypes$traceMagic(final DamageSource source, final float damage,
 			final CallbackInfoReturnable<Float> cir) {
-		DamageTrace.record(DamageTrace.STAGE_PROTECTION, damage, cir.getReturnValueF());
+		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_PROTECTION,
+				damage, cir.getReturnValueF());
 	}
 }
