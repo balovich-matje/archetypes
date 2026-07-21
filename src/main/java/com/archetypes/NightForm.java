@@ -20,7 +20,6 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
-import org.jspecify.annotations.Nullable;
 
 /**
  * The Nemesis Shadow's night form: the Dark Ritual's ten-second channel, the
@@ -67,8 +66,6 @@ import org.jspecify.annotations.Nullable;
  *       <td>standing in burning sunlight — drives the blinding overlay</td></tr>
  *   <tr><td>{@link #sensed} / {@link #sensedPlayers}</td><td>owner only</td>
  *       <td>Extra Sensory Perception's rosters, as entity ids</td></tr>
- *   <tr><td>{@link #empoweredNameKey}</td><td>anywhere</td>
- *       <td>the vampire name of an empowered Cutpurse active</td></tr>
  * </table>
  * The predicates take {@link Player}, not {@code ServerPlayer}, and are safe on
  * either side. Nothing here writes state off a client.
@@ -172,27 +169,10 @@ public final class NightForm {
 		return isActive(player) && rank(player, NemesisShadowNodes.Family.INCORPOREAL) > 0;
 	}
 
-	/**
-	 * The lang key of a Cutpurse active's empowered name while transformed, or
-	 * null if the active is unchanged (Invisibility) or the player is mortal.
-	 * The icon swap is the renderer's; this is the wording that goes with it.
-	 */
-	public static @Nullable String empoweredNameKey(final Player player, final SubTree tree,
-			final Enum<?> family) {
-		if (!isActive(player)) {
-			return null;
-		}
-
-		if (tree == SubTree.MARKSMAN && family == MarksmanNodes.Family.TRUE_SHOT) {
-			return "node.archetypes.marksman.true_shot.night";
-		}
-
-		if (tree == SubTree.ASSASSIN && family == AssassinNodes.Family.SHADOW_STEP) {
-			return "node.archetypes.assassin.shadow_step.night";
-		}
-
-		return null;
-	}
+	// The form no longer renames anything. True Shot and Shadow Step keep their
+	// own names and their own icons while transformed, because they keep their
+	// own damage: the empowered identities existed to announce the x1.5 and the
+	// ambush term, and both are gone.
 
 	// ------------------------------------------------------------------
 	// The ritual.

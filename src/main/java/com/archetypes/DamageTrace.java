@@ -112,8 +112,9 @@ public final class DamageTrace {
 	/** {@code archetypes$daggerDamage}: the whole Assassin/Nemesis Assassin chain. */
 	public static final String STAGE_DAGGER = "dagger";
 
-	/** {@code archetypes$firstStrike}: the Shadow's opener out of invisibility. */
-	public static final String STAGE_FIRST_STRIKE = "first_strike";
+	// First Strike has no stage: it is Strength on the ATTACK_DAMAGE attribute
+	// now, so it is already inside the amount this trace starts from, the same
+	// way Blade Master and Bare-Knuckle are.
 
 	/** {@code archetypes$sunderDamage}: Meteor's smash bonus and Sunder's shred. */
 	public static final String STAGE_SUNDER = "sunder";
@@ -634,7 +635,7 @@ public final class DamageTrace {
 	/** Whether a stage has anything to say beyond its own before/after. */
 	private static boolean hasBreakdown(final String stage) {
 		return STAGE_GREATSWORD.equals(stage) || STAGE_DAGGER.equals(stage)
-				|| STAGE_FIRST_STRIKE.equals(stage) || STAGE_SUNDER.equals(stage);
+				|| STAGE_SUNDER.equals(stage);
 	}
 
 	private static void explain(final Frame frame, final String stage, final ServerPlayer attacker,
@@ -642,7 +643,6 @@ public final class DamageTrace {
 		float derived = switch (stage) {
 			case STAGE_GREATSWORD -> explainGreatsword(frame, attacker, victim);
 			case STAGE_DAGGER -> explainDagger(frame, attacker, victim, before);
-			case STAGE_FIRST_STRIKE -> explainFirstStrike(frame, attacker);
 			case STAGE_SUNDER -> explainSunder(frame, attacker, victim);
 			default -> Float.NaN;
 		};
@@ -782,16 +782,8 @@ public final class DamageTrace {
 									: !marked ? note("unmarked") : note("player_only"));
 		}
 
-		boolean night = stepping && NightForm.isActive(attacker);
-		float nightBonus = night ? Tuning.NIGHT_FORM_SHADOW_STEP_BONUS : 0.0F;
-		frame.lines.add(night
-				? Component.translatable(KEY + "factor.add",
-						Component.translatable(KEY + "factor.night_form"),
-						num(nightBonus), note("night_form"))
-				: Component.translatable(KEY + "factor.off",
-						Component.translatable(KEY + "factor.night_form"),
-						stepping ? note("no_night_form") : notStepped));
-		sum += nightBonus;
+		// No night-form line: the Dark Ritual no longer weighs on the box, so
+		// there is nothing here for a trace to report either way.
 
 		int flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned,
 				AssassinNodes.Family.SHADOW_FLURRY);
@@ -843,15 +835,6 @@ public final class DamageTrace {
 				note("flense", num(armour), pct(ignore),
 						pct(ArmourMath.mitigation(victim, damage, armour)),
 						pct(ArmourMath.mitigation(victim, damage, armour * (1.0F - ignore)))));
-		return value;
-	}
-
-	/** Mirror of {@code archetypes$firstStrike}. */
-	private static float explainFirstStrike(final Frame frame, final ServerPlayer attacker) {
-		int rank = ShadowNodes.rank(SubTree.SHADOW, NodePurchases.owned(attacker, SubTree.SHADOW),
-				ShadowNodes.Family.FIRST_STRIKE);
-		float value = rank > 0 ? 1.0F + Tuning.FIRST_STRIKE_PER_RANK * rank : 1.0F;
-		factor(frame, ShadowNodes.Family.FIRST_STRIKE.nameKey(), rank > 0, value, rankNote(rank));
 		return value;
 	}
 

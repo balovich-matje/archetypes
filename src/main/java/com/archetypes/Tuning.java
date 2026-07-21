@@ -344,7 +344,16 @@ public final class Tuning {
 	public static final float SWIFT_SHADOW_SNEAK_REFUND_PER_RANK = 0.35F;
 	public static final float DARK_MENDING_HEAL = 2.0F;
 	public static final float DIM_PRESENCE_PER_RANK = 0.20F;
-	public static final float FIRST_STRIKE_PER_RANK = 0.25F;
+	/**
+	 * First Strike: Strength I/II held for as long as the invisibility does,
+	 * re-asserted each tick and left to lapse the moment it ends — the same
+	 * shape (and the same reasoning) as {@link #NIGHT_STALKER_TICKS}, so a
+	 * potion's or Riposte's Strength buried under ours comes back instead of
+	 * being discarded with it. Short enough that teardown reads as immediate;
+	 * the instance is granted ambient so the HUD icon sits steady rather than
+	 * strobing the way vanilla paints an effect inside its last ten seconds.
+	 */
+	public static final int FIRST_STRIKE_TICKS = 5;
 	/** Bloodrush: Strength I/II for this long, on kills while invisible. */
 	public static final int BLOODRUSH_TICKS = 80;
 	public static final float REAPER_HEAL = 4.0F;
@@ -760,14 +769,11 @@ public final class Tuning {
 	 * starts strobing. */
 	public static final int NIGHT_FORM_EFFECT_TICKS = 300;
 
-	/** The empowered Cutpurse actives: Heart-piercing Shot is the base
-	 * ability's final damage times this. Invisibility is deliberately
-	 * untouched (author's spec). */
-	public static final float NIGHT_FORM_TRUE_SHOT_FACTOR = 1.5F;
-	/** Stalker's Step is the same blink and strike landing harder, but as an
-	 * additive term in the ambush box rather than a multiplier over it — see
-	 * {@link #COUP_DE_GRACE_PLAYER_BONUS}. */
-	public static final float NIGHT_FORM_SHADOW_STEP_BONUS = 1.25F;
+	// The night form does not touch the Cutpurse actives. True Shot and Shadow
+	// Step hit for what they hit for, transformed or not: the Dark Ritual was
+	// carrying an x1.5 on the arrow and a 1.25 term in the ambush box, and
+	// both are gone (author's call — the Cutpurse chain had too many
+	// multipliers, and this mod's are the ones being cut).
 
 	/** Extra Sensory Perception's reach in blocks, and how often the roster is
 	 * rebuilt. Twice a second is well inside a walking creature's stride and
@@ -911,13 +917,14 @@ public final class Tuning {
 	 * so the execute pays out as extra weight on the blow instead.
 	 *
 	 * <h2>The ambush box</h2>
-	 * This term, {@link #SHADOW_FLURRY_BONUS}, {@link #NIGHT_FORM_SHADOW_STEP_BONUS},
-	 * {@link #TWIN_FANGS_OFFHAND_BONUS}, {@link #DEATH_MARK_DAMAGE_FACTOR} and
-	 * {@link #HEADHUNTER_PER_RANK} are summed into ONE multiplier — the ambush
+	 * This term, {@link #SHADOW_FLURRY_BONUS}, {@link #TWIN_FANGS_OFFHAND_BONUS},
+	 * {@link #DEATH_MARK_DAMAGE_FACTOR} and {@link #HEADHUNTER_PER_RANK} are
+	 * summed into ONE multiplier — the ambush
 	 * box — rather than multiplied one over the next. Nine multiplicative
 	 * sources with no ceiling are what turned one bad Flense constant into a
 	 * 9.4x overkill: the product of the old step chain was x25.3 and the box is
-	 * x11.0 with everything lit, and every future node added here costs its own
+	 * x9.75 with everything lit (x11.0 before the night form's 1.25 term left
+	 * it), and every future node added here costs its own
 	 * face value instead of its face value times everything already in the box.
 	 * Coup de Grace lives INSIDE the box deliberately; it is the only
 	 * player-exclusive term and leaving it outside is what let the collapse be

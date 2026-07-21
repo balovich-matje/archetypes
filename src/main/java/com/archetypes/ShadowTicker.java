@@ -72,6 +72,30 @@ public final class ShadowTicker {
 			}
 		}
 
+		// First Strike: Strength I at rank one, II at rank two, held for
+		// exactly as long as the dark is. It used to be a damage MULTIPLIER on
+		// the hurtServer funnel, which meant it multiplied a number the ambush
+		// box was about to multiply again; as a flat ATTACK_DAMAGE grant it is
+		// one term the rest of the chain scales, which is the whole point of
+		// the move.
+		//
+		// Asserted here rather than removed on the way out, for the reason
+		// Night Stalker's comment below spells out: an explicit removeEffect
+		// would take a potion's or Riposte's Strength buried under ours with
+		// it. Letting a five-tick instance lapse cannot strand anything — a
+		// respec, a dispelled invisibility or a logout all end it inside a
+		// quarter second, because nothing has to notice they happened.
+		int firstStrike = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.FIRST_STRIKE);
+
+		if (invisible && firstStrike > 0) {
+			// ambient + invisible + showIcon: no particles, because a stealth
+			// tree must not paint the player it just hid, and ambient is what
+			// keeps the HUD icon steady at this duration (Hud only flickers a
+			// non-ambient effect inside its last 200 ticks).
+			player.addEffect(new MobEffectInstance(MobEffects.STRENGTH, Tuning.FIRST_STRIKE_TICKS,
+					firstStrike - 1, true, false, true));
+		}
+
 		// Night Stalker: invisible under a night sky, you move like a hunter —
 		// Jump Boost II and Slow Falling. Re-asserted each tick while the hunt
 		// holds, then simply left to lapse (never removeEffect): the short

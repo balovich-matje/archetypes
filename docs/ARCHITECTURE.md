@@ -295,8 +295,7 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    `archetypes$greatswordDamage` (Heavy Blows → First Blood → Executioner),
    `archetypes$daggerDamage` (Razor Edge / Expose / Flense / Shadow Flurry / Twin
    Fangs + Venom/Blight/Crippling coatings), `archetypes$marksmanArrowHit`
-   (delegates to `MarksmanCombat.onArrowHit`), `archetypes$firstStrike` (bonus out
-   of invisibility), `archetypes$sunderDamage` (mace/fists armor-shred + Meteor
+   (delegates to `MarksmanCombat.onArrowHit`), `archetypes$sunderDamage` (mace/fists armor-shred + Meteor
    smash bonus + the `CrusherCombat.onCrusherHit` batch). Attacker-side hooks
    check `source.getEntity()`; victim-side `archetypes$manaShield` checks
    `(Object)this` and drains the pool instead of health, and
@@ -387,10 +386,10 @@ tick.
 | `VanillaUi` | shared vanilla-style window/inset drawing and `nodeIcon` |
 | `BookmarkTab` | the survival-inventory bookmark widget |
 | `SpellProjectileRenderer`, `BladestormLayer`, `BulwarkShieldLayer`, `GreatswordSweepParticle`, `SlayerAnimations` | render layers and the animation player |
-| `NightAnimations`, `NightFormFx`, `NightAuraLayer` | the Dark Ritual's pose, its particle column and quickening heartbeat plus the transformed body's trail, and the violet energy-swirl aura onlookers see on a vampire |
+| `NightAnimations`, `NightFormFx`, `NightEyesLayer` | the Dark Ritual's pose, its particle column and quickening heartbeat plus the transformed body's trail, and the red eye glow onlookers see on a vampire |
 | `SunBlindOverlay`, `UndeadHud` | the night form's sun bloom, its grey hearts and its hidden hunger row |
 | `DeadeyeOverlay` | the Deadeye stance's concentration vignette, drawn as nested fills rather than a texture |
-| `ExtraSensoryPerception`, `NightIdentity` | the sensed-creature outline colours *and* Death Mark's red (the mark wins over ESP and over anything vanilla paints; Stalk adds only the through-walls exemption), and the two empowered active identities |
+| `ExtraSensoryPerception` | the sensed-creature outline colours *and* Death Mark's red (the mark wins over ESP and over anything vanilla paints; Stalk adds only the through-walls exemption) |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 | `BankedHungerHud` | Well Fed's hunger above 20, as a bevelled 1px halo around the vanilla drumsticks that bank is currently backing (leftmost first, the end vanilla drains first). Anchored after `FOOD_BAR`, not `HOTBAR`, or it would draw under the row it marks; hidden in creative and spectator |
 
@@ -403,11 +402,17 @@ overrides are gated per frame and hold no state to restore: `UndeadHud.active()`
 decides both the hunger row's `replaceElement` and `HudMixin`'s heart-sprite
 swap (our own `hud/heart/grey_*` set — vanilla's WITHERED sprites are left to
 mean the Wither), and `SunBlindOverlay` snaps its bloom to zero the frame the
-form ends. The aura and the trail are the one part that is NOT purely the
-owner's view: `AvatarRendererMixin` writes `NightAuraLayer.ACTIVE` onto every
-player's render state the way it does `BULWARK_ACTIVE`, and both it and
-`NightFormFx`'s trail are suppressed whenever the player is invisible, so a
-Cutpurse's Invisibility is never betrayed by their own vampirism. `ExtraSensoryPerception` supplies the
+form ends. The eye glow and the trail are the one part that is NOT purely the
+owner's view: `AvatarRendererMixin` writes `NightEyesLayer.GLOW` onto every
+player's render state the way it does `BULWARK_ACTIVE`. `NightFormFx`'s trail is
+suppressed whenever the player is invisible, and so is the glow — with one
+exception, which is the whole design of `NightEyesLayer`: a vampire holding a
+live Death Mark glows much brighter and glows *through* invisibility, because
+naming a victim is supposed to cost you your hiding place. Everything else about
+an invisible Cutpurse still gives away nothing. Since the mark's owner-side
+stamps are target-synced, an onlooker's client answers "does this player have a
+mark out?" backwards, from the `MARKED_BY` flag on the bodies it can see (cached
+once a game tick). `ExtraSensoryPerception` supplies the
 outline colour that `EntityRendererMixin` writes onto `EntityRenderState`
 (vanilla's glowing field) and the sensed test that `LevelExtractorMixin` uses to
 excuse a walled-off creature from occlusion culling — both read the LOCAL

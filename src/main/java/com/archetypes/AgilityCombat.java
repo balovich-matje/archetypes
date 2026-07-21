@@ -44,10 +44,8 @@ public final class AgilityCombat {
 
 			boolean homing = MarksmanNodes.rank(SubTree.MARKSMAN,
 					NodePurchases.owned(player, SubTree.MARKSMAN), MarksmanNodes.Family.SEEKER_ARROW) > 0;
-			// Heart-piercing Shot: the same arrow, half again as deadly, while
-			// the night form holds.
-			AgilityActives.empower(arrow, AgilityActives.nightFactor(player)
-					* (homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER), homing);
+			AgilityActives.empower(arrow,
+					homing ? Tuning.TRUE_SHOT_HOMING_MULTIPLIER : Tuning.TRUE_SHOT_MULTIPLIER, homing);
 			AgilityActives.markTrueShot(arrow);
 
 			// The Seeker Arrow aims itself: whatever the player was pointing

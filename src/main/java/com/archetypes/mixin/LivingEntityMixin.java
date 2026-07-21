@@ -325,11 +325,9 @@ public abstract class LivingEntityMixin {
 		boolean executing = false;
 
 		if (stepping) {
-			// Stalker's Step: the same blink and strike, landing harder while
-			// the night form holds.
-			if (com.archetypes.NightForm.isActive(player)) {
-				ambush += Tuning.NIGHT_FORM_SHADOW_STEP_BONUS;
-			}
+			// The night form adds nothing here: the Dark Ritual no longer
+			// empowers the Shadow Step, so a transformed player's opener is
+			// the same blow a mortal one throws.
 
 			// Shadow Flurry lands the strike with several daggers' weight; Twin
 			// Fangs brings the off-hand dagger into the same blow at its own
@@ -571,37 +569,11 @@ public abstract class LivingEntityMixin {
 		return amount - absorbed;
 	}
 
-	/**
-	 * First Strike: melee out of invisibility opens +25% per rank harder.
-	 * Vanilla breaks the invisibility right after the hit lands, so this
-	 * naturally pays once per vanishing.
-	 *
-	 * <p>"Melee" is the word the node is sold on, and this is the one hook in the
-	 * file with no weapon test at all to narrow it — so being the direct entity
-	 * was doing all the work, and that is precisely what a thorns reflect, a Rend
-	 * pulse and every {@code indirectMagic(player, player)} DoT also look like.
-	 * The "once per vanishing" promise depended on it too: a bleed ticking under
-	 * an invisibility took the opener bonus on every pulse, because a DoT does not
-	 * break invisibility the way a swing does.
-	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
-			at = @At("HEAD"), argsOnly = true)
-	private float archetypes$firstStrike(final float amount, final ServerLevel level,
-			final DamageSource source) {
-		if (!(source.getEntity() instanceof ServerPlayer player)
-				|| source.getDirectEntity() != player
-				|| !com.archetypes.MeleeSwing.isSwinging(player)
-				|| !player.hasEffect(net.minecraft.world.effect.MobEffects.INVISIBILITY)) {
-			return amount;
-		}
-
-		int rank = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
-				NodePurchases.owned(player, SubTree.SHADOW), com.archetypes.ShadowNodes.Family.FIRST_STRIKE);
-		float result = rank > 0 ? amount * (1.0F + Tuning.FIRST_STRIKE_PER_RANK * rank) : amount;
-		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_FIRST_STRIKE, amount,
-				result);
-		return result;
-	}
+	// First Strike no longer shapes damage here. It grants Strength I/II while
+	// the player is invisible (asserted in ShadowTicker), so it reaches the
+	// blow through the ATTACK_DAMAGE attribute — one term the ambush box then
+	// scales, instead of a seventh multiplier stacked over it. Nothing on this
+	// funnel replaces it, and DamageTrace's mirror went with the handler.
 
 	/**
 	 * Dim Presence: while sneaking, mobs notice this player 20% per rank less

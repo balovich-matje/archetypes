@@ -1961,21 +1961,40 @@ The key already means two things (transform, revert) and a third would let any
 duplicated press toggle the ritual; swinging, using an item or switching slots
 still aborts a channel at no cost.
 
-**The vampire looks like one.** Both halves the author offered, because they
-cover different distances: `NightAuraLayer` puts violet filaments crawling
-over the body (vanilla's energy-swirl path — note it is ADDITIVE with a 0.1
-alpha cutout, so nothing drawn there can darken skin; the "dark" read is a
-deep violet drawn as light on a mostly-transparent sheet), and `NightFormFx`
+**The vampire looks like one.** Two halves, because they cover different
+distances: `NightEyesLayer` puts a red glow on the eyes, and `NightFormFx`
 sheds a smoke/sculk-soul trail that lags behind the player's motion so the
-form still reads in a moving silhouette at range. The shell is vanilla's
-outer-armor humanoid, not the player model — a coplanar copy would z-fight.
+form still reads in a moving silhouette at range. The violet energy-swirl
+chest aura that used to be the close read (`NightAuraLayer`) is GONE at the
+author's call — it dressed the torso, which is not where a vampire is.
 
-Hard constraint from the author: none of it may show while the player is
-invisible, since a Cutpurse in night form lives on Invisibility. Both gates
-read the entity's invisible flag, which is where the mod's Invisibility and
-vanilla's potion both land. This is not decoration: `shouldRenderLayers`
-defaults to TRUE, so an invisible player's layers keep drawing unless
-something stops them.
+The eye glow is one quad riding the vanilla head part, drawn on
+`RenderTypes.eyes` — vanilla's own spider/enderman pass, whose pipeline is
+EMISSIVE and takes no lightmap, so it is full-bright in a cave and does not
+light the cave. Its position is derived from `steve.png`, not guessed: the
+head's NORTH face unwraps to texture (8,8)..(16,16), so a face texel (tx,ty)
+is model (tx-12, ty-16), and the eye pixels are row 12 at columns 9-10 and
+13-14 — model x [-3,-1] and [1,3], y [-4,-3]. A custom skin that paints eyes
+somewhere else wears the glow where Steve's are; the author accepted that.
+
+Three states, and the middle one is the hard constraint. A Cutpurse in night
+form lives on Invisibility, so an invisible vampire with no mark out shows
+NOTHING — not the glow, not the trail. Both gates read the entity's invisible
+flag, which is where the mod's Invisibility and vanilla's potion both land,
+and this is not decoration: `shouldRenderLayers` defaults to TRUE (for a
+player, `!isSpectator`), so an invisible player's layers keep drawing unless
+something stops them. The exception the author asked for is the mark: a
+Nemesis holding a live Death Mark glows much brighter AND glows through
+invisibility. Naming a victim is what costs you your hiding place.
+
+Reading that on an onlooker's client took no packet. The mark's owner-side
+stamps are `targetOnly()`, but `MARKED_BY` on the marked body is synced to
+everyone, so the question is answered backwards: scan the bodies this client
+can see for one wearing this player's id. Cached once a game tick, since
+extraction runs per player per frame. The one thing it cannot see is a mark on
+a body outside the onlooker's own entity-tracking range — then the onlooker
+sees the faint glow rather than the bright one, while the assassin's own
+client (which holds the authoritative stamps) sees bright.
 
 **Grey hearts, not withered ones.** The withered sprite means the Wither and
 now keeps meaning only that. Ours is vanilla's own heart art with its

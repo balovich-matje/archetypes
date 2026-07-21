@@ -29,7 +29,7 @@ public abstract class AvatarRendererMixin {
 		((LivingEntityRendererAccessor) this)
 				.archetypes$addLayer(new com.archetypes.client.BladestormLayer((AvatarRenderer) (Object) this));
 		((LivingEntityRendererAccessor) this).archetypes$addLayer(
-				new com.archetypes.client.NightAuraLayer((AvatarRenderer) (Object) this, context));
+				new com.archetypes.client.NightEyesLayer((AvatarRenderer) (Object) this));
 	}
 
 	/**
@@ -62,14 +62,15 @@ public abstract class AvatarRendererMixin {
 			state.feetEquipment = net.minecraft.world.item.ItemStack.EMPTY;
 		}
 
-		// The night form's aura, same handoff. Invisibility wins over it in
-		// every case: an invisible Cutpurse must give away nothing, and layers
-		// are not skipped for an invisible entity on their own (see
-		// NightAuraLayer). isInvisible covers the mod's Invisibility and
-		// vanilla's potion alike — both are MobEffects.INVISIBILITY.
-		fabricState.setData(com.archetypes.client.NightAuraLayer.ACTIVE,
-				entity instanceof net.minecraft.world.entity.player.Player player
-						&& com.archetypes.NightForm.isActive(player) && !entity.isInvisible());
+		// The night form's eye glow, same handoff. Extraction is the only place
+		// the entity can still be asked whether it is invisible and whether its
+		// Death Mark is out, so the whole three-state decision is made here (in
+		// NightEyesLayer.glowFor) and the layer only paints what it is told.
+		// Layers are NOT skipped for an invisible player — AvatarRenderer's
+		// shouldRenderLayers only excuses spectators — so the invisibility rule
+		// is ours to enforce, and glowFor is the one place it is written.
+		fabricState.setData(com.archetypes.client.NightEyesLayer.GLOW,
+				com.archetypes.client.NightEyesLayer.glowFor(entity));
 
 		// Bladestorm: same handoff, keyed on the synced channel-end timestamp.
 		Long stormEnd = ((AttachmentTarget) entity).getAttached(ModAttachments.BLADESTORM_END);
