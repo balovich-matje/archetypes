@@ -25,7 +25,7 @@ public final class ColossusCrusherNodes {
 		AFTERSHOCK(() -> Items.MAGMA_BLOCK),
 		/** Two ranks: every blow taken plates the body a little more. */
 		HARDENED(() -> Items.IRON_INGOT),
-		/** Two ranks riding Battle Trance's banked health. */
+		/** Two ranks of flat max health, and a higher Battle Trance ceiling. */
 		BULWARK(() -> Items.IRON_CHESTPLATE),
 		/** Mace and unarmed hits cannot be blocked (lang name: Unstoppable force). */
 		SIEGEBREAKER(() -> Items.OBSIDIAN),

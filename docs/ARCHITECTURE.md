@@ -83,7 +83,20 @@ in `*Combat`), each exposing a static `initialize()` called from
 `ServerTickEvents.END_SERVER_TICK` listener, iterate `getPlayerList()`, gate on
 the archetype, and act. `ProtectorTicker`, `SlayerTicker`, `CrusherTicker`,
 `AgilityTicker`, `ShadowTicker`, and `SeekerTicker` maintain auras, cooldown
-bookkeeping, and mana regen this way. `SlayerCombat`, `AgilityCombat`, and
+bookkeeping, and mana regen this way.
+
+A ticker is also this mod's **only** lifecycle for a standing attribute
+modifier — there is no purchase-time apply and no `DefencePassives`-style
+respawn hook. A node that grants an attribute permanently (the Colossus
+Crusher's Bulwark, `+7.0` max health a rank) is asserted by its ticker every
+tick through the local `apply`/`stance` helper, which adds the modifier when it
+is missing, rewrites it when its amount drifts, and removes it when the
+condition drops. That is what makes it respawn-, relog- and respec-safe without
+any event of its own: attributes and transient modifiers do not survive a death,
+and the loop puts them back a tick later. It is also why every one of these
+loops walks **every** player rather than filtering on archetype — a node revoked
+by Amnesia II or the creative reset has to be taken back off by the same pass
+that put it on. `SlayerCombat`, `AgilityCombat`, and
 `SeekerCombat` instead hook combat/entity events; `BlizzardZones` runs its zone
 pulses off an `END_SERVER_TICK` listener of its own.
 
