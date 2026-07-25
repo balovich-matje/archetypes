@@ -292,7 +292,10 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
 2. **`@ModifyVariable` shapers** each read and rewrite the `amount` argument, so
    they compose (each one's output is the next one's input). They are gated by
    role + weapon so at most one attacker-side shaper applies per hit:
-   `archetypes$greatswordDamage` (Heavy Blows → First Blood → Executioner),
+   `archetypes$greatswordDamage` (Heavy Blows → First Blood → Executioner → Blade
+   Master), `archetypes$swordDamage` (Blade Master alone — its weapon gate is
+   `ModItems.isSword`, the vanilla `swords` tag minus this mod's greatswords and
+   daggers, so it and the greatsword hook can never both fire),
    `archetypes$daggerDamage` (Razor Edge / Expose / Flense / Shadow Flurry / Twin
    Fangs + Venom/Blight/Crippling coatings), `archetypes$marksmanArrowHit`
    (delegates to `MarksmanCombat.onArrowHit`), `archetypes$sunderDamage` (mace/fists armor-shred + Meteor

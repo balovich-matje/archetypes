@@ -173,9 +173,16 @@ public final class ColossusSlayer {
 	}
 
 	/**
-	 * Blade Master's armour half: the multiplier that makes a greatsword blow
-	 * land as though the victim wore {@code 1 - ignore} of their armour AND
-	 * {@code bite} fewer points of enchantment protection.
+	 * Blade Master's armour half: the multiplier that makes a blow land as
+	 * though the victim wore {@code 1 - ignore} of their armour AND {@code bite}
+	 * fewer points of enchantment protection.
+	 *
+	 * <p>Both blades. Called from {@code archetypes$greatswordDamage} (last in
+	 * that chain) and from {@code archetypes$swordDamage} (which is only this),
+	 * whose weapon gates are disjoint by construction — {@code ModItems.isSword}
+	 * is the vanilla {@code swords} tag minus this mod's greatswords and daggers,
+	 * both of which are IN that tag — so it can never apply twice to one blow.
+	 * The swing-time penalty is the half that stays greatsword-only.
 	 *
 	 * <h2>Two mitigations, not one</h2>
 	 * "Cut through full enchanted netherite" is two separate stages of

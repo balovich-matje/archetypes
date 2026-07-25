@@ -202,6 +202,61 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * Blade Master's armour half on an ordinary sword — the same 25%/rank armour
+	 * ignore and 4/rank Protection bite the greatsword gets, through the same
+	 * {@code ArmourMath} pre-compensation, and nothing else. The swing-time
+	 * penalty is greatsword-only and lives on the attribute (see
+	 * {@code ColossusSlayer.tickStance}); a sword's speed is the reason to carry
+	 * one, so the node buys plate-cutting on both blades and charges for it on
+	 * only one.
+	 *
+	 * <p><b>Why a hook of its own rather than a branch of
+	 * {@link #archetypes$greatswordDamage}.</b> The weapon gates are disjoint by
+	 * construction — {@code ModItems.isSword} is the vanilla {@code swords} tag
+	 * MINUS this mod's greatswords and daggers, both of which are added to that
+	 * tag by {@code data/minecraft/tags/item/swords.json} — so no stack can
+	 * satisfy both and the node can never apply twice to one blow. Keeping them
+	 * apart is what makes that readable: this method has one stage, the other has
+	 * four, and the trace prints them as separate stages for the same reason.
+	 *
+	 * <p><b>The gate is the greatsword path's, verbatim</b>, and it is what keeps
+	 * the tree's own damage-over-time out: a Rend bleed pulses from
+	 * {@code SlayerTicker.tickBleeds} on the server tick, dealt as
+	 * {@code playerAttack(source)} so the kill still credits the blade that
+	 * opened the wound — attacker and direct entity both the player, which is
+	 * exactly what a swing looks like to a {@code DamageSource}. No
+	 * {@code MeleeSwing} is open around it, so it is not one, and a wound does not
+	 * cut plate. Same for every {@code indirectMagic(player, player)} pulse in the
+	 * mod.
+	 *
+	 * <p>Runs against {@code amount} at HEAD, which for a plain sword is the whole
+	 * blow: no other shaper this mod owns answers to {@code isSword}. A sibling
+	 * mod's multipliers on the same funnel are a coin flip against ours (see
+	 * {@code archetypes$daggerDamage}'s note and {@code FlenseMixin}), so the
+	 * armour compensation may be computed either side of Skill Proficiencies'
+	 * combat multiplier — the same open question the greatsword path already has,
+	 * and deliberately not answered differently here.
+	 */
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$swordDamage(final float amount, final ServerLevel level,
+			final DamageSource source) {
+		if (!(source.getEntity() instanceof ServerPlayer player)
+				|| source.getDirectEntity() != player
+				|| !com.archetypes.MeleeSwing.isSwinging(player)
+				|| !ModItems.isSword(player.getMainHandItem())) {
+			return amount;
+		}
+
+		LivingEntity victim = (LivingEntity) (Object) this;
+		float result = amount * com.archetypes.ColossusSlayer.bladeMasterFactor(player, level,
+				victim, source, amount);
+
+		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_SWORD, amount, result);
+		return result;
+	}
+
+	/**
 	 * The Marksman's on-hit passives ride the victim's damage intake, before
 	 * death resolution — Combustion on a kill-shot must still detonate, and
 	 * AFTER_DAMAGE never fires for lethal hits.

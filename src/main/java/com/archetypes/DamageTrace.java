@@ -109,6 +109,15 @@ public final class DamageTrace {
 	/** {@code archetypes$greatswordDamage}: Heavy Blows, First Blood, Executioner. */
 	public static final String STAGE_GREATSWORD = "greatsword";
 
+	/**
+	 * {@code archetypes$swordDamage}: Blade Master's armour half on an ordinary
+	 * sword, and nothing else — it is the one node in the tree that reaches both
+	 * blades. Its own stage rather than a tail on {@link #STAGE_GREATSWORD}
+	 * because the two can never fire on the same blow (the weapon gates are
+	 * disjoint) and a reader has to be able to see WHICH one did.
+	 */
+	public static final String STAGE_SWORD = "sword";
+
 	/** {@code archetypes$daggerDamage}: the whole Assassin/Nemesis Assassin chain. */
 	public static final String STAGE_DAGGER = "dagger";
 
@@ -660,7 +669,8 @@ public final class DamageTrace {
 
 	/** Whether a stage has anything to say beyond its own before/after. */
 	private static boolean hasBreakdown(final String stage) {
-		return STAGE_GREATSWORD.equals(stage) || STAGE_DAGGER.equals(stage)
+		return STAGE_GREATSWORD.equals(stage) || STAGE_SWORD.equals(stage)
+				|| STAGE_DAGGER.equals(stage)
 				|| STAGE_SUNDER.equals(stage) || STAGE_FLENSE.equals(stage);
 	}
 
@@ -668,6 +678,11 @@ public final class DamageTrace {
 			final LivingEntity victim, final float before, final float after) {
 		float derived = switch (stage) {
 			case STAGE_GREATSWORD -> explainGreatsword(frame, attacker, victim, before);
+			// The sword stage IS Blade Master, alone, so the mirror is that one
+			// method — handed the same `before` the handler was handed, since the
+			// node is computed against the damage that reaches it (explainFlense's
+			// reason, and explainGreatsword's for its own last stage).
+			case STAGE_SWORD -> explainBladeMaster(frame, attacker, victim, before);
 			case STAGE_DAGGER -> explainDagger(frame, attacker, victim, before);
 			case STAGE_SUNDER -> explainSunder(frame, attacker, victim);
 			// Handed the same `before` the handler was handed, which is the
