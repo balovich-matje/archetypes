@@ -222,18 +222,15 @@ public final class TitansLeap {
 	// the third, keeps its own bookkeeping and lives in {@link Hardened}.
 	// ------------------------------------------------------------------
 
-	/**
-	 * Bulwark's condition: the node is owned, Battle Trance is owned, and the
-	 * trance is actually holding health right now. Absorption from anywhere
-	 * else — a golden apple, the Oracle Wizard's Magic Armor — must not switch
-	 * the reduction on, which is what the Battle Trance test is for.
-	 */
-	public static boolean bulwarkHolding(final Player player) {
-		return rank(player, ColossusCrusherNodes.Family.BULWARK) > 0
-				&& CrusherNodes.rank(SubTree.CRUSHER, NodePurchases.owned(player, SubTree.CRUSHER),
-						CrusherNodes.Family.BATTLE_TRANCE) > 0
-				&& player.getAbsorptionAmount() > 0.0F;
-	}
+	// Bulwark's old condition — node owned AND Battle Trance owned AND the
+	// trance actually holding health — lived here, and it existed for one
+	// reason: to keep a golden apple or the Oracle Wizard's Magic Armor from
+	// switching the damage reduction on. There is no damage reduction any
+	// more (the node is a standing MAX_HEALTH modifier, asserted in
+	// CrusherTicker), so there is nothing left for the test to gate and it is
+	// gone with it. Bulwark still raises Battle Trance's ceiling, and THAT
+	// half needs no precondition — a ceiling nobody banks against is inert on
+	// its own.
 
 	/**
 	 * Unstoppable Force's cue, sent from the blocking hook once a raised shield

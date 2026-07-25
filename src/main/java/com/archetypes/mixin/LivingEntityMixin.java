@@ -1093,37 +1093,14 @@ public abstract class LivingEntityMixin {
 		}
 	}
 
-	/**
-	 * Bulwark: 20% per rank off everything, but only while Battle Trance is
-	 * actually holding banked health. Same shape as Mana Shield's — a
-	 * victim-side {@code ModifyVariable} on the shared {@code amount}, so it
-	 * composes multiplicatively with whatever else shaped the hit.
-	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
-			at = @At("HEAD"), argsOnly = true)
-	private float archetypes$colossusBulwark(final float amount, final ServerLevel level,
-			final DamageSource source) {
-		if (!((Object) this instanceof ServerPlayer player)
-				|| !com.archetypes.TitansLeap.bulwarkHolding(player)) {
-			return amount;
-		}
-
-		int rank = com.archetypes.TitansLeap.rank(player,
-				com.archetypes.ColossusCrusherNodes.Family.BULWARK);
-
-		// The flash is for hits, not for drowning or a burning tick: those
-		// arrive every tick and would strobe the indicator. The reduction
-		// itself still applies to every source.
-		if (source.getEntity() != null) {
-			ProcIndicators.send(player, SubTree.COLOSSUS_CRUSHER,
-					com.archetypes.ColossusCrusherNodes.Family.BULWARK);
-		}
-
-		float result = amount * Math.max(0.0F, 1.0F - Tuning.COLOSSUS_BULWARK_DR_PER_RANK * rank);
-		com.archetypes.DamageTrace.record(com.archetypes.DamageTrace.STAGE_COLOSSUS_BULWARK, amount,
-				result);
-		return result;
-	}
+	// Bulwark used to hang a victim-side ModifyVariable here — a flat 20%
+	// per rank off the raw amount while Battle Trance held banked health. It
+	// is gone, and nothing replaced it on the funnel: the node is a standing
+	// MAX_HEALTH modifier now (Tuning#COLOSSUS_BULWARK_MAX_HEALTH_PER_RANK,
+	// asserted in CrusherTicker). Cutting the raw number at hurtServer's HEAD
+	// is pre-armour, so it was also buying a second, unadvertised reduction
+	// out of vanilla's shred term; max health cannot do that to a damage
+	// number because it never touches one.
 
 	/**
 	 * Instinctive Guard: a carried shield blocks a share of every hit without

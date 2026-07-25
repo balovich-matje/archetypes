@@ -60,6 +60,23 @@ public final class ArmourMath {
 	/** {@code CombatRules.MIN_ARMOR_RATIO}. */
 	private static final float MIN_RATIO = 0.2F;
 
+	/**
+	 * How far below zero an effective armour value is allowed to go — the
+	 * mirror of {@link #MAX_ARMOUR}, and the reason it is the mirror is that it
+	 * bounds the amplification at exactly the reciprocal shape of the ceiling:
+	 * {@code 1 + 20/25 = x1.80}.
+	 *
+	 * <p>Nothing vanilla produces a negative armour value. This mod does:
+	 * Blade Master's PvE bite (see {@code Tuning#BLADE_MASTER_PVE_BITE_REF})
+	 * subtracts armour points from a victim who may have none, deliberately
+	 * cutting past the last plate. That is a real input to
+	 * {@link #afterArmour}, so the curve has to answer it rather than silently
+	 * treating it as "unarmoured" — which is what the old {@code armour <= 0}
+	 * early-out did, quietly deleting the whole node against exactly the
+	 * targets it was added for.
+	 */
+	private static final float MAX_NEGATIVE_ARMOUR = 20.0F;
+
 	private ArmourMath() {
 	}
 
@@ -91,22 +108,59 @@ public final class ArmourMath {
 	 * {@code armor_effectiveness} enchantment hook — Breach and any other real
 	 * modifier compose on top of this inside vanilla and must not be
 	 * double-counted here.
+	 *
+	 * <p><b>Extended below zero</b>, which vanilla never is. A negative
+	 * {@code armour} means the blow cuts past the last plate and the term
+	 * amplifies rather than mitigates. It gets a branch of its own rather than
+	 * falling through vanilla's clamp because that clamp is the wrong shape on
+	 * this side of zero twice over: the {@code -damage/t} shred term is a
+	 * subtraction from real plate and there is none to shred, and the
+	 * {@code armour x MIN_RATIO} floor becomes a CEILING for a negative value
+	 * (a fifth of -10 is -2, which is greater than -10), so vanilla's own
+	 * expression would quietly throw four fifths of the bite away and make the
+	 * amount thrown away depend on how big the bite was.
+	 *
+	 * <p>So below zero it is the bare signed term, {@code damage x (1 - armour /
+	 * 25)}, floored at {@link #MAX_NEGATIVE_ARMOUR}. Behaviour for every input
+	 * that was reachable before — {@code armour >= 0} — is unchanged expression
+	 * for expression.
 	 */
 	public static float afterArmour(final float damage, final float armour, final float t) {
-		if (armour <= 0.0F || damage <= 0.0F) {
+		if (armour == 0.0F || damage <= 0.0F) {
 			return damage;
+		}
+
+		if (armour < 0.0F) {
+			return damage * (1.0F - negative(armour) / DIVIDER);
 		}
 
 		float realArmour = Mth.clamp(armour - damage / t, armour * MIN_RATIO, MAX_ARMOUR);
 		return damage * (1.0F - realArmour / DIVIDER);
 	}
 
+	/** A negative armour value as the curve is allowed to see it. */
+	private static float negative(final float armour) {
+		return Math.max(armour, -MAX_NEGATIVE_ARMOUR);
+	}
+
 	/**
 	 * The raw damage that {@link #afterArmour} turns into {@code target}. The
-	 * inverse of the expression above, branch by branch.
+	 * inverse of the expression above, branch by branch — including the
+	 * negative branch, so the two stay a true inverse pair. In practice this
+	 * one is only ever handed the victim's REAL armour, which cannot be
+	 * negative; the branch is here so that a later caller inverting a bitten
+	 * value gets an answer rather than {@code target} back unchanged.
 	 */
 	public static float rawForAfterArmour(final float target, final float armour, final float t) {
-		if (armour <= 0.0F || target <= 0.0F) {
+		if (target <= 0.0F) {
+			return target;
+		}
+
+		if (armour < 0.0F) {
+			return target / (1.0F - negative(armour) / DIVIDER);
+		}
+
+		if (armour == 0.0F) {
 			return target;
 		}
 

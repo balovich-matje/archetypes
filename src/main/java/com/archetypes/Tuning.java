@@ -1124,11 +1124,47 @@ public final class Tuning {
 	 */
 	public static final int HARDENED_DURATION_TICKS_PER_RANK = 40;
 
-	/** Bulwark: 20% off per rank while Battle Trance holds banked health. The
-	 * condition is the balance — the trance decays
-	 * {@link #TRANCE_DECAY_DELAY_TICKS} after the last landed hit, so this is a
-	 * reward for still swinging, not a passive shield. */
-	public static final float COLOSSUS_BULWARK_DR_PER_RANK = 0.20F;
+	/**
+	 * Bulwark: max health added per rank — 7.0 health, i.e. <b>3.5 hearts a
+	 * rank</b>, so rank 2 is a whole extra health bar's worth of seven.
+	 *
+	 * <h2>What it replaces, and why</h2>
+	 * The node used to be a flat 20%-per-rank damage reduction, conditioned on
+	 * Battle Trance actually holding banked health. Three things were wrong with
+	 * it and only the third is a balance number:
+	 * <ul>
+	 * <li>It was a victim-side {@code ModifyVariable} at {@code hurtServer}'s
+	 *     HEAD, i.e. <b>pre-armour</b>. Cutting the raw number there does not
+	 *     merely take its 40% — it also drops the hit far enough that vanilla
+	 *     stops shredding the victim's armour by {@code damage/t}, so the armour
+	 *     stage silently pays a second dividend on top. Rank 2 was worth well
+	 *     more than the 40% it advertised, and worth most exactly against the
+	 *     biggest hits.</li>
+	 * <li>It was zero-input: no facing, no cooldown, no press. The absorption
+	 *     bank behind it had to be earned, but at resolve time the node did its
+	 *     work whether or not the player did any.</li>
+	 * <li>It stacked multiplicatively with Instinctive Guard, Mana Shield and
+	 *     everything else on the same funnel, which is how one two-point node
+	 *     became the difference between dying to an opener and outlasting nine
+	 *     follow-ups.</li>
+	 * </ul>
+	 * Max health has none of those properties. It is linear, it is visible on
+	 * the HUD, it composes additively with armour instead of multiplying against
+	 * it, and it cannot change what a single blow is worth — only how many of
+	 * them the body takes. The node still reads as "the body worth hitting",
+	 * which is what the right-hand column of the tree is for.
+	 *
+	 * <p>Denominated in HEALTH, not hearts, because that is what
+	 * {@code Attributes.MAX_HEALTH} is denominated in; the tooltip does the
+	 * halving.
+	 *
+	 * <p>Applied as a plain {@code ADD_VALUE} modifier asserted by
+	 * {@code CrusherTicker} for exactly as long as the node is owned — the
+	 * mod's one lifecycle for a standing attribute, so a respec, a death or a
+	 * relog can never strand it (the ticker walks every player, not only
+	 * Brawlers, for that reason).
+	 */
+	public static final float COLOSSUS_BULWARK_MAX_HEALTH_PER_RANK = 7.0F;
 	/** Health added to Battle Trance's ceiling per rank — 3/6 hearts. The base
 	 * cap is {@link #TRANCE_CAP_PER_RANK} x 3 = 3 hearts, so rank 2 triples it. */
 	public static final float COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK = 6.0F;
@@ -1360,6 +1396,55 @@ public final class Tuning {
 	 * what a diamond one is worth against an unpenetrated blow — a real cut, and
 	 * still a reason to wear it. */
 	public static final float BLADE_MASTER_ARMOUR_IGNORE_PER_RANK = 0.25F;
+
+	/**
+	 * Blade Master, <b>against mobs only</b>: the points of NEGATIVE armour a
+	 * full share of the node's ignore is worth. The share is
+	 * {@link #BLADE_MASTER_ARMOUR_IGNORE_PER_RANK} x rank — 0.25 at rank 1, 0.50
+	 * at rank 2 — so the bite it actually takes is 5 points at rank 1 and 10 at
+	 * rank 2, and the victim's effective armour becomes
+	 * <pre>
+	 *   (1 - s) x armour  -  s x BLADE_MASTER_PVE_BITE_REF
+	 * </pre>
+	 * which can and is meant to go below zero.
+	 *
+	 * <h2>The problem it answers</h2>
+	 * A share of the victim's armour is worth exactly nothing against a victim
+	 * with no armour, and most of what a Brawler swings at is a zombie. Read
+	 * strictly, Blade Master rank 2 was a dead node for the entire early game
+	 * and a dead node in every cave, and only came alive against the one player
+	 * on the server wearing netherite. So past zero the share keeps cutting: the
+	 * blade does not stop at the last plate.
+	 *
+	 * <h2>Why 20, i.e. -10 at rank 2</h2>
+	 * Vanilla's armour term is {@code 1 - realArmour / 25} and it is signed —
+	 * feeding it a negative number amplifies instead of mitigating, on the same
+	 * curve and in the same unit, which is why the bite is denominated in armour
+	 * points rather than as a second multiplier. -10 armour is {@code 1 + 10/25
+	 * = x1.40}: <b>+40% on a naked mob at rank 2</b>, +20% at rank 1. That is a
+	 * real reason to own the node in PvE without being a general damage buff of
+	 * the size the node's PvP half is worth, and it lands on the SAME arithmetic
+	 * as the ignore rather than beside it, so there is one number to reason
+	 * about and {@code ArmourMath} inverts both at once.
+	 *
+	 * <p><b>The bite is denominated per FULL share (s = 1), not per rank.</b>
+	 * Halve this constant to 10.0F if the bite should be 5 points at rank 2
+	 * rather than 10 — that is the only knob, and nothing else moves with it.
+	 *
+	 * <h2>Mobs only, and PvP untouched</h2>
+	 * The gate is {@code !(victim instanceof Player)} and it is checked in
+	 * {@code ColossusSlayer.bladeMasterFactor} before the effective armour is
+	 * computed, so a blow landing on a player runs the pre-existing expression
+	 * unchanged — the PvP arithmetic this node was tuned around is the same
+	 * arithmetic to the last float operation. Armour ignore is a PvP node; this
+	 * is the PvE half bolted to the same lever, and the two must not leak into
+	 * each other.
+	 *
+	 * <p>Bounded by {@code ArmourMath}'s own floor on negative armour (-20, the
+	 * mirror of vanilla's 20-point ceiling), so no future rank count or retune
+	 * can drive the amplification past x1.8.
+	 */
+	public static final float BLADE_MASTER_PVE_BITE_REF = 20.0F;
 
 	/**
 	 * Blade Master: enchantment protection points (EPF) a greatsword hit bites
