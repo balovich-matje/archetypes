@@ -476,7 +476,7 @@
 	"node.archetypes.colossus_protector.immovable_object": "Immovable Object",
 	"node.archetypes.colossus_protector.immovable_object.desc": "Your block can no longer be broken by normal means \u2014 an axe or the Warden will not knock your shield aside.",
 	"node.archetypes.colossus_slayer.parry": "Parry",
-	"node.archetypes.colossus_slayer.parry.desc": "You can now parry melee attackers with your ability key. Sword parries reflect damage back to melee attackers and hit them with your normal attack. Greatsword parries automatically use a Decimate instead. A parry leaves you no swing cooldown; missing one puts the skill on an 8 second cooldown.",
+	"node.archetypes.colossus_slayer.parry.desc": "You can now parry melee attackers with your ability key. Sword parries reflect damage back to melee attackers and hit them with your normal attack. Greatsword parries automatically use a Decimate instead. A parry leaves you no swing cooldown, and puts the skill on a 2 second cooldown with a greatsword or 1 second with a sword; missing one puts it on an 8 second cooldown.",
 	"node.archetypes.colossus_slayer.barbarian": "Barbarian",
 	"node.archetypes.colossus_slayer.barbarian.desc": "You take 37.5/75% less magical damage and healing from all sources.",
 	"node.archetypes.colossus_slayer.blade_master": "Blade Master",

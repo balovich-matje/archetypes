@@ -566,11 +566,12 @@ public final class ModAttachments {
 
 	// --- Colossus Slayer (epic): the parry ---
 	/**
-	 * Game tick the Parry key answers again — the whole price of a missed
-	 * parry, and nothing at all after a landed one. Synced like every other
-	 * ready-at stamp because the cooldown bar draws a tile from it; the server
-	 * still re-checks it, since the stamp is the only thing stopping a client
-	 * that presses every tick from standing in a permanent window.
+	 * Game tick the Parry key answers again — eight seconds after a missed
+	 * parry, one or two after a landed one depending on the blade (see
+	 * {@code Tuning.PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS}). Synced like every
+	 * other ready-at stamp because the cooldown bar draws a tile from it; the
+	 * server still re-checks it, since the stamp is the only thing stopping a
+	 * client that presses every tick from standing in a permanent window.
 	 */
 	public static final AttachmentType<Long> PARRY_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("parry_ready_at"),

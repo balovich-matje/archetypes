@@ -10,9 +10,11 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
  *
  * <p>The value is vanilla's own {@code attackStrengthTicker}, already computed
  * by the server, and the client installs it verbatim — a ticker already at
- * full charge. Only successful parries send this: a miss now costs
+ * full charge. Only successful parries send this: a miss costs
  * {@link Tuning#PARRY_COOLDOWN_TICKS} on the ability key and leaves the swing
- * timer alone.
+ * timer alone. (A success costs the key a second or two of its own now — see
+ * {@link Tuning#PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS} — but that is the
+ * ability's clock, not the swing's, and this packet is about the swing.)
  *
  * <p>It is sent rather than derived because the server is the only side that
  * knows a parry landed: the hit that pays for it arrives after the press. Left

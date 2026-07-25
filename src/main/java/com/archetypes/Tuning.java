@@ -1239,10 +1239,50 @@ public final class Tuning {
 
 	/**
 	 * What a missed parry costs: eight seconds before the key answers again.
-	 * A landed parry costs nothing at all — the node is a read of the enemy's
-	 * wind-up, and reading it right is supposed to let you read the next one.
+	 * Reading the wind-up right is still supposed to let you read the next one,
+	 * so a landed parry costs a fraction of this — but no longer nothing at all.
+	 * See {@link #PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS}.
 	 */
 	public static final int PARRY_COOLDOWN_TICKS = 160;
+
+	/**
+	 * What a LANDED parry costs with a greatsword: two seconds.
+	 *
+	 * <h2>Why a landed parry costs anything</h2>
+	 * Because refunding the key outright made the node self-sustaining in both
+	 * directions, and neither one is a fight:
+	 * <ul>
+	 * <li><b>PvE.</b> A parry that pays for itself is answered by being attacked,
+	 *     so a Colossus standing in a mob pack could re-open the window on every
+	 *     incoming blow and take none of them — near-invulnerability bought with
+	 *     one key, and the more enemies there were the safer it got.</li>
+	 * <li><b>PvP.</b> Two Slayers with the node parry-locked each other: each
+	 *     landed parry hands the key back AND fills the swing timer
+	 *     ({@code ColossusSlayer.pay}), so both players could answer every swing
+	 *     the other threw forever and neither fight ever resolved.</li>
+	 * </ul>
+	 *
+	 * <p>So the reward is now the two things a parry was always FOR — the free
+	 * swing and the riposte — rather than the key as well. The clock is short on
+	 * purpose: long enough that the window cannot be re-opened inside the same
+	 * exchange, short enough that a player who reads three wind-ups in a row is
+	 * still rewarded for two of them.
+	 *
+	 * <p>Twice the sword's, because a greatsword parry is worth more: it answers
+	 * with a free instant Decimate ({@code SlayerActives.decimate(player, true)}),
+	 * which the sword's answer cannot match. That reward is unchanged — this
+	 * constant fences how OFTEN it can be earned, next to
+	 * {@link #DECIMATE_FREE_COOLDOWN_TICKS}, which fences the cast itself.
+	 */
+	public static final int PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS = 40;
+
+	/**
+	 * What a LANDED parry costs with a sword: one second — half the greatsword's,
+	 * for the reason named on {@link #PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS}.
+	 * A sword parry reflects the blow and follows with a normal attack; it is the
+	 * cheaper answer, so it comes back sooner.
+	 */
+	public static final int PARRY_SUCCESS_SWORD_COOLDOWN_TICKS = 20;
 
 	/**
 	 * Barbarian: 37.5% of magical damage AND magical healing cut per rank, so

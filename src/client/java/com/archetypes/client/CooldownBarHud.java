@@ -370,8 +370,9 @@ public final class CooldownBarHud {
 		}
 
 		// The Parry shares slot 5 with Death Mark and Magic Armaments, and its
-		// tile is bright far more often than the others: a landed parry costs
-		// nothing, so only a missed one starts the eight seconds this drains.
+		// tile is bright far more often than the others: a landed parry costs a
+		// second or two, so only a missed one fills this tile — the scale stays
+		// the miss cooldown, and a success simply drains the top quarter of it.
 		var colossusSlayer = NodePurchases.owned(player, SubTree.COLOSSUS_SLAYER);
 
 		if (com.archetypes.ColossusSlayerNodes.rank(SubTree.COLOSSUS_SLAYER, colossusSlayer,

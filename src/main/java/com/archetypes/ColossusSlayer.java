@@ -59,10 +59,14 @@ import net.minecraft.world.item.enchantment.EnchantmentHelper;
  * </ol>
  *
  * <h2>What a guess costs</h2>
- * Read right, nothing: {@link #pay} clears {@code PARRY_READY_AT} outright, so
- * the key answers the very next wind-up. Read wrong,
- * {@link Tuning#PARRY_COOLDOWN_TICKS} — eight seconds off the key, and nothing
- * done to the swing at all.
+ * Read wrong, {@link Tuning#PARRY_COOLDOWN_TICKS} — eight seconds off the key,
+ * and nothing done to the swing at all. Read right, a fraction of that:
+ * {@link #pay} stamps {@link Tuning#PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS} or
+ * {@link Tuning#PARRY_SUCCESS_SWORD_COOLDOWN_TICKS} depending on the blade, so
+ * the key comes back in a second or two rather than the very next tick. It used
+ * to come back free, and the two things that broke are named on the first of
+ * those constants: a Colossus in a mob pack could re-open the window on every
+ * incoming blow, and two of them could parry-lock each other forever.
  *
  * <p>So only the success side touches vanilla's {@code attackStrengthTicker},
  * and it fills it to full charge: that is the node's "no swing cooldown" half,
@@ -486,17 +490,23 @@ public final class ColossusSlayer {
 	}
 
 	/**
-	 * Everything a successful parry is worth, whatever was parried: the key
-	 * handed straight back, the waived swing cooldown, Riposte's Strength,
-	 * Stalwart's temporary hearts, and the blade's own voice.
+	 * Everything a successful parry is worth, whatever was parried: the waived
+	 * swing cooldown, Riposte's Strength, Stalwart's temporary hearts, and the
+	 * blade's own voice — plus the short clock the key now answers to.
 	 *
-	 * <p>The cooldown stamp is REMOVED rather than left alone. Nothing sets it
-	 * on this path today, but a parry landing is exactly the moment the key must
-	 * be free, and reading that from the code should not require knowing which
-	 * other branch last wrote the stamp.
+	 * <p>The stamp is WRITTEN rather than cleared, and it is written first: a
+	 * parry landing is exactly the moment the key's next answer is decided, and
+	 * reading that from the code should not require knowing which other branch
+	 * last touched the stamp. Which clock is a question about the blade, so it is
+	 * asked once here and the answer serves the sound cue below as well.
 	 */
 	private static void pay(final ServerPlayer player, final ServerLevel level) {
-		((AttachmentTarget) player).removeAttached(ModAttachments.PARRY_READY_AT);
+		boolean greatsword = ModItems.isGreatsword(player.getMainHandItem());
+
+		((AttachmentTarget) player).setAttached(ModAttachments.PARRY_READY_AT,
+				player.level().getGameTime() + (greatsword
+						? Tuning.PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS
+						: Tuning.PARRY_SUCCESS_SWORD_COOLDOWN_TICKS));
 		setSwingTicker(player, (int) Math.ceil(player.getCurrentItemAttackStrengthDelay()));
 
 		int riposte = rank(player, Family.RIPOSTE);
@@ -512,8 +522,6 @@ public final class ColossusSlayer {
 			stalwart(player);
 			ProcIndicators.send(player, SubTree.COLOSSUS_SLAYER, Family.STALWART);
 		}
-
-		boolean greatsword = ModItems.isGreatsword(player.getMainHandItem());
 
 		// The author's two cues: a clank for the sword, a low loud metallic
 		// bang for the greatsword. Both are the anvil, an octave apart.
