@@ -313,7 +313,35 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    Blizzard pulses at zero, and Clinch reduces a bare-fisted Crusher's shove.
 4. `archetypes$bulwark` (`@ModifyExpressionValue` on the `Math.acos` block-angle
    check in `applyItemBlocking`) forces the angle to 0 so a Bulwark holder blocks
-   from every direction.
+   from every direction. (That is the Protector's `OMNI_BLOCK`. The Colossus
+   Crusher's same-named node is not on this funnel at all — it used to be a flat
+   victim-side reduction and is now a standing `MAX_HEALTH` modifier, for the
+   reason in the next paragraph.)
+
+**Why a defensive node should not be a shaper.** A `@ModifyVariable` at
+`hurtServer`'s HEAD is *pre-armour*, and vanilla's armour term degrades by
+`damage / t` — so cutting the raw number there does not merely take its
+advertised share, it also stops the victim's own armour from being shredded and
+collects a second, unadvertised reduction on top, biggest against the biggest
+hits. Flat percentage DR on this funnel therefore reads as one number and is
+worth another; the Colossus Crusher's Bulwark was the clearest case and is now
+max health instead, which composes additively with armour and cannot change
+what a single blow is worth. Both remaining victim-side entries earn their place
+by not being flat: Mana Shield moves damage into another pool, Instinctive Guard
+spends shield durability and answers the shield's own `BlocksAttacks`.
+
+**`ArmourMath` is signed.** `afterArmour`/`rawForAfterArmour` transcribe
+`CombatRules.getDamageAfterAbsorb` and its exact inverse, and they now also
+answer a **negative** armour value on a branch of their own (floored at -20, the
+mirror of vanilla's 20-point ceiling), because Blade Master's PvE bite produces
+one: against a non-player the node's ignored share `s` is spent both as a share
+of the plate and as a flat bite past it, `(1 - s) x armour - s x 20`, so a naked
+mob takes `x1.40` at rank 2 through vanilla's own `1 - realArmour / 25`. Vanilla
+never produces a negative here and its clamp is the wrong shape below zero (a
+fifth of a negative number is a ceiling, not a floor), which is why it is a
+branch and not a widened clamp. Against a **player** the pre-existing expression
+runs unchanged — the bite is gated on `!(victim instanceof Player)` and the PvP
+arithmetic the node was tuned around is untouched.
 
 **A guard that cannot be broken.** Every way vanilla knocks a shield aside —
 an axe hit through `Player.blockUsingItem`, the Warden's own five seconds, and

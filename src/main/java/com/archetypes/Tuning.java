@@ -1362,6 +1362,55 @@ public final class Tuning {
 	public static final float BLADE_MASTER_ARMOUR_IGNORE_PER_RANK = 0.25F;
 
 	/**
+	 * Blade Master, <b>against mobs only</b>: the points of NEGATIVE armour a
+	 * full share of the node's ignore is worth. The share is
+	 * {@link #BLADE_MASTER_ARMOUR_IGNORE_PER_RANK} x rank — 0.25 at rank 1, 0.50
+	 * at rank 2 — so the bite it actually takes is 5 points at rank 1 and 10 at
+	 * rank 2, and the victim's effective armour becomes
+	 * <pre>
+	 *   (1 - s) x armour  -  s x BLADE_MASTER_PVE_BITE_REF
+	 * </pre>
+	 * which can and is meant to go below zero.
+	 *
+	 * <h2>The problem it answers</h2>
+	 * A share of the victim's armour is worth exactly nothing against a victim
+	 * with no armour, and most of what a Brawler swings at is a zombie. Read
+	 * strictly, Blade Master rank 2 was a dead node for the entire early game
+	 * and a dead node in every cave, and only came alive against the one player
+	 * on the server wearing netherite. So past zero the share keeps cutting: the
+	 * blade does not stop at the last plate.
+	 *
+	 * <h2>Why 20, i.e. -10 at rank 2</h2>
+	 * Vanilla's armour term is {@code 1 - realArmour / 25} and it is signed —
+	 * feeding it a negative number amplifies instead of mitigating, on the same
+	 * curve and in the same unit, which is why the bite is denominated in armour
+	 * points rather than as a second multiplier. -10 armour is {@code 1 + 10/25
+	 * = x1.40}: <b>+40% on a naked mob at rank 2</b>, +20% at rank 1. That is a
+	 * real reason to own the node in PvE without being a general damage buff of
+	 * the size the node's PvP half is worth, and it lands on the SAME arithmetic
+	 * as the ignore rather than beside it, so there is one number to reason
+	 * about and {@code ArmourMath} inverts both at once.
+	 *
+	 * <p><b>The bite is denominated per FULL share (s = 1), not per rank.</b>
+	 * Halve this constant to 10.0F if the bite should be 5 points at rank 2
+	 * rather than 10 — that is the only knob, and nothing else moves with it.
+	 *
+	 * <h2>Mobs only, and PvP untouched</h2>
+	 * The gate is {@code !(victim instanceof Player)} and it is checked in
+	 * {@code ColossusSlayer.bladeMasterFactor} before the effective armour is
+	 * computed, so a blow landing on a player runs the pre-existing expression
+	 * unchanged — the PvP arithmetic this node was tuned around is the same
+	 * arithmetic to the last float operation. Armour ignore is a PvP node; this
+	 * is the PvE half bolted to the same lever, and the two must not leak into
+	 * each other.
+	 *
+	 * <p>Bounded by {@code ArmourMath}'s own floor on negative armour (-20, the
+	 * mirror of vanilla's 20-point ceiling), so no future rank count or retune
+	 * can drive the amplification past x1.8.
+	 */
+	public static final float BLADE_MASTER_PVE_BITE_REF = 20.0F;
+
+	/**
 	 * Blade Master: enchantment protection points (EPF) a greatsword hit bites
 	 * off the victim, per rank. Rank 2 is 8 — exactly half of a full Protection
 	 * IV suit's 16.

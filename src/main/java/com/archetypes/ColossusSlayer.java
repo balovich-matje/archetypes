@@ -202,6 +202,22 @@ public final class ColossusSlayer {
 	 *     which is precisely what a node has to be.</li>
 	 * </ul>
 	 *
+	 * <h2>The third thing, and it is PvE only</h2>
+	 * Both mitigations above are shares of something the victim has, so both are
+	 * worth zero against a victim with none — which is nearly everything a
+	 * Brawler swings at. Against a NON-PLAYER the ignored share therefore does
+	 * not stop at zero: it is also spent as a flat negative armour bite
+	 * ({@link Tuning#BLADE_MASTER_PVE_BITE_REF}), so the effective plate is
+	 * {@code (1 - s) x armour - s x 20} and a naked mob takes {@code x1.40} at
+	 * rank 2 through vanilla's own signed {@code 1 - realArmour / 25} term.
+	 * {@code ArmourMath.afterArmour} answers negative armour on a branch of its
+	 * own for that reason, floored at -20.
+	 *
+	 * <p>Against a PLAYER nothing changes — not the value, not the expression.
+	 * The node's armour lane is a PvP lane and it is tuned as one; the bite is
+	 * the PvE half hung off the same lever, and the gate keeps the two from
+	 * leaking into each other.
+	 *
 	 * <h2>The instrument</h2>
 	 * Both halves are pre-compensated in front of vanilla rather than changed
 	 * inside it, which is {@code ArmourMath}'s whole reason to exist and what
@@ -243,10 +259,22 @@ public final class ColossusSlayer {
 		float t = ArmourMath.toughnessTerm(victim);
 		float ignore = Math.min(1.0F, Tuning.BLADE_MASTER_ARMOUR_IGNORE_PER_RANK * rank);
 
-		// Where the blow would land if the plate were thinner. afterArmour hands
-		// back `damage` untouched for an unarmoured victim, so this is a no-op
-		// against one rather than a special case.
-		float ideal = ArmourMath.afterArmour(damage, armour * (1.0F - ignore), t);
+		// The plate the blow behaves as though it met. Against a PLAYER that is
+		// the thinner suit and nothing else — the expression below is the one
+		// this node was tuned around and it is left alone to the last float
+		// operation. Against anything else the same share keeps cutting past
+		// the last plate and the value goes negative; see the PvE bite's own
+		// constant for the whole of why.
+		float effective = armour * (1.0F - ignore);
+
+		if (!(victim instanceof Player)) {
+			effective -= ignore * Tuning.BLADE_MASTER_PVE_BITE_REF;
+		}
+
+		// Where the blow would land against that. afterArmour hands back
+		// `damage` untouched for an unarmoured victim, so an un-bitten hit on
+		// one is a no-op rather than a special case.
+		float ideal = ArmourMath.afterArmour(damage, effective, t);
 
 		// ...and where it would land if the Protection were weaker. Vanilla
 		// clamps EPF to [0, 20] before dividing by 25, so the clamp comes first
