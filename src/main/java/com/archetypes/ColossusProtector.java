@@ -281,9 +281,23 @@ public final class ColossusProtector {
 	 * is an input permission and nothing else, answered against the client's
 	 * synced copy of {@code PURCHASED} — the same mirror that paints a node
 	 * buyable — and consumed by {@code MinecraftMixin}.
+	 *
+	 * <p><b>It stops at spears, and that exclusion is load-bearing.</b> Since
+	 * Spearwall, {@link #blocking} can be true because a spear is braced rather
+	 * than because a shield was raised — that is exactly what that node buys.
+	 * Free Hand asked nothing but "am I blocking?", so the two nodes together
+	 * would have handed a player a raised shield, a braced spear AND a free
+	 * melee arm, which is every stance in the tree at once for two points.
+	 *
+	 * <p>A braced spear is a planted weapon: it hurts what runs onto it and it
+	 * does not swing. The refusal lives here, on the one function the whole
+	 * permission flows through, rather than in {@code MinecraftMixin} beside
+	 * the click loop — there is one gate, so there is no second path to forget.
 	 */
 	public static boolean canAttackWhileBlocking(final Player player) {
-		return rank(player, Family.FREE_HAND) > 0 && blocking(player);
+		return rank(player, Family.FREE_HAND) > 0
+				&& blocking(player)
+				&& !com.archetypes.Spearwall.bracingSpear(player);
 	}
 
 	/**

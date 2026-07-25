@@ -21,8 +21,8 @@ public final class Tuning {
 	 * Bashing also resets the melee attack timer, so a bash always costs a sword
 	 * swing — otherwise a fast bash weaves between sword hits as free extra DPS.
 	 *
-	 * <p><b>Ability</b> — 6 seconds on top. Quick Recovery removes a quarter of
-	 * <em>this layer only</em> per rank (4 ranks), so even at −100% the swing
+	 * <p><b>Ability</b> — 6 seconds on top. Quick Recovery removes a share of
+	 * <em>this layer only</em> per rank (3 ranks), so even at −100% the swing
 	 * cadence holds.
 	 *
 	 * <p>There is no grey sweep: both layers fold into the one countdown on the
@@ -44,17 +44,41 @@ public final class Tuning {
 	}
 
 	/**
-	 * Total cooldown ticks: swing floor + the modified ability layer. Recovery
-	 * shaves a fifth per rank (nerfed from a quarter), so even at full rank
-	 * ~1.2s of the ability layer remains on top of the swing.
+	 * Quick Recovery's cut of the ability layer, per rank.
+	 *
+	 * <p>The chain was four nodes shaving a fifth each; it is three nodes now,
+	 * and this is 4/15 so that a full chain still lands on exactly the same
+	 * −80%. The node kept its ceiling and gave up a point — that point is what
+	 * paid for Spearwall, which took the cell the fourth rank used to hold.
+	 * Deliberately not rounded to 0.27: the endpoint has to be the old one to
+	 * the tick, or every published bash cadence shifts.
+	 */
+	public static final float RECOVERY_PER_RANK = 4.0F / 15.0F;
+
+	/**
+	 * Total cooldown ticks: swing floor + the modified ability layer. Even at
+	 * full Recovery ~1.2s of the ability layer remains on top of the swing.
 	 */
 	public static int bashCooldownTicks(final int slamRank, final int recoveryRank) {
-		float factor = 1.0F + slamRank / 3.0F - recoveryRank / 5.0F;
+		float factor = 1.0F + slamRank / 3.0F - recoveryRank * RECOVERY_PER_RANK;
 		return BASH_SWING_TICKS + Math.max(0, Math.round(BASH_ABILITY_TICKS * factor));
 	}
 
 	/** Braced: each blocked hit shaves this off the bash's remaining cooldown. */
 	public static final int BRACED_REFUND_TICKS = 20;
+
+	/**
+	 * Spearwall: extra wind-up, on top of the shield's own
+	 * {@code blockDelayTicks}, before a braced spear's shield counts as raised.
+	 *
+	 * <p>The surcharge is the node's whole cost. Everything else about
+	 * Spearwall is addition — the spear braces as vanilla braces it and the
+	 * shield blocks as vanilla blocks — so if the guard engaged the instant the
+	 * brace did, the node would be free value on a stance the player already
+	 * wanted. Quarter of a second says "plant, then you are covered", which is
+	 * also the only window an attacker gets to punish a stance being taken.
+	 */
+	public static final int SPEARWALL_BRACE_DELAY_TICKS = 5;
 
 	/** Taunt: bashing enrages every monster within this radius. */
 	public static final double TAUNT_RADIUS = 8.0;

@@ -33,6 +33,7 @@ public final class ProtectorNodes {
 		SPIKES(Archetypes.id("textures/node/iron_spikes.png"), 32),
 		RUSH(() -> Items.WIND_CHARGE),
 		BRACED(() -> Items.SHIELD, Archetypes.id("textures/node/braced_overlay.png"), 32),
+		SPEARWALL(() -> Items.IRON_SPEAR, Archetypes.id("textures/node/braced_overlay.png"), 32, true),
 		REFLECT(() -> Items.SHIELD, Archetypes.id("textures/node/reflection_overlay.png"), 32),
 		TAUNT(() -> Items.GOAT_HORN),
 		OMNI_BLOCK(() -> Items.SHIELD, Archetypes.id("textures/node/bulwark_overlay.png"), 32),
@@ -152,10 +153,20 @@ public final class ProtectorNodes {
 		// Centre column: Quick Recovery — the every-build pick — then the
 		// capstones flanking its top, Omni-block left, Ground Slam right,
 		// mutually exclusive at purchase.
+		//
+		// Recovery used to run four cells to (4,4). It runs three now and keeps
+		// its old ceiling (Tuning.RECOVERY_PER_RANK), which freed (4,4) without
+		// touching a single '#': the grid is unchanged, so every node INDEX is
+		// unchanged, and saved PURCHASED sets still mean what they meant. That
+		// is the whole reason the compaction was done by remapping a cell
+		// instead of by redrawing the shield.
 		byCell.put(cell(4, 1), new Def(Family.COOLDOWN, 1));
 		byCell.put(cell(4, 2), new Def(Family.COOLDOWN, 2));
 		byCell.put(cell(4, 3), new Def(Family.COOLDOWN, 3));
-		byCell.put(cell(4, 4), new Def(Family.COOLDOWN, 4));
+		// Spearwall inherits the cell: last stop on the centre column, touching
+		// both crown nodes diagonally, so the shield-and-spear stance gates into
+		// Braced and Taunt exactly the way Recovery's top rank used to.
+		byCell.put(cell(4, 4), new Def(Family.SPEARWALL, 1));
 		// The crown: Braced and Taunt side by side above Recovery, each
 		// cross-linked to both capstones (explicit edges in Constellations).
 		byCell.put(cell(3, 5), new Def(Family.BRACED, 1));

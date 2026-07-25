@@ -928,6 +928,69 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * Spearwall: a braced spear does not stop the shield being up.
+	 *
+	 * <p>{@code getItemBlockingWith} is the only thing in the game that decides
+	 * whether an entity is blocking — {@code isBlocking}, the block pose, the
+	 * block arc and {@code applyItemBlocking} all defer to it, and none of them
+	 * reads {@code useItem} for itself. So the whole node is: when vanilla is
+	 * about to say "nothing", offer the shield in the other hand instead. See
+	 * {@link com.archetypes.Spearwall} for why the spear half needs no hook at
+	 * all.
+	 *
+	 * <p>At RETURN and only over a null, so this can never overrule a shield
+	 * the player genuinely raised — including a shield still inside its own
+	 * {@code blockDelayTicks}, which vanilla reports as not-yet-blocking and
+	 * which has to stay not-yet-blocking.
+	 *
+	 * <p>Common, not server-side: the client asks the same question to pose the
+	 * player, and it can answer, because {@code PURCHASED} is synced to the
+	 * owning client and {@code NodePurchases.owned} is the same code there.
+	 */
+	@Inject(method = "getItemBlockingWith", at = @At("RETURN"), cancellable = true)
+	private void archetypes$spearwall(
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<
+					net.minecraft.world.item.ItemStack> cir) {
+		if (cir.getReturnValue() != null) {
+			return;
+		}
+
+		net.minecraft.world.item.ItemStack shield =
+				com.archetypes.Spearwall.guardingShield((LivingEntity) (Object) this);
+
+		if (shield != null) {
+			cir.setReturnValue(shield);
+		}
+	}
+
+	/**
+	 * Spearwall's one seam: whose durability the block costs.
+	 *
+	 * <p>{@code applyItemBlocking} charges the block with
+	 * {@code hurtBlockingItem(level, blockingStack, this, getUsedItemHand(),
+	 * blocked)}. The stack is ours and therefore right, but the hand is the
+	 * spear's — it is the item actually in use — so a Spearwall shield would
+	 * wear down correctly and then shatter in the wrong slot. Redirecting the
+	 * single {@code getUsedItemHand()} call in that method is the narrowest fix
+	 * that keeps the break where the player is looking.
+	 *
+	 * <p>Only when the guard is genuinely Spearwall's: a normally raised shield
+	 * already IS the used item, and rewriting the hand there would move the
+	 * damage off it.
+	 */
+	@ModifyExpressionValue(method = "applyItemBlocking",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;getUsedItemHand()"
+							+ "Lnet/minecraft/world/InteractionHand;"))
+	private net.minecraft.world.InteractionHand archetypes$spearwallHand(
+			final net.minecraft.world.InteractionHand hand) {
+		LivingEntity self = (LivingEntity) (Object) this;
+
+		return com.archetypes.Spearwall.guardingShield(self) == null ? hand
+				: com.archetypes.Spearwall.guardHand(self);
+	}
+
+	/**
 	 * Bulwark: vanilla's block-angle check boils down to one Math.acos in
 	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
 	 * "in front" for a capstone holder. {@code this} is the blocker here.
