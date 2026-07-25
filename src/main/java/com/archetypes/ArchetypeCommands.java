@@ -42,7 +42,7 @@ import org.jspecify.annotations.Nullable;
  * <h2>Why it ships</h2>
  * The mod's numbers are only checkable by playing them. Nothing else in here
  * grants levels or points ({@code SkillTokenItem} is creative-only and gives a
- * fixed 45), nothing spawns a target worth measuring against, and nothing at all
+ * fixed 1 or 60), nothing spawns a target worth measuring against, and nothing at all
  * shows the shaping chain — so a claim like "a fully built Cutpurse one-shots a
  * fully built Colossus" could be argued from source and never tested. The whole
  * tree is gated at permission level 2 ({@code Commands.LEVEL_GAMEMASTERS}, which

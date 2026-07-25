@@ -261,7 +261,8 @@ competes with enchanting.
   (`MISSILE_CAST_COUNT`, `TRUE_SHOT_ARMED`, `CROSSBOW_PRIMED`) so a respec cannot
   inherit a half-charged proc.
 
-Creative-only `SkillTokenItem` (`skill_token`, `skill_token_45`) grants levels for
+Creative-only `SkillTokenItem` (`skill_token`, `skill_token_60` — 1 level and the
+full `MAX_LEVEL`, so one click reaches the epic tier) grants levels for
 testing; `SpellcastingTomeItem` does the same for the Spellcasting skill.
 
 ## 5. Combat and spell systems

@@ -311,7 +311,7 @@
 	"item.archetypes.holy_wand": "Holy Wand",
 	"item.archetypes.oracle_wand": "Oracle's Wand",
 	"itemGroup.archetypes.archetypes": "Archetypes",
-	"item.archetypes.skill_token_45": "Skill Token x45",
+	"item.archetypes.skill_token_60": "Skill Token x60",
 	"toast.archetypes.levelup": "Archetype Level %s",
 	"toast.archetypes.levelup.desc": "Level %s -> %s",
 	"node.archetypes.wizard.mana_shield": "Mana Shield",

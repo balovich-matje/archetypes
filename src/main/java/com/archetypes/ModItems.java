@@ -104,9 +104,17 @@ public final class ModItems {
 		return stack.is(ItemTags.SWORDS) && !stack.is(GREATSWORDS) && !stack.is(DAGGERS);
 	}
 
-	/** Creative-only: skill points per use. See {@link SkillTokenItem}. */
+	/**
+	 * Creative-only: skill points per use. See {@link com.archetypes.items.SkillTokenItem}.
+	 *
+	 * <p>The greater token grants 60, which is {@link SkillPoints#MAX_LEVEL} — the
+	 * EPIC cap, not the base one. It granted 45 (the base cap,
+	 * {@link SkillPoints#BASE_LEVEL_CAP}) until the epic trees became the thing
+	 * most worth testing, and a token that stopped one tier short meant a second
+	 * command every time.
+	 */
 	public static final Item SKILL_TOKEN = registerSkillToken("skill_token", 1);
-	public static final Item SKILL_TOKEN_45 = registerSkillToken("skill_token_45", 45);
+	public static final Item SKILL_TOKEN_60 = registerSkillToken("skill_token_60", 60);
 
 	/** Creative-only Spellcasting boosts, the twin of Specialities' books. */
 	public static final Item SPELLCASTING_TOME_25 = registerTome(25);
@@ -353,7 +361,7 @@ public final class ModItems {
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 									net.minecraft.world.item.Items.POTION, AmnesiaPotions.STRONG_AMNESIA));
 							output.accept(SKILL_TOKEN);
-							output.accept(SKILL_TOKEN_45);
+							output.accept(SKILL_TOKEN_60);
 							output.accept(SPELLCASTING_TOME_25);
 							output.accept(SPELLCASTING_TOME_100);
 						})

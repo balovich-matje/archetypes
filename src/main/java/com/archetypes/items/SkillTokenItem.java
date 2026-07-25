@@ -10,9 +10,11 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.Level;
 
 /**
- * Testing affordance: grants skill points on use — one for the plain token,
- * the full 45 for the greater one. Creative only — the server checks the
- * game mode itself rather than trusting that the item is hard to get.
+ * Testing affordance: grants archetype levels on use — one for the plain token,
+ * the full 60 for the greater one, which is {@code SkillPoints.MAX_LEVEL} and so
+ * lands a test account in the epic tier rather than one tier short of it.
+ * Creative only — the server checks the game mode itself rather than trusting
+ * that the item is hard to get.
  */
 public class SkillTokenItem extends Item {
 	private final int levels;
