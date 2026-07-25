@@ -12,8 +12,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Keeps the cached advancement count (the XP-rate multiplier's input) in
- * step: a full recount only when a REAL advancement lands or is revoked —
+ * Keeps the cached advancement tally (the XP-rate multiplier's input — the
+ * total plus the goal and challenge counts, since the rate is frame-weighted)
+ * in step: a full recount only when a REAL advancement lands or is revoked —
  * the 1,500+ silent recipe unlocks have no display block and are skipped,
  * so the hot path never pays for them.
  */

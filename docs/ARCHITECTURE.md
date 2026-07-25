@@ -232,22 +232,48 @@ XP: `PlayerMixin` injects at the tail of `giveExperiencePoints` and calls
 player keeps all their XP and the archetype banks a copy, so levelling never
 competes with enchanting.
 
-- **The curve.** `COST[L] = 15 + (6L² + 2) / 5` (exact integer half-up rounding
-  of `1.2L² + 15`), running unchanged to the epic cap, and `CUM[L]` is the
-  cumulative XP to reach level `L`. Both tables are built in a `static` block
-  that asserts the anchors (`CUM[45] = 38_349`, `CUM[60] = 89_472`,
-  `CUM[15] = 1_713`, `COST[1] = 16`, `COST[45] = 2_445`) and throws if the curve
-  drifts. `level(player)` walks `CUM`; `available(player) =
-  max(min(level, 45) − spent, 0)` and `epicAvailable(player) =
-  max(max(level − 45, 0) − epicSpent, 0)` keep the two pools apart.
-- **Advancement multiplier.** Banking is scaled at deposit time by
-  `xpMultiplier(advancementCount) = min(1 + 0.025 · count, 3.0)` — every completed
-  non-recipe advancement adds 2.5% to the banking rate, tripling it at 80. The
-  count is cached on the synced `ADVANCEMENT_COUNT` attachment: recomputed on join
-  and by `PlayerAdvancementsMixin` (which recounts only when a *real*, displayable
-  advancement is awarded or revoked, skipping the ~1,500 silent recipe unlocks).
-  Because scaling happens at banking time, `ARCHETYPE_XP` stays an append-only
-  ledger — retuning the rate never re-inflates past XP.
+- **The curve — two tiers, two shapes.** The **base tier**, levels 1-45, is the
+  original quadratic `COST[L] = 15 + (6L² + 2) / 5` (exact integer half-up
+  rounding of `1.2L² + 15`) and is **frozen**: it is what every existing save's
+  level is read off, so it must never move. The **epic tier**, levels 46-60, is
+  the literal `EPIC_COST` table — `7,000 · 8,500 · 10,000 · 12,000 · 14,500 ·
+  17,500 · 21,000 · 25,000 · 30,000 · 36,000 · 43,000 · 51,000 · 61,000 ·
+  73,000 · 88,000`, about ×1.20 a level, summing to **497,500**. Level 46's
+  7,000 is a deliberate step up from level 45's 2,445: 46 is the first level of
+  a different tier and is priced like one. `CUM[L]` is the cumulative XP to
+  reach level `L`; a `static` block builds both arrays and asserts the anchors
+  (`CUM[15] = 1_713`, `COST[1] = 16`, `COST[45] = 2_445`, `CUM[45] = 38_349` —
+  all four unchanged — plus `COST[46] = 7_000`, `CUM[50] = 90_349`,
+  `COST[60] = 88_000`, `CUM[60] = 535_849`), throwing if the curve drifts.
+  Levels past 45 are 93% of the road by design. `level(player)` walks `CUM`;
+  `available(player) = max(min(level, 45) − spent, 0)` and `epicAvailable(player)
+  = max(max(level − 45, 0) − epicSpent, 0)` keep the two pools apart.
+- **Advancement multiplier — frame-weighted, uncapped, never below x1.** Banking
+  is scaled at deposit time by
+  `xpMultiplier(tasks, goals, challenges) = 1 + 0.05 · tasks + 0.75 · goals +
+  2.00 · challenges`. The frame comes from `holder.value().display().get()
+  .getType()` (`AdvancementType.TASK` / `GOAL` / `CHALLENGE`); vanilla ships
+  91 / 10 / 25 = 126 displayable advancements, so the weights are paid
+  1 : 15 : 40 per advancement and land at **x1.00** fresh, **x1.60** for a
+  farm-parked player holding twelve tasks, **x24.80** for a thorough
+  playthrough (66/6/8) and **x63.05** for the full 126. There is no cap and no
+  sub-1.0 branch anywhere — the rate only ever climbs, so a slow player is
+  never *penalised*, only un-accelerated. Three synced attachments cache it:
+  `ADVANCEMENT_COUNT` (the total, which is what the tree screen shows),
+  `ADVANCEMENT_GOALS` and `ADVANCEMENT_CHALLENGES` — tasks are the remainder.
+  All three are recomputed on join and by `PlayerAdvancementsMixin` (which
+  recounts only when a *real*, displayable advancement is awarded or revoked,
+  skipping the ~1,500 silent recipe unlocks). Because scaling happens at
+  banking time, `ARCHETYPE_XP` stays an append-only ledger — retuning the rate
+  never re-inflates past XP.
+- **What the numbers buy (model, mid rate).** A semi-AFK farm banks ~3,000-7,200
+  raw XP/h; a thorough player kills and explores for ~350-1,010. Times for the
+  full 5→60 climb: **grinder 46 / 66 / 112 h** (fast / mid / slow raw),
+  **explorer 21 / 32 / 62 h** — the explorer is **×2.07** faster overall despite
+  banking a seventh of the raw XP, which is the whole point of the weights.
+  Within the epic tier the explorer clears 45→50 in ~3 h and then spends ~26 h
+  on 50→60; the last level alone costs 88,000 XP. A 126/126 completionist runs
+  x63.05 and still needs ~12 h for 45→60.
 - **Guards.** `ensureBankCoversSpent` (run on join) raises the bank if a retune
   ever left more points spent than XP justifies; it only ever raises.
 - **Amnesia / respec.** `AmnesiaPotions` registers two drinkable potions.

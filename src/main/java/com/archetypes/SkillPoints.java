@@ -1,7 +1,10 @@
 package com.archetypes;
 
+import java.util.Optional;
+
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.minecraft.advancements.AdvancementHolder;
+import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.ServerAdvancementManager;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,19 +16,23 @@ import net.minecraft.world.entity.player.Player;
  *
  * <p>The XP is <em>mirrored</em>, not spent: earning experience feeds levels
  * in parallel, so archetype progress never competes with enchanting. Each
- * level is one skill point, but the price climbs a quadratic curve —
- * {@code cost(L) = round(1.2 L² + 15)} — so the first fifteen levels are a
- * few in-game days of normal play while the last fifteen are 69% of the
- * whole 38,349-XP road. Level 45 is a milestone on the order of slaying the
- * dragon.
+ * level is one skill point, and the price runs two curves back to back: the
+ * base tier 1-45 is the original quadratic {@code round(1.2 L² + 15)},
+ * untouched so no existing save shifts, and the epic tier 46-60 is a separate
+ * table that climbs about 20% a level, from 7,000 to 88,000. The base tier is
+ * 38,349 XP; the epic tier is 497,500 — the levels past 45 are 93% of the
+ * whole road, which is the point. Level 45 is where the game changes shape,
+ * not where it ends.
  *
- * <p>The mirror also runs faster the further the player has actually gotten
- * in the game: every completed non-recipe advancement adds
- * {@link #XP_PER_ADVANCEMENT} to the banking rate, tripling it at 80. The
- * multiplier applies at banking time, so past XP keeps its historical rate
- * and a grinder parked at a frozen game stage levels legally, just slowly.
- * The three sub-tree caps still bound how much of a tree one build can own;
- * the curve now paces how fast it gets there.
+ * <p>The mirror runs faster the further the player has actually gotten in the
+ * game, and how much further is read off the advancement's own frame: a task
+ * is worth {@link #XP_PER_TASK}, a goal {@link #XP_PER_GOAL}, a challenge
+ * {@link #XP_PER_CHALLENGE}. There is no cap and no penalty — the rate starts
+ * at x1 for everyone and only ever climbs, so a farm-parked player still
+ * levels legally, just on the slow road, while a player who actually beat the
+ * game runs it in half the time. The multiplier applies at banking time, so
+ * past XP keeps its historical rate. The three sub-tree caps still bound how
+ * much of a tree one build can own; the curve paces how fast it gets there.
  */
 public final class SkillPoints {
 	/** Brawler at 0, Colossus at the epic cap of 60. One point per level. */
@@ -55,38 +62,68 @@ public final class SkillPoints {
 	public static final int MAX_POINTS_PER_EPIC_SUB_TREE = 5;
 
 	/**
-	 * The curve, in exact integer math: {@code 15 + round(6L²/5)}, where
-	 * {@code 6L² mod 5} is only ever 0, 1 or 4, so adding 2 before the
-	 * integer divide rounds half-up correctly. COST[L] is the price of level
-	 * L; CUM[L] the total banked XP to reach it. The same formula runs the
-	 * whole way to the epic cap.
+	 * The epic tier's price list, levels 46 to 60 in order. Roughly x1.20 a
+	 * level, hand-rounded so the numbers read as prices rather than as output
+	 * from a formula, and starting at 7,000 — a deliberate step up from level
+	 * 45's 2,445, because 46 is the first level of a different tier and should
+	 * cost like one. Sums to 497,500, which is what makes the whole 5-to-60
+	 * climb land at roughly 65 hours for a farm-parked player and half that
+	 * for one who has actually played the game.
+	 */
+	private static final int[] EPIC_COST = {
+		7_000, 8_500, 10_000, 12_000, 14_500,
+		17_500, 21_000, 25_000, 30_000, 36_000,
+		43_000, 51_000, 61_000, 73_000, 88_000,
+	};
+
+	/**
+	 * The curve. Levels 1-45 in exact integer math: {@code 15 + round(6L²/5)},
+	 * where {@code 6L² mod 5} is only ever 0, 1 or 4, so adding 2 before the
+	 * integer divide rounds half-up correctly. Levels 46-60 come from
+	 * {@link #EPIC_COST}. COST[L] is the price of level L; CUM[L] the total
+	 * banked XP to reach it.
 	 */
 	private static final int[] COST = new int[MAX_LEVEL + 1];
 	private static final int[] CUM = new int[MAX_LEVEL + 1];
 
 	static {
-		for (int level = 1; level <= MAX_LEVEL; level++) {
+		for (int level = 1; level <= BASE_LEVEL_CAP; level++) {
 			COST[level] = 15 + (6 * level * level + 2) / 5;
+		}
+
+		for (int level = BASE_LEVEL_CAP + 1; level <= MAX_LEVEL; level++) {
+			COST[level] = EPIC_COST[level - BASE_LEVEL_CAP - 1];
+		}
+
+		for (int level = 1; level <= MAX_LEVEL; level++) {
 			CUM[level] = CUM[level - 1] + COST[level];
 		}
 
 		// Anchors from the design doc; a drifted curve should fail loudly. The
-		// peak-tier and epic-cap totals both come straight from the formula.
-		if (CUM[BASE_LEVEL_CAP] != 38_349 || CUM[15] != 1_713 || COST[1] != 16
-				|| COST[45] != 2_445 || CUM[MAX_LEVEL] != 89_472) {
+		// base-tier anchors are the pre-v2 ones and must never move — every
+		// existing save's level is read off them.
+		if (EPIC_COST.length != MAX_EPIC_POINTS || CUM[BASE_LEVEL_CAP] != 38_349
+				|| CUM[15] != 1_713 || COST[1] != 16 || COST[BASE_LEVEL_CAP] != 2_445
+				|| COST[BASE_LEVEL_CAP + 1] != 7_000 || CUM[50] != 90_349
+				|| COST[MAX_LEVEL] != 88_000 || CUM[MAX_LEVEL] != 535_849) {
 			throw new IllegalStateException("XP curve drifted: cum(45)=" + CUM[BASE_LEVEL_CAP]
-					+ " cum(60)=" + CUM[MAX_LEVEL]);
+					+ " cum(50)=" + CUM[50] + " cum(60)=" + CUM[MAX_LEVEL]);
 		}
 	}
 
 	/**
-	 * The advancement rate: +2.5% per completed non-recipe advancement,
-	 * capped at triple speed (80 advancements of vanilla's ~126 — a thorough
-	 * playthrough, not a completionist one). Vanilla-tuned: datapacks and
-	 * mods grow the pool, so revisit per-modpack.
+	 * The advancement rate, weighted by the advancement's own frame. A task is
+	 * the small change of progression (vanilla has 91 of them), a goal is a
+	 * chapter (10), a challenge is an accomplishment (25) — so they are paid
+	 * 1 : 15 : 40. Nothing here is capped and nothing subtracts: the rate is
+	 * {@code 1 + 0.05·tasks + 0.75·goals + 2.00·challenges}, which is x1.00 for
+	 * a fresh player, x1.60 for a farm-parked one holding twelve tasks, x24.80
+	 * for a thorough playthrough (66/6/8) and x63.05 for the full 126.
+	 * Vanilla-tuned: datapacks and mods grow the pool, so revisit per-modpack.
 	 */
-	public static final float XP_PER_ADVANCEMENT = 0.025F;
-	public static final float MAX_XP_MULTIPLIER = 3.0F;
+	public static final float XP_PER_TASK = 0.05F;
+	public static final float XP_PER_GOAL = 0.75F;
+	public static final float XP_PER_CHALLENGE = 2.00F;
 
 	private SkillPoints() {
 	}
@@ -165,13 +202,32 @@ public final class SkillPoints {
 		return level(player) >= BASE_LEVEL_CAP ? 1 : 0;
 	}
 
-	/** The banking rate for a given advancement count. Pure — the client
-	 * runs the same formula on the synced count. */
-	public static float xpMultiplier(final int advancementCount) {
-		return Math.min(1.0F + XP_PER_ADVANCEMENT * advancementCount, MAX_XP_MULTIPLIER);
+	/** The banking rate for a frame-by-frame advancement tally. Pure, never
+	 * below 1, never capped — the client runs the same formula on the synced
+	 * counts. */
+	public static float xpMultiplier(final int tasks, final int goals, final int challenges) {
+		return 1.0F + XP_PER_TASK * tasks + XP_PER_GOAL * goals + XP_PER_CHALLENGE * challenges;
 	}
 
-	/** The synced cached count; absent means not yet computed. */
+	/** The banking rate this player is earning at right now. */
+	public static float xpMultiplier(final Player player) {
+		// Reading the total first is what triggers the lazy server-side
+		// recount, so the two frame counts below are never stale against it.
+		int total = advancementCount(player);
+		int goals = attached(player, ModAttachments.ADVANCEMENT_GOALS);
+		int challenges = attached(player, ModAttachments.ADVANCEMENT_CHALLENGES);
+
+		return xpMultiplier(Math.max(total - goals - challenges, 0), goals, challenges);
+	}
+
+	private static int attached(final Player player,
+			final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Integer> type) {
+		Integer value = ((AttachmentTarget) player).getAttached(type);
+		return value == null ? 0 : value;
+	}
+
+	/** The synced cached count, all frames together; absent means not yet
+	 * computed. */
 	public static int advancementCount(final Player player) {
 		Integer count = ((AttachmentTarget) player).getAttached(ModAttachments.ADVANCEMENT_COUNT);
 
@@ -189,22 +245,40 @@ public final class SkillPoints {
 
 	/**
 	 * Recount completed non-recipe advancements (the ones with a display
-	 * block; hidden-ness is UI-only and still counts) and cache the result
-	 * on the synced attachment. Called on join and from the award/revoke
-	 * mixin, so {@link #bank} stays O(1) on the hot path.
+	 * block; hidden-ness is UI-only and still counts), split by frame, and
+	 * cache all three numbers on the synced attachments. Called on join and
+	 * from the award/revoke mixin, so {@link #bank} stays O(1) on the hot
+	 * path. Returns the total, which is what the tree screen shows.
 	 */
 	public static int refreshAdvancementCount(final ServerPlayer player) {
 		ServerAdvancementManager manager = player.level().getServer().getAdvancements();
 		PlayerAdvancements progress = player.getAdvancements();
 		int count = 0;
+		int goals = 0;
+		int challenges = 0;
 
 		for (AdvancementHolder holder : manager.getAllAdvancements()) {
-			if (holder.value().display().isPresent() && progress.getOrStartProgress(holder).isDone()) {
-				count++;
+			Optional<DisplayInfo> display = holder.value().display();
+
+			if (display.isEmpty() || !progress.getOrStartProgress(holder).isDone()) {
+				continue;
+			}
+
+			count++;
+
+			switch (display.get().getType()) {
+				case GOAL -> goals++;
+				case CHALLENGE -> challenges++;
+				default -> {
+					// A task; it is the remainder, so nothing to tally.
+				}
 			}
 		}
 
-		((AttachmentTarget) player).setAttached(ModAttachments.ADVANCEMENT_COUNT, count);
+		AttachmentTarget target = (AttachmentTarget) player;
+		target.setAttached(ModAttachments.ADVANCEMENT_GOALS, goals);
+		target.setAttached(ModAttachments.ADVANCEMENT_CHALLENGES, challenges);
+		target.setAttached(ModAttachments.ADVANCEMENT_COUNT, count);
 		return count;
 	}
 
@@ -219,7 +293,7 @@ public final class SkillPoints {
 			return;
 		}
 
-		int scaled = Math.round(amount * xpMultiplier(advancementCount(serverPlayer)));
+		int scaled = Math.round(amount * xpMultiplier(serverPlayer));
 		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, bankedXp(player) + scaled);
 	}
 
@@ -254,9 +328,10 @@ public final class SkillPoints {
 	 * {@code level} by writing the XP the curve says that level costs.
 	 *
 	 * <p>One write rather than a loop of {@link #bank} calls, and the difference
-	 * matters: banking is scaled by the advancement multiplier at deposit time, so
-	 * awarding {@code CUM[level]} in pieces would overshoot by up to triple and
-	 * land the tester somewhere near the level they asked for. Writing the
+	 * matters: banking is scaled by the advancement multiplier at deposit time, and
+	 * that multiplier is uncapped, so awarding {@code CUM[level]} in pieces would
+	 * overshoot by whatever rate the tester happens to be on and land them
+	 * somewhere near the level they asked for. Writing the
 	 * cumulative cost lands on it, and everything downstream — {@link #available},
 	 * {@link #epicAvailable}, {@link #tier} — is derived from the bank, so the
 	 * points and the epic pool that follow are the ones the curve actually owes.

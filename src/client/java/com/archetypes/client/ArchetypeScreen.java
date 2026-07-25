@@ -557,7 +557,7 @@ public class ArchetypeScreen extends Screen {
 		// Short bar: XP into the current level, over what the NEXT level
 		// costs (quadratic curve), with the live advancement rate beside it.
 		int advancements = SkillPoints.advancementCount(player);
-		float rate = SkillPoints.xpMultiplier(advancements);
+		float rate = SkillPoints.xpMultiplier(player);
 		Component next = Component.literal(SkillPoints.xpIntoLevel(player)
 				+ "/" + SkillPoints.costForNextLevel(player) + " XP  (x"
 				+ String.format(java.util.Locale.ROOT, "%.2f", rate) + ")");

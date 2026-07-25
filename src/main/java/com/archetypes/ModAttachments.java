@@ -40,11 +40,27 @@ public final class ModAttachments {
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
 
-	/** Cached count of completed non-recipe advancements — the XP-rate
-	 * multiplier's input. Transient (recounted on join and on every real
-	 * advancement) but synced, so the tree screen can show the live rate. */
+	/** Cached count of completed non-recipe advancements, all frames together.
+	 * Transient (recounted on join and on every real advancement) but synced,
+	 * so the tree screen can show the live rate. */
 	public static final AttachmentType<Integer> ADVANCEMENT_COUNT = AttachmentRegistry.create(
 			Archetypes.id("advancement_count"),
+			builder -> builder
+					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
+	/** How many of {@link #ADVANCEMENT_COUNT} carry the goal frame. The XP rate
+	 * is frame-weighted, so the three tiers are counted apart; tasks are the
+	 * remainder, which keeps the total attachment above meaning what it says. */
+	public static final AttachmentType<Integer> ADVANCEMENT_GOALS = AttachmentRegistry.create(
+			Archetypes.id("advancement_goals"),
+			builder -> builder
+					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
+					.copyOnDeath());
+
+	/** How many of {@link #ADVANCEMENT_COUNT} carry the challenge frame. */
+	public static final AttachmentType<Integer> ADVANCEMENT_CHALLENGES = AttachmentRegistry.create(
+			Archetypes.id("advancement_challenges"),
 			builder -> builder
 					.syncWith(ByteBufCodecs.VAR_INT, AttachmentSyncPredicate.targetOnly())
 					.copyOnDeath());
