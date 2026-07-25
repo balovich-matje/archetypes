@@ -1296,12 +1296,44 @@ public final class Tuning {
 	public static final float BARBARIAN_MAGIC_CUT_PER_RANK = 0.375F;
 
 	/**
-	 * Blade Master: 20% off a greatsword's swing time per rank. Applied as an
-	 * ATTACK_SPEED multiplier of {@code 1 / (1 - cut) - 1}, so the number here
-	 * is the swing time the description names, not the attack speed — rank 2
-	 * is 40% off the time, i.e. x1.667 the rate.
+	 * Blade Master: <b>-20% greatsword ATTACK_SPEED per rank</b>, so rank 2 is
+	 * -40%. The sign is the whole change — the node used to hand the same 20% a
+	 * rank the other way, as a swing-time CUT.
+	 *
+	 * <h2>Why it inverted</h2>
+	 * Because the node was paying twice for one point. Blade Master already
+	 * carries the tree's armour lane ({@link #BLADE_MASTER_ARMOUR_IGNORE_PER_RANK}
+	 * and {@link #BLADE_MASTER_PROTECTION_BITE_PER_RANK}), and the speed half on
+	 * top of it did not stack with the rest of a Brawler's kit so much as cancel
+	 * it: Heavy Blows is a deliberate damage-for-speed trade, and Blade Master
+	 * rank 2 handed the speed back with interest, so the build that took both
+	 * paid nothing for either. Measured on the greatsword's own 0.8 swings/s
+	 * (25.0 ticks to full charge), with Skill Proficiencies' Arms Mastery 100
+	 * multiplying the finished RECOVERY TIME by 0.7 after the attributes resolve:
+	 * <ul>
+	 * <li>bare greatsword — 25.0 ticks;</li>
+	 * <li>Heavy Blows 3 (-30% speed) — 35.7 ticks;</li>
+	 * <li>+ old Blade Master 2 (+66.7% rate) — 21.4, and <b>15.0</b> with Arms
+	 *     Mastery 100. A two-hander swinging faster than it does bare-handed, and
+	 *     the author's complaint;</li>
+	 * <li>+ this constant instead (-40% speed) — 59.5, and <b>41.7</b> with Arms
+	 *     Mastery 100.</li>
+	 * </ul>
+	 *
+	 * <h2>Why an attribute, and why denominated in speed</h2>
+	 * An attribute because it has to be one: {@code
+	 * getCurrentItemAttackStrengthDelay} reads {@code ATTACK_SPEED} and nothing
+	 * else. Denominated in attack speed, as a raw {@code ADD_MULTIPLIED_TOTAL}
+	 * amount, because that is {@link #HEAVY_PER_RANK}'s idiom in this mod and the
+	 * two modifiers sit on the same attribute — vanilla applies each
+	 * {@code ADD_MULTIPLIED_TOTAL} in turn, so the two multiply cleanly and the
+	 * description's "20/40% slower" reads the same way Heavy Blows' does.
+	 *
+	 * <p>Greatsword only. The armour lane now reaches ordinary swords too (see
+	 * {@code ColossusSlayer.bladeMasterFactor}); this penalty deliberately does
+	 * not — a sword's speed is the reason to carry one.
 	 */
-	public static final float BLADE_MASTER_SWING_CUT_PER_RANK = 0.20F;
+	public static final float BLADE_MASTER_SWING_PENALTY_PER_RANK = 0.20F;
 
 	/**
 	 * Blade Master: the share of a victim's ARMOUR a greatsword hit ignores, per

@@ -131,37 +131,45 @@ public final class ColossusSlayer {
 	}
 
 	// ------------------------------------------------------------------
-	// Blade Master — the greatsword lane: swing time, and armour.
+	// Blade Master — armour on both blades, and a slower greatsword.
 	// ------------------------------------------------------------------
 
 	/**
-	 * Blade Master's swing-time half, asserted and revoked every tick in
-	 * {@code SlayerTicker.tickStance}'s shape so no respec can leave the
-	 * modifier standing.
+	 * Blade Master's swing-time half — a PENALTY now, not a bonus — asserted and
+	 * revoked every tick in {@code SlayerTicker.tickStance}'s shape so no respec
+	 * can leave the modifier standing.
 	 *
 	 * <p>An attribute rather than a damage hook because it has to be one:
 	 * {@code getCurrentItemAttackStrengthDelay} reads {@code ATTACK_SPEED} and
-	 * nothing else. The number is converted, not copied: {@code -20%} of the
-	 * TIME is {@code x1.25} the rate, so the modifier carries
-	 * {@code 1 / (1 - cut) - 1}. It multiplies against Heavy Blows' own
-	 * {@code ATTACK_SPEED} cut rather than cancelling it, because vanilla
-	 * applies each {@code ADD_MULTIPLIED_TOTAL} in turn — so the description's
-	 * "-20/40%" stays true of whatever the greatsword swings at now.
+	 * nothing else. The number is carried straight through rather than converted,
+	 * which is the second half of the change: {@link
+	 * Tuning#BLADE_MASTER_SWING_PENALTY_PER_RANK} is denominated in attack speed,
+	 * exactly like {@link Tuning#HEAVY_PER_RANK} on the same attribute two nodes
+	 * down the tree. Vanilla applies each {@code ADD_MULTIPLIED_TOTAL} in turn, so
+	 * the two compound rather than cancelling — which is the point: Heavy Blows'
+	 * trade is no longer refunded by the epic node above it.
 	 *
-	 * <p>The node's second half used to be +20% sword ATTACK_DAMAGE per rank and
+	 * <p>Clamped at -90% so no future rank count can drive the attribute to zero
+	 * and the swing timer to infinity; rank 2 is -40% and nowhere near it.
+	 *
+	 * <p>Greatsword only, deliberately. The node's armour half reaches ordinary
+	 * swords ({@link #bladeMasterFactor}) and this half does not.
+	 *
+	 * <p>The node's third half used to be +20% sword ATTACK_DAMAGE per rank and
 	 * is gone; see {@link #bladeMasterFactor} for what replaced it and
 	 * {@link Tuning#BLADE_MASTER_ARMOUR_IGNORE_PER_RANK} for why the swap. There
 	 * is deliberately no revoke path left for the retired damage modifier:
 	 * {@code addTransientModifier} is never saved to disk, so no live attribute
-	 * map can carry one across the restart this change requires.
+	 * map can carry one across the restart this change requires — and the same
+	 * fact is why the speed modifier's flipped sign needs no migration either.
 	 */
 	private static void tickStance(final ServerPlayer player) {
 		int rank = rank(player, Family.BLADE_MASTER);
 		ItemStack held = player.getMainHandItem();
-		double cut = Math.min(0.9, Tuning.BLADE_MASTER_SWING_CUT_PER_RANK * rank);
+		double penalty = Math.min(0.9, Tuning.BLADE_MASTER_SWING_PENALTY_PER_RANK * rank);
 
 		stance(player.getAttribute(Attributes.ATTACK_SPEED), BLADE_MASTER_SPEED_ID,
-				rank > 0 && ModItems.isGreatsword(held), 1.0 / (1.0 - cut) - 1.0);
+				rank > 0 && ModItems.isGreatsword(held), -penalty);
 	}
 
 	/**
