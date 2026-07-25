@@ -44,12 +44,26 @@ import org.jspecify.annotations.Nullable;
  * grants levels or points ({@code SkillTokenItem} is creative-only and gives a
  * fixed 1 or 60), nothing spawns a target worth measuring against, and nothing at all
  * shows the shaping chain — so a claim like "a fully built Cutpurse one-shots a
- * fully built Colossus" could be argued from source and never tested. The whole
- * tree is gated at permission level 2 ({@code Commands.LEVEL_GAMEMASTERS}, which
- * is literally {@code new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER)}
- * — the 26.2 spelling of the old {@code hasPermission(2)}), holds no client-side
- * state, and every mutation it performs goes through the same code the real UI
- * uses.
+ * fully built Colossus" could be argued from source and never tested. It holds no
+ * client-side state, and every mutation it performs goes through the same code
+ * the real UI uses.
+ *
+ * <h2>Who can see it</h2>
+ * Both of: permission level 2 ({@code Commands.LEVEL_GAMEMASTERS}, which is
+ * literally {@code new PermissionCheck.Require(Permissions.COMMANDS_GAMEMASTER)}
+ * — the 26.2 spelling of the old {@code hasPermission(2)}) AND a player in
+ * CREATIVE ({@link #creativePlayer}). Brigadier consults {@code requires} both
+ * when it builds the tree it sends a client and when it parses what that client
+ * typed, so the pair hides the kit from a survival playthrough's tab-complete and
+ * refuses it if typed anyway. The console has no game mode and is refused.
+ *
+ * <p>One thing the client-side half cannot promise: vanilla resends the command
+ * tree on join and on op/deop ({@code PlayerList.sendPlayerPermissionLevel}) and
+ * NOT on a game-mode change — {@code ServerPlayerGameMode.changeGameModeForPlayer}
+ * broadcasts abilities and a player-info update, no {@code ClientboundCommandsPacket}
+ * (read off the 26.2 bytecode). So the suggestion list a client is holding goes
+ * stale until it rejoins. The server-side answer is exact either way, because it
+ * re-parses against the live source.
  *
  * <h2>What it deliberately does not do</h2>
  * {@code buy} does not touch {@code PURCHASED} directly. It asks
@@ -75,13 +89,44 @@ public final class ArchetypeCommands {
 
 	private static final String KEY = "commands.archetypes.";
 
+	/**
+	 * Permission level 2, unchanged — {@code Commands.LEVEL_GAMEMASTERS} is the
+	 * 26.2 spelling of the old {@code hasPermission(2)}. Its own constant only so
+	 * the creative test below can be {@code and}ed onto it without the generic
+	 * witness {@code Commands.<CommandSourceStack>hasPermission(...)} would
+	 * otherwise need: assigning it here gives the inference its target type.
+	 */
+	private static final java.util.function.Predicate<CommandSourceStack> GAMEMASTER =
+			Commands.hasPermission(Commands.LEVEL_GAMEMASTERS);
+
 	private ArchetypeCommands() {
+	}
+
+	/**
+	 * The second half of the gate: the caller must be a PLAYER, and that player
+	 * must be in creative.
+	 *
+	 * <p>Two things it buys. The tree stops appearing in a survival player's
+	 * tab-complete, so a test kit that grants levels and spawns armoured dummies
+	 * is not sitting one keystroke away from an ordinary playthrough on a server
+	 * where the author is opped. And the console stays out:
+	 * {@code getPlayer()} is null for it, for a command block and for a function,
+	 * none of which has a game mode to be in, and every branch below already
+	 * needs a player ({@code getPlayerOrException}) — so refusing them once here
+	 * is the same answer given earlier and in one place.
+	 *
+	 * <p>Both halves are required, not either: creative alone would hand the kit
+	 * to any creative player on a server, and permission alone is what it was.
+	 */
+	private static boolean creativePlayer(final CommandSourceStack source) {
+		ServerPlayer player = source.getPlayer();
+		return player != null && player.isCreative();
 	}
 
 	public static void initialize() {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registries, environment) ->
 				dispatcher.register(Commands.literal("archetypes")
-						.requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+						.requires(GAMEMASTER.and(ArchetypeCommands::creativePlayer))
 						.then(setCommand())
 						.then(levelCommand())
 						.then(buyCommand())
