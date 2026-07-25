@@ -1017,13 +1017,16 @@ public final class Tuning {
 	 * The 3.09 HP residual assumes Skill Proficiencies at its default
 	 * {@code combatDamageMaxBonus = 0.5} (Combat 100 = x1.5). Their config
 	 * permits up to 5.0, and their own javadoc invites 1.0 — at x2.0 the same
-	 * opener is lethal. And vanilla's own critical hit is NOT modelled here:
-	 * {@code AgilityActives.strike} is deliberately "one authentic full-charge
-	 * attack: enchants, crits and all", so a Shadow Step pressed while airborne
-	 * and falling multiplies the base damage (not the enchantment boost) by 1.5,
-	 * i.e. 10.2 into the funnel instead of 7.800, and the opener kills. Both are
-	 * stated rather than defended against, because defending against either
-	 * means no node can state a number in its description.
+	 * opener is lethal. That one is stated rather than defended against,
+	 * because defending against a sibling mod's config means no node can state
+	 * a number in its description. Vanilla's critical hit, by contrast, IS
+	 * defended against since the ambush-bucket session:
+	 * {@code AgilityActives.strike} calls {@code resetFallDistance()}
+	 * immediately before the attack, so a Shadow Step can never crit — the
+	 * 10.2-base lethal case is unreachable through the step. A MANUAL falling
+	 * dagger crit still exists but has no Shadow Flurry (+1.50 needs a step
+	 * strike), so its box is 6.05 and it lands ~38.7 — alive on ~1.3, tight
+	 * but not lethal.
 	 */
 	public static final float COUP_DE_GRACE_PLAYER_BONUS = 3.40F;
 	/** Stalk: beyond this, a sneaking hunter is dropped by their own mark. Eight

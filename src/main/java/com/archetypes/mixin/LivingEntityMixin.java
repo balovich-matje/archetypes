@@ -429,14 +429,18 @@ public abstract class LivingEntityMixin {
 		if (executing) {
 			// Executioner's idiom verbatim: past every resistance.
 			//
-			// This floor is written BEFORE Skill Proficiencies' own multipliers
-			// (they run after this handler — see FlenseMixin's class comment for
-			// the whole ordering), so what actually reaches vanilla is
-			// (health + 100) x their factor. That is deliberate and it is the
-			// safe direction: the clamp exists to guarantee a kill, and a
-			// downstream multiply can only make a floor larger. Compensating it
-			// would need to predict a sibling mod's gates, which is how the
-			// execute would silently stop executing the day one of them changed.
+			// Ordering vs Skill Proficiencies' multipliers is a COIN FLIP, not a
+			// fact: both mods' hurtServer handlers sit at priority 1000, and the
+			// 2026-07-26 trace session measured SP running FIRST on that install
+			// (dagger stage's `before` was 7.80 x 4.50 = 35.10) — the opposite of
+			// what this comment used to assert. So do not rely on the floor being
+			// multiplied up by SP; what reaches vanilla may be the bare
+			// (health + 100), which then eats armour and Protection (x0.84 x0.36
+			// on a full netherite kit = x0.302). Consequence, measured: on an
+			// armoured mob the "guaranteed" execute only actually kills while
+			// health < ~43; a beefier armoured mob at 30% can survive it.
+			// Compensating through armour here would need ArmourMath against the
+			// victim's live stats — parked; mob-only path, low frequency.
 			result = Math.max(result, victim.getHealth() + 100.0F);
 		}
 
