@@ -53,9 +53,21 @@ public abstract class LocalPlayerMixin {
 	 * {@code guardingShield} rather than the published flag, because the owner's
 	 * own client can and should answer without a tick of latency.
 	 */
+	/**
+	 * <p>Sure Footing rides the same handler rather than a second
+	 * {@code @ModifyReturnValue}, because the two compose and the order is not
+	 * negotiable: Spearwall has to install the guard's multiplier BEFORE the
+	 * node hands part of it back, or a Spearwall Protector with Sure Footing
+	 * would have its relief applied to the spear's 1.0 and come out unchanged.
+	 * Two separate injectors would leave that ordering to whatever the mixin
+	 * applier felt like.
+	 */
 	@ModifyReturnValue(method = "itemUseSpeedMultiplier", at = @At("RETURN"))
-	private float archetypes$spearwallGuardIsHeavy(final float original) {
-		return com.archetypes.Spearwall.guardSpeedMultiplier((LocalPlayer) (Object) this, original);
+	private float archetypes$blockingMovement(final float original) {
+		LocalPlayer self = (LocalPlayer) (Object) this;
+
+		return com.archetypes.SureFooting.relieve(self,
+				com.archetypes.Spearwall.guardSpeedMultiplier(self, original));
 	}
 
 	/** The other half of the same stance: vanilla gates sprinting on the use

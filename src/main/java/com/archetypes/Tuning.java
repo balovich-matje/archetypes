@@ -174,9 +174,21 @@ public final class Tuning {
 		return 2 * rank;
 	}
 
-	/** Knockback trade: each rank sheds 12% damage for ~KB-enchant-level shove. */
-	public static final double KNOCKBACK_PER_RANK = 0.67;
-	public static final float KNOCKBACK_DAMAGE_PENALTY = 0.12F;
+	/**
+	 * Sure Footing: the share of the blocking movement penalty handed back, by
+	 * rank. Vanilla blocks at a fifth of walking speed
+	 * ({@code UseEffects.DEFAULT.speedMultiplier()}), so rank 3 is the whole
+	 * penalty and a full-rank Protector advances behind a raised shield at
+	 * walking pace. The sprint gate is not part of this and stays.
+	 */
+	public static float sureFootingRelief(final int rank) {
+		return switch (Math.max(Math.min(rank, 3), 0)) {
+			case 1 -> 0.33F;
+			case 2 -> 0.66F;
+			case 3 -> 1.0F;
+			default -> 0.0F;
+		};
+	}
 
 	/** Wide Swings: secondary targets take 50% then 100% of the bash. */
 	public static float wideSecondaryFraction(final int rank) {

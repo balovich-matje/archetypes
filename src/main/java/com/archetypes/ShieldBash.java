@@ -53,15 +53,15 @@ public final class ShieldBash {
 
 		int slam = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.SLAM);
 		int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.COOLDOWN);
-		int knockback = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.KNOCKBACK);
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
 		int taunt = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.TAUNT);
 		int groundSlam = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.GROUND_SLAM);
 
-		float damage = Tuning.BASH_DAMAGE
-				* Tuning.slamMultiplier(slam)
-				* (1.0F - Tuning.KNOCKBACK_DAMAGE_PENALTY * knockback);
-		double shove = Tuning.BASH_KNOCKBACK + Tuning.KNOCKBACK_PER_RANK * knockback;
+		// The bash's shove is flat now. The node that used to buy more of it
+		// (Concussive Blow) is Sure Footing, which is about moving while the
+		// shield is up and never touches this ability at all.
+		float damage = Tuning.BASH_DAMAGE * Tuning.slamMultiplier(slam);
+		double shove = Tuning.BASH_KNOCKBACK;
 
 		ServerLevel level = (ServerLevel) player.level();
 		Vec3 look = player.getLookAngle();
