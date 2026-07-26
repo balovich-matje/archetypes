@@ -203,7 +203,7 @@ in.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
-  Bulwark(`OMNI_BLOCK`)|Ground Slam. Elementalist is special: its four capstones
+  Bulwark(`OMNI_BLOCK`)|Spear Phalanx(`GROUND_SLAM`). Elementalist is special: its four capstones
   are **one choice total** — any owned capstone locks the other three.
 
 ### Compacting a family instead of redrawing a grid
@@ -491,7 +491,15 @@ form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
 
-### Ground Slam: the phalanx, and why the clones are only decoration
+### Spear Phalanx: the formation, and why the clones are only decoration
+
+The node is **displayed** as Spear Phalanx and is still `Family.GROUND_SLAM`
+everywhere else: the enum constant, the `node.archetypes.protector.ground_slam`
+lang keys, the `textures/node/protector/ground_slam.png` sprite and — the point
+of reworking in place rather than adding a node — the constellation index that
+`PURCHASED` has been storing all along. Only the lang VALUE moved. Never
+"tidy" the constant to match the title; that renumbers nothing but it does
+orphan the sprite and both lang keys at once.
 
 The capstone used to turn the bash into a ring — the same hit over a larger
 circle, which is a poor thing for a capstone to be when the node opposite it is
