@@ -29,7 +29,6 @@ public final class ProtectorNodes {
 		COOLDOWN(() -> Items.CLOCK),
 		KNOCKBACK(() -> Items.PISTON),
 		WIDE(() -> Items.SHIELD, Archetypes.id("textures/node/wide_swings_overlay.png"), 32),
-		UNBREAKING(() -> Items.LEATHER),
 		SPIKES(Archetypes.id("textures/node/iron_spikes.png"), 32),
 		RUSH(() -> Items.WIND_CHARGE),
 		BRACED(() -> Items.SHIELD, Archetypes.id("textures/node/braced_overlay.png"), 32),
@@ -137,8 +136,16 @@ public final class ProtectorNodes {
 		byCell.put(cell(1, 4), new Def(Family.KNOCKBACK, 1));
 		byCell.put(cell(0, 5), new Def(Family.KNOCKBACK, 2));
 		byCell.put(cell(0, 6), new Def(Family.KNOCKBACK, 3));
-		byCell.put(cell(0, 7), new Def(Family.UNBREAKING, 1));
-		byCell.put(cell(0, 8), new Def(Family.REFLECT, 1));
+		// Reflection took the whole top of the rim. Reinforced Straps used to
+		// sit at (0,7) — a flat Unbreaking I on the blocking item, which was a
+		// durability discount pretending to be a skill. The cell is Reflection's
+		// second rank now, and nothing about saved data has to move for it:
+		// PURCHASED stores INDICES, so a player who owned Straps owns the same
+		// index and it simply reads as Reflection I. Owning both reads as
+		// Reflection II. No refund path, nothing orphaned, no renumbering — the
+		// same reason the grid was never redrawn for Spearwall either.
+		byCell.put(cell(0, 7), new Def(Family.REFLECT, 1));
+		byCell.put(cell(0, 8), new Def(Family.REFLECT, 2));
 
 		// Right rim, bottom-up: the damage path.
 		byCell.put(cell(5, 1), new Def(Family.SLAM, 1));

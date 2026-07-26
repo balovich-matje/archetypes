@@ -159,7 +159,21 @@ public final class Tuning {
 		return PHALANX_SPEAR_ANGLE_DEGREES - SPEAR_ARM_REST_DEGREES;
 	}
 
-	/** Reflection: a returned projectile keeps half its bite. */
+	/**
+	 * Reflection: how much of its bite a returned arrow keeps, by rank. Rank 2
+	 * sends the shot back whole — a skeleton that shoots a Protector at rank 2
+	 * is shooting itself, which is the point of a two-point node on the top of
+	 * the rim. Rank 1 is the old single-rank value unchanged, so nobody's
+	 * existing Reflection got quietly better or worse the day it grew a rank.
+	 */
+	public static double reflectDamageFactor(final int rank) {
+		return rank >= 2 ? 1.0 : REFLECT_DAMAGE_FACTOR;
+	}
+
+	/** A parried spell's arrow keeps half its bite — Spell Reflect's own number,
+	 * kept apart from the Protector node's rank table on purpose: the Colossus
+	 * Slayer's parry has nothing to do with how far up the shield rim someone
+	 * bought. */
 	public static final double REFLECT_DAMAGE_FACTOR = 0.5;
 	/** Floor on the return flight — a mid-drawn-bow launch, enough to carry
 	 * the shot back to a skeleton at normal firing range. */
@@ -207,9 +221,6 @@ public final class Tuning {
 	public static int spikesThornsLevel(final int rank) {
 		return rank * 5;
 	}
-
-	/** Reinforced Straps = Unbreaking I: half of durability hits are ignored. */
-	public static final float STRAPS_SKIP_CHANCE = 0.5F;
 
 	/**
 	 * Free Hand: how far into a brace the clock is frozen, in ticks past the

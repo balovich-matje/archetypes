@@ -94,9 +94,10 @@ public abstract class ProjectileMixin {
 		// Slayer's Spell Reflect off an open parry window (EntityMixin answers
 		// vanilla's deflection test so the spell is deflected in the first
 		// place). Only the aftermath differs.
-		boolean reflect = ProtectorNodes.rank(SubTree.PROTECTOR,
+		int reflectRank = ProtectorNodes.rank(SubTree.PROTECTOR,
 				NodePurchases.owned(player, SubTree.PROTECTOR),
-				ProtectorNodes.Family.REFLECT) > 0;
+				ProtectorNodes.Family.REFLECT);
+		boolean reflect = reflectRank > 0;
 		boolean parried = com.archetypes.ColossusSlayer.parriesSpell(player, self);
 
 		if (!reflect && !parried) {
@@ -132,9 +133,15 @@ public abstract class ProjectileMixin {
 		level.playSound(null, self.getX(), self.getY(), self.getZ(),
 				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.8F, 1.5F);
 
+		// What comes back, and how hard. The node's rank decides — half at rank
+		// 1, whole at rank 2 — and it wins over the parry's flat half when a
+		// player somehow holds both, because the node is the one that was paid
+		// for twice. A parry with no Reflection keeps Spell Reflect's own
+		// number, which is deliberately not on the same table.
 		if (self instanceof AbstractArrow arrow) {
-			arrow.setBaseDamage(((AbstractArrowAccessor) arrow).archetypes$getBaseDamage()
-					* Tuning.REFLECT_DAMAGE_FACTOR);
+			double keep = reflect ? Tuning.reflectDamageFactor(reflectRank)
+					: Tuning.REFLECT_DAMAGE_FACTOR;
+			arrow.setBaseDamage(((AbstractArrowAccessor) arrow).archetypes$getBaseDamage() * keep);
 		}
 
 		if (reflect) {

@@ -214,6 +214,17 @@ stores indices — so the cheapest safe way to free a cell for a new skill is to
 ASCII art. Editing a `'#'` renumbers every node after it and silently
 repurposes saved data.
 
+The same move works in reverse, to delete a skill without deleting a cell.
+Reinforced Straps was one node at `(0,7)` — a flat Unbreaking I on the blocking
+item, a durability discount pretending to be a skill. It is gone and its cell is
+Reflection's second rank, so `REFLECT` now runs `(0,7)`→`(0,8)` at x0.5/x1.0
+returned damage. No migration code exists because none is needed: `PURCHASED`
+stores indices, so an owner of Straps owns the same index and it reads as
+Reflection I, and an owner of both reads Reflection II. Note what this does NOT
+do — it frees no cell. A rank **is** a cell in this system, so folding two
+one-rank skills into one two-rank skill is exactly cell-neutral; the only way to
+free one is the compaction below.
+
 The Protector is the worked example. Quick Recovery (`COOLDOWN`) ran four cells
 up the centre column at a fifth of the bash's ability layer each; it runs three
 at `Tuning.RECOVERY_PER_RANK = 4/15`, which lands on the same −80% it always
