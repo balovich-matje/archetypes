@@ -563,16 +563,22 @@ public class ArchetypeScreen extends Screen {
 				+ String.format(java.util.Locale.ROOT, "%.2f", rate) + ")");
 		graphics.text(this.font, next, left, top + 18, VanillaUi.LABEL_FAINT, false);
 
-		// The rate earns an explanation on hover.
+		// The rate earns an explanation on hover. Both lines go through
+		// font.split at VanillaUi.TOOLTIP_WIDTH, the same width every other
+		// tooltip on this screen wraps at — a getVisualOrderText() straight off
+		// a Component is ONE line however long it is, which is how this one
+		// grew across the whole window and got clipped at the edge.
 		if (mouseY >= top + 16 && mouseY < top + 28 && mouseX >= left
 				&& mouseX < left + this.font.width(next)) {
-			graphics.setTooltipForNextFrame(this.font, java.util.List.of(
+			List<FormattedCharSequence> lines = new java.util.ArrayList<>();
+			lines.addAll(this.font.split(
 					Component.translatable("screen.archetypes.tree.rate.tooltip")
-							.withStyle(ChatFormatting.GRAY).getVisualOrderText(),
+							.withStyle(ChatFormatting.GRAY), VanillaUi.TOOLTIP_WIDTH));
+			lines.addAll(this.font.split(
 					Component.translatable("screen.archetypes.tree.rate.tooltip.count",
 							advancements, String.format(java.util.Locale.ROOT, "%.2f", rate))
-							.withStyle(ChatFormatting.WHITE).getVisualOrderText()),
-					mouseX, mouseY);
+							.withStyle(ChatFormatting.WHITE), VanillaUi.TOOLTIP_WIDTH));
+			graphics.setTooltipForNextFrame(this.font, lines, mouseX, mouseY);
 		}
 
 		// The points-remaining chip: epic points while previewing an epic tree,
