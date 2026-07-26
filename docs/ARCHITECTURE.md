@@ -609,8 +609,29 @@ on the same column as Spearwall by design.
   4. `ClientboundSetEntityDataPacket` (the skin-layer byte) and
      `ClientboundSetEquipmentPacket` (spear in the main hand, the caster's
      armour on the four humanoid slots).
-- **The skin is the caster's own, and it is legitimate.** The clone's profile is
-  a fresh UUID carrying a copy of the caster's signed `textures` property.
+- **The clone identities are DERIVED, and that is a bug fix, not tidiness.**
+  `ClientPacketListener.handleAddEntity` ends by putting every `Player` add into
+  `seenPlayers`, and nothing ever removes from that map:
+  `handlePlayerInfoRemove` clears `playerInfoMap` and `listedPlayers` and calls
+  `PlayerSocialManager.removePlayer`, but leaves `seenPlayers` alone — the only
+  other writes are `handleConfigurationStart` and the `getSeenPlayers()` that
+  the Social Interactions list and the pause screen read. With a random UUID per
+  cast, every bash added two more strangers wearing the caster's skin to every
+  nearby player's Social Interactions list, permanently. So the profile id is
+  `UUID.nameUUIDFromBytes("archetypes:phalanx:<casterUUID>:L|R")`, the profile
+  name is the caster's name cut to 13 characters plus `_L`/`_R` (the wire cap is
+  16 — `ByteBufCodecs.PLAYER_NAME` is `stringUtf8(16)`), and the team name is
+  `archetypes_phalanx_<casterUUID>` (no cap; team names go over as a plain
+  `writeUtf`). **Residual, accepted:** two entries per caster per viewer remain
+  until the viewer disconnects. No clientbound packet can clear `seenPlayers`;
+  naming them after the caster is what makes the leftovers legible. The price of
+  stable ids is that one caster must never have two live formations — the first
+  one's despawn would pull profiles the second one's entities need — so
+  `SpearPhalanx.formUp` sweeps the caster's live formation before re-spawning
+  rather than trusting the bash cooldown floor (40 ticks) to stay above
+  `PHALANX_LIFE_TICKS` (12).
+- **The skin is the caster's own, and it is legitimate.** The clone's profile
+  carries a copy of the caster's signed `textures` property.
   authlib's `unpackTextures` validates the signature over the payload and
   decodes it; it does not compare the payload's profile id to the profile
   carrying it, which is why the property transplants. If the caster has no

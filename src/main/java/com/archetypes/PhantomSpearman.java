@@ -1,5 +1,6 @@
 package com.archetypes;
 
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -86,12 +87,65 @@ import net.minecraft.world.scores.Team;
  * world to write to a region file. Gameplay has already resolved in full by the
  * time any of this is sent — a clone a client never received, or one swept
  * early, cannot cost anybody a hit.
+ *
+ * <h2>Why the identities are derived and not random</h2>
+ * A clone's profile id and profile name are a pure function of the caster's
+ * UUID and which shoulder it stands at, so a given player's left spearman is
+ * the same profile on the tenth cast as on the first. That is not tidiness, it
+ * is the fix for a leak that only a viewer's client could see.
+ *
+ * <p>{@code ClientPacketListener.handleAddEntity} ends by putting every add of
+ * a {@code Player} into {@code seenPlayers} (the profile is already in
+ * {@code playerInfoMap} by then, which is the whole reason step 2 exists), and
+ * <b>nothing takes it back out</b>:
+ * {@code handlePlayerInfoRemove} clears {@code playerInfoMap} and
+ * {@code listedPlayers} and calls {@code PlayerSocialManager.removePlayer}, but
+ * never touches {@code seenPlayers}; the only other writes to that map are
+ * {@code handleConfigurationStart} (a server switch) and the
+ * {@code getSeenPlayers()} the Social Interactions list and the pause screen
+ * read. So a despawn cannot undo the entry — the map is append-only for the
+ * life of a connection, by design, because "players you have seen this session"
+ * is exactly what a report screen wants.
+ *
+ * <p>With random ids that meant every cast added two more strangers wearing the
+ * caster's skin to every nearby player's Social Interactions list, forever.
+ * Derived ids cap it: a caster contributes <b>two</b> entries per viewer per
+ * connection no matter how many times they cast. Those two do remain until the
+ * viewer disconnects, and no server-side packet exists that can remove them —
+ * that residual is the price of the puppet and is accepted. Naming them after
+ * the caster ({@code <caster>_L} / {@code <caster>_R}) is the other half of
+ * accepting it: what is left in the list reads as the player who cast it
+ * instead of as an unexplained stranger.
  */
 final class PhantomSpearman {
 	/** Armour copied off the caster, so the clone reads as the same soldier. */
 	private static final EquipmentSlot[] ARMOUR = {
 		EquipmentSlot.HEAD, EquipmentSlot.CHEST, EquipmentSlot.LEGS, EquipmentSlot.FEET,
 	};
+
+	/**
+	 * Namespace for the derived profile ids. It is only ever hashed, never
+	 * shown; it is spelled out so the derivation cannot collide with another
+	 * mod's name-based UUIDs by accident.
+	 */
+	private static final String ID_NAMESPACE = "archetypes:phalanx:";
+
+	/**
+	 * How much of the caster's name a clone's name may carry.
+	 *
+	 * <p>Profile names are wire-capped at 16 characters
+	 * ({@code ByteBufCodecs.PLAYER_NAME} is {@code stringUtf8(16)}, verified in
+	 * the jar) and the suffix costs two, so thirteen is the whole budget.
+	 * Vanilla names run to 16, so a name CAN be truncated into another's — two
+	 * casters sharing their first thirteen characters would key their clones on
+	 * the same team membership strings. The profile ids stay distinct (they are
+	 * derived from the full caster UUID), so the formations never merge; the
+	 * worst case is that one caster's despawn drops the other's clones out of a
+	 * team for the last few ticks of a 12-tick life and a name plate flickers.
+	 * Accepted over hashing the name into unreadability, which would give back
+	 * the "unexplained stranger" this naming exists to avoid.
+	 */
+	private static final int NAME_BUDGET = 13;
 
 	private final int entityId;
 	private final GameProfile profile;
@@ -111,18 +165,73 @@ final class PhantomSpearman {
 	/**
 	 * A clone of {@code caster}, standing at {@code at}.
 	 *
-	 * @param name the profile name. Never shown — the team hides the plate —
-	 *             but it is the string the team's membership is keyed on, so it
-	 *             has to be unique per cast or one caster's team would steal
-	 *             another's entry. Capped at 16 characters by the wire codec
-	 *             ({@code ByteBufCodecs.PLAYER_NAME}).
+	 * <p>The entity id is fresh every cast ({@code getNextEntityId} is the only
+	 * safe source and it never repeats), but the PROFILE — id and name both —
+	 * is derived from the caster and the shoulder, so the client's
+	 * append-only {@code seenPlayers} map gains at most two entries per caster
+	 * per connection. See the class javadoc.
+	 *
+	 * @param side {@code 'L'} or {@code 'R'}: which shoulder, and the only
+	 *             thing that separates a caster's two clones
 	 */
 	static PhantomSpearman conjure(final ServerLevel level, final ServerPlayer caster,
-			final String name, final Vec3 at, final float yRot, final float xRot) {
-		GameProfile profile = new GameProfile(UUID.randomUUID(), name,
+			final char side, final Vec3 at, final float yRot, final float xRot) {
+		GameProfile profile = new GameProfile(profileId(caster.getUUID(), side),
+				profileName(caster.getGameProfile().name(), side),
 				new PropertyMap(caster.getGameProfile().properties()));
 
 		return new PhantomSpearman(level.getNextEntityId(), profile, at, yRot, xRot);
+	}
+
+	/**
+	 * The stable profile id for one shoulder of one caster's formation. Type-3
+	 * (name-based) rather than random, so it is the same UUID on every cast and
+	 * cannot be mistaken for an authenticated account id.
+	 */
+	private static UUID profileId(final UUID caster, final char side) {
+		return UUID.nameUUIDFromBytes(
+				(ID_NAMESPACE + caster + ":" + side).getBytes(StandardCharsets.UTF_8));
+	}
+
+	/**
+	 * The caster's name, cut to {@link #NAME_BUDGET} and reduced to
+	 * {@code [A-Za-z0-9_]}, plus {@code _L} or {@code _R}. Fifteen characters at
+	 * most, so the 16-character wire cap is respected by construction rather
+	 * than by trusting the caller's name to be a vanilla one — an offline or
+	 * proxied login can hand us anything.
+	 */
+	private static String profileName(final String caster, final char side) {
+		StringBuilder safe = new StringBuilder(NAME_BUDGET + 2);
+
+		for (int i = 0; i < caster.length() && safe.length() < NAME_BUDGET; i++) {
+			char c = caster.charAt(i);
+			boolean plain = c == '_'
+					|| (c >= '0' && c <= '9')
+					|| (c >= 'A' && c <= 'Z')
+					|| (c >= 'a' && c <= 'z');
+			safe.append(plain ? c : '_');
+		}
+
+		// A name that sanitised away to nothing still has to be a name: the
+		// string is the team's membership key and an empty one would key both
+		// shoulders of every such caster together.
+		if (safe.length() == 0) {
+			safe.append('_');
+		}
+
+		return safe.append('_').append(side).toString();
+	}
+
+	/**
+	 * The formation's team name, derived the same stable way. Team packets are
+	 * add-or-modify ({@code createAddOrModifyPacket(colours, true)}), so
+	 * re-sending the same name on the next cast simply re-states it. Not
+	 * subject to the 16-character profile cap — the team name goes over the
+	 * wire as a plain {@code writeUtf} — so it carries the whole caster UUID
+	 * and cannot collide with anything.
+	 */
+	static String teamFor(final UUID caster) {
+		return "archetypes_phalanx_" + caster;
 	}
 
 	int entityId() {

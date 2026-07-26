@@ -60,6 +60,12 @@ import net.minecraft.world.phys.Vec3;
  * reference to a player or a level, so a formation outliving the disconnect of
  * everyone who could see it leaks nothing and its despawn simply finds nobody
  * to tell.
+ *
+ * <p>The profile ids and the team name are derived from the CASTER rather than
+ * minted per cast, which caps what a viewer's client accumulates — see
+ * {@link PhantomSpearman}. The price of stable ids is that two formations for
+ * one caster must never stand at once; {@code formUp} sweeps first rather than
+ * leaning on the bash cooldown to be longer than the formation's life.
  */
 public final class SpearPhalanx {
 	/**
@@ -92,14 +98,6 @@ public final class SpearPhalanx {
 	}
 
 	private static final List<Formation> LIVE = new ArrayList<>();
-
-	/**
-	 * Serial for the per-cast profile and team names. Two formations standing
-	 * at once — two Protectors fighting side by side — must not share a team,
-	 * or the second cast's membership would take the first's spearmen off
-	 * their own team and give them their name plates back mid-thrust.
-	 */
-	private static long serial;
 
 	private SpearPhalanx() {
 	}
@@ -190,22 +188,32 @@ public final class SpearPhalanx {
 	 */
 	private static void formUp(final ServerLevel level, final ServerPlayer player,
 			final ItemStack spear, final Vec3 flat) {
-		long cast = ++serial;
-		String team = "archetypes_phalanx_" + cast;
+		// One caster, one pair of identities, one team — see PhantomSpearman's
+		// javadoc for why they are derived rather than minted per cast.
+		String team = PhantomSpearman.teamFor(player.getUUID());
+
+		// Which makes overlapping formations the one thing that must not
+		// happen: two live formations for one caster would share profile ids,
+		// so the first one's despawn would pull the profiles the second one's
+		// entities were built from and leave two clones the client can never be
+		// told to remove. It cannot occur at shipped numbers — the bash's
+		// cooldown floor is BASH_SWING_TICKS + 20% of BASH_ABILITY_TICKS = 40
+		// ticks against PHALANX_LIFE_TICKS = 12 — but the identities are only
+		// safe while that arithmetic holds, and it lives in another file. So
+		// the overlap is closed here instead of assumed: a second cast sweeps
+		// the first formation properly before the same ids are re-used.
+		dismiss(level.getServer(), player.getUUID());
 
 		Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
 		List<PhantomSpearman> spearmen = new ArrayList<>(2);
 
 		for (int lane = -1; lane <= 1; lane += 2) {
 			Vec3 at = player.position().add(right.scale(lane * Tuning.PHALANX_FLANK_OFFSET));
-			// Names are wire-capped at 16 characters and only ever used as the
-			// team's membership key; the cast serial keeps them unique.
-			String name = (lane < 0 ? "PhalanxL" : "PhalanxR") + (cast % 100000L);
 			// The caster's yaw, but NOT their pitch: the clone's pitch is what
 			// aims its spear (Tuning.phalanxSpearPitch), and a caster who cast
 			// while looking at the sky would otherwise plant two spearmen
 			// saluting it.
-			spearmen.add(PhantomSpearman.conjure(level, player, name, at,
+			spearmen.add(PhantomSpearman.conjure(level, player, lane < 0 ? 'L' : 'R', at,
 					player.getYRot(), Tuning.phalanxSpearPitch()));
 		}
 
@@ -289,6 +297,29 @@ public final class SpearPhalanx {
 				broadcast(server, formation, despawn);
 				iterator.remove();
 			}
+		}
+	}
+
+	/**
+	 * Sweeps this caster's live formation early, if they somehow have one, by
+	 * doing exactly what the timer would have done — despawn packets to the
+	 * clients that were told, then drop it. Called at the head of a new cast;
+	 * at shipped cooldowns it finds nothing.
+	 */
+	private static void dismiss(final MinecraftServer server, final UUID caster) {
+		var iterator = LIVE.iterator();
+
+		while (iterator.hasNext()) {
+			Formation formation = iterator.next();
+
+			if (!formation.caster.equals(caster)) {
+				continue;
+			}
+
+			List<Packet<?>> despawn = new ArrayList<>(3);
+			PhantomSpearman.appendDespawn(despawn, formation.team, formation.spearmen);
+			broadcast(server, formation, despawn);
+			iterator.remove();
 		}
 	}
 
