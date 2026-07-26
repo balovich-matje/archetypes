@@ -206,6 +206,23 @@ in.
   Bulwark(`OMNI_BLOCK`)|Ground Slam. Elementalist is special: its four capstones
   are **one choice total** — any owned capstone locks the other three.
 
+### Compacting a family instead of redrawing a grid
+
+A node's identity is its index into `constellation().nodes()`, and `PURCHASED`
+stores indices — so the cheapest safe way to free a cell for a new skill is to
+**shorten an existing family's chain and remap the cell**, never to edit the
+ASCII art. Editing a `'#'` renumbers every node after it and silently
+repurposes saved data.
+
+The Protector is the worked example. Quick Recovery (`COOLDOWN`) ran four cells
+up the centre column at a fifth of the bash's ability layer each; it runs three
+at `Tuning.RECOVERY_PER_RANK = 4/15`, which lands on the same −80% it always
+did. The node kept its ceiling, gave back a point, and cell `(4,4)` went to
+`SPEARWALL` — grid untouched, all 25 indices unchanged. The cell was worth
+having for its edges as much as its emptiness: `(4,4)` is grid-adjacent to
+Recovery below and diagonally to *both* crown nodes, so the new node gates into
+Braced and Taunt exactly the way the retired rank did.
+
 ## 3. Node icon resolution
 
 The tree screen, cooldown bar, and picker all draw a node through
@@ -356,6 +373,59 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    Crusher's same-named node is not on this funnel at all — it used to be a flat
    victim-side reduction and is now a standing `MAX_HEALTH` modifier, for the
    reason in the next paragraph.)
+5. `archetypes$spearwall` and `archetypes$spearwallHand` — not damage shapers at
+   all, but they live beside the block hooks because they decide *whether a
+   block happened*. See "Spearwall" below.
+
+### Spearwall: two item-use states vanilla only has one slot for
+
+A braced spear and a raised shield are the same action to 26.2. Both are "using
+an item", `LivingEntity` holds exactly one (`useItem`), and `startUsingItem`
+opens with `if (stack.isEmpty() || this.isUsingItem()) return;` — so the second
+request is dropped. The hand order settles which one wins and it is always the
+same one: the use key walks `InteractionHand.values()`, main hand first, so a
+player holding spear and shield the normal way braces the spear and never
+raises the shield.
+
+**The spear half is untouched.** It is the real `useItem`; vanilla ticks its
+`KINETIC_WEAPON` component through `ItemStack.onUseTick` →
+`KineticWeapon.damageEntities`, and every speed condition, contact cooldown
+(`recentKineticEnemies`, allocated by `startUsingItem` only for a kinetic used
+item) and stab sound stays vanilla's. Driving that by hand would have meant
+reimplementing it *and* managing the stab-memory map, whose absence silently
+disables the contact cooldown rather than erroring — `wasRecentlyStabbed`
+returns false on a null map, so a hand-rolled brace stabs every tick.
+
+**The shield half is one hook.** `LivingEntity.getItemBlockingWith` is the only
+thing in the game that answers "is this entity blocking" — `isBlocking`, the
+block pose, the block arc, `applyItemBlocking` and the `blockUsingItem` disable
+path all defer to it and none reads `useItem` for itself. `archetypes$spearwall`
+injects at its RETURN and, **only over a null**, offers the other hand's shield
+(`Spearwall.guardingShield`). Everything downstream arrives free, including this
+tree's own block-gated nodes: Iron Spikes and Braced hang off `blockedByItem`,
+which only fires because a block happened.
+
+Injected common, not server-side: the client asks the same question to pose the
+player, and can answer it because `PURCHASED` is synced and `NodePurchases.owned`
+is the same code there.
+
+The one seam is durability. `applyItemBlocking` charges the block with
+`hurtBlockingItem(level, blockingStack, this, getUsedItemHand(), blocked)` — the
+stack is ours and right, the hand is the *spear's*, so the shield would wear
+correctly and shatter in the wrong slot. `archetypes$spearwallHand`
+(`@ModifyExpressionValue`) rewrites that single `getUsedItemHand()` call, and
+only when the guard is genuinely Spearwall's; a normally raised shield already
+is the used item and must keep its own hand.
+
+**Free Hand explicitly does not extend to spears, and the exclusion is
+load-bearing.** Free Hand is an input permission gated on nothing but "am I
+blocking?" (`ColossusProtector.canAttackWhileBlocking`, consumed by
+`MinecraftMixin`'s `handleKeybinds` head). Spearwall makes that true, so the two
+nodes together would have bought a raised shield, a braced spear and a free
+melee arm for two points. The refusal is one clause on that one function —
+`&& !Spearwall.bracingSpear(player)` — rather than a second gate beside the
+click loop, so there is no other path to keep in step. A braced spear is a
+planted weapon: it hurts what runs onto it, and it does not swing.
 
 **Why a defensive node should not be a shaper.** A `@ModifyVariable` at
 `hurtServer`'s HEAD is *pre-armour*, and vanilla's armour term degrades by
@@ -420,6 +490,47 @@ server-side forbids attacking while blocking), `HudMixin` (the night
 form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
+
+### Ground Slam: the phalanx, and why the clones are only decoration
+
+The capstone used to turn the bash into a ring — the same hit over a larger
+circle, which is a poor thing for a capstone to be when the node opposite it is
+Bulwark and half the tree is already about widening the bash. It is now
+`SpearPhalanx`: **carrying a spear**, the bash plants two phantom spearmen at
+the caster's shoulders and all three thrust forward. Without a spear the bash is
+untouched, so the capstone is a loadout ask rather than a dead node, and it sits
+on the same column as Spearwall by design.
+
+- **The hit is one hit.** Each victim in the front cone takes the bash's damage
+  *plus* a full spear stab (`ATTACK_DAMAGE × PHALANX_STAB_MULTIPLIER`), once,
+  and `ShieldBash` returns before its own target loop so nobody is charged
+  twice. It is wrapped in `MeleeSwing.begin/end` for the same reason
+  `SlayerActives.resolve` is: a capstone blow outside the funnel would be the
+  one attack in the tree armour treated differently, and Specialities' combat
+  multiplier rides that funnel too. One swing is opened around *all* victims,
+  not one per victim, or a per-swing passive would fire once per body.
+- **Victims are recomputed by the phalanx**, over its own longer reach
+  (`Tuning.phalanxRange`, 4 blocks + 1 per Wide Swings rank — Wide now feeds
+  the capstone as reach instead of ring radius).
+- **The phantoms carry no gameplay.** They are two `Display.ItemDisplay`
+  entities holding a copy of the caster's spear, and gameplay has already
+  resolved in full by the time they spawn. That separation is the safety
+  property: a phantom that a client never received, or that is swept early,
+  cannot cost anyone a hit. They are ticked and discarded by `ProtectorTicker`
+  (`SpearPhalanx.tick`), which is also where the thrust is driven — a Display
+  lerps from the transformation it is *currently showing* to the one it is
+  given, so the animation is necessarily two steps: spawn drawn back, then push
+  forward a beat later with an interpolation duration set. A single
+  transformation at spawn would simply appear in its final place.
+- **`Display`'s setters are all private** (the class is built to be driven by
+  NBT from commands), so `DisplayAccessor` and `ItemDisplayAccessor` reach
+  `setTransformation`, the two interpolation setters, `setViewRange`,
+  `setItemStack` and `setItemTransform` through `@Invoker`.
+- **Player Animation Library was checked and rejected.** Its entire API
+  (`PlayerAnimationAccess.getPlayerAnimManager`,
+  `PlayerAnimationFactory.invoke`) is keyed on `Avatar` — an actual player
+  entity. It animates players that exist; it has nothing for conjuring one that
+  does not. Real fake-player entities were never on the table.
 
 ### `SpellProjectile` modes and mana
 
@@ -499,6 +610,11 @@ mana bar is visible, rather than overlapping.
 
 Worked for a hypothetical new Slayer skill "Cleave":
 
+0. **Find it a cell without growing the tree.** Trees are at their point
+   economy, so the first move is not "add a `'#'`" — it is to shorten some
+   inert multi-rank family and remap the freed cell, keeping its old ceiling by
+   raising the per-rank value. See §2, "Compacting a family instead of
+   redrawing a grid". Adding a cell renumbers saved `PURCHASED` data.
 1. **Grid** (`Constellations.SLAYER_SWORD`): if the node occupies a cell that
    already exists in the ASCII grid, no change; if you need a new cell, add a
    `'#'` — but note that changes node indices and therefore saved `PURCHASED`
