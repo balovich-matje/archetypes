@@ -115,24 +115,17 @@ public final class Tuning {
 	public static final int PHALANX_TRAIL_POINTS = 8;
 
 	/**
-	 * The phantoms' animation, in ticks: how long they stand drawn back, how
-	 * long the thrust interpolates, and when they are swept.
+	 * The clones' life, in ticks: how long they stand shouldered before the
+	 * thrust, and when they are swept.
 	 *
 	 * <p>The whole life is short on purpose. They carry no gameplay — the hit
-	 * already happened at cast — so a long-lived phantom is only a chance for
-	 * something to be left standing in the world.
+	 * already happened at cast — so a long-lived clone is only a chance for
+	 * something to be left standing on somebody's screen. Vanilla's own swing
+	 * runs six ticks, so the sweep has to sit clear of the wind-up plus that or
+	 * the stab would be cut off half-played.
 	 */
 	public static final int PHALANX_WINDUP_TICKS = 2;
-	public static final int PHALANX_STAB_TICKS = 4;
-	public static final int PHALANX_LIFE_TICKS = 10;
-
-	/** Local-space translation of the spear model, drawn back then thrust. */
-	public static final float PHALANX_DRAW_BACK = 0.35F;
-	public static final float PHALANX_THRUST = 0.9F;
-
-	/** Phantoms are brief; no reason to sync them across the whole tracking
-	 * range a Display defaults to. */
-	public static final float PHALANX_VIEW_RANGE = 0.6F;
+	public static final int PHALANX_LIFE_TICKS = 12;
 
 	/** Reflection: a returned projectile keeps half its bite. */
 	public static final double REFLECT_DAMAGE_FACTOR = 0.5;

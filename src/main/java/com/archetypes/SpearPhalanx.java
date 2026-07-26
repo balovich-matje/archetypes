@@ -2,39 +2,34 @@ package com.archetypes;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
-import com.archetypes.mixin.DisplayAccessor;
-import com.archetypes.mixin.ItemDisplayAccessor;
-import com.mojang.math.Transformation;
-
+import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.ItemTags;
-import net.minecraft.world.entity.Display;
-import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.phys.Vec3;
-import org.joml.Quaternionf;
-import org.joml.Vector3f;
 
 /**
- * Ground Slam, reworked: two spearmen instead of a shockwave.
+ * Spear Phalanx (the node is still {@code Family.GROUND_SLAM}): two spearmen
+ * instead of a shockwave.
  *
  * <h2>What changed and why</h2>
  * The capstone used to turn the bash into a ring — same hit, larger circle. It
  * read as "the bash, but more", which is a poor thing for a capstone to be
  * when the node opposite it is Bulwark and the tree's other half is already
- * about widening the bash. So the ring is gone. Ground Slam now plants two
- * phantom spearmen at the caster's shoulders and all three thrust forward
- * together: a formation, not an explosion, and it points the ability the same
- * way the caster is pointing instead of at everything around them.
+ * about widening the bash. So the ring is gone. The bash now plants two clones
+ * of the caster at their shoulders and all three thrust forward together: a
+ * formation, not an explosion, and it points the ability the same way the
+ * caster is pointing instead of at everything around them.
  *
  * <h2>The hit</h2>
  * One hit per victim, of the bash's damage <em>plus</em> a spear thrust, and it
@@ -53,62 +48,58 @@ import org.joml.Vector3f;
  * as Spearwall, and the ability the player keeps when they ignore it is the
  * one they already had.
  *
- * <h2>The phantoms are decoration and nothing else</h2>
+ * <h2>The clones are decoration and nothing else</h2>
  * Gameplay resolves in full at cast, server-side, the way the rest of
- * {@code ShieldBash} does. The two {@link Display.ItemDisplay} entities carry
- * no damage, no collision and no state anyone reads — they exist to be looked
- * at, and they are swept on a timer by {@link ProtectorTicker}. Keeping them
- * that way is what makes them safe: a phantom that vanished early, or that a
- * client never received, cannot cost anybody a hit.
+ * {@code ShieldBash} does. What follows is {@link PhantomSpearman} — a player
+ * assembled out of clientbound packets, with no entity behind it on the server
+ * at all. Keeping it that way is what makes it safe: a clone that vanished
+ * early, or that a client never received, cannot cost anybody a hit.
  *
- * <p>Real fake-player entities were never on the table, and Player Animation
- * Library does not help here either — its whole API
- * ({@code PlayerAnimationAccess.getPlayerAnimManager}, {@code
- * PlayerAnimationFactory.invoke}) is keyed on {@code Avatar}, an actual player
- * entity, so it animates players that exist and offers nothing for conjuring
- * one that does not.
+ * <p>The bookkeeping here is deliberately made of value types — entity ids,
+ * profile UUIDs, viewer UUIDs, a team name. Nothing in {@link #LIVE} holds a
+ * reference to a player or a level, so a formation outliving the disconnect of
+ * everyone who could see it leaks nothing and its despawn simply finds nobody
+ * to tell.
  */
 public final class SpearPhalanx {
 	/**
-	 * Command tag carried by every phantom so {@code EntityMixin} can veto
-	 * {@code shouldBeSaved} — a phantom written to a region file by an autosave
-	 * landing inside its 10-tick life would outlive the ticker's memory of it
-	 * and float forever.
+	 * A cast in flight: the two spearmen, the client-only team that hides their
+	 * name plates, the clients that were told about them, and the two gametimes
+	 * that shape their short life.
+	 *
+	 * <p>{@code stabbed} is a latch, not an equality check against
+	 * {@code stabAt}: a lagged server tick can skip the exact gametime, and the
+	 * thrust must fire on the next tick rather than never.
 	 */
-	public static final String PHANTOM_TAG = "archetypes_phantom";
-
-	/**
-	 * A spawned phantom and the two gametimes that shape its short life.
-	 * {@code stabbed} is a latch, not an equality check against {@code stabAt}:
-	 * a lagged server tick can skip the exact gametime, and the thrust must
-	 * fire on the next tick rather than never.
-	 */
-	private static final class Phantom {
-		final Display.ItemDisplay display;
+	private static final class Formation {
+		final List<PhantomSpearman> spearmen;
+		final String team;
+		final UUID caster;
+		final List<UUID> viewers;
 		final long stabAt;
 		final long removeAt;
 		boolean stabbed;
 
-		Phantom(final Display.ItemDisplay display, final long stabAt, final long removeAt) {
-			this.display = display;
+		Formation(final List<PhantomSpearman> spearmen, final String team, final UUID caster,
+				final List<UUID> viewers, final long stabAt, final long removeAt) {
+			this.spearmen = spearmen;
+			this.team = team;
+			this.caster = caster;
+			this.viewers = viewers;
 			this.stabAt = stabAt;
 			this.removeAt = removeAt;
 		}
-
-		Display.ItemDisplay display() {
-			return display;
-		}
-
-		long stabAt() {
-			return stabAt;
-		}
-
-		long removeAt() {
-			return removeAt;
-		}
 	}
 
-	private static final List<Phantom> LIVE = new ArrayList<>();
+	private static final List<Formation> LIVE = new ArrayList<>();
+
+	/**
+	 * Serial for the per-cast profile and team names. Two formations standing
+	 * at once — two Protectors fighting side by side — must not share a team,
+	 * or the second cast's membership would take the first's spearmen off
+	 * their own team and give them their name plates back mid-thrust.
+	 */
+	private static long serial;
 
 	private SpearPhalanx() {
 	}
@@ -130,7 +121,6 @@ public final class SpearPhalanx {
 	 * normal target loop, so a victim takes this or the bash, never both.
 	 *
 	 * @param bashDamage the bash's own damage, already shaped by Shield Slam
-	 *                   and the Concussive Blow penalty
 	 */
 	public static void execute(final ServerPlayer player, final ServerLevel level,
 			final ItemStack spear, final float bashDamage, final int wide) {
@@ -164,8 +154,7 @@ public final class SpearPhalanx {
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.7F);
 
 		stabTrail(level, player, flat, range);
-		spawnPhantom(level, player, spear, flat, true);
-		spawnPhantom(level, player, spear, flat, false);
+		formUp(level, player, spear, flat);
 	}
 
 	/**
@@ -192,75 +181,68 @@ public final class SpearPhalanx {
 	}
 
 	/**
-	 * One phantom, at a shoulder.
+	 * Conjures the pair and tells everyone who can see the caster.
 	 *
-	 * <p>It is spawned drawn BACK, and {@link #tick} pushes it forward a beat
-	 * later with an interpolation duration set. That two-step is the whole
-	 * animation: a Display lerps from the transformation it is currently
-	 * showing to the one it is given, so a single transformation at spawn would
-	 * simply appear in its final place and never move.
+	 * <p>The audience is the caster's own tracker set plus the caster: a client
+	 * that is not tracking the caster is not rendering the spot the clones
+	 * stand in either, and would be holding two profiles and two entities for a
+	 * formation it never sees.
 	 */
-	private static void spawnPhantom(final ServerLevel level, final ServerPlayer player,
-			final ItemStack spear, final Vec3 flat, final boolean left) {
-		Display.ItemDisplay display = EntityTypes.ITEM_DISPLAY.create(level,
-				net.minecraft.world.entity.EntitySpawnReason.TRIGGERED);
-
-		if (display == null) {
-			return;
-		}
+	private static void formUp(final ServerLevel level, final ServerPlayer player,
+			final ItemStack spear, final Vec3 flat) {
+		long cast = ++serial;
+		String team = "archetypes_phalanx_" + cast;
 
 		Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
-		Vec3 at = player.position()
-				.add(right.scale((left ? -1 : 1) * Tuning.PHALANX_FLANK_OFFSET))
-				.add(0.0, player.getBbHeight() * 0.5, 0.0);
+		List<PhantomSpearman> spearmen = new ArrayList<>(2);
 
-		display.setPos(at.x, at.y, at.z);
-		display.setYRot(player.getYRot());
-		display.setXRot(player.getXRot());
-		display.addTag(PHANTOM_TAG);
+		for (int lane = -1; lane <= 1; lane += 2) {
+			Vec3 at = player.position().add(right.scale(lane * Tuning.PHALANX_FLANK_OFFSET));
+			// Names are wire-capped at 16 characters and only ever used as the
+			// team's membership key; the cast serial keeps them unique.
+			String name = (lane < 0 ? "PhalanxL" : "PhalanxR") + (cast % 100000L);
+			spearmen.add(PhantomSpearman.conjure(level, player, name, at,
+					player.getYRot(), player.getXRot()));
+		}
 
-		ItemDisplayAccessor item = (ItemDisplayAccessor) display;
-		item.archetypes$setItemStack(spear.copyWithCount(1));
-		item.archetypes$setItemTransform(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND);
+		List<Packet<?>> spawn = new ArrayList<>();
+		spawn.add(PhantomSpearman.raiseColours(team,
+				spearmen.stream().map(PhantomSpearman::name).toList()));
 
-		DisplayAccessor shape = (DisplayAccessor) display;
-		shape.archetypes$setViewRange(Tuning.PHALANX_VIEW_RANGE);
-		shape.archetypes$setInterpolationDelay(0);
-		shape.archetypes$setInterpolationDuration(0);
-		shape.archetypes$setTransformation(transform(-Tuning.PHALANX_DRAW_BACK));
+		for (PhantomSpearman spearman : spearmen) {
+			spearman.appendSpawn(spawn, player, spear);
+		}
 
-		level.addFreshEntity(display);
+		List<ServerPlayer> audience = new ArrayList<>(PlayerLookup.tracking(player));
 
-		long now = level.getGameTime();
-		LIVE.add(new Phantom(display, now + Tuning.PHALANX_WINDUP_TICKS,
-				now + Tuning.PHALANX_LIFE_TICKS));
+		if (!audience.contains(player)) {
+			audience.add(player);
+		}
+
+		for (ServerPlayer viewer : audience) {
+			for (Packet<?> packet : spawn) {
+				viewer.connection.send(packet);
+			}
+		}
+
+		// One clock for spawn and sweep: the overworld's, which every dimension
+		// shares, so a formation cast in the Nether is not compared against a
+		// gametime read somewhere else.
+		long now = level.getServer().overworld().getGameTime();
+		LIVE.add(new Formation(spearmen, team, player.getUUID(),
+				audience.stream().map(ServerPlayer::getUUID).toList(),
+				now + Tuning.PHALANX_WINDUP_TICKS, now + Tuning.PHALANX_LIFE_TICKS));
 	}
 
 	/**
-	 * Local-space translation along the phantom's own facing.
-	 *
-	 * <p>+Z is forward here because the Display's yaw is already the caster's:
-	 * the entity is turned to face the same way, and the transformation runs
-	 * inside that. Which sign reads as "thrust" on screen is the one thing in
-	 * this class that a headless server cannot answer — see the note in
-	 * ARCHITECTURE.
-	 */
-	private static Transformation transform(final float forward) {
-		return new Transformation(
-				new Vector3f(0.0F, 0.0F, forward),
-				new Quaternionf(),
-				new Vector3f(1.0F, 1.0F, 1.0F),
-				new Quaternionf());
-	}
-
-	/**
-	 * Drops any phantom that does not belong to this server.
+	 * Drops any formation that does not belong to this server.
 	 *
 	 * <p>{@link #LIVE} is static and an integrated server is torn down and
 	 * rebuilt inside one JVM every time a single-player world is left, so
-	 * without this a phantom spawned in the last ten ticks of a world would be
-	 * ticked against the next one. Called on stop rather than checked per tick:
-	 * the common case is an empty list.
+	 * without this a cast made in the last ten ticks of a world would be ticked
+	 * against the next one. The clones themselves need no cleanup on the way
+	 * out: they live in clients that are being disconnected, and a disconnected
+	 * client keeps nothing.
 	 */
 	public static void forget() {
 		LIVE.clear();
@@ -272,30 +254,57 @@ public final class SpearPhalanx {
 			return;
 		}
 
+		long now = server.overworld().getGameTime();
 		var iterator = LIVE.iterator();
 
 		while (iterator.hasNext()) {
-			Phantom phantom = iterator.next();
-			Display.ItemDisplay display = phantom.display();
+			Formation formation = iterator.next();
 
-			if (display.isRemoved()) {
+			if (!formation.stabbed && now >= formation.stabAt) {
+				formation.stabbed = true;
+				ServerPlayer caster = server.getPlayerList().getPlayer(formation.caster);
+
+				// The swing packet is addressed by hand but still has to be
+				// BUILT around some entity; without the caster there is nobody
+				// to build it from, and a formation whose caster logged out mid
+				// cast simply stands still until it is swept.
+				if (caster != null) {
+					List<Packet<?>> thrust = new ArrayList<>(formation.spearmen.size());
+
+					for (PhantomSpearman spearman : formation.spearmen) {
+						thrust.add(spearman.stab(caster));
+					}
+
+					broadcast(server, formation, thrust);
+				}
+			}
+
+			if (now >= formation.removeAt) {
+				List<Packet<?>> despawn = new ArrayList<>(3);
+				PhantomSpearman.appendDespawn(despawn, formation.team, formation.spearmen);
+				broadcast(server, formation, despawn);
 				iterator.remove();
+			}
+		}
+	}
+
+	/**
+	 * To exactly the clients that were told about this formation, and only
+	 * those still connected. Viewers are held as UUIDs and resolved here, so a
+	 * player who quit during the cast is skipped rather than kept alive by the
+	 * list — and their client, which is gone, needs no despawn anyway.
+	 */
+	private static void broadcast(final MinecraftServer server, final Formation formation,
+			final List<Packet<?>> packets) {
+		for (UUID viewer : formation.viewers) {
+			ServerPlayer player = server.getPlayerList().getPlayer(viewer);
+
+			if (player == null) {
 				continue;
 			}
 
-			long now = display.level().getGameTime();
-
-			if (!phantom.stabbed && now >= phantom.stabAt()) {
-				phantom.stabbed = true;
-				DisplayAccessor shape = (DisplayAccessor) display;
-				shape.archetypes$setInterpolationDelay(0);
-				shape.archetypes$setInterpolationDuration(Tuning.PHALANX_STAB_TICKS);
-				shape.archetypes$setTransformation(transform(Tuning.PHALANX_THRUST));
-			}
-
-			if (now >= phantom.removeAt()) {
-				display.discard();
-				iterator.remove();
+			for (Packet<?> packet : packets) {
+				player.connection.send(packet);
 			}
 		}
 	}

@@ -504,8 +504,8 @@ orphan the sprite and both lang keys at once.
 The capstone used to turn the bash into a ring — the same hit over a larger
 circle, which is a poor thing for a capstone to be when the node opposite it is
 Bulwark and half the tree is already about widening the bash. It is now
-`SpearPhalanx`: **carrying a spear**, the bash plants two phantom spearmen at
-the caster's shoulders and all three thrust forward. Without a spear the bash is
+`SpearPhalanx`: **carrying a spear**, the bash plants two clones of the caster at
+their shoulders and all three thrust forward. Without a spear the bash is
 untouched, so the capstone is a loadout ask rather than a dead node, and it sits
 on the same column as Spearwall by design.
 
@@ -520,25 +520,62 @@ on the same column as Spearwall by design.
 - **Victims are recomputed by the phalanx**, over its own longer reach
   (`Tuning.phalanxRange`, 4 blocks + 1 per Wide Swings rank — Wide now feeds
   the capstone as reach instead of ring radius).
-- **The phantoms carry no gameplay.** They are two `Display.ItemDisplay`
-  entities holding a copy of the caster's spear, and gameplay has already
-  resolved in full by the time they spawn. That separation is the safety
-  property: a phantom that a client never received, or that is swept early,
-  cannot cost anyone a hit. They are ticked and discarded by `ProtectorTicker`
-  (`SpearPhalanx.tick`), which is also where the thrust is driven — a Display
-  lerps from the transformation it is *currently showing* to the one it is
-  given, so the animation is necessarily two steps: spawn drawn back, then push
-  forward a beat later with an interpolation duration set. A single
-  transformation at spawn would simply appear in its final place.
-- **`Display`'s setters are all private** (the class is built to be driven by
-  NBT from commands), so `DisplayAccessor` and `ItemDisplayAccessor` reach
-  `setTransformation`, the two interpolation setters, `setViewRange`,
-  `setItemStack` and `setItemTransform` through `@Invoker`.
+- **The clones carry no gameplay, and they do not exist on the server.**
+  `PhantomSpearman` is a fake player made of clientbound packets: nothing is
+  spawned, so there is no hitbox, no collision, no AI and no save path — the
+  whole class of bug the previous `ItemDisplay` pass needed an `EntityMixin`
+  `shouldBeSaved` veto for cannot arise. The server keeps two entity ids, two
+  profile UUIDs, a team name and the UUIDs of the clients it told; gameplay has
+  already resolved in full by then. A clone a client never received, or one
+  swept early, cannot cost anyone a hit.
+- **The spawn is four packets in a fixed order**, and each one is load-bearing:
+  1. `ClientboundSetPlayerTeamPacket` for a team built on a **throwaway
+     `Scoreboard`** — it never touches the server's real one and only travels
+     over the wire. `Visibility.NEVER` is the only thing that silences the name
+     plate (`Player.shouldShowName()` is a hard `true`, and
+     `LivingEntityRenderer.shouldShowName` consults the entity's team before
+     anything else), and `CollisionRule.NEVER` stops the caster's own client
+     shoving itself sideways off two player bodies at its shoulders.
+  2. `ClientboundPlayerInfoUpdatePacket` with **only `ADD_PLAYER`**.
+     `ClientPacketListener.createEntityFromPacket` refuses a `PLAYER`
+     add-entity whose UUID is not already in `playerInfoMap` and builds the
+     `RemotePlayer` from the profile it finds there — that profile is where the
+     skin comes from. Sending `ADD_PLAYER` alone means the entry is never in
+     `listedPlayers`, so there is no tab-list ghost to remove afterwards.
+  3. `ClientboundAddEntityPacket` with `EntityTypes.PLAYER` and an id from
+     `ServerLevel.getNextEntityId()`, which cannot collide with a later spawn.
+  4. `ClientboundSetEntityDataPacket` (the skin-layer byte) and
+     `ClientboundSetEquipmentPacket` (spear in the main hand, the caster's
+     armour on the four humanoid slots).
+- **The skin is the caster's own, and it is legitimate.** The clone's profile is
+  a fresh UUID carrying a copy of the caster's signed `textures` property.
+  authlib's `unpackTextures` validates the signature over the payload and
+  decodes it; it does not compare the payload's profile id to the profile
+  carrying it, which is why the property transplants. If the caster has no
+  textures property at all (offline dev launch), the clone falls back to a
+  default skin — a cosmetic miss, never an error.
+- **The thrust is one packet.** A spear carries `SWING_ANIMATION` of type
+  `STAB`, so `HumanoidModel.setupAttackAnimation` routes a plain main-hand
+  swing to `SpearAnimations.thirdPersonAttackHand` — vanilla's own stab, timed
+  by a swing counter the client ticks itself. `ClientboundAnimatePacket`'s only
+  constructor reads its id off a real `Entity`, so `AnimatePacketAccessor`
+  re-addresses one built around the caster.
+- **Three accessors, no injectors.** `PlayerInfoUpdatePacketAccessor` (the
+  packet has no constructor that takes entries), `AnimatePacketAccessor` (above)
+  and `AvatarAccessor` for the `protected static DATA_PLAYER_MODE_CUSTOMISATION`
+  key. All three fail loudly at class-load if a field is renamed, and none of
+  them is an injection point that can silently find nothing.
+- **Cleanup is "packets sent", and the bookkeeping holds no references.**
+  Viewers are stored as UUIDs and resolved through `PlayerList` at send time, so
+  a player who disconnects mid-cast is skipped rather than kept alive by the
+  list — and their client, which is gone, needs no despawn. `SpearPhalanx.forget`
+  on `SERVER_STOPPED` empties the static list, because an integrated server is
+  torn down and rebuilt inside one JVM on every world exit.
 - **Player Animation Library was checked and rejected.** Its entire API
   (`PlayerAnimationAccess.getPlayerAnimManager`,
   `PlayerAnimationFactory.invoke`) is keyed on `Avatar` — an actual player
-  entity. It animates players that exist; it has nothing for conjuring one that
-  does not. Real fake-player entities were never on the table.
+  entity — and a packet puppet is not one on the server side, so there is
+  nothing for it to animate.
 
 ### `SpellProjectile` modes and mana
 
