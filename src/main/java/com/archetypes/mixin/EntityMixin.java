@@ -1,6 +1,7 @@
 package com.archetypes.mixin;
 
 import com.archetypes.ColossusSlayer;
+import com.archetypes.SpearPhalanx;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
@@ -33,6 +34,24 @@ public abstract class EntityMixin {
 		if ((Object) this instanceof ServerPlayer player
 				&& ColossusSlayer.parriesSpell(player, projectile)) {
 			cir.setReturnValue(ProjectileDeflection.REVERSE);
+		}
+	}
+
+	/**
+	 * Keeps the phalanx phantoms out of region files. An {@code ItemDisplay} is
+	 * a fully serialised entity for its whole 10-tick life — {@code EntityTypes}
+	 * registers it without {@code noSave()} and {@code Display} never overrides
+	 * {@code shouldBeSaved} — so an autosave or a {@code /stop} landing inside
+	 * the spawn→remove window writes the phantom to disk; on the next load the
+	 * ticker's list is empty and nothing ever discards it, leaving a permanent
+	 * 0×0-hitbox floating spear. Tag-gated so every other entity's save path is
+	 * untouched.
+	 */
+	@Inject(method = "shouldBeSaved", at = @At("RETURN"), cancellable = true)
+	private void archetypes$neverSavePhantoms(final CallbackInfoReturnable<Boolean> cir) {
+		if (cir.getReturnValueZ()
+				&& ((Entity) (Object) this).entityTags().contains(SpearPhalanx.PHANTOM_TAG)) {
+			cir.setReturnValue(false);
 		}
 	}
 }

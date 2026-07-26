@@ -69,8 +69,43 @@ import org.joml.Vector3f;
  * one that does not.
  */
 public final class SpearPhalanx {
-	/** A spawned phantom and the two gametimes that shape its short life. */
-	private record Phantom(Display.ItemDisplay display, long stabAt, long removeAt) {
+	/**
+	 * Command tag carried by every phantom so {@code EntityMixin} can veto
+	 * {@code shouldBeSaved} — a phantom written to a region file by an autosave
+	 * landing inside its 10-tick life would outlive the ticker's memory of it
+	 * and float forever.
+	 */
+	public static final String PHANTOM_TAG = "archetypes_phantom";
+
+	/**
+	 * A spawned phantom and the two gametimes that shape its short life.
+	 * {@code stabbed} is a latch, not an equality check against {@code stabAt}:
+	 * a lagged server tick can skip the exact gametime, and the thrust must
+	 * fire on the next tick rather than never.
+	 */
+	private static final class Phantom {
+		final Display.ItemDisplay display;
+		final long stabAt;
+		final long removeAt;
+		boolean stabbed;
+
+		Phantom(final Display.ItemDisplay display, final long stabAt, final long removeAt) {
+			this.display = display;
+			this.stabAt = stabAt;
+			this.removeAt = removeAt;
+		}
+
+		Display.ItemDisplay display() {
+			return display;
+		}
+
+		long stabAt() {
+			return stabAt;
+		}
+
+		long removeAt() {
+			return removeAt;
+		}
 	}
 
 	private static final List<Phantom> LIVE = new ArrayList<>();
@@ -182,6 +217,7 @@ public final class SpearPhalanx {
 		display.setPos(at.x, at.y, at.z);
 		display.setYRot(player.getYRot());
 		display.setXRot(player.getXRot());
+		display.addTag(PHANTOM_TAG);
 
 		ItemDisplayAccessor item = (ItemDisplayAccessor) display;
 		item.archetypes$setItemStack(spear.copyWithCount(1));
@@ -249,7 +285,8 @@ public final class SpearPhalanx {
 
 			long now = display.level().getGameTime();
 
-			if (now == phantom.stabAt()) {
+			if (!phantom.stabbed && now >= phantom.stabAt()) {
+				phantom.stabbed = true;
 				DisplayAccessor shape = (DisplayAccessor) display;
 				shape.archetypes$setInterpolationDelay(0);
 				shape.archetypes$setInterpolationDuration(Tuning.PHALANX_STAB_TICKS);
