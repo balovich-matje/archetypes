@@ -15,7 +15,17 @@ public final class ProtectorTicker {
 	}
 
 	public static void initialize() {
+		// The phantom list is static and an integrated server is rebuilt inside
+		// one JVM on every world exit, so it is emptied with the server.
+		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPED
+				.register(server -> SpearPhalanx.forget());
+
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+			// Ground Slam's phantom spearmen: thrust, then sweep. They ride
+			// this ticker rather than owning one because they are decoration
+			// with a countdown, and the list is empty on almost every tick.
+			SpearPhalanx.tick(server);
+
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 				boolean should = player.isBlocking()
 						&& ProtectorNodes.rank(SubTree.PROTECTOR,

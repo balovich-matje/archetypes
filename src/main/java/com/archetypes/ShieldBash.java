@@ -3,8 +3,6 @@ package com.archetypes;
 import java.util.List;
 import java.util.Set;
 
-import net.minecraft.core.particles.BlockParticleOption;
-import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -15,8 +13,8 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -71,16 +69,14 @@ public final class ShieldBash {
 				.expandTowards(look.scale(Tuning.BASH_RANGE))
 				.inflate(0.6);
 
-		// Ground Slam turns the shove into a ring around the player; otherwise
-		// candidates are in front only — a bash is a shove, not a spin.
-		double slamRadius = Tuning.groundSlamRadius(wide);
-		List<LivingEntity> targets = groundSlam > 0
-				? level.getEntitiesOfClass(LivingEntity.class,
-						player.getBoundingBox().inflate(slamRadius, 1.0, slamRadius),
-						entity -> entity != player && entity.isAlive() && !entity.isSpectator())
-				: level.getEntitiesOfClass(LivingEntity.class, reach,
-						entity -> entity != player && entity.isAlive() && !entity.isSpectator()
-								&& facing(player, entity, look));
+		// Ground Slam fires only with a spear carried; without one the bash is
+		// the ordinary bash, which is why the capstone is a loadout ask and not
+		// a dead node.
+		ItemStack spear = groundSlam > 0 ? SpearPhalanx.spear(player) : null;
+
+		List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class, reach,
+				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
+						&& facing(player, entity, look));
 
 		LivingEntity primary = null;
 		double best = Double.MAX_VALUE;
@@ -96,14 +92,10 @@ public final class ShieldBash {
 
 		// The swing happens whether or not it lands — whiffing is feedback too.
 		player.swing(hand, true);
-		// Slam ranks deepen the thunk; Ground Slam gets the mace's crash.
+		// Slam ranks deepen the thunk; the phalanx gets a shout under it.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				groundSlam > 0 ? SoundEvents.MACE_SMASH_GROUND : SoundEvents.SHIELD_BLOCK.value(),
-				SoundSource.PLAYERS, 1.0F, groundSlam > 0 ? 1.0F : 0.65F - 0.05F * slam);
-
-		if (groundSlam > 0) {
-			slamDebris(level, player, slamRadius, wide);
-		}
+				SoundEvents.SHIELD_BLOCK.value(),
+				SoundSource.PLAYERS, 1.0F, 0.65F - 0.05F * slam);
 
 		// One visible timer: swing floor + ability layer folded together (see
 		// Tuning) — no grey sweep. Bashing also spends the melee attack timer,
@@ -126,13 +118,20 @@ public final class ShieldBash {
 			}
 		}
 
+		// Ground Slam, with a spear carried: the formation replaces the bash's
+		// own hit outright. A victim takes the phalanx's blow or the shove,
+		// never both — the phalanx already includes the bash's damage.
+		// Recomputes its own victims, over its own longer reach.
+		if (spear != null) {
+			SpearPhalanx.execute(player, level, spear, damage, wide);
+			return;
+		}
+
 		if (primary == null) {
 			// Whiffed: a sweep in front is the feedback that the swing happened.
-			if (groundSlam <= 0) {
-				Vec3 front = player.position().add(look.x * 1.5, player.getBbHeight() * 0.5, look.z * 1.5);
-				level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z,
-						1, 0.0, 0.0, 0.0, 0.0);
-			}
+			Vec3 front = player.position().add(look.x * 1.5, player.getBbHeight() * 0.5, look.z * 1.5);
+			level.sendParticles(ParticleTypes.SWEEP_ATTACK, front.x, front.y, front.z,
+					1, 0.0, 0.0, 0.0, 0.0);
 
 			return;
 		}
@@ -142,13 +141,12 @@ public final class ShieldBash {
 		for (LivingEntity target : targets) {
 			boolean isPrimary = target == primary;
 
-			// Ground Slam hits its whole ring at full strength; otherwise Wide
-			// Swings decides what the extra targets take.
-			if (groundSlam <= 0 && !isPrimary && secondaryFraction <= 0.0F) {
+			// Wide Swings decides what the extra targets take.
+			if (!isPrimary && secondaryFraction <= 0.0F) {
 				continue;
 			}
 
-			float dealt = isPrimary || groundSlam > 0 ? damage : damage * secondaryFraction;
+			float dealt = isPrimary ? damage : damage * secondaryFraction;
 			target.hurtServer(level, player.damageSources().playerAttack(player), dealt);
 
 			// Placeholder knockback: plain push away from the player. TODO: switch
@@ -161,68 +159,6 @@ public final class ShieldBash {
 			level.sendParticles(ParticleTypes.SWEEP_ATTACK,
 					target.getX(), target.getY() + target.getBbHeight() * 0.6, target.getZ(),
 					1, 0.0, 0.0, 0.0, 0.0);
-		}
-	}
-
-	/**
-	 * The slam's visual, in three layers so the exact range is legible at a
-	 * glance. Count 0 turns sendParticles' offsets into a velocity.
-	 *
-	 * <ul>
-	 * <li><b>Edge ring</b> — evenly spaced dust in the ground block's own map
-	 * colour, sitting exactly on the radius. Dust takes a scale, so the ring's
-	 * particles literally grow with Wide Swings.</li>
-	 * <li><b>Shockwave</b> — clouds pushed outward from the player toward the
-	 * edge, sweeping the area the hit covers.</li>
-	 * <li><b>Debris</b> — pieces of the block underfoot popped upward and left
-	 * to fall; more and livelier per Wide rank.</li>
-	 * </ul>
-	 */
-	private static void slamDebris(final ServerLevel level, final ServerPlayer player,
-			final double radius, final int wide) {
-		BlockState ground = player.getBlockStateOn();
-
-		if (ground.isAir()) {
-			return;
-		}
-
-		double x = player.getX();
-		double y = player.getY();
-		double z = player.getZ();
-
-		// Edge ring: the range marker.
-		int dustColor = ground.getMapColor(level, player.getOnPos()).col;
-		DustParticleOptions dust = new DustParticleOptions(dustColor, 1.2F + 0.6F * wide);
-		int ringPoints = 20 + 10 * wide;
-
-		for (int i = 0; i < ringPoints; i++) {
-			double angle = i * (Math.PI * 2.0 / ringPoints);
-			level.sendParticles(dust,
-					x + Math.cos(angle) * radius, y + 0.15, z + Math.sin(angle) * radius,
-					0, 0.0, 0.05, 0.0, 1.0);
-		}
-
-		// Shockwave: clouds racing from the centre to the edge.
-		for (int i = 0; i < 12; i++) {
-			double angle = i * (Math.PI * 2.0 / 12);
-			double push = 0.12 * radius;
-			level.sendParticles(ParticleTypes.CLOUD,
-					x + Math.cos(angle) * 0.4, y + 0.1, z + Math.sin(angle) * 0.4,
-					0, Math.cos(angle) * push, 0.02, Math.sin(angle) * push, 1.0);
-		}
-
-		// Debris: the ground itself, thrown up and falling back.
-		// Interior sits at the edge count plus about half of it, so the area
-		// reads filled without drowning out the range ring.
-		BlockParticleOption debris = new BlockParticleOption(ParticleTypes.BLOCK, ground);
-		int pieces = 30 + 18 * wide;
-
-		for (int i = 0; i < pieces; i++) {
-			double angle = level.getRandom().nextDouble() * Math.PI * 2.0;
-			double distance = 0.6 + level.getRandom().nextDouble() * (radius - 0.5);
-			level.sendParticles(debris,
-					x + Math.cos(angle) * distance, y + 0.1, z + Math.sin(angle) * distance,
-					0, 0.0, 0.25 + level.getRandom().nextDouble() * (0.25 + 0.1 * wide), 0.0, 1.0);
 		}
 	}
 

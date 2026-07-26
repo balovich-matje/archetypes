@@ -84,13 +84,55 @@ public final class Tuning {
 	public static final double TAUNT_RADIUS = 8.0;
 
 	/**
-	 * Ground Slam: the bash hits everything within this ring — 2 blocks at
-	 * baseline, and each rank of Wide Swings adds one (4 at full rank), so the
-	 * cleave node feeds the capstone instead of being made redundant by it.
+	 * Ground Slam, reworked: the phalanx's reach in front of the caster.
+	 *
+	 * <p>Longer than the bash's 3 because these are spears and a spear's whole
+	 * argument is that it lands first. Wide Swings still feeds the capstone —
+	 * it lengthens the formation's reach now instead of widening a ring, so the
+	 * cleave node keeps mattering to a capstone holder without being the thing
+	 * the capstone is made of.
 	 */
-	public static double groundSlamRadius(final int wideRank) {
-		return 2.0 + wideRank;
+	public static double phalanxRange(final int wideRank) {
+		return 4.0 + wideRank;
 	}
+
+	/**
+	 * The thrust's damage on top of the bash's, as a share of ATTACK_DAMAGE.
+	 *
+	 * <p>1.0 is a full ordinary hit, and the sum being "bash + a real stab" is
+	 * the node's pitch rather than a multiplier pulled to taste: the caster
+	 * gave up Bulwark for it and has to be carrying a spear to see it at all.
+	 * Everything past that is the funnel's business — armour, Blade Master,
+	 * Specialities' combat multiplier all apply after this, because the blow
+	 * goes through MeleeSwing like any swing.
+	 */
+	public static final float PHALANX_STAB_MULTIPLIER = 1.0F;
+
+	/** How far to each side the phantom spearmen stand, in blocks. */
+	public static final double PHALANX_FLANK_OFFSET = 0.9;
+
+	/** Crit-cloud density along each of the two stab lines. */
+	public static final int PHALANX_TRAIL_POINTS = 8;
+
+	/**
+	 * The phantoms' animation, in ticks: how long they stand drawn back, how
+	 * long the thrust interpolates, and when they are swept.
+	 *
+	 * <p>The whole life is short on purpose. They carry no gameplay — the hit
+	 * already happened at cast — so a long-lived phantom is only a chance for
+	 * something to be left standing in the world.
+	 */
+	public static final int PHALANX_WINDUP_TICKS = 2;
+	public static final int PHALANX_STAB_TICKS = 4;
+	public static final int PHALANX_LIFE_TICKS = 10;
+
+	/** Local-space translation of the spear model, drawn back then thrust. */
+	public static final float PHALANX_DRAW_BACK = 0.35F;
+	public static final float PHALANX_THRUST = 0.9F;
+
+	/** Phantoms are brief; no reason to sync them across the whole tracking
+	 * range a Display defaults to. */
+	public static final float PHALANX_VIEW_RANGE = 0.6F;
 
 	/** Reflection: a returned projectile keeps half its bite. */
 	public static final double REFLECT_DAMAGE_FACTOR = 0.5;
