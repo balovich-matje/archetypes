@@ -991,6 +991,53 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
+	 * Spearwall's other seam, and the one players read as "the node does not
+	 * work": the block was SILENT.
+	 *
+	 * <p>The guard itself was never broken. {@code getItemBlockingWith} answers
+	 * the shield, {@code applyItemBlocking} runs on it, and the damage really is
+	 * subtracted — in {@code hurtServer}'s own bytecode the call sits at offset
+	 * 79 and {@code amount -= blocked} at 84–88. What is wrong is what happens
+	 * 200 instructions later. {@code hurtServer} stashes {@code getUseItem()} in
+	 * a local at 69–73, and at 288–324 it reads {@code BLOCKS_ATTACKS} off THAT
+	 * stack to pick between
+	 *
+	 * <pre>blocks.onBlocked(level, this)        // the block sound, offset 315
+	 * level.broadcastDamageEvent(this, source)  // a plain hurt,   offset 324</pre>
+	 *
+	 * <p>Under Spearwall the used item is the SPEAR, which carries no
+	 * {@code BLOCKS_ATTACKS}, so the component came back null and every real
+	 * block took the second branch: no block sound, and the victim broadcast as
+	 * ordinarily hurt — red flash, hurt sound, the works. A block that is
+	 * announced to every client as a hit is indistinguishable from no block at
+	 * all, which is exactly the report.
+	 *
+	 * <p>So this rewrites that one stash, and nothing else: the local is read in
+	 * exactly one place ({@code aload 5} appears once in the method) and the call
+	 * is the method's only {@code getUseItem}, so redirecting it moves the
+	 * feedback and cannot touch the arithmetic. The shield answers
+	 * {@code onBlocked} the way a raised shield would, and anything else reading
+	 * the blocking stack downstream — the axe disable among it — reads the shield
+	 * too.
+	 *
+	 * <p>Null-guarded, and {@code guardingShield} is itself the "is this the
+	 * guarding player" test: it wants a {@code Player} that is using a braced
+	 * spear with a live Spearwall rank, so a victim who is not one leaves the
+	 * used item exactly as vanilla stashed it.
+	 */
+	@ModifyExpressionValue(method = "hurtServer",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;getUseItem()"
+							+ "Lnet/minecraft/world/item/ItemStack;"))
+	private net.minecraft.world.item.ItemStack archetypes$spearwallBlockFeedback(
+			final net.minecraft.world.item.ItemStack used) {
+		net.minecraft.world.item.ItemStack shield =
+				com.archetypes.Spearwall.guardingShield((LivingEntity) (Object) this);
+
+		return shield == null ? used : shield;
+	}
+
+	/**
 	 * Bulwark: vanilla's block-angle check boils down to one Math.acos in
 	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
 	 * "in front" for a capstone holder. {@code this} is the blocker here.

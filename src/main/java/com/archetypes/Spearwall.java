@@ -44,12 +44,24 @@ import org.jspecify.annotations.Nullable;
  * reflects and Braced still refunds the bash, because they hang off
  * {@code blockedByItem}, which only ever fires because a block happened.
  *
- * <p>The one seam is durability. {@code applyItemBlocking} charges the block to
+ * <p>There are exactly two seams, and both are places where vanilla reaches past
+ * {@code getItemBlockingWith} for the USE ITEM instead. Both are closed with a
+ * {@code @ModifyExpressionValue} in {@code LivingEntityMixin}, and neither
+ * touches the guard itself:
+ *
+ * <ol>
+ * <li><b>Durability.</b> {@code applyItemBlocking} charges the block to
  * {@code getUsedItemHand()}, which is the spear's hand, not the shield's — the
  * damaged stack is right (it is passed the stack we returned) but the slot the
- * break effect plays in would be wrong. {@code LivingEntityMixin} corrects that
- * call with a {@code @ModifyExpressionValue} rather than leaving a shield that
- * shatters in the wrong hand.
+ * break effect plays in would be wrong, so the shield would shatter in the wrong
+ * hand.</li>
+ * <li><b>Feedback.</b> {@code hurtServer} stashes {@code getUseItem()} in a
+ * local and later reads {@code BLOCKS_ATTACKS} off THAT stack to choose between
+ * the block sound and a plain hurt broadcast. The spear has no such component,
+ * so a real block was silent and went out to every client as an ordinary hit —
+ * which is what a player reports as "the attacks pass through". The fix hands
+ * that one read the shield.</li>
+ * </ol>
  *
  * <h2>Free Hand does not extend to spears</h2>
  * Free Hand (Colossus Protector) is an input permission: it spends the attack

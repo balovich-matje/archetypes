@@ -469,13 +469,31 @@ one you would guess.**
   only, and that is correct rather than a shortcut: players are
   movement-authoritative.
 
-The one seam is durability. `applyItemBlocking` charges the block with
-`hurtBlockingItem(level, blockingStack, this, getUsedItemHand(), blocked)` — the
-stack is ours and right, the hand is the *spear's*, so the shield would wear
-correctly and shatter in the wrong slot. `archetypes$spearwallHand`
-(`@ModifyExpressionValue`) rewrites that single `getUsedItemHand()` call, and
-only when the guard is genuinely Spearwall's; a normally raised shield already
-is the used item and must keep its own hand.
+**Two seams, and both are vanilla reaching past `getItemBlockingWith` for the
+USE ITEM.** One `@ModifyExpressionValue` each, neither touching the guard:
+
+- *Durability.* `applyItemBlocking` charges the block with
+  `hurtBlockingItem(level, blockingStack, this, getUsedItemHand(), blocked)` —
+  the stack is ours and right, the hand is the *spear's*, so the shield would
+  wear correctly and shatter in the wrong slot. `archetypes$spearwallHand`
+  rewrites that single `getUsedItemHand()` call, and only when the guard is
+  genuinely Spearwall's; a normally raised shield already is the used item and
+  must keep its own hand.
+- *Feedback — the bug that read as "the attacks pass through".* The guard was
+  never the problem: in `hurtServer`'s bytecode `applyItemBlocking` is called at
+  offset 79 and `amount -= blocked` lands at 84–88, so the damage really was
+  being stopped. But `hurtServer` also stashes `getUseItem()` at 69–73, and at
+  288–324 reads `BLOCKS_ATTACKS` off *that* stack to choose between
+  `blocks.onBlocked(level, this)` (the block sound, offset 315) and
+  `level.broadcastDamageEvent(this, source)` (a plain hurt, offset 324). A spear
+  carries no `BLOCKS_ATTACKS`, so every genuine block took the second branch:
+  silent, and broadcast to every client as an ordinary hit — visually identical
+  to no block at all. `archetypes$spearwallBlockFeedback` hands that one read the
+  shield. It is safe to be that blunt because the local is read in exactly one
+  place (`aload 5` appears once in the whole method) and the call is the method's
+  only `getUseItem`, so the redirect moves the feedback and cannot reach the
+  arithmetic. Everything else downstream that consults the blocking stack — the
+  axe disable among it — now reads the shield too.
 
 **What actually ends a brace — and what Free Hand does about it.** Not the use
 item: `Item.getUseDuration` answers a flat `72000` for anything holding
