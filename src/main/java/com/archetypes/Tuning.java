@@ -108,56 +108,58 @@ public final class Tuning {
 	 */
 	public static final float PHALANX_STAB_MULTIPLIER = 1.0F;
 
-	/** How far to each side the phantom spearmen stand, in blocks. */
+	/** How far to each side the flanking spears stand, in blocks. */
 	public static final double PHALANX_FLANK_OFFSET = 0.9;
+
+	/**
+	 * Where the flanking spears are planted, as a fraction of the caster's
+	 * height — shoulder rather than waist, so the pair line up with the caster's
+	 * own weapon. The crit trail reads the same number, because the particles
+	 * are what tells a player where the formation reaches and they would lie if
+	 * they ran at a different height from the spears drawing them.
+	 */
+	public static final double PHALANX_SHOULDER_HEIGHT = 0.55;
 
 	/** Crit-cloud density along each of the two stab lines. */
 	public static final int PHALANX_TRAIL_POINTS = 8;
 
 	/**
-	 * The clones' life, in ticks: how long they stand shouldered before the
-	 * thrust, and when they are swept.
+	 * The spears' animation, in ticks: how long they stand drawn back, how long
+	 * the thrust interpolates, and when they are swept.
 	 *
 	 * <p>The whole life is short on purpose. They carry no gameplay — the hit
-	 * already happened at cast — so a long-lived clone is only a chance for
-	 * something to be left standing on somebody's screen. Vanilla's own swing
-	 * runs six ticks, so the sweep has to sit clear of the wind-up plus that or
-	 * the stab would be cut off half-played.
+	 * already happened at cast — so a long-lived spear is only a chance for
+	 * something to be left standing in the world. The sweep has to clear the
+	 * wind-up plus the thrust (2 + 4) or the lunge would be cut off half-played.
 	 */
 	public static final int PHALANX_WINDUP_TICKS = 2;
+	public static final int PHALANX_STAB_TICKS = 4;
 	public static final int PHALANX_LIFE_TICKS = 12;
 
 	/**
-	 * Where a clone's spear points: degrees below the horizon, along the
-	 * caster's facing. Levelled spears read as a guard-of-honour and a spear
-	 * held up reads as a parade; a formation about to gut something holds them
-	 * down at the chest of whatever is coming.
+	 * Where the spears point: degrees below the HORIZON, along the caster's
+	 * facing. Levelled spears read as a guard-of-honour and a spear held up
+	 * reads as a parade; a formation about to gut something holds them down at
+	 * the chest of whatever is coming.
+	 *
+	 * <p>Measured from the horizon and nothing else. The display carries its own
+	 * rotation now — {@code SpearPhalanx.pose} spends this as
+	 * {@code Rx(90° + this)} on a base pose that points straight up — so there
+	 * is no arm pose to undo and no caster pitch mixed in.
 	 */
 	public static final float PHALANX_SPEAR_ANGLE_DEGREES = 47.0F;
 
 	/**
-	 * Vanilla's resting spear depression, in degrees, for a player looking dead
-	 * level. Not a taste knob — it is a transcription. {@code
-	 * SpearAnimations.thirdPersonHandUse} sets the holding arm to
-	 *
-	 * <pre>arm.xRot = -PI/2 + head.xRot + 0.8</pre>
-	 *
-	 * and {@code HumanoidModel.setupAnim} feeds {@code head.xRot} straight from
-	 * the entity's pitch. An arm at {@code -PI/2} points level and one at 0
-	 * points down, so depression below the horizon is {@code 90 + arm.xRot} in
-	 * degrees, which reduces to {@code 0.8 rad + pitch} = 45.8366 + pitch.
+	 * How far along its own shaft a spear slides, in blocks: drawn back at
+	 * spawn, thrust when the formation lunges. Not along the caster's facing —
+	 * along the depressed shaft, so the lunge reads as a stab.
 	 */
-	public static final float SPEAR_ARM_REST_DEGREES = 45.8366F;
+	public static final float PHALANX_DRAW_BACK = 0.35F;
+	public static final float PHALANX_THRUST = 0.9F;
 
-	/**
-	 * The pitch to spawn a clone at, so its held spear lands on
-	 * {@link #PHALANX_SPEAR_ANGLE_DEGREES}. Inverting the line above: the
-	 * clone looks a degree past level and vanilla's own arm pose does the rest,
-	 * which is why nothing here rotates a model by hand.
-	 */
-	public static float phalanxSpearPitch() {
-		return PHALANX_SPEAR_ANGLE_DEGREES - SPEAR_ARM_REST_DEGREES;
-	}
+	/** The spears are brief; no reason to sync them across the whole tracking
+	 * range a Display defaults to. */
+	public static final float PHALANX_VIEW_RANGE = 0.6F;
 
 	/**
 	 * Reflection: how much of its bite a returned arrow keeps, by rank. Rank 2

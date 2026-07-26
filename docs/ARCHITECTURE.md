@@ -553,11 +553,14 @@ around `FoodData.eat` where the player is a parameter), `ConsumableMixin`
 milk's clear-everything cannot wipe the Regeneration it grants, early enough
 that the stack still knows what it is), `EntityMixin` (Spell Reflect answers
 vanilla's own `Entity.deflection`, so a parried spell turns around before it
-lands and the return-to-sender is the Protector's Reflection unchanged),
+lands and the return-to-sender is the Protector's Reflection unchanged — plus
+the `shouldBeSaved` veto that keeps the Spear Phalanx spears out of region
+files, see below),
 `MobEffectInstanceMixin` and `HealOrHarmMobEffectMixin` (which heals count as
 magic for Barbarian — healing carries no `DamageSource`, so the flag is raised
-around vanilla's ticked and instantaneous effect application), and
-`LivingEntityAccessor`.
+around vanilla's ticked and instantaneous effect application),
+`LivingEntityAccessor`, and `DisplayAccessor`/`ItemDisplayAccessor` (the
+phalanx's spears, below).
 Client-side: `AvatarRendererMixin` (armor hiding,
 ability poses), `HumanoidModelMixin` (the Spearwall guard arm vanilla skips —
 see above; the only injector this mod has into a model class),
@@ -569,7 +572,7 @@ form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
 
-### Spear Phalanx: the formation, and why the clones are only decoration
+### Spear Phalanx: the formation, and why the spears are only decoration
 
 The node is **displayed** as Spear Phalanx and is still `Family.GROUND_SLAM`
 everywhere else: the enum constant, the `node.archetypes.protector.ground_slam`
@@ -582,8 +585,8 @@ orphan the sprite and both lang keys at once.
 The capstone used to turn the bash into a ring — the same hit over a larger
 circle, which is a poor thing for a capstone to be when the node opposite it is
 Bulwark and half the tree is already about widening the bash. It is now
-`SpearPhalanx`: **carrying a spear**, the bash plants two clones of the caster at
-their shoulders and all three thrust forward. Without a spear the bash is
+`SpearPhalanx`: **carrying a spear**, the bash plants a spear at each of the
+caster's shoulders and all three thrust forward. Without a spear the bash is
 untouched, so the capstone is a loadout ask rather than a dead node, and it sits
 on the same column as Spearwall by design.
 
@@ -598,93 +601,112 @@ on the same column as Spearwall by design.
 - **Victims are recomputed by the phalanx**, over its own longer reach
   (`Tuning.phalanxRange`, 4 blocks + 1 per Wide Swings rank — Wide now feeds
   the capstone as reach instead of ring radius).
-- **The clones carry no gameplay, and they do not exist on the server.**
-  `PhantomSpearman` is a fake player made of clientbound packets: nothing is
-  spawned, so there is no hitbox, no collision, no AI and no save path — the
-  whole class of bug the previous `ItemDisplay` pass needed an `EntityMixin`
-  `shouldBeSaved` veto for cannot arise. The server keeps two entity ids, two
-  profile UUIDs, a team name and the UUIDs of the clients it told; gameplay has
-  already resolved in full by then. A clone a client never received, or one
-  swept early, cannot cost anyone a hit.
-- **The spawn is four packets in a fixed order**, and each one is load-bearing:
-  1. `ClientboundSetPlayerTeamPacket` for a team built on a **throwaway
-     `Scoreboard`** — it never touches the server's real one and only travels
-     over the wire. `Visibility.NEVER` is the only thing that silences the name
-     plate (`Player.shouldShowName()` is a hard `true`, and
-     `LivingEntityRenderer.shouldShowName` consults the entity's team before
-     anything else), and `CollisionRule.NEVER` stops the caster's own client
-     shoving itself sideways off two player bodies at its shoulders.
-  2. `ClientboundPlayerInfoUpdatePacket` with **only `ADD_PLAYER`**.
-     `ClientPacketListener.createEntityFromPacket` refuses a `PLAYER`
-     add-entity whose UUID is not already in `playerInfoMap` and builds the
-     `RemotePlayer` from the profile it finds there — that profile is where the
-     skin comes from. Sending `ADD_PLAYER` alone means the entry is never in
-     `listedPlayers`, so there is no tab-list ghost to remove afterwards.
-  3. `ClientboundAddEntityPacket` with `EntityTypes.PLAYER` and an id from
-     `ServerLevel.getNextEntityId()`, which cannot collide with a later spawn.
-  4. `ClientboundSetEntityDataPacket` (the skin-layer byte) and
-     `ClientboundSetEquipmentPacket` (spear in the main hand, the caster's
-     armour on the four humanoid slots).
-- **The clone identities are DERIVED, and that is a bug fix, not tidiness.**
-  `ClientPacketListener.handleAddEntity` ends by putting every `Player` add into
-  `seenPlayers`, and nothing ever removes from that map:
-  `handlePlayerInfoRemove` clears `playerInfoMap` and `listedPlayers` and calls
-  `PlayerSocialManager.removePlayer`, but leaves `seenPlayers` alone — the only
-  other writes are `handleConfigurationStart` and the `getSeenPlayers()` that
-  the Social Interactions list and the pause screen read. With a random UUID per
-  cast, every bash added two more strangers wearing the caster's skin to every
-  nearby player's Social Interactions list, permanently. So the profile id is
-  `UUID.nameUUIDFromBytes("archetypes:phalanx:<casterUUID>:L|R")`, the profile
-  name is the caster's name cut to 13 characters plus `_L`/`_R` (the wire cap is
-  16 — `ByteBufCodecs.PLAYER_NAME` is `stringUtf8(16)`), and the team name is
-  `archetypes_phalanx_<casterUUID>` (no cap; team names go over as a plain
-  `writeUtf`). **Residual, accepted:** two entries per caster per viewer remain
-  until the viewer disconnects. No clientbound packet can clear `seenPlayers`;
-  naming them after the caster is what makes the leftovers legible. The price of
-  stable ids is that one caster must never have two live formations — the first
-  one's despawn would pull profiles the second one's entities need — so
-  `SpearPhalanx.formUp` sweeps the caster's live formation before re-spawning
-  rather than trusting the bash cooldown floor (40 ticks) to stay above
-  `PHALANX_LIFE_TICKS` (12).
-- **The skin is the caster's own, and it is legitimate.** The clone's profile
-  carries a copy of the caster's signed `textures` property.
-  authlib's `unpackTextures` validates the signature over the payload and
-  decodes it; it does not compare the payload's profile id to the profile
-  carrying it, which is why the property transplants. If the caster has no
-  textures property at all (offline dev launch), the clone falls back to a
-  default skin — a cosmetic miss, never an error.
-- **The spear's angle is set by the clone's pitch, not by a transform.** A held
-  spear is `HumanoidModel.ArmPose.SPEAR` on sight (`AvatarRenderer.getArmPose`
-  falls through to `ItemTags.SPEARS` with no use-state needed), and
-  `SpearAnimations.thirdPersonHandUse` poses that arm at
-  `-PI/2 + head.xRot + 0.8` — i.e. `45.8366° + pitch` below the horizon. So the
-  clone is spawned at `Tuning.phalanxSpearPitch()`, which is just
-  `PHALANX_SPEAR_ANGLE_DEGREES − SPEAR_ARM_REST_DEGREES`, and vanilla's own
-  animation lands the weapon on the target angle. The caster's *yaw* is copied;
-  their pitch deliberately is not, or a cast aimed at the sky would plant two
-  spearmen saluting it.
-- **The thrust is one packet.** A spear carries `SWING_ANIMATION` of type
-  `STAB`, so `HumanoidModel.setupAttackAnimation` routes a plain main-hand
-  swing to `SpearAnimations.thirdPersonAttackHand` — vanilla's own stab, timed
-  by a swing counter the client ticks itself. `ClientboundAnimatePacket`'s only
-  constructor reads its id off a real `Entity`, so `AnimatePacketAccessor`
-  re-addresses one built around the caster.
-- **Three accessors, no injectors.** `PlayerInfoUpdatePacketAccessor` (the
-  packet has no constructor that takes entries), `AnimatePacketAccessor` (above)
-  and `AvatarAccessor` for the `protected static DATA_PLAYER_MODE_CUSTOMISATION`
-  key. All three fail loudly at class-load if a field is renamed, and none of
-  them is an injection point that can silently find nothing.
-- **Cleanup is "packets sent", and the bookkeeping holds no references.**
-  Viewers are stored as UUIDs and resolved through `PlayerList` at send time, so
-  a player who disconnects mid-cast is skipped rather than kept alive by the
-  list — and their client, which is gone, needs no despawn. `SpearPhalanx.forget`
-  on `SERVER_STOPPED` empties the static list, because an integrated server is
-  torn down and rebuilt inside one JVM on every world exit.
+- **Spears, not spearmen — the clones were tried and failed in-game.** A pass
+  between these two conjured two clones of the caster out of clientbound
+  packets (a client-only team to kill the name plates, an `ADD_PLAYER` info
+  entry carrying the caster's own signed `textures` property, a `PLAYER`
+  add-entity, the skin-layer byte, the caster's armour) and let vanilla's
+  `SpearAnimations` arm pose aim their weapons. It is gone. The skin transplant
+  needs a signed `textures` property and an **offline account has none**, so on
+  every dev and LAN launch the two spearmen wore random default skins instead of
+  the caster's — which is the whole reason to clone a player in the first place.
+  The formation is back to the two things it was ever about: a spear at each
+  shoulder, and a thrust.
+- **The spears carry no gameplay.** Each is a `Display.ItemDisplay` holding a
+  one-count copy of the caster's spear: zero-size bounding box, `noPhysics`,
+  no AI, and `Display.hurtServer` is a hard `false`, so nothing can be hit,
+  pushed or killed by one or can kill one. Gameplay resolves in full at cast,
+  server-side, the way the rest of `ShieldBash` does — so a spear that vanished
+  early, or that a client never received, cannot cost anybody a hit.
+- **They ARE real entities, and that is the one failure this design owns.**
+  An `ItemDisplay` is fully serialised for its whole 12-tick life:
+  `EntityTypes` registers it without `noSave()` and `Display` never overrides
+  `shouldBeSaved`, so an autosave or a `/stop` landing inside the spawn→sweep
+  window writes it to a region file, and on the next load `SpearPhalanx.LIVE`
+  is empty and nothing ever discards it — a permanent 0×0-hitbox spear hanging
+  in the air. `EntityMixin` vetoes `shouldBeSaved` at `RETURN` for anything
+  carrying the `archetypes_phantom` command tag, so every other entity's save
+  path is untouched.
+- **The angle is carried by the display's own transformation, and it is
+  measured from the HORIZON.** This is the part that has to be derived rather
+  than eyeballed, because the previous pass's 47 degrees were relative to a
+  humanoid arm rest pose that no longer exists:
+  1. A `Transformation` composes as `T · L · S · R`
+     (`Transformation.compose`), so the left rotation turns the model and the
+     translation is applied OUTSIDE it, in the display's own unrotated axes.
+  2. Those axes come straight off `DisplayRenderer.calculateOrientation`: a
+     FIXED billboard — the default, and what these are — is posed with
+     `rotationYXZ(-yRot, +xRot, 0)`, and `Ry(-yRot)` carries local `+Z` onto
+     `(-sin yRot, 0, cos yRot)`, which is Minecraft's own facing vector for
+     that yaw. So local `+Z` is **forward**, `+Y` is up, `+X` is the caster's
+     left, and a **positive** rotation about `+X` tips forward down — the same
+     sign the renderer spends a positive (downward) Minecraft pitch with.
+  3. The base pose is `+Y`, tip up. `ItemDisplayRenderer.submitInner` spins the
+     item 180° about `+Y` and draws it under its `THIRD_PERSON_RIGHT_HAND`
+     display transform, which for `spear_in_hand.json` is
+     `rotation [5, 270, -40]`, `scale [1.7, 1.7, 0.85]`. Composed as
+     `Rx(5)·Ry(270)·Rz(-40)` against the sprite's own 45° diagonal (tip at the
+     texture's top-left, butt at its bottom-right) that lands the shaft on
+     exactly `+Y`; the Y-flip cannot disturb it because `+Y` is the one axis
+     the flip fixes.
+  4. `Rx(θ)` carries `+Y` onto `(0, cos θ, sin θ)`, so `θ = 90°` is level and
+     pointing forward. The left rotation is therefore
+     **`Rx(90° + PHALANX_SPEAR_ANGLE_DEGREES)`**, giving
+     `+Y ↦ (0, −sin 47°, +cos 47°)` — forward, 47° under the horizon. Written
+     as `90 + the knob` on purpose: the 90 is the base pose and the 47 is
+     tuning, and moving the knob re-derives nothing.
+  5. The display's **yaw** is the caster's, so the formation points where they
+     are pointing and so "forward" means anything at all. Their **pitch** is
+     explicitly `0`: `xRot` is a second rotation the renderer applies before
+     ours, so a cast aimed at the sky would tilt the whole formation with it and
+     the 47° would stop being measured from the horizon.
+- **The thrust is the Display's own interpolation, in two steps.** A Display
+  lerps from the transformation it is currently showing to the one it is given,
+  so a single transformation at spawn would appear in its final place and never
+  move. Both spears are spawned drawn back with duration 0 (a fresh render
+  state, no lerp), and `PHALANX_WINDUP_TICKS` later the ticker sets delay 0,
+  duration `PHALANX_STAB_TICKS` and the thrust pose. The slide runs along the
+  **depressed shaft**, not along `+Z`, so the lunge reads as a stab rather than
+  a tilted spear sliding level — `pose(along)` scales the same
+  `(0, −sin 47°, +cos 47°)` vector it built the rotation from.
+  `setTransformationInterpolationDelay` forces its data entry dirty
+  (`entityData.set(…, true)`), which is why re-sending the same `0` still
+  restarts the client's interpolation clock; `setTransformationInterpolationDuration`
+  does not, which is why it can be left at 0 at spawn and only written once.
+- **One latch and one clock for the pair.** `stabbed` is a latch, not an
+  equality check against `stabAt`: a lagged server tick can skip the exact
+  gametime and the thrust has to fire on the next tick rather than never. It is
+  one latch for both spears because they lunge together — a formation whose
+  halves thrust on different ticks reads as two spears, which is the thing this
+  node is not. Both gametimes come from `server.overworld().getGameTime()`, the
+  clock every dimension shares, so a cast made in the Nether is not compared
+  against a gametime read somewhere else.
+- **The pair is the unit on the way out too.** If anything outside the class
+  removed one of them — a `/kill`, an unloading chunk — the survivor is
+  discarded with it rather than left standing alone. `SpearPhalanx.forget` on
+  `SERVER_STOPPED` empties the static list, because an integrated server is torn
+  down and rebuilt inside one JVM on every world exit; the spears themselves need
+  no discard there, since the level is going away with them and the
+  `shouldBeSaved` veto is what stops the shutdown save writing them down.
+- **`DisplayAccessor` and `ItemDisplayAccessor` are `@Invoker`s, not direct
+  calls, and the reason is a trap worth naming.** All five setters are `private`
+  in the shipped class, but `fabric-transitive-access-wideners-v1` widens them,
+  so the compile classpath and the decompiler both show `public final` while
+  `javap` on the game jar shows `private`. Calling them straight would compile
+  and would keep working only for as long as Fabric API keeps those entries in
+  its list. An `@Invoker` owes that list nothing, is not an injection point that
+  can silently find nothing, and still fails loudly at class-load if a name
+  moves.
 - **Player Animation Library was checked and rejected.** Its entire API
   (`PlayerAnimationAccess.getPlayerAnimManager`,
   `PlayerAnimationFactory.invoke`) is keyed on `Avatar` — an actual player
-  entity — and a packet puppet is not one on the server side, so there is
-  nothing for it to animate.
+  entity — so there is nothing for it to animate on a floating weapon (and
+  nothing on a packet puppet either, back when that was the plan).
+- **Untested without a client.** Everything above is derived from the shipped
+  bytecode and the shipped model JSON, and a headless server cannot look at it.
+  The spears' final on-screen angle, where the shafts sit relative to the
+  caster's shoulders, and whether the thrust reads as a lunge are an in-game
+  pass.
 
 ### `SpellProjectile` modes and mana
 

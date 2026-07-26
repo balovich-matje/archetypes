@@ -2,32 +2,39 @@ package com.archetypes;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.UUID;
 
-import net.fabricmc.fabric.api.networking.v1.PlayerLookup;
+import com.archetypes.mixin.DisplayAccessor;
+import com.archetypes.mixin.ItemDisplayAccessor;
+import com.mojang.math.Transformation;
+
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.protocol.Packet;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.Display;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.item.ItemDisplayContext;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.Vec3;
+import org.joml.Quaternionf;
+import org.joml.Vector3f;
 
 /**
- * Spear Phalanx (the node is still {@code Family.GROUND_SLAM}): two spearmen
+ * Spear Phalanx (the node is still {@code Family.GROUND_SLAM}): two spears
  * instead of a shockwave.
  *
  * <h2>What changed and why</h2>
  * The capstone used to turn the bash into a ring — same hit, larger circle. It
  * read as "the bash, but more", which is a poor thing for a capstone to be
  * when the node opposite it is Bulwark and the tree's other half is already
- * about widening the bash. So the ring is gone. The bash now plants two clones
- * of the caster at their shoulders and all three thrust forward together: a
+ * about widening the bash. So the ring is gone. The bash now plants a spear at
+ * each of the caster's shoulders and all three thrust forward together: a
  * formation, not an explosion, and it points the ability the same way the
  * caster is pointing instead of at everything around them.
  *
@@ -48,50 +55,63 @@ import net.minecraft.world.phys.Vec3;
  * as Spearwall, and the ability the player keeps when they ignore it is the
  * one they already had.
  *
- * <h2>The clones are decoration and nothing else</h2>
- * Gameplay resolves in full at cast, server-side, the way the rest of
- * {@code ShieldBash} does. What follows is {@link PhantomSpearman} — a player
- * assembled out of clientbound packets, with no entity behind it on the server
- * at all. Keeping it that way is what makes it safe: a clone that vanished
- * early, or that a client never received, cannot cost anybody a hit.
+ * <h2>Spears, not spearmen</h2>
+ * An earlier pass conjured two clones of the caster out of clientbound packets
+ * and let vanilla's own arm pose aim their weapons. The in-game pass killed it:
+ * a clone's skin comes from the profile's signed {@code textures} property, and
+ * an offline account has none, so every spearman on a dev or LAN launch wore a
+ * random default skin instead of the caster's. What is left is the two things
+ * the formation was ever about — a spear at each shoulder, and a thrust.
  *
- * <p>The bookkeeping here is deliberately made of value types — entity ids,
- * profile UUIDs, viewer UUIDs, a team name. Nothing in {@link #LIVE} holds a
- * reference to a player or a level, so a formation outliving the disconnect of
- * everyone who could see it leaks nothing and its despawn simply finds nobody
- * to tell.
+ * <p>So the pair are {@link Display.ItemDisplay} entities: no hitbox (a Display
+ * carries a zero-size bounding box and {@code noPhysics}), no AI, and
+ * {@code Display.hurtServer} is a hard {@code false}, so nothing can be hit,
+ * pushed or killed. They carry no gameplay at all — the hit already resolved at
+ * cast, server-side, the way the rest of {@code ShieldBash} does, which is what
+ * makes a spear that vanished early or that a client never received unable to
+ * cost anybody a hit.
  *
- * <p>The profile ids and the team name are derived from the CASTER rather than
- * minted per cast, which caps what a viewer's client accumulates — see
- * {@link PhantomSpearman}. The price of stable ids is that two formations for
- * one caster must never stand at once; {@code formUp} sweeps first rather than
- * leaning on the bash cooldown to be longer than the formation's life.
+ * <p>They are real entities, though, and that is the one failure this design
+ * owns: an {@code ItemDisplay} serialises for its whole short life, so an
+ * autosave landing inside the window would write it to a region file and leave
+ * it hanging there forever. {@code EntityMixin} vetoes {@code shouldBeSaved}
+ * for anything wearing {@link #PHANTOM_TAG}.
+ *
+ * <p>Player Animation Library is no help here either: its whole API
+ * ({@code PlayerAnimationAccess.getPlayerAnimManager},
+ * {@code PlayerAnimationFactory.invoke}) is keyed on {@code Avatar} — an actual
+ * player entity — so it animates players that exist and offers nothing for a
+ * floating weapon.
  */
 public final class SpearPhalanx {
 	/**
-	 * A cast in flight: the two spearmen, the client-only team that hides their
-	 * name plates, the clients that were told about them, and the two gametimes
-	 * that shape their short life.
+	 * Command tag carried by every spear so {@code EntityMixin} can veto
+	 * {@code shouldBeSaved} — a spear written to a region file by an autosave
+	 * landing inside its 12-tick life would outlive the ticker's memory of it
+	 * and float forever.
+	 */
+	public static final String PHANTOM_TAG = "archetypes_phantom";
+
+	/**
+	 * A cast in flight: the two spears and the two gametimes that shape their
+	 * short life.
 	 *
 	 * <p>{@code stabbed} is a latch, not an equality check against
 	 * {@code stabAt}: a lagged server tick can skip the exact gametime, and the
 	 * thrust must fire on the next tick rather than never.
+	 *
+	 * <p>One latch for the pair rather than one each, because the pair thrust
+	 * together — a formation whose two halves lunged on different ticks would
+	 * read as two spears, which is the thing this node is not.
 	 */
 	private static final class Formation {
-		final List<PhantomSpearman> spearmen;
-		final String team;
-		final UUID caster;
-		final List<UUID> viewers;
+		final List<Display.ItemDisplay> spears;
 		final long stabAt;
 		final long removeAt;
 		boolean stabbed;
 
-		Formation(final List<PhantomSpearman> spearmen, final String team, final UUID caster,
-				final List<UUID> viewers, final long stabAt, final long removeAt) {
-			this.spearmen = spearmen;
-			this.team = team;
-			this.caster = caster;
-			this.viewers = viewers;
+		Formation(final List<Display.ItemDisplay> spears, final long stabAt, final long removeAt) {
+			this.spears = spears;
 			this.stabAt = stabAt;
 			this.removeAt = removeAt;
 		}
@@ -159,12 +179,13 @@ public final class SpearPhalanx {
 	 * The crit cloud along the line the spears cover, thickest where the
 	 * flanking pair actually reach rather than evenly down the middle — the
 	 * particles ARE the hitbox as far as a player reading the ability goes, so
-	 * they are drawn from the same range the victim query used.
+	 * they are drawn from the same range the victim query used, at the same
+	 * height the spears are planted at.
 	 */
 	private static void stabTrail(final ServerLevel level, final ServerPlayer player,
 			final Vec3 flat, final double range) {
 		Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
-		double y = player.getY() + player.getBbHeight() * 0.55;
+		double y = player.getY() + player.getBbHeight() * Tuning.PHALANX_SHOULDER_HEIGHT;
 
 		for (int lane = -1; lane <= 1; lane += 2) {
 			Vec3 origin = player.position().add(right.scale(lane * Tuning.PHALANX_FLANK_OFFSET));
@@ -179,71 +200,130 @@ public final class SpearPhalanx {
 	}
 
 	/**
-	 * Conjures the pair and tells everyone who can see the caster.
+	 * Plants the pair, one at each shoulder.
 	 *
-	 * <p>The audience is the caster's own tracker set plus the caster: a client
-	 * that is not tracking the caster is not rendering the spot the clones
-	 * stand in either, and would be holding two profiles and two entities for a
-	 * formation it never sees.
+	 * <p>Both are spawned drawn BACK, and {@link #tick} pushes them forward a
+	 * beat later with an interpolation duration set. That two-step is the whole
+	 * animation: a Display lerps from the transformation it is currently showing
+	 * to the one it is given, so a single transformation at spawn would simply
+	 * appear in its final place and never move.
 	 */
 	private static void formUp(final ServerLevel level, final ServerPlayer player,
 			final ItemStack spear, final Vec3 flat) {
-		// One caster, one pair of identities, one team — see PhantomSpearman's
-		// javadoc for why they are derived rather than minted per cast.
-		String team = PhantomSpearman.teamFor(player.getUUID());
-
-		// Which makes overlapping formations the one thing that must not
-		// happen: two live formations for one caster would share profile ids,
-		// so the first one's despawn would pull the profiles the second one's
-		// entities were built from and leave two clones the client can never be
-		// told to remove. It cannot occur at shipped numbers — the bash's
-		// cooldown floor is BASH_SWING_TICKS + 20% of BASH_ABILITY_TICKS = 40
-		// ticks against PHALANX_LIFE_TICKS = 12 — but the identities are only
-		// safe while that arithmetic holds, and it lives in another file. So
-		// the overlap is closed here instead of assumed: a second cast sweeps
-		// the first formation properly before the same ids are re-used.
-		dismiss(level.getServer(), player.getUUID());
-
 		Vec3 right = new Vec3(-flat.z, 0.0, flat.x);
-		List<PhantomSpearman> spearmen = new ArrayList<>(2);
+		List<Display.ItemDisplay> spears = new ArrayList<>(2);
 
 		for (int lane = -1; lane <= 1; lane += 2) {
-			Vec3 at = player.position().add(right.scale(lane * Tuning.PHALANX_FLANK_OFFSET));
-			// The caster's yaw, but NOT their pitch: the clone's pitch is what
-			// aims its spear (Tuning.phalanxSpearPitch), and a caster who cast
-			// while looking at the sky would otherwise plant two spearmen
-			// saluting it.
-			spearmen.add(PhantomSpearman.conjure(level, player, lane < 0 ? 'L' : 'R', at,
-					player.getYRot(), Tuning.phalanxSpearPitch()));
-		}
+			Display.ItemDisplay display = EntityTypes.ITEM_DISPLAY.create(level,
+					EntitySpawnReason.TRIGGERED);
 
-		List<Packet<?>> spawn = new ArrayList<>();
-		spawn.add(PhantomSpearman.raiseColours(team,
-				spearmen.stream().map(PhantomSpearman::name).toList()));
-
-		for (PhantomSpearman spearman : spearmen) {
-			spearman.appendSpawn(spawn, player, spear);
-		}
-
-		List<ServerPlayer> audience = new ArrayList<>(PlayerLookup.tracking(player));
-
-		if (!audience.contains(player)) {
-			audience.add(player);
-		}
-
-		for (ServerPlayer viewer : audience) {
-			for (Packet<?> packet : spawn) {
-				viewer.connection.send(packet);
+			if (display == null) {
+				continue;
 			}
+
+			Vec3 at = player.position()
+					.add(right.scale(lane * Tuning.PHALANX_FLANK_OFFSET))
+					.add(0.0, player.getBbHeight() * Tuning.PHALANX_SHOULDER_HEIGHT, 0.0);
+
+			display.setPos(at.x, at.y, at.z);
+			// The caster's yaw, so the formation points where they are pointing
+			// and so the pose below can talk about "forward" at all. Their PITCH
+			// deliberately is not copied: the display's own xRot is a second
+			// rotation the renderer applies before ours, so a cast aimed at the
+			// sky would tilt the whole formation up with it and the 47 degrees
+			// would stop being measured from the horizon.
+			display.setYRot(player.getYRot());
+			display.setXRot(0.0F);
+			display.addTag(PHANTOM_TAG);
+
+			ItemDisplayAccessor item = (ItemDisplayAccessor) display;
+			item.archetypes$setItemStack(spear.copyWithCount(1));
+			item.archetypes$setItemTransform(ItemDisplayContext.THIRD_PERSON_RIGHT_HAND);
+
+			DisplayAccessor shape = (DisplayAccessor) display;
+			shape.archetypes$setViewRange(Tuning.PHALANX_VIEW_RANGE);
+			shape.archetypes$setInterpolationDelay(0);
+			shape.archetypes$setInterpolationDuration(0);
+			shape.archetypes$setTransformation(pose(-Tuning.PHALANX_DRAW_BACK));
+
+			level.addFreshEntity(display);
+			spears.add(display);
+		}
+
+		if (spears.isEmpty()) {
+			return;
 		}
 
 		// One clock for spawn and sweep: the overworld's, which every dimension
 		// shares, so a formation cast in the Nether is not compared against a
 		// gametime read somewhere else.
 		long now = level.getServer().overworld().getGameTime();
-		LIVE.add(new Formation(spearmen, team, player.getUUID(),
-				audience.stream().map(ServerPlayer::getUUID).toList(),
+		LIVE.add(new Formation(spears,
 				now + Tuning.PHALANX_WINDUP_TICKS, now + Tuning.PHALANX_LIFE_TICKS));
+	}
+
+	/**
+	 * The pose of one spear: depressed {@link Tuning#PHALANX_SPEAR_ANGLE_DEGREES}
+	 * below the horizon along the caster's facing, slid {@code along} its own
+	 * shaft.
+	 *
+	 * <h2>The frame</h2>
+	 * A {@code Transformation} composes as {@code T · L · S · R} (see
+	 * {@code Transformation.compose}), so the left rotation turns the model and
+	 * the translation is applied OUTSIDE it, in the display's own unrotated
+	 * axes. Those axes are readable straight off
+	 * {@code DisplayRenderer.calculateOrientation}: a FIXED billboard — the
+	 * default, and what these are — is posed with
+	 * {@code rotationYXZ(-yRot, +xRot, 0)}, and {@code Ry(-yRot)} carries local
+	 * {@code +Z} onto {@code (-sin yRot, 0, cos yRot)}, which is Minecraft's own
+	 * facing vector for that yaw. So in this frame {@code +Z} is FORWARD,
+	 * {@code +Y} is UP, {@code +X} is the caster's left, and a POSITIVE rotation
+	 * about {@code +X} tips forward down — the same sign the renderer itself
+	 * uses to spend a positive (downward) Minecraft pitch.
+	 *
+	 * <h2>The base pose</h2>
+	 * {@code ItemDisplayRenderer.submitInner} spins the item 180 degrees about
+	 * {@code +Y} and then draws it under its {@code THIRD_PERSON_RIGHT_HAND}
+	 * display transform. For a spear that transform is
+	 * {@code rotation [5, 270, -40]} with {@code scale [1.7, 1.7, 0.85]}, and
+	 * composed as {@code Rx(5)·Ry(270)·Rz(-40)} against the sprite's own
+	 * 45-degree diagonal (tip at the texture's top-left, butt at its
+	 * bottom-right) it lands the shaft on exactly {@code +Y}, tip up. The Y-flip
+	 * cannot disturb that, because {@code +Y} is the one axis it fixes. So the
+	 * spear arrives pointing straight UP and this is the only rotation acting on
+	 * it.
+	 *
+	 * <h2>The rotation</h2>
+	 * {@code Rx(θ)} carries {@code +Y} onto {@code (0, cos θ, sin θ)}. At
+	 * {@code θ = 90°} that is {@code (0, 0, 1)} — level, pointing forward — so
+	 * the depression wanted is simply the next {@code 47°}:
+	 *
+	 * <pre>L = Rx(90° + 47°)  ⇒  +Y ↦ (0, −sin 47°, +cos 47°)</pre>
+	 *
+	 * which is forward and 47 degrees under the horizon, since
+	 * {@code atan2(sin 47°, cos 47°) = 47°}. Writing the angle as
+	 * {@code 90 + PHALANX_SPEAR_ANGLE_DEGREES} rather than as one baked number
+	 * is the point: the 90 is the base pose, the 47 is the tuning knob, and
+	 * nothing has to be re-derived to move the knob.
+	 *
+	 * <h2>The thrust</h2>
+	 * {@code along} slides the spear down that same vector rather than along
+	 * {@code +Z}, so the lunge runs up the shaft and reads as a stab instead of
+	 * a depressed spear sliding level. Negative is drawn back, positive is
+	 * thrust — signed in the display's frame, where {@code +Z} is provably the
+	 * caster's facing, so this is arithmetic rather than a guess a headless
+	 * server cannot check.
+	 */
+	private static Transformation pose(final float along) {
+		double depression = Math.toRadians(Tuning.PHALANX_SPEAR_ANGLE_DEGREES);
+		Vector3f shaft = new Vector3f(0.0F,
+				(float) -Math.sin(depression), (float) Math.cos(depression));
+
+		return new Transformation(
+				shaft.mul(along, new Vector3f()),
+				new Quaternionf().rotationX((float) (Math.PI / 2.0 + depression)),
+				new Vector3f(1.0F, 1.0F, 1.0F),
+				new Quaternionf());
 	}
 
 	/**
@@ -252,9 +332,10 @@ public final class SpearPhalanx {
 	 * <p>{@link #LIVE} is static and an integrated server is torn down and
 	 * rebuilt inside one JVM every time a single-player world is left, so
 	 * without this a cast made in the last ten ticks of a world would be ticked
-	 * against the next one. The clones themselves need no cleanup on the way
-	 * out: they live in clients that are being disconnected, and a disconnected
-	 * client keeps nothing.
+	 * against the next one. The spears themselves need no discard on the way
+	 * out: the level they are in is going away with them, and
+	 * {@code EntityMixin}'s veto is what keeps the shutdown save from writing
+	 * them down.
 	 */
 	public static void forget() {
 		LIVE.clear();
@@ -272,75 +353,36 @@ public final class SpearPhalanx {
 		while (iterator.hasNext()) {
 			Formation formation = iterator.next();
 
+			// Something outside this class removed one of them — a /kill, an
+			// unloading chunk. The pair is the unit, so the survivor goes too
+			// rather than being left standing on its own.
+			if (formation.spears.stream().anyMatch(Display.ItemDisplay::isRemoved)) {
+				discard(formation);
+				iterator.remove();
+				continue;
+			}
+
 			if (!formation.stabbed && now >= formation.stabAt) {
 				formation.stabbed = true;
-				ServerPlayer caster = server.getPlayerList().getPlayer(formation.caster);
 
-				// The swing packet is addressed by hand but still has to be
-				// BUILT around some entity; without the caster there is nobody
-				// to build it from, and a formation whose caster logged out mid
-				// cast simply stands still until it is swept.
-				if (caster != null) {
-					List<Packet<?>> thrust = new ArrayList<>(formation.spearmen.size());
-
-					for (PhantomSpearman spearman : formation.spearmen) {
-						thrust.add(spearman.stab(caster));
-					}
-
-					broadcast(server, formation, thrust);
+				for (Display.ItemDisplay display : formation.spears) {
+					DisplayAccessor shape = (DisplayAccessor) display;
+					shape.archetypes$setInterpolationDelay(0);
+					shape.archetypes$setInterpolationDuration(Tuning.PHALANX_STAB_TICKS);
+					shape.archetypes$setTransformation(pose(Tuning.PHALANX_THRUST));
 				}
 			}
 
 			if (now >= formation.removeAt) {
-				List<Packet<?>> despawn = new ArrayList<>(3);
-				PhantomSpearman.appendDespawn(despawn, formation.team, formation.spearmen);
-				broadcast(server, formation, despawn);
+				discard(formation);
 				iterator.remove();
 			}
 		}
 	}
 
-	/**
-	 * Sweeps this caster's live formation early, if they somehow have one, by
-	 * doing exactly what the timer would have done — despawn packets to the
-	 * clients that were told, then drop it. Called at the head of a new cast;
-	 * at shipped cooldowns it finds nothing.
-	 */
-	private static void dismiss(final MinecraftServer server, final UUID caster) {
-		var iterator = LIVE.iterator();
-
-		while (iterator.hasNext()) {
-			Formation formation = iterator.next();
-
-			if (!formation.caster.equals(caster)) {
-				continue;
-			}
-
-			List<Packet<?>> despawn = new ArrayList<>(3);
-			PhantomSpearman.appendDespawn(despawn, formation.team, formation.spearmen);
-			broadcast(server, formation, despawn);
-			iterator.remove();
-		}
-	}
-
-	/**
-	 * To exactly the clients that were told about this formation, and only
-	 * those still connected. Viewers are held as UUIDs and resolved here, so a
-	 * player who quit during the cast is skipped rather than kept alive by the
-	 * list — and their client, which is gone, needs no despawn anyway.
-	 */
-	private static void broadcast(final MinecraftServer server, final Formation formation,
-			final List<Packet<?>> packets) {
-		for (UUID viewer : formation.viewers) {
-			ServerPlayer player = server.getPlayerList().getPlayer(viewer);
-
-			if (player == null) {
-				continue;
-			}
-
-			for (Packet<?> packet : packets) {
-				player.connection.send(packet);
-			}
+	private static void discard(final Formation formation) {
+		for (Display.ItemDisplay display : formation.spears) {
+			display.discard();
 		}
 	}
 
