@@ -96,9 +96,12 @@ public abstract class AvatarRendererMixin {
 	 * MODEL is a separate seam ({@code IsUsingItemMixin}) because it is the
 	 * item property, not the pose, that vanilla swaps the shield mesh on.
 	 *
-	 * <p>The spear's own arm is untouched: {@code ArmPose.SPEAR} is not
-	 * two-handed, so vanilla does not overwrite the off hand's pose and both
-	 * arms can be posed at once — which is the entire point of the node.
+	 * <p>The spear's own arm is untouched. Writing {@code BLOCK} here is only
+	 * half the job though: {@code ArmPose.SPEAR} is
+	 * {@code affectsOffhandPose = true}, so {@code HumanoidModel.setupAnim}
+	 * poses the spear arm and then SKIPS the guard arm entirely and this value
+	 * is never read. {@link HumanoidModelMixin} is the other half and poses the
+	 * guard arm off exactly this flag — do not delete one without the other.
 	 *
 	 * <p>Overload disambiguated by full descriptor: {@code AvatarRenderer} has
 	 * two {@code getArmPose}s and the other one takes a {@code HumanoidArm}.

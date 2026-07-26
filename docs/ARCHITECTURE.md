@@ -438,12 +438,26 @@ one you would guess.**
   Spearwall shield, in every view at once. `IsUsingItemMixin` answers yes for
   the guard stack, which fixes first person, third person and anything else
   that draws a held item from one place.
-- *The arm.* `AvatarRenderer.getArmPose` only reaches `BLOCK` when
-  `avatar.getUsedItemHand() == hand`, which under Spearwall is the spear's, so
-  the guarding hand fell through to `ArmPose.ITEM`. `AvatarRendererMixin` returns
-  `BLOCK` for the guard hand. The spear arm is untouched: `ArmPose.SPEAR` is not
-  two-handed, so vanilla does not overwrite the off hand and both arms pose at
-  once — which is the whole point of the node.
+- *The arm — two mixins, and both are required.* `AvatarRenderer.getArmPose`
+  only reaches `BLOCK` when `avatar.getUsedItemHand() == hand`, which under
+  Spearwall is the spear's, so the guarding hand fell through to
+  `ArmPose.ITEM`. `AvatarRendererMixin` returns `BLOCK` for the guard hand —
+  and on its own that value is written and never read. `HumanoidModel.setupAnim`
+  poses the USING arm and then poses the other arm *only if*
+  `usingArmPose.affectsOffhandPose()` is false; `ArmPose.SPEAR` is built
+  `(twoHanded = false, affectsOffhandPose = true)`, so vanilla skips the guard
+  arm outright, for either hand configuration (the guard is duplicated in both
+  arms of the `if`). `HumanoidModelMixin` closes it: an `@Inject` at the
+  `setupAttackAnimation` call — the point where vanilla's arm posing ends —
+  runs vanilla's own private `poseBlockingArm` (reached by `@Invoker`) on the
+  guard arm, gated on the exact negative of vanilla's skip (using an item, the
+  guard arm is not the using arm, guard pose is `BLOCK`, using pose claims the
+  off hand). Nothing vanilla produces satisfies that gate, so no extra Spearwall
+  flag is consulted; handedness comes from `state.mainArm`. **Not `TAIL`:** the
+  crouch block and the swim/fall-flying lerps run after that call and read the
+  arm rotations, so posing at `TAIL` would feed crouch's `+0.4` into
+  `poseBlockingArm`'s own `xRot * 0.5` and sit ~11° off vanilla whenever a
+  guarding player sneaks.
 - *The slowdown.* `LocalPlayer.modifyInput` scales input by the USE item's
   `UseEffects.speedMultiplier`. A shield has no `USE_EFFECTS` and takes
   `UseEffects.DEFAULT` — `0.2F`, `canSprint = false`. A spear declares its own:
@@ -545,7 +559,9 @@ magic for Barbarian — healing carries no `DamageSource`, so the flag is raised
 around vanilla's ticked and instantaneous effect application), and
 `LivingEntityAccessor`.
 Client-side: `AvatarRendererMixin` (armor hiding,
-ability poses), `LocalPlayerMixin`, `MinecraftMixin` (charged-swing announce,
+ability poses), `HumanoidModelMixin` (the Spearwall guard arm vanilla skips —
+see above; the only injector this mod has into a model class),
+`LocalPlayerMixin`, `MinecraftMixin` (charged-swing announce,
 plus the `handleKeybinds` head that spends the attack click before the
 `isUsingItem()` arm swallows it — the whole of Free Hand, since nothing
 server-side forbids attacking while blocking), `HudMixin` (the night
