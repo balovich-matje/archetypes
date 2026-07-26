@@ -474,7 +474,7 @@
 	"node.archetypes.colossus_protector.instinctive_guard": "Instinctive Guard",
 	"node.archetypes.colossus_protector.instinctive_guard.desc": "While carrying a shield, you passively block all attacks at 25/50% effectiveness. The shield still takes full damage for those blocks.",
 	"node.archetypes.colossus_protector.free_hand": "Free Hand",
-	"node.archetypes.colossus_protector.free_hand.desc": "You can hold your shield up and swing your weapon at the same time.",
+	"node.archetypes.colossus_protector.free_hand.desc": "You can hold your shield up and swing your weapon at the same time. A braced spear also never tires — it keeps its bite for as long as you hold it, though it still never swings.",
 	"node.archetypes.colossus_protector.immovable_object": "Immovable Object",
 	"node.archetypes.colossus_protector.immovable_object.desc": "Your block can no longer be broken by normal means \u2014 an axe or the Warden will not knock your shield aside.",
 	"node.archetypes.colossus_slayer.parry": "Parry",

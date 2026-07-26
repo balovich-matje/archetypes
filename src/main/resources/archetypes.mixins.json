@@ -18,6 +18,7 @@
 		"FoodPropertiesMixin",
 		"HealOrHarmMobEffectMixin",
 		"ItemStackMixin",
+		"KineticWeaponMixin",
 		"LivingEntityAccessor",
 		"LivingEntityMixin",
 		"MobEffectInstanceMixin",

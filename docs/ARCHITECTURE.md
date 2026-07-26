@@ -417,6 +417,22 @@ correctly and shatter in the wrong slot. `archetypes$spearwallHand`
 only when the guard is genuinely Spearwall's; a normally raised shield already
 is the used item and must keep its own hand.
 
+**What actually ends a brace — and what Free Hand does about it.** Not the use
+item: `Item.getUseDuration` answers a flat `72000` for anything holding
+`KINETIC_WEAPON`, so `LivingEntity.updateUsingItem`'s `--useItemRemaining == 0`
+arm is an hour away. The real lifetime is `KineticWeapon.Condition`, one per
+effect (dismount / knockback / damage), each opening `ticksUsed <=
+maxDurationTicks` — and `KineticWeapon.damageEntities` derives that `ticksUsed`
+from `stack.getUseDuration(holder) - ticksRemaining - delayTicks`, which only
+climbs. An iron spear's windows are 50 / 135 / 225 ticks past a 12-tick wind-up:
+past about eleven seconds the spear is still braced, still animating, and inert.
+`KineticWeaponMixin` rewrites the one argument that number comes from, freezing
+it at `Tuning.FREE_HAND_BRACE_HOLD_TICKS` past the wind-up for a Free Hand
+holder — inside the shortest window every shipped material declares, so all
+three effects stay alive without reconstructing a single `Condition`. The speed
+halves of `Condition.test` are untouched, so the node buys duration and never
+damage.
+
 **Free Hand explicitly does not extend to spears, and the exclusion is
 load-bearing.** Free Hand is an input permission gated on nothing but "am I
 blocking?" (`ColossusProtector.canAttackWhileBlocking`, consumed by

@@ -199,6 +199,19 @@ public final class Tuning {
 	/** Reinforced Straps = Unbreaking I: half of durability hits are ignored. */
 	public static final float STRAPS_SKIP_CHANCE = 0.5F;
 
+	/**
+	 * Free Hand: how far into a brace the clock is frozen, in ticks past the
+	 * spear's own {@code delayTicks} wind-up.
+	 *
+	 * <p>Has to sit inside the SHORTEST window any spear declares, because the
+	 * point is that all three of a brace's effects stay alive: iron and
+	 * netherite give dismount only fifty ticks, so forty leaves ten ticks of
+	 * margin for a data pack that shaves it further. Raising this past fifty
+	 * would silently drop dismount off a Free Hand brace on exactly two
+	 * materials and nowhere else, which is the kind of bug nobody finds.
+	 */
+	public static final int FREE_HAND_BRACE_HOLD_TICKS = 40;
+
 	// --- Slayer ---
 
 	/** Hamstring: Slowness (rank-1 amplifier) for this long on melee hits. */
