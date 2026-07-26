@@ -127,6 +127,38 @@ public final class Tuning {
 	public static final int PHALANX_WINDUP_TICKS = 2;
 	public static final int PHALANX_LIFE_TICKS = 12;
 
+	/**
+	 * Where a clone's spear points: degrees below the horizon, along the
+	 * caster's facing. Levelled spears read as a guard-of-honour and a spear
+	 * held up reads as a parade; a formation about to gut something holds them
+	 * down at the chest of whatever is coming.
+	 */
+	public static final float PHALANX_SPEAR_ANGLE_DEGREES = 47.0F;
+
+	/**
+	 * Vanilla's resting spear depression, in degrees, for a player looking dead
+	 * level. Not a taste knob — it is a transcription. {@code
+	 * SpearAnimations.thirdPersonHandUse} sets the holding arm to
+	 *
+	 * <pre>arm.xRot = -PI/2 + head.xRot + 0.8</pre>
+	 *
+	 * and {@code HumanoidModel.setupAnim} feeds {@code head.xRot} straight from
+	 * the entity's pitch. An arm at {@code -PI/2} points level and one at 0
+	 * points down, so depression below the horizon is {@code 90 + arm.xRot} in
+	 * degrees, which reduces to {@code 0.8 rad + pitch} = 45.8366 + pitch.
+	 */
+	public static final float SPEAR_ARM_REST_DEGREES = 45.8366F;
+
+	/**
+	 * The pitch to spawn a clone at, so its held spear lands on
+	 * {@link #PHALANX_SPEAR_ANGLE_DEGREES}. Inverting the line above: the
+	 * clone looks a degree past level and vanilla's own arm pose does the rest,
+	 * which is why nothing here rotates a model by hand.
+	 */
+	public static float phalanxSpearPitch() {
+		return PHALANX_SPEAR_ANGLE_DEGREES - SPEAR_ARM_REST_DEGREES;
+	}
+
 	/** Reflection: a returned projectile keeps half its bite. */
 	public static final double REFLECT_DAMAGE_FACTOR = 0.5;
 	/** Floor on the return flight — a mid-drawn-bow launch, enough to carry

@@ -554,6 +554,16 @@ on the same column as Spearwall by design.
   carrying it, which is why the property transplants. If the caster has no
   textures property at all (offline dev launch), the clone falls back to a
   default skin — a cosmetic miss, never an error.
+- **The spear's angle is set by the clone's pitch, not by a transform.** A held
+  spear is `HumanoidModel.ArmPose.SPEAR` on sight (`AvatarRenderer.getArmPose`
+  falls through to `ItemTags.SPEARS` with no use-state needed), and
+  `SpearAnimations.thirdPersonHandUse` poses that arm at
+  `-PI/2 + head.xRot + 0.8` — i.e. `45.8366° + pitch` below the horizon. So the
+  clone is spawned at `Tuning.phalanxSpearPitch()`, which is just
+  `PHALANX_SPEAR_ANGLE_DEGREES − SPEAR_ARM_REST_DEGREES`, and vanilla's own
+  animation lands the weapon on the target angle. The caster's *yaw* is copied;
+  their pitch deliberately is not, or a cast aimed at the sky would plant two
+  spearmen saluting it.
 - **The thrust is one packet.** A spear carries `SWING_ANIMATION` of type
   `STAB`, so `HumanoidModel.setupAttackAnimation` routes a plain main-hand
   swing to `SpearAnimations.thirdPersonAttackHand` — vanilla's own stab, timed

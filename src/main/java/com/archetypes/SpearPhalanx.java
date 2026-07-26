@@ -201,8 +201,12 @@ public final class SpearPhalanx {
 			// Names are wire-capped at 16 characters and only ever used as the
 			// team's membership key; the cast serial keeps them unique.
 			String name = (lane < 0 ? "PhalanxL" : "PhalanxR") + (cast % 100000L);
+			// The caster's yaw, but NOT their pitch: the clone's pitch is what
+			// aims its spear (Tuning.phalanxSpearPitch), and a caster who cast
+			// while looking at the sky would otherwise plant two spearmen
+			// saluting it.
 			spearmen.add(PhantomSpearman.conjure(level, player, name, at,
-					player.getYRot(), player.getXRot()));
+					player.getYRot(), Tuning.phalanxSpearPitch()));
 		}
 
 		List<Packet<?>> spawn = new ArrayList<>();
