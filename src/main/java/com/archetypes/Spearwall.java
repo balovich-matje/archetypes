@@ -7,6 +7,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.BlocksAttacks;
+import net.minecraft.world.item.component.UseEffects;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -134,5 +135,68 @@ public final class Spearwall {
 		return entity instanceof Player player
 				&& player.getUsedItemHand() == InteractionHand.MAIN_HAND
 						? InteractionHand.OFF_HAND : InteractionHand.MAIN_HAND;
+	}
+
+	/**
+	 * The rendering-side answer to "is this entity's guard up", read off the
+	 * published {@link ModAttachments#SPEARWALL_GUARD} flag rather than
+	 * recomputed.
+	 *
+	 * <p>{@link #guardingShield} is the truth and every gameplay path asks it,
+	 * but it cannot be asked about somebody ELSE on a client:
+	 * {@code NodePurchases.owned} reads a target-only attachment, so an
+	 * onlooker's copy of another player's build is empty and the answer comes
+	 * back no. Every renderer therefore asks this instead, and pays a tick of
+	 * latency for being right about everybody.
+	 */
+	public static boolean guardRaised(final LivingEntity entity) {
+		return Boolean.TRUE.equals(((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) entity)
+				.getAttached(ModAttachments.SPEARWALL_GUARD));
+	}
+
+	/** Whether this exact stack is the raised guard — the test both the shield's
+	 * blocking MODEL and its arm pose are decided by. */
+	public static boolean isRaisedGuard(final LivingEntity entity, final ItemStack stack) {
+		return !stack.isEmpty() && guardRaised(entity)
+				&& entity.getItemInHand(guardHand(entity)) == stack;
+	}
+
+	/**
+	 * The movement multiplier a Spearwall guard should move at.
+	 *
+	 * <h2>Why the guard is not slow on its own</h2>
+	 * Vanilla scales a using player's input by the USE ITEM's
+	 * {@code UseEffects.speedMultiplier} ({@code LocalPlayer.modifyInput} →
+	 * {@code itemUseSpeedMultiplier}). A raised shield has no {@code USE_EFFECTS}
+	 * of its own, so it takes {@code UseEffects.DEFAULT} — {@code 0.2F}, and
+	 * {@code canSprint = false}. A spear declares its own:
+	 * {@code Item.Properties.spear} sets {@code new UseEffects(true, false, 1.0F)},
+	 * because a braced spear is supposed to be carried at a run.
+	 *
+	 * <p>Under Spearwall the use item is the SPEAR, so a player got the shield's
+	 * whole guard at the spear's full running speed — a shield that costs
+	 * nothing to hold. This returns the guard's own multiplier instead, and
+	 * {@code min} rather than a swap so a future item that braces slower than a
+	 * shield blocks is not accidentally sped up.
+	 */
+	public static float guardSpeedMultiplier(final Player player, final float braced) {
+		ItemStack shield = guardingShield(player);
+
+		if (shield == null) {
+			return braced;
+		}
+
+		return Math.min(braced, shield
+				.getOrDefault(DataComponents.USE_EFFECTS, UseEffects.DEFAULT).speedMultiplier());
+	}
+
+	/** The other half of the same stance: a guard that can be sprinted with is
+	 * not a guard. Vanilla gates {@code canStartSprinting} on the use item's
+	 * {@code canSprint}, and the spear's is true. */
+	public static boolean guardStopsSprint(final Player player) {
+		ItemStack shield = guardingShield(player);
+
+		return shield != null
+				&& !shield.getOrDefault(DataComponents.USE_EFFECTS, UseEffects.DEFAULT).canSprint();
 	}
 }

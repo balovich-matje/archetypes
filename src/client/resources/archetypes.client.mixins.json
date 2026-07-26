@@ -7,6 +7,7 @@
 		"AvatarRendererMixin",
 		"EntityRendererMixin",
 		"HudMixin",
+		"IsUsingItemMixin",
 		"LevelExtractorMixin",
 		"LivingEntityRendererAccessor",
 		"LocalPlayerMixin",

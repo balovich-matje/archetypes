@@ -407,7 +407,42 @@ which only fires because a block happened.
 
 Injected common, not server-side: the client asks the same question to pose the
 player, and can answer it because `PURCHASED` is synced and `NodePurchases.owned`
-is the same code there.
+is the same code there. **For the owner only, though** — `PURCHASED` rides
+`targetOnly()`, so an onlooker's client evaluates someone else's build as empty
+and answers no. Everything that RENDERS the guard therefore reads a published
+flag, `SPEARWALL_GUARD` (transient, `all()`, maintained by `ProtectorTicker`
+beside `BULWARK_ACTIVE`), and pays a tick of latency for being right about
+everybody. Gameplay and the owner's own movement still ask the real function.
+
+**Looking like it and moving like it are three separate seams, none of them the
+one you would guess.**
+
+- *The shield mesh.* A raised shield does not look raised because of an arm
+  transform — `ItemInHandRenderer`'s `BLOCK` branch explicitly skips a
+  `ShieldItem`. It looks raised because `assets/minecraft/items/shield.json` is
+  a `minecraft:condition` on `minecraft:using_item`, swapping `item/shield` for
+  `item/shield_blocking`, which is a different model with different display
+  transforms. That property is `IsUsingItem`, whose whole body is
+  `owner.isUsingItem() && owner.getUseItem() == itemStack` — false for a
+  Spearwall shield, in every view at once. `IsUsingItemMixin` answers yes for
+  the guard stack, which fixes first person, third person and anything else
+  that draws a held item from one place.
+- *The arm.* `AvatarRenderer.getArmPose` only reaches `BLOCK` when
+  `avatar.getUsedItemHand() == hand`, which under Spearwall is the spear's, so
+  the guarding hand fell through to `ArmPose.ITEM`. `AvatarRendererMixin` returns
+  `BLOCK` for the guard hand. The spear arm is untouched: `ArmPose.SPEAR` is not
+  two-handed, so vanilla does not overwrite the off hand and both arms pose at
+  once — which is the whole point of the node.
+- *The slowdown.* `LocalPlayer.modifyInput` scales input by the USE item's
+  `UseEffects.speedMultiplier`. A shield has no `USE_EFFECTS` and takes
+  `UseEffects.DEFAULT` — `0.2F`, `canSprint = false`. A spear declares its own:
+  `Item.Properties.spear` sets `new UseEffects(true, false, 1.0F)`, because a
+  braced spear is meant to be carried at a run. So the synthesised guard was
+  free — full shield, full running speed. `LocalPlayerMixin` returns the
+  guard's multiplier from `itemUseSpeedMultiplier` and forces
+  `isSlowDueToUsingItem` (which is what gates `canStartSprinting`). Local-player
+  only, and that is correct rather than a shortcut: players are
+  movement-authoritative.
 
 The one seam is durability. `applyItemBlocking` charges the block with
 `hurtBlockingItem(level, blockingStack, this, getUsedItemHand(), blocked)` — the

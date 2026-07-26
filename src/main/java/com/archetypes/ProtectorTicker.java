@@ -40,6 +40,18 @@ public final class ProtectorTicker {
 				} else if (!should && current != null) {
 					target.removeAttached(ModAttachments.BULWARK_ACTIVE);
 				}
+
+				// Spearwall's guard, on the same terms and for the same reason:
+				// onlookers cannot run guardingShield for somebody else's build,
+				// so the answer is published rather than recomputed.
+				boolean guarding = Spearwall.guardingShield(player) != null;
+				Boolean raised = target.getAttached(ModAttachments.SPEARWALL_GUARD);
+
+				if (guarding && raised == null) {
+					target.setAttached(ModAttachments.SPEARWALL_GUARD, true);
+				} else if (!guarding && raised != null) {
+					target.removeAttached(ModAttachments.SPEARWALL_GUARD);
+				}
 			}
 		});
 	}

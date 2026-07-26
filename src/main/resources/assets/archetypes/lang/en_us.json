@@ -123,7 +123,7 @@
 	"node.archetypes.protector.ground_slam.desc": "Carrying a spear, the bash summons two spearmen at your shoulders. All three thrust: everything within 4 blocks in front takes the bash's damage plus a full spear stab, once. Wide Swings adds 1/2 blocks of reach. Without a spear the bash is unchanged.",
 	"node.archetypes.protector.spearwall": "Spearwall",
 	"node.archetypes.protector.braced": "Braced",
-	"node.archetypes.protector.spearwall.desc": "Brace a spear with a shield in your other hand and the shield guards you anyway, a quarter-second after you plant. A braced spear never swings \u2014 not even with Free Hand.",
+	"node.archetypes.protector.spearwall.desc": "Brace a spear with a shield in your other hand and the shield guards you anyway, a quarter-second after you plant. You hold both for real: the shield stays raised, and you move at a blocker's pace while you do. A braced spear never swings \u2014 not even with Free Hand.",
 	"node.archetypes.protector.braced.desc": "Every hit your shield blocks shaves a second off the bash's cooldown.",
 	"node.archetypes.protector.taunt": "Taunt",
 	"node.archetypes.protector.taunt.desc": "The bash also makes every monster within 8 blocks attack you.",
