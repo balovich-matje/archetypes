@@ -1245,9 +1245,14 @@ public final class Tuning {
 	public static final int HARDENED_DURATION_TICKS_PER_RANK = 40;
 
 	/**
-	 * Bulwark: health added to Battle Trance's ceiling per rank — 3/6 hearts.
-	 * The base cap is {@link #TRANCE_CAP_PER_RANK} x 3 = 3 hearts, so rank 2
-	 * triples it.
+	 * Bulwark: health added to Battle Trance's ceiling per rank — <b>3.5/7
+	 * hearts</b>. The base cap is {@link #TRANCE_CAP_PER_RANK} x 3 = 3 hearts,
+	 * so rank 1 more than doubles the bank and rank 2 more than triples it.
+	 *
+	 * <p>Deliberately the same 7.0 the deleted MAX_HEALTH modifier carried, and
+	 * that is the whole point of the rework: the node still moves the same
+	 * number of hearts, but they are hearts the player has to punch something
+	 * to get and that drain when the fight stops.
 	 *
 	 * <h2>What the node is NOT any more</h2>
 	 * Two designs have been through this constant's neighbourhood and both are
@@ -1278,7 +1283,7 @@ public final class Tuning {
 	 * {@code Attributes.MAX_ABSORPTION} is denominated in; the tooltip does the
 	 * halving.
 	 */
-	public static final float COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK = 6.0F;
+	public static final float COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK = 7.0F;
 
 	/** Unstoppable Force: seconds a shield raised against a mace or a bare fist
 	 * is knocked aside for. The Warden's own number

@@ -494,7 +494,7 @@
 	"node.archetypes.colossus_crusher.hardened": "Hardened",
 	"node.archetypes.colossus_crusher.hardened.desc": "Taking damage while holding a mace grants +1 armor for 2/4 seconds, or +2 armor while unarmed. Every hit adds its own stack, and each one runs out on its own. Environmental damage does not count.",
 	"node.archetypes.colossus_crusher.bulwark": "Bulwark",
-	"node.archetypes.colossus_crusher.bulwark.desc": "Battle Trance's cap increased by 3/6 hearts.",
+	"node.archetypes.colossus_crusher.bulwark.desc": "Battle Trance's cap increased by 3.5/7 hearts. The health it banks never decays while your fists are bare.",
 	"node.archetypes.colossus_crusher.siegebreaker": "Unstoppable Force",
 	"node.archetypes.colossus_crusher.siegebreaker.desc": "Your mace and unarmed attacks break through blocking.",
 

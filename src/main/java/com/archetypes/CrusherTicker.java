@@ -102,8 +102,20 @@ public final class CrusherTicker {
 				trance > 0, tranceCap(player, owned),
 				AttributeModifier.Operation.ADD_VALUE);
 
-		// Battle Trance decay: the banked hearts fade once the fight is over.
-		if (trance > 0 && player.getAbsorptionAmount() > 0) {
+		// Battle Trance decay: the banked hearts fade once the fight is over —
+		// unless the epic Bulwark is owned and the hands are bare, which holds
+		// the whole bank open for as long as they stay that way.
+		//
+		// A PAUSE, not a reset and not a longer delay. The drain is driven off
+		// the wall clock (a point every twentieth tick once TRANCE_HIT_AT has
+		// gone quiet for TRANCE_DECAY_DELAY_TICKS), so simply declining to take
+		// the step is exactly what "paused" means: picking a weapon back up
+		// resumes the drain at the next twenty-tick boundary, from wherever the
+		// bank stands, having lost nothing and gained no grace period.
+		int bulwark = TitansLeap.rank(player, ColossusCrusherNodes.Family.BULWARK);
+		boolean held = hands && bulwark > 0;
+
+		if (trance > 0 && !held && player.getAbsorptionAmount() > 0) {
 			Long lastHit = target.getAttached(ModAttachments.TRANCE_HIT_AT);
 
 			if (lastHit != null && now - lastHit > Tuning.TRANCE_DECAY_DELAY_TICKS && now % 20 == 0) {
@@ -126,7 +138,7 @@ public final class CrusherTicker {
 
 	/**
 	 * Battle Trance's ceiling in health: the base tree's 2.0 per rank plus the
-	 * epic Bulwark's 6.0 per rank. Both the MAX_ABSORPTION modifier above and
+	 * epic Bulwark's 7.0 per rank. Both the MAX_ABSORPTION modifier above and
 	 * the per-hit clamp in {@code CrusherCombat} have to read this same number,
 	 * or Bulwark raises a ceiling the banking never reaches.
 	 */
