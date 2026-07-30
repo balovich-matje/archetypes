@@ -1245,48 +1245,39 @@ public final class Tuning {
 	public static final int HARDENED_DURATION_TICKS_PER_RANK = 40;
 
 	/**
-	 * Bulwark: max health added per rank — 7.0 health, i.e. <b>3.5 hearts a
-	 * rank</b>, so rank 2 is a whole extra health bar's worth of seven.
+	 * Bulwark: health added to Battle Trance's ceiling per rank — 3/6 hearts.
+	 * The base cap is {@link #TRANCE_CAP_PER_RANK} x 3 = 3 hearts, so rank 2
+	 * triples it.
 	 *
-	 * <h2>What it replaces, and why</h2>
-	 * The node used to be a flat 20%-per-rank damage reduction, conditioned on
-	 * Battle Trance actually holding banked health. Three things were wrong with
-	 * it and only the third is a balance number:
+	 * <h2>What the node is NOT any more</h2>
+	 * Two designs have been through this constant's neighbourhood and both are
+	 * gone:
 	 * <ul>
-	 * <li>It was a victim-side {@code ModifyVariable} at {@code hurtServer}'s
-	 *     HEAD, i.e. <b>pre-armour</b>. Cutting the raw number there does not
-	 *     merely take its 40% — it also drops the hit far enough that vanilla
+	 * <li>A flat 20%-per-rank damage reduction on the {@code hurtServer} funnel.
+	 *     It was a victim-side {@code ModifyVariable} at HEAD, i.e.
+	 *     <b>pre-armour</b>: cutting the raw number there does not merely take
+	 *     its advertised 40%, it also drops the hit far enough that vanilla
 	 *     stops shredding the victim's armour by {@code damage/t}, so the armour
-	 *     stage silently pays a second dividend on top. Rank 2 was worth well
-	 *     more than the 40% it advertised, and worth most exactly against the
-	 *     biggest hits.</li>
-	 * <li>It was zero-input: no facing, no cooldown, no press. The absorption
-	 *     bank behind it had to be earned, but at resolve time the node did its
-	 *     work whether or not the player did any.</li>
-	 * <li>It stacked multiplicatively with Instinctive Guard, Mana Shield and
-	 *     everything else on the same funnel, which is how one two-point node
-	 *     became the difference between dying to an opener and outlasting nine
-	 *     follow-ups.</li>
+	 *     stage silently paid a second dividend on top — biggest against the
+	 *     biggest hits, and multiplicative with Instinctive Guard and Mana
+	 *     Shield besides.</li>
+	 * <li>A flat {@code +7.0} MAX_HEALTH a rank, asserted by
+	 *     {@code CrusherTicker}. It fixed the funnel problem and kept the other
+	 *     one: it was zero-input. Two points bought a second health bar that
+	 *     was there whether the player did anything or not, and it read as the
+	 *     Protector's kind of node rather than the Crusher's.</li>
 	 * </ul>
-	 * Max health has none of those properties. It is linear, it is visible on
-	 * the HUD, it composes additively with armour instead of multiplying against
-	 * it, and it cannot change what a single blow is worth — only how many of
-	 * them the body takes. The node still reads as "the body worth hitting",
-	 * which is what the right-hand column of the tree is for.
+	 * What is left is the half that was always conditional on play: Battle
+	 * Trance has to be <b>earned</b>, hit by hit, and Bulwark only says how
+	 * high the earning can go — plus {@link #TRANCE_DECAY_DELAY_TICKS}'s clock
+	 * being held open while the fists are bare, which is a second thing the
+	 * player has to choose. A ceiling nobody banks against is worth nothing,
+	 * which is exactly the property the two dead designs lacked.
 	 *
 	 * <p>Denominated in HEALTH, not hearts, because that is what
-	 * {@code Attributes.MAX_HEALTH} is denominated in; the tooltip does the
+	 * {@code Attributes.MAX_ABSORPTION} is denominated in; the tooltip does the
 	 * halving.
-	 *
-	 * <p>Applied as a plain {@code ADD_VALUE} modifier asserted by
-	 * {@code CrusherTicker} for exactly as long as the node is owned — the
-	 * mod's one lifecycle for a standing attribute, so a respec, a death or a
-	 * relog can never strand it (the ticker walks every player, not only
-	 * Brawlers, for that reason).
 	 */
-	public static final float COLOSSUS_BULWARK_MAX_HEALTH_PER_RANK = 7.0F;
-	/** Health added to Battle Trance's ceiling per rank — 3/6 hearts. The base
-	 * cap is {@link #TRANCE_CAP_PER_RANK} x 3 = 3 hearts, so rank 2 triples it. */
 	public static final float COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK = 6.0F;
 
 	/** Unstoppable Force: seconds a shield raised against a mace or a bare fist

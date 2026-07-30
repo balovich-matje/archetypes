@@ -87,8 +87,9 @@ bookkeeping, and mana regen this way.
 
 A ticker is also this mod's **only** lifecycle for a standing attribute
 modifier — there is no purchase-time apply and no `DefencePassives`-style
-respawn hook. A node that grants an attribute permanently (the Colossus
-Crusher's Bulwark, `+7.0` max health a rank) is asserted by its ticker every
+respawn hook. A node that grants an attribute permanently (Battle Trance's
+`MAX_ABSORPTION` ceiling, whose only condition is owning the node and whose
+amount moves when the epic Bulwark is bought) is asserted by its ticker every
 tick through the local `apply`/`stance` helper, which adds the modifier when it
 is missing, rewrites it when its amount drifts, and removes it when the
 condition drops. That is what makes it respawn-, relog- and respec-safe without
@@ -397,8 +398,12 @@ advertised share, it also stops the victim's own armour from being shredded and
 collects a second, unadvertised reduction on top, biggest against the biggest
 hits. Flat percentage DR on this funnel therefore reads as one number and is
 worth another; the Colossus Crusher's Bulwark was the clearest case and is now
-max health instead, which composes additively with armour and cannot change
-what a single blow is worth. Both remaining victim-side entries earn their place
+Battle Trance's ceiling instead — an absorption bank vanilla spends *after*
+armour, in a step this mixin never sees, so it cannot change what a single blow
+is worth and it has to be earned hit by hit before it is worth anything at all.
+(It was briefly flat max health in between. That fixed the funnel problem and
+kept the other one — a zero-input node — which is why it did not last.)
+Both remaining victim-side entries earn their place
 by not being flat: Mana Shield moves damage into another pool, Instinctive Guard
 spends shield durability and answers the shield's own `BlocksAttacks`.
 

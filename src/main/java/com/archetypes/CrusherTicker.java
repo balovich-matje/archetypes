@@ -12,11 +12,15 @@ import net.minecraft.server.level.ServerPlayer;
  * The Crusher's stances, mirroring SlayerTicker's pattern: attribute
  * modifiers that exist exactly while their condition holds. Bare-Knuckle and
  * Iron Skin while the hands are bare; Battle Trance's absorption drains
- * once the fight goes quiet; the epic Hardened's plates, whose modifier is
+ * once the fight goes quiet; and the epic Hardened's plates, whose modifier is
  * re-asserted here every tick because its value shrinks on its own as
- * individually-timed plates lapse; and the epic Bulwark's max health, whose
- * condition is nothing more than owning the node — this loop is simply the
- * mod's one lifecycle for a standing attribute.
+ * individually-timed plates lapse.
+ *
+ * <p>Battle Trance's MAX_ABSORPTION ceiling is the loop's standing attribute:
+ * its only condition is owning the node, and its VALUE moves when the epic
+ * Bulwark is bought — this loop is simply the mod's one lifecycle for such a
+ * modifier, so a death, a relog and a respec all resolve themselves a tick
+ * later without an event of their own.
  */
 public final class CrusherTicker {
 	private static final Identifier BARE_KNUCKLE_ID = Archetypes.id("bare_knuckle");
@@ -25,7 +29,6 @@ public final class CrusherTicker {
 	private static final Identifier CLINCH_ID = Archetypes.id("clinch");
 	private static final Identifier QUAKE_IMMUNITY_ID = Archetypes.id("quake_immunity");
 	private static final Identifier TRANCE_CAP_ID = Archetypes.id("battle_trance_cap");
-	private static final Identifier BULWARK_HEALTH_ID = Archetypes.id("colossus_bulwark_health");
 
 	private CrusherTicker() {
 	}
@@ -97,24 +100,6 @@ public final class CrusherTicker {
 		int trance = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE);
 		apply(player.getAttribute(Attributes.MAX_ABSORPTION), TRANCE_CAP_ID,
 				trance > 0, tranceCap(player, owned),
-				AttributeModifier.Operation.ADD_VALUE);
-
-		// Bulwark: 3.5 hearts of max health a rank, standing for exactly as
-		// long as the node is owned. No condition and no clock — the node's
-		// old damage reduction had both and this is what replaced it.
-		//
-		// Asserted here rather than once at purchase time because this tick
-		// is the mod's lifecycle for a standing attribute: attributes are not
-		// saved across a death and a transient modifier does not survive one
-		// either, so a Colossus who dies, relogs or respecs is put back where
-		// they were within a tick — and, because the loop walks EVERY player
-		// rather than only Brawlers, a revoked node is taken back off the
-		// same way (AgilityTicker's lesson, and RadianceAura's before it).
-		// Vanilla clamps a player's health down when MAX_HEALTH falls, so the
-		// removal side needs nothing of its own.
-		int bulwark = TitansLeap.rank(player, ColossusCrusherNodes.Family.BULWARK);
-		apply(player.getAttribute(Attributes.MAX_HEALTH), BULWARK_HEALTH_ID,
-				bulwark > 0, bulwark * Tuning.COLOSSUS_BULWARK_MAX_HEALTH_PER_RANK,
 				AttributeModifier.Operation.ADD_VALUE);
 
 		// Battle Trance decay: the banked hearts fade once the fight is over.

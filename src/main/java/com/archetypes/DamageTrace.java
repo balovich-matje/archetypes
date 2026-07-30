@@ -149,7 +149,6 @@ public final class DamageTrace {
 	/** Victim-side shapers. Each is one node's flat reduction, no gates worth
 	 * expanding — the stage line's own factor says everything. */
 	public static final String STAGE_MANA_SHIELD = "mana_shield";
-	public static final String STAGE_COLOSSUS_BULWARK = "colossus_bulwark";
 	public static final String STAGE_INSTINCTIVE_GUARD = "instinctive_guard";
 	public static final String STAGE_BARBARIAN = "barbarian";
 

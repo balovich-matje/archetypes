@@ -1095,12 +1095,14 @@ public abstract class LivingEntityMixin {
 
 	// Bulwark used to hang a victim-side ModifyVariable here — a flat 20%
 	// per rank off the raw amount while Battle Trance held banked health. It
-	// is gone, and nothing replaced it on the funnel: the node is a standing
-	// MAX_HEALTH modifier now (Tuning#COLOSSUS_BULWARK_MAX_HEALTH_PER_RANK,
-	// asserted in CrusherTicker). Cutting the raw number at hurtServer's HEAD
-	// is pre-armour, so it was also buying a second, unadvertised reduction
-	// out of vanilla's shred term; max health cannot do that to a damage
-	// number because it never touches one.
+	// is gone and nothing replaced it on the funnel: the node is Battle
+	// Trance's ceiling now (Tuning#COLOSSUS_BULWARK_TRANCE_CAP_PER_RANK, read
+	// by CrusherTicker and CrusherCombat), plus a pause on that bank's decay
+	// while the fists are bare. Cutting the raw number at hurtServer's HEAD is
+	// pre-armour, so it was also buying a second, unadvertised reduction out
+	// of vanilla's shred term; an absorption bank cannot do that to a damage
+	// number because it never touches one — vanilla spends absorption after
+	// armour, in its own step, and this mixin never sees it.
 
 	/**
 	 * Instinctive Guard: a carried shield blocks a share of every hit without
