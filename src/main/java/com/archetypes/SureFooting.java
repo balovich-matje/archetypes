@@ -25,9 +25,7 @@ import net.minecraft.world.entity.player.Player;
  * Client-side, in {@code LocalPlayerMixin}, because that is where movement is
  * decided: players are movement-authoritative and the multiplier never reaches
  * the server. Gated on {@code isBlocking()} rather than on "am I using an
- * item", so eating and drawing a bow keep their own penalties — and so
- * Spearwall's synthesised guard is covered for free, since
- * {@code getItemBlockingWith} is exactly what both of them answer.
+ * item", so eating and drawing a bow keep their own penalties.
  */
 public final class SureFooting {
 	private SureFooting() {

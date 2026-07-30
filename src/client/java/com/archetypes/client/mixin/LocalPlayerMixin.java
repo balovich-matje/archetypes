@@ -39,42 +39,14 @@ public abstract class LocalPlayerMixin {
 	}
 
 	/**
-	 * Spearwall pays the shield's movement price.
-	 *
-	 * <p>Vanilla scales input by the USE item's multiplier, and under Spearwall
-	 * the use item is the spear — which declares
-	 * {@code new UseEffects(true, false, 1.0F)}, i.e. no slowdown and sprinting
-	 * allowed, because a braced spear is meant to be carried at a run. The
-	 * synthesised guard was therefore a free shield. See
-	 * {@link com.archetypes.Spearwall#guardSpeedMultiplier}.
+	 * Sure Footing: hand back a share of the blocking movement penalty.
 	 *
 	 * <p>Local-player only, and that is correct rather than a shortcut: players
-	 * are movement-authoritative, so this IS the slowdown. It asks the real
-	 * {@code guardingShield} rather than the published flag, because the owner's
-	 * own client can and should answer without a tick of latency.
-	 */
-	/**
-	 * <p>Sure Footing rides the same handler rather than a second
-	 * {@code @ModifyReturnValue}, because the two compose and the order is not
-	 * negotiable: Spearwall has to install the guard's multiplier BEFORE the
-	 * node hands part of it back, or a Spearwall Protector with Sure Footing
-	 * would have its relief applied to the spear's 1.0 and come out unchanged.
-	 * Two separate injectors would leave that ordering to whatever the mixin
-	 * applier felt like.
+	 * are movement-authoritative, so this IS the slowdown. The node's own gate
+	 * ({@code isBlocking}) lives in {@link com.archetypes.SureFooting}.
 	 */
 	@ModifyReturnValue(method = "itemUseSpeedMultiplier", at = @At("RETURN"))
 	private float archetypes$blockingMovement(final float original) {
-		LocalPlayer self = (LocalPlayer) (Object) this;
-
-		return com.archetypes.SureFooting.relieve(self,
-				com.archetypes.Spearwall.guardSpeedMultiplier(self, original));
-	}
-
-	/** The other half of the same stance: vanilla gates sprinting on the use
-	 * item's {@code canSprint}, and a spear's is true. A guard you can sprint
-	 * behind is not a guard. */
-	@ModifyReturnValue(method = "isSlowDueToUsingItem", at = @At("RETURN"))
-	private boolean archetypes$spearwallGuardStopsSprint(final boolean slow) {
-		return slow || com.archetypes.Spearwall.guardStopsSprint((LocalPlayer) (Object) this);
+		return com.archetypes.SureFooting.relieve((LocalPlayer) (Object) this, original);
 	}
 }

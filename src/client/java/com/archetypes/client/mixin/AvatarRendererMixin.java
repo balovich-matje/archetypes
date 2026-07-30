@@ -84,42 +84,4 @@ public abstract class AvatarRendererMixin {
 			fabricState.setData(com.archetypes.client.BladestormLayer.GHOST, blade);
 		}
 	}
-
-	/**
-	 * Spearwall's shield arm goes up.
-	 *
-	 * <p>{@code getArmPose} only reaches its {@code BLOCK} branch when
-	 * {@code avatar.getUsedItemHand() == hand}, and under Spearwall the used
-	 * hand is the spear's — so the guarding hand fell all the way through to
-	 * {@code ArmPose.ITEM} and the shield hung at the player's side while the
-	 * spear was planted. This is the third-person half; the shield's blocking
-	 * MODEL is a separate seam ({@code IsUsingItemMixin}) because it is the
-	 * item property, not the pose, that vanilla swaps the shield mesh on.
-	 *
-	 * <p>The spear's own arm is untouched. Writing {@code BLOCK} here is only
-	 * half the job though: {@code ArmPose.SPEAR} is
-	 * {@code affectsOffhandPose = true}, so {@code HumanoidModel.setupAnim}
-	 * poses the spear arm and then SKIPS the guard arm entirely and this value
-	 * is never read. {@link HumanoidModelMixin} is the other half and poses the
-	 * guard arm off exactly this flag — do not delete one without the other.
-	 *
-	 * <p>Overload disambiguated by full descriptor: {@code AvatarRenderer} has
-	 * two {@code getArmPose}s and the other one takes a {@code HumanoidArm}.
-	 */
-	@com.llamalad7.mixinextras.injector.ModifyReturnValue(
-			method = "getArmPose(Lnet/minecraft/world/entity/Avatar;"
-					+ "Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/InteractionHand;)"
-					+ "Lnet/minecraft/client/model/HumanoidModel$ArmPose;",
-			at = @At("RETURN"))
-	private static net.minecraft.client.model.HumanoidModel.ArmPose archetypes$spearwallShieldArm(
-			final net.minecraft.client.model.HumanoidModel.ArmPose pose, final Avatar avatar,
-			final net.minecraft.world.item.ItemStack itemInHand,
-			final net.minecraft.world.InteractionHand hand) {
-		if (pose == net.minecraft.client.model.HumanoidModel.ArmPose.BLOCK
-				|| !com.archetypes.Spearwall.isRaisedGuard(avatar, itemInHand)) {
-			return pose;
-		}
-
-		return net.minecraft.client.model.HumanoidModel.ArmPose.BLOCK;
-	}
 }

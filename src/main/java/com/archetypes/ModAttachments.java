@@ -101,24 +101,6 @@ public final class ModAttachments {
 			Archetypes.id("bulwark_active"),
 			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
 
-	/**
-	 * True while Spearwall is synthesising a guard: spear braced, shield in the
-	 * other hand, past the wind-up. Maintained by ProtectorTicker; absent means
-	 * off.
-	 *
-	 * <p>Synced to everyone rather than to the owner, and that is the whole
-	 * reason it exists. {@code Spearwall.guardingShield} answers correctly on
-	 * the owning client because {@code PURCHASED} rides
-	 * {@code AttachmentSyncPredicate.targetOnly()} — but only there. An
-	 * onlooker's client cannot run that test for someone else's build, so
-	 * without a flag every other player's Spearwall shield would render lowered
-	 * on every screen but their own. Rendering asks this; gameplay and the
-	 * owner's own movement still ask the real function.
-	 */
-	public static final AttachmentType<Boolean> SPEARWALL_GUARD = AttachmentRegistry.create(
-			Archetypes.id("spearwall_guard"),
-			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
-
 	/** Slayer active cooldowns, same shape as the bash's. */
 	public static final AttachmentType<Long> DECIMATE_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("decimate_ready_at"),

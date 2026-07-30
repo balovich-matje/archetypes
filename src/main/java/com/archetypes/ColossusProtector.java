@@ -10,7 +10,6 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.damagesource.DamageSource;
@@ -283,60 +282,15 @@ public final class ColossusProtector {
 	 * synced copy of {@code PURCHASED} — the same mirror that paints a node
 	 * buyable — and consumed by {@code MinecraftMixin}.
 	 *
-	 * <p><b>It stops at spears, and that exclusion is load-bearing.</b> Since
-	 * Spearwall, {@link #blocking} can be true because a spear is braced rather
-	 * than because a shield was raised — that is exactly what that node buys.
-	 * Free Hand asked nothing but "am I blocking?", so the two nodes together
-	 * would have handed a player a raised shield, a braced spear AND a free
-	 * melee arm, which is every stance in the tree at once for two points.
-	 *
-	 * <p>A braced spear is a planted weapon: it hurts what runs onto it and it
-	 * does not swing. The refusal lives here, on the one function the whole
-	 * permission flows through, rather than in {@code MinecraftMixin} beside
-	 * the click loop — there is one gate, so there is no second path to forget.
+	 * <p>It asks nothing but "do I own the node and is my guard up", and that is
+	 * now the whole of it. The node once carried an exclusion for a braced spear
+	 * — a planted weapon that must not swing — which only existed because
+	 * Spearwall could make {@link #blocking} true without a shield being raised.
+	 * Spearwall is gone and so is every spear rule in this mod, so the only way
+	 * to be blocking again is to be holding a shield up.
 	 */
 	public static boolean canAttackWhileBlocking(final Player player) {
-		return rank(player, Family.FREE_HAND) > 0
-				&& blocking(player)
-				&& !com.archetypes.Spearwall.bracingSpear(player);
-	}
-
-	/**
-	 * Free Hand's other half: a Free Hand holder's brace never expires.
-	 *
-	 * <h2>What actually ends a brace in vanilla</h2>
-	 * Not the use itself. {@code Item.getUseDuration} answers a flat
-	 * {@code 72000} for anything carrying {@code KINETIC_WEAPON}, so
-	 * {@code LivingEntity.updateUsingItem}'s {@code --useItemRemaining == 0}
-	 * arm is an hour away and never fires in practice.
-	 *
-	 * <p>What ends it is {@code KineticWeapon.Condition}. Each of the three
-	 * effects a braced spear has — dismount, knockback, damage — carries its
-	 * own {@code maxDurationTicks}, and {@code Condition.test} opens with
-	 * {@code ticksUsed <= this.maxDurationTicks}. {@code damageEntities}
-	 * computes that {@code ticksUsed} as
-	 * {@code stack.getUseDuration(holder) - ticksRemaining - delayTicks}, so it
-	 * only climbs. An iron spear's windows are 50 / 135 / 225 ticks past a
-	 * 12-tick wind-up: hold longer than about eleven seconds and the weapon is
-	 * still braced, still animating, and inert.
-	 *
-	 * <p>So the node freezes the clock rather than extending any window — the
-	 * brace is held permanently at {@link Tuning#FREE_HAND_BRACE_HOLD_TICKS}
-	 * past the wind-up, which is inside the shortest window every spear
-	 * material ships (fifty ticks, on iron and netherite). What it explicitly
-	 * does NOT touch is the other half of {@code Condition.test}: the speed
-	 * gates. A planted spear still only hurts what runs onto it, so this buys
-	 * duration and never damage.
-	 *
-	 * <p>The exclusion above is unchanged and orthogonal — the spear still does
-	 * not swing for anybody. Free Hand now means two different things to a
-	 * Protector depending on what is in their hands, and both are "the stance
-	 * costs you less": a shield stops costing the sword arm, a spear stops
-	 * costing the clock.
-	 */
-	public static boolean bracesIndefinitely(final Player player, final ItemStack braced) {
-		return braced.is(ItemTags.SPEARS)
-				&& rank(player, Family.FREE_HAND) > 0;
+		return rank(player, Family.FREE_HAND) > 0 && blocking(player);
 	}
 
 	/**

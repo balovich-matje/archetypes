@@ -13,7 +13,6 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.Enemy;
-import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -55,7 +54,6 @@ public final class ShieldBash {
 		int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.COOLDOWN);
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
 		int taunt = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.TAUNT);
-		int groundSlam = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.GROUND_SLAM);
 
 		// The bash's shove is flat now. The node that used to buy more of it
 		// (Concussive Blow) is Sure Footing, which is about moving while the
@@ -68,11 +66,6 @@ public final class ShieldBash {
 		AABB reach = player.getBoundingBox()
 				.expandTowards(look.scale(Tuning.BASH_RANGE))
 				.inflate(0.6);
-
-		// Ground Slam fires only with a spear carried; without one the bash is
-		// the ordinary bash, which is why the capstone is a loadout ask and not
-		// a dead node.
-		ItemStack spear = groundSlam > 0 ? SpearPhalanx.spear(player) : null;
 
 		List<LivingEntity> targets = level.getEntitiesOfClass(LivingEntity.class, reach,
 				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
@@ -92,7 +85,7 @@ public final class ShieldBash {
 
 		// The swing happens whether or not it lands — whiffing is feedback too.
 		player.swing(hand, true);
-		// Slam ranks deepen the thunk; the phalanx gets a shout under it.
+		// Slam ranks deepen the thunk.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.SHIELD_BLOCK.value(),
 				SoundSource.PLAYERS, 1.0F, 0.65F - 0.05F * slam);
@@ -116,15 +109,6 @@ public final class ShieldBash {
 						mob.getX(), mob.getY() + mob.getBbHeight() + 0.3, mob.getZ(),
 						1, 0.1, 0.1, 0.1, 0.0);
 			}
-		}
-
-		// Ground Slam, with a spear carried: the formation replaces the bash's
-		// own hit outright. A victim takes the phalanx's blow or the shove,
-		// never both — the phalanx already includes the bash's damage.
-		// Recomputes its own victims, over its own longer reach.
-		if (spear != null) {
-			SpearPhalanx.execute(player, level, spear, damage, wide);
-			return;
 		}
 
 		if (primary == null) {

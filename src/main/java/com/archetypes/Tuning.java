@@ -48,8 +48,8 @@ public final class Tuning {
 	 *
 	 * <p>The chain was four nodes shaving a fifth each; it is three nodes now,
 	 * and this is 4/15 so that a full chain still lands on exactly the same
-	 * −80%. The node kept its ceiling and gave up a point — that point is what
-	 * paid for Spearwall, which took the cell the fourth rank used to hold.
+	 * −80%. The node kept its ceiling and gave up a point — that point paid for
+	 * the node that took the cell the fourth rank used to hold.
 	 * Deliberately not rounded to 0.27: the endpoint has to be the old one to
 	 * the tick, or every published bash cadence shifts.
 	 */
@@ -67,99 +67,8 @@ public final class Tuning {
 	/** Braced: each blocked hit shaves this off the bash's remaining cooldown. */
 	public static final int BRACED_REFUND_TICKS = 20;
 
-	/**
-	 * Spearwall: extra wind-up, on top of the shield's own
-	 * {@code blockDelayTicks}, before a braced spear's shield counts as raised.
-	 *
-	 * <p>The surcharge is the node's whole cost. Everything else about
-	 * Spearwall is addition — the spear braces as vanilla braces it and the
-	 * shield blocks as vanilla blocks — so if the guard engaged the instant the
-	 * brace did, the node would be free value on a stance the player already
-	 * wanted. Quarter of a second says "plant, then you are covered", which is
-	 * also the only window an attacker gets to punish a stance being taken.
-	 */
-	public static final int SPEARWALL_BRACE_DELAY_TICKS = 5;
-
 	/** Taunt: bashing enrages every monster within this radius. */
 	public static final double TAUNT_RADIUS = 8.0;
-
-	/**
-	 * Ground Slam, reworked: the phalanx's reach in front of the caster.
-	 *
-	 * <p>Longer than the bash's 3 because these are spears and a spear's whole
-	 * argument is that it lands first. Wide Swings still feeds the capstone —
-	 * it lengthens the formation's reach now instead of widening a ring, so the
-	 * cleave node keeps mattering to a capstone holder without being the thing
-	 * the capstone is made of.
-	 */
-	public static double phalanxRange(final int wideRank) {
-		return 4.0 + wideRank;
-	}
-
-	/**
-	 * The thrust's damage on top of the bash's, as a share of ATTACK_DAMAGE.
-	 *
-	 * <p>1.0 is a full ordinary hit, and the sum being "bash + a real stab" is
-	 * the node's pitch rather than a multiplier pulled to taste: the caster
-	 * gave up Bulwark for it and has to be carrying a spear to see it at all.
-	 * Everything past that is the funnel's business — armour, Blade Master,
-	 * Specialities' combat multiplier all apply after this, because the blow
-	 * goes through MeleeSwing like any swing.
-	 */
-	public static final float PHALANX_STAB_MULTIPLIER = 1.0F;
-
-	/** How far to each side the flanking spears stand, in blocks. */
-	public static final double PHALANX_FLANK_OFFSET = 0.9;
-
-	/**
-	 * Where the flanking spears are planted, as a fraction of the caster's
-	 * height — shoulder rather than waist, so the pair line up with the caster's
-	 * own weapon. The crit trail reads the same number, because the particles
-	 * are what tells a player where the formation reaches and they would lie if
-	 * they ran at a different height from the spears drawing them.
-	 */
-	public static final double PHALANX_SHOULDER_HEIGHT = 0.55;
-
-	/** Crit-cloud density along each of the two stab lines. */
-	public static final int PHALANX_TRAIL_POINTS = 8;
-
-	/**
-	 * The spears' animation, in ticks: how long they stand drawn back, how long
-	 * the thrust interpolates, and when they are swept.
-	 *
-	 * <p>The whole life is short on purpose. They carry no gameplay — the hit
-	 * already happened at cast — so a long-lived spear is only a chance for
-	 * something to be left standing in the world. The sweep has to clear the
-	 * wind-up plus the thrust (2 + 4) or the lunge would be cut off half-played.
-	 */
-	public static final int PHALANX_WINDUP_TICKS = 2;
-	public static final int PHALANX_STAB_TICKS = 4;
-	public static final int PHALANX_LIFE_TICKS = 12;
-
-	/**
-	 * Where the spears point: degrees below the HORIZON, along the caster's
-	 * facing. Levelled spears read as a guard-of-honour and a spear held up
-	 * reads as a parade; a formation about to gut something holds them down at
-	 * the chest of whatever is coming.
-	 *
-	 * <p>Measured from the horizon and nothing else. The display carries its own
-	 * rotation now — {@code SpearPhalanx.pose} spends this as
-	 * {@code Rx(90° + this)} on a base pose that points straight up — so there
-	 * is no arm pose to undo and no caster pitch mixed in.
-	 */
-	public static final float PHALANX_SPEAR_ANGLE_DEGREES = 47.0F;
-
-	/**
-	 * How far along its own shaft a spear slides, in blocks: drawn back at
-	 * spawn, thrust when the formation lunges. Not along the caster's facing —
-	 * along the depressed shaft, so the lunge reads as a stab.
-	 */
-	public static final float PHALANX_DRAW_BACK = 0.35F;
-	public static final float PHALANX_THRUST = 0.9F;
-
-	/** The spears are brief; no reason to sync them across the whole tracking
-	 * range a Display defaults to. */
-	public static final float PHALANX_VIEW_RANGE = 0.6F;
 
 	/**
 	 * Reflection: how much of its bite a returned arrow keeps, by rank. Rank 2
@@ -223,19 +132,6 @@ public final class Tuning {
 	public static int spikesThornsLevel(final int rank) {
 		return rank * 5;
 	}
-
-	/**
-	 * Free Hand: how far into a brace the clock is frozen, in ticks past the
-	 * spear's own {@code delayTicks} wind-up.
-	 *
-	 * <p>Has to sit inside the SHORTEST window any spear declares, because the
-	 * point is that all three of a brace's effects stay alive: iron and
-	 * netherite give dismount only fifty ticks, so forty leaves ten ticks of
-	 * margin for a data pack that shaves it further. Raising this past fifty
-	 * would silently drop dismount off a Free Hand brace on exactly two
-	 * materials and nowhere else, which is the kind of bug nobody finds.
-	 */
-	public static final int FREE_HAND_BRACE_HOLD_TICKS = 40;
 
 	// --- Slayer ---
 

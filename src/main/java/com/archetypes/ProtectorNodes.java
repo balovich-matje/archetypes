@@ -32,7 +32,7 @@ public final class ProtectorNodes {
 		SPIKES(Archetypes.id("textures/node/iron_spikes.png"), 32),
 		RUSH(() -> Items.WIND_CHARGE),
 		BRACED(() -> Items.SHIELD, Archetypes.id("textures/node/braced_overlay.png"), 32),
-		SPEARWALL(() -> Items.IRON_SPEAR, Archetypes.id("textures/node/braced_overlay.png"), 32, true),
+		SPEARWALL(() -> Items.SHIELD),
 		REFLECT(() -> Items.SHIELD, Archetypes.id("textures/node/reflection_overlay.png"), 32),
 		TAUNT(() -> Items.GOAT_HORN),
 		OMNI_BLOCK(() -> Items.SHIELD, Archetypes.id("textures/node/bulwark_overlay.png"), 32),
@@ -142,8 +142,7 @@ public final class ProtectorNodes {
 		// second rank now, and nothing about saved data has to move for it:
 		// PURCHASED stores INDICES, so a player who owned Straps owns the same
 		// index and it simply reads as Reflection I. Owning both reads as
-		// Reflection II. No refund path, nothing orphaned, no renumbering — the
-		// same reason the grid was never redrawn for Spearwall either.
+		// Reflection II. No refund path, nothing orphaned, no renumbering.
 		byCell.put(cell(0, 7), new Def(Family.REFLECT, 1));
 		byCell.put(cell(0, 8), new Def(Family.REFLECT, 2));
 
@@ -170,9 +169,9 @@ public final class ProtectorNodes {
 		byCell.put(cell(4, 1), new Def(Family.COOLDOWN, 1));
 		byCell.put(cell(4, 2), new Def(Family.COOLDOWN, 2));
 		byCell.put(cell(4, 3), new Def(Family.COOLDOWN, 3));
-		// Spearwall inherits the cell: last stop on the centre column, touching
-		// both crown nodes diagonally, so the shield-and-spear stance gates into
-		// Braced and Taunt exactly the way Recovery's top rank used to.
+		// The SPEARWALL constant inherited the cell: last stop on the centre
+		// column, touching both crown nodes diagonally, so it gates into Braced
+		// and Taunt exactly the way Recovery's top rank used to.
 		byCell.put(cell(4, 4), new Def(Family.SPEARWALL, 1));
 		// The crown: Braced and Taunt side by side above Recovery, each
 		// cross-linked to both capstones (explicit edges in Constellations).
