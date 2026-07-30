@@ -425,6 +425,19 @@ Our own Unstoppable Force is deliberately not exempted: the two absolutes meet
 as the clash instead (`ProtectorClash`, fired from the cancelling
 `hurtServer` head `archetypes$clash`).
 
+**Free Hand is an input permission and nothing else.** Nothing on the server
+forbids swinging while blocking — `Player.attack` runs happily while an item is
+in use and does not end the use. The whole prohibition is the
+`if (this.player.isUsingItem())` arm of `Minecraft.handleKeybinds`, which drains
+the attack-click queue into an empty `while` loop and throws it away. So
+`MinecraftMixin` spends those clicks at the method's HEAD, before that arm can
+eat them, gated on `ColossusProtector.canAttackWhileBlocking` — which asks
+nothing but "do I own the node and is my guard up". Every weapon, no weapon
+gate, no exceptions: the one exception the node ever carried was for a braced
+spear, and it existed only because Spearwall could make "am I blocking?" true
+without a shield being raised. The arm itself is deliberately left alone,
+because it is also what lowers the shield when the use key comes up.
+
 Other mixins: `PlayerMixin` (XP mirror, the `canGlide` hook that lets a
 Magic Armaments channel glide in an elytra's place — declared common because
 `Player` is common and the client's jump-to-deploy runs the same check — and

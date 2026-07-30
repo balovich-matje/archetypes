@@ -283,11 +283,13 @@ public final class ColossusProtector {
 	 * buyable — and consumed by {@code MinecraftMixin}.
 	 *
 	 * <p>It asks nothing but "do I own the node and is my guard up", and that is
-	 * now the whole of it. The node once carried an exclusion for a braced spear
-	 * — a planted weapon that must not swing — which only existed because
-	 * Spearwall could make {@link #blocking} true without a shield being raised.
-	 * Spearwall is gone and so is every spear rule in this mod, so the only way
-	 * to be blocking again is to be holding a shield up.
+	 * now the whole of it. Every weapon, and no weapon gate — the node's promise
+	 * is "swing your weapon", not "swing some weapons", and there is nothing in
+	 * the input path that could tell them apart cheaply anyway. The one
+	 * exclusion this ever carried was for a braced spear, and it existed only
+	 * because Spearwall could make {@link #blocking} true without a shield being
+	 * raised. Spearwall is gone and so is every spear rule in this mod, so the
+	 * only way to be blocking again is to be holding a shield up.
 	 */
 	public static boolean canAttackWhileBlocking(final Player player) {
 		return rank(player, Family.FREE_HAND) > 0 && blocking(player);
