@@ -74,6 +74,7 @@ public class ArchetypesClient implements ClientModInitializer {
 		NightAnimations.initialize();
 		ElementalistAnimations.initialize();
 		DaggerAnimations.initialize();
+		ProtectorAnimations.initialize();
 		NightFormFx.initialize();
 		RadianceLight.initialize();
 

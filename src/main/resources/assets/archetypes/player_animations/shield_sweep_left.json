@@ -1,0 +1,68 @@
+{
+	"name": "shield_sweep_left",
+	"author": "archetypes",
+	"description": "Shield Sweep: the mirror of shield_sweep_right, out to the player's left",
+	"version": 3,
+	"emote": {
+		"isLoop": false,
+		"returnTick": 2,
+		"beginTick": 0,
+		"endTick": 8,
+		"stopTick": 10,
+		"degrees": true,
+		"moves": [
+			{
+				"tick": 0,
+				"easing": "EASEINQUAD",
+				"torso": {
+					"pitch": 2,
+					"yaw": -8
+				},
+				"leftArm": {
+					"pitch": -54,
+					"yaw": 38,
+					"roll": -4
+				}
+			},
+			{
+				"tick": 2,
+				"easing": "EASEOUTQUAD",
+				"torso": {
+					"pitch": 0,
+					"yaw": 14
+				},
+				"leftArm": {
+					"pitch": -80,
+					"yaw": -62,
+					"roll": 22
+				}
+			},
+			{
+				"tick": 4,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 3,
+					"yaw": 8
+				},
+				"leftArm": {
+					"pitch": -64,
+					"yaw": -44,
+					"roll": 10
+				}
+			},
+			{
+				"tick": 8,
+				"easing": "EASEINOUTQUAD",
+				"torso": {
+					"pitch": 0,
+					"yaw": 0
+				},
+				"leftArm": {
+					"pitch": 0,
+					"yaw": 0,
+					"roll": 0
+				}
+			}
+		]
+	}
+}

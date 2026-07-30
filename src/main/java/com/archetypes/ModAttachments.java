@@ -101,6 +101,21 @@ public final class ModAttachments {
 			Archetypes.id("bulwark_active"),
 			builder -> builder.syncWith(ByteBufCodecs.BOOL, AttachmentSyncPredicate.all()));
 
+	/**
+	 * Game-time tick a Shield Sweep swung on, synced to everyone so the shield
+	 * swing plays for onlookers and not only for the caster.
+	 *
+	 * <p>The bash's own {@code player.swing} is broadcast by vanilla and would
+	 * have been free, the way the dagger's stab is — but it is broadcast for
+	 * EVERY bash, and only a capstone holder's bash is a sweep. A stamp is the
+	 * cheapest thing that says which. Which arms swing is not stamped: held
+	 * items are tracked equipment, so every client can already see whether this
+	 * player has one shield or two.
+	 */
+	public static final AttachmentType<Long> SHIELD_SWEEP_AT = AttachmentRegistry.create(
+			Archetypes.id("shield_sweep_at"),
+			builder -> builder.syncWith(ByteBufCodecs.VAR_LONG, AttachmentSyncPredicate.all()));
+
 	/** Slayer active cooldowns, same shape as the bash's. */
 	public static final AttachmentType<Long> DECIMATE_READY_AT = AttachmentRegistry.create(
 			Archetypes.id("decimate_ready_at"),

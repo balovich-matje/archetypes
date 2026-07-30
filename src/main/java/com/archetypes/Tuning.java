@@ -11,6 +11,13 @@ public final class Tuning {
 	/** Reach of the bash, blocks. */
 	public static final double BASH_RANGE = 3.0;
 	public static final float BASH_DAMAGE = 5.0F;
+	/**
+	 * The bash's cone, as the dot of the look vector with the flat direction to
+	 * a target: 0.5 is 60 degrees off centre, so a 120-degree arc in front.
+	 * Shield Sweep replaces this number rather than scaling it — see
+	 * {@link #SHIELD_SWEEP_CONE_DOT}.
+	 */
+	public static final double BASH_CONE_DOT = 0.5;
 	/** Base horizontal shove. Placeholder push physics, see ShieldBash. */
 	public static final double BASH_KNOCKBACK = 0.5;
 
@@ -80,6 +87,67 @@ public final class Tuning {
 	 * query and nothing else.
 	 */
 	public static final int TAUNT_PERIOD_TICKS = 10;
+
+	// --- Shield Sweep (the GROUND_SLAM capstone) ---
+
+	/**
+	 * Shield Sweep's cone, in the same units as {@link #BASH_CONE_DOT}: zero is
+	 * 90 degrees off centre, i.e. the whole half-disc in front of the player.
+	 *
+	 * <p>A swing that starts at the block position and finishes out to the side
+	 * covers everything the player is facing, and the capstone's first promise
+	 * is exactly "a wider cone". Nothing BEHIND the swing is touched — a full
+	 * circle is what the node used to be, back when it was a shockwave, and
+	 * losing that was the point of the rework.
+	 */
+	public static final double SHIELD_SWEEP_CONE_DOT = 0.0;
+
+	/**
+	 * Shield Sweep's reach in front of the caster: the bash's 3 plus this, plus
+	 * one more per Wide Swings rank.
+	 *
+	 * <p>4 / 5 / 6 blocks — the same three numbers the capstone had before the
+	 * rework, so a Wide Swings holder's reach is unchanged and only what fills
+	 * the arc moved. Wide keeps feeding the capstone as reach rather than as
+	 * the fraction secondary targets take, because a sweep does not have
+	 * secondary targets: everything the arc covers is hit by the same swing.
+	 */
+	public static final double SHIELD_SWEEP_REACH_BONUS = 1.0;
+
+	public static double shieldSweepRange(final int wideRank) {
+		return BASH_RANGE + SHIELD_SWEEP_REACH_BONUS + wideRank;
+	}
+
+	/**
+	 * How much of the held weapon Shield Sweep adds to the bash, as a share of
+	 * {@code ATTACK_DAMAGE}.
+	 *
+	 * <p>1.0 is the whole of it — the item, Strength and every tree bonus
+	 * together, which is the same number the Slayer's own capstone reads. That
+	 * is the node's pitch rather than a multiplier pulled to taste: the caster
+	 * gave up Bulwark for it, and the bash was deliberately never worth more
+	 * than a sword swing on its own. Everything past this is the funnel's
+	 * business — armour, Blade Master and Specialities' combat multiplier all
+	 * apply after it, because the blow goes through MeleeSwing like any swing.
+	 */
+	public static final float SHIELD_SWEEP_WEAPON_SHARE = 1.0F;
+
+	/**
+	 * A shield in BOTH hands: the whole sweep, times this.
+	 *
+	 * <p>It reads enormous and is not, which is the trade the node is made of.
+	 * A second shield costs the weapon term ({@code ATTACK_DAMAGE} with no
+	 * weapon is a fist's 1.0), the off-hand slot a Protector otherwise fills
+	 * with the shield they block with, and every non-bash attack they own — a
+	 * dual-shield Protector has no melee outside this button. x4 on
+	 * (bash + fist) is roughly what the sweep is worth with a good sword in
+	 * hand, so the two loadouts meet rather than one replacing the other.
+	 */
+	public static final float SHIELD_SWEEP_DUAL_SHIELD_MULTIPLIER = 4.0F;
+
+	/** Arc-particle density: points drawn across the sweep's cone, so the
+	 * player can read how far it actually reached. */
+	public static final int SHIELD_SWEEP_ARC_POINTS = 9;
 
 	/**
 	 * Reflection: how much of its bite a returned arrow keeps, by rank. Rank 2

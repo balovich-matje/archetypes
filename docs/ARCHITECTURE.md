@@ -203,7 +203,7 @@ in.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
-  Bulwark(`OMNI_BLOCK`)|Spear Phalanx(`GROUND_SLAM`). Elementalist is special: its four capstones
+  Bulwark(`OMNI_BLOCK`)|Shield Sweep(`GROUND_SLAM`). Elementalist is special: its four capstones
   are **one choice total** — any owned capstone locks the other three.
 
 ### Compacting a family instead of redrawing a grid
@@ -448,6 +448,89 @@ server-side forbids attacking while blocking), `HudMixin` (the night
 form's grey hearts), `EntityRendererMixin` and `LevelExtractorMixin` (Extra
 Sensory Perception's outlines and their exemption from occlusion culling), and
 two accessors.
+
+### Shield Sweep: a capstone that is three changes to one ability
+
+The node is **displayed** as Shield Sweep and is still `Family.GROUND_SLAM`
+everywhere else: the enum constant, the `node.archetypes.protector.ground_slam`
+lang keys, the `textures/node/protector/ground_slam.png` sprite and — the point
+of reworking in place rather than adding a node — the constellation index that
+`PURCHASED` has been storing all along. That cell has now carried a shockwave,
+a spear formation and this, and every owner of every one of them still owns the
+same index. Only the lang VALUE and the sprite's pixels move. Never "tidy" the
+constant to match the title.
+
+It is deliberately not a second ability, and that is the whole design. The node
+opposite it is Bulwark; a capstone with its own key, its own timer and its own
+animation would have made the tree's left column optional. So Shield Sweep is
+three edits to `ShieldBash.execute`, all of them gated on one boolean:
+
+- **The cone.** `Tuning.BASH_CONE_DOT = 0.5` (a 120° arc) becomes
+  `SHIELD_SWEEP_CONE_DOT = 0.0` — the whole half-disc in front — over
+  `shieldSweepRange(wide)` = 4/5/6 blocks instead of `BASH_RANGE`'s flat 3.
+  Everything inside takes the same blow, so Wide Swings' secondary FRACTION
+  stops applying to a Sweep holder and Wide feeds the capstone as reach
+  instead. Those are the same three reach numbers the previous capstone had, so
+  nothing a Wide Swings owner had measured moved.
+  The box query needs a **radial clamp on top** and the plain bash does not: a
+  box inflated to cover a half-disc also covers its corners, which is 8.5
+  blocks out at the diagonal of a 6-block arc.
+- **The weapon.** The whole of `ATTACK_DAMAGE` — item, Strength and every tree
+  bonus, the same reading the Slayer's capstone takes — is added to the bash's
+  own number. This is the node's answer to a real complaint about the tree: a
+  Protector's sword had nothing to do with the button they actually press.
+- **Two shields.** `SHIELD_SWEEP_DUAL_SHIELD_MULTIPLIER = 4.0` on the sum. It
+  reads enormous and is not: a second shield spends the weapon term (a fist's
+  `ATTACK_DAMAGE` is 1.0), the off-hand slot, and every melee attack the player
+  owns outside this button.
+
+**The blow goes through `MeleeSwing`, opened ONCE around all victims.** Same
+reasoning as `SlayerActives.resolve`: a capstone blow outside the funnel would
+be the one attack in the tree armour treated differently, Specialities' combat
+multiplier rides the same funnel, and a window per victim would let every
+per-swing passive in the mod fire once per body. The plain bash is *not* wrapped
+— it never was, and it is a shove rather than a swing.
+
+**The animation is Player Animation Library, and it is three files.** The swing
+opens from the pose vanilla's own `HumanoidModel.poseBlockingArm` holds a raised
+shield in (`xRot = -0.9424779` rad = −54°, `yRot = ∓30°`) and travels OUTWARD,
+so which arm is doing it decides which way it goes: `shield_sweep_right`,
+`shield_sweep_left`, and `shield_sweep_dual` for both at once from the same
+centre. They are generated from one authored arm track
+(`notes/art/.../anim`-style script kept with the sketch) so the mirror is exact
+— yaw and roll negated, arms swapped.
+
+- **Positive `yaw` swings an arm toward the player's RIGHT.** Derived, not
+  guessed: `ModelPart` composes `Rz·Ry·Rx`, an arm's rest direction is model
+  `+Y` (down), `Rx(-90°)` carries it to model `−Z` (forward), and `Ry(φ)` then
+  takes that to `(−sin φ, 0, −cos φ)` — model `+X` being the entity's left.
+  `poseBlockingArm`'s mirrored ∓30° is the same fact stated by vanilla.
+  PAL writes `bone.rotation.y` straight onto `ModelPart.yRot` for an arm
+  (`RenderUtil.translatePart`), and its loader negates nothing for arm bones —
+  only for `body`, `cape` and the item bones.
+- **`"version": 3` is required in every file.** Below 3 the loader rewrites the
+  bone name `torso` to `body`, and `body` additionally has its pitch and yaw
+  negated on the way in. This is the trap named in `CLAUDE.md`, and it is
+  visible in `PlayerAnimatorLoader.moveDeserializer`'s bytecode as a literal
+  `if (version < 3 && name.equals("torso")) name = "body"`.
+- **A move's `easing` governs the segment LEAVING that keyframe**, so the
+  sweep's acceleration is written on the tick-0 move and its settle on tick 2.
+- **The drive window must equal the files' `stopTick`** (10), for the reason
+  `SlayerAnimations` spells out: longer re-triggers and loops a one-shot,
+  shorter calls `stop()` mid-swing. All three end on an all-zero keyframe at
+  tick 8, so a stop in the tail is invisible.
+- `ProtectorAnimations` picks the file per **arm**, not per hand — for a
+  right-handed player that is the sketch's "main hand to the right, off-hand to
+  the left" exactly, and for a left-handed one it keeps each arm sweeping out on
+  its own side.
+
+**One synced stamp, and nothing else.** `SHIELD_SWEEP_AT` (transient, `all()`)
+carries the gametime the sweep landed on. Which arms hold shields is *not*
+synced and does not need to be: held items are tracked equipment, so every
+client already knows whether this player has one shield or two. The stamp exists
+only because `player.swing` is broadcast for **every** bash and only a capstone
+holder's bash is a sweep. It is written before the damage, so a blow that kills
+its victim still animates.
 
 ### `SpellProjectile` modes and mana
 
