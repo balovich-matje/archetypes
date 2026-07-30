@@ -1343,9 +1343,18 @@ public final class Tuning {
 	 */
 	public static final double IRONCLAD_ARMOUR_BONUS = 0.50;
 
-	/** Well Fed: 25% off the time a bite of food takes, per rank. Rank 2 halves
-	 * it — a steak in 16 ticks rather than 32. */
-	public static final float WELL_FED_EAT_SPEED_PER_RANK = 0.25F;
+	/**
+	 * Well Fed: 37.5% off the time a bite of food takes, per rank.
+	 *
+	 * <p>Rank 2 is 75% off — a steak in 8 ticks rather than 32, which is fast
+	 * enough to be a real answer to being caught low mid-fight rather than a
+	 * convenience. The floor of one tick in {@code ItemStackMixin} is still not
+	 * reachable at these ranks (the shortest vanilla food is 16 ticks, so 4 at
+	 * full rank), and it is there because a zero would send
+	 * {@code Consumable.startConsuming} down the instant-use branch and change
+	 * what eating IS.
+	 */
+	public static final float WELL_FED_EAT_SPEED_PER_RANK = 0.375F;
 	/** Well Fed: how much further the hunger bar fills, per rank, as a share of
 	 * vanilla's 20. Rank 1 is 30, rank 2 is 40 — two full bars.
 	 *

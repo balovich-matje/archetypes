@@ -127,7 +127,8 @@ public final class ColossusProtector {
 
 	/**
 	 * Well Fed's second half: how far the hunger bar can be filled. Vanilla's
-	 * 20 at rank 0, then 30 and 40.
+	 * 20 at rank 0, then 30 and 40 — the sketch's "50/100% more", unchanged by
+	 * the eating-speed retune beside it.
 	 *
 	 * <p>Only the ceiling moves. The regeneration thresholds in
 	 * {@code FoodData.tick} (saturated regen at 20, slow regen at 18) are left

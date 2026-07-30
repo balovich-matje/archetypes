@@ -466,7 +466,7 @@
 	"node.archetypes.colossus_protector.ironclad": "Ironclad",
 	"node.archetypes.colossus_protector.ironclad.desc": "Your armor and armor toughness from all sources are increased by 50%.",
 	"node.archetypes.colossus_protector.well_fed": "Well Fed",
-	"node.archetypes.colossus_protector.well_fed.desc": "Eating food takes 25/50% less time, and your hunger bar can store 50/100% more.",
+	"node.archetypes.colossus_protector.well_fed.desc": "Eating food takes 37.5/75% less time, and your hunger bar can store 50/100% more.",
 	"node.archetypes.colossus_protector.hearty_meal": "Hearty Meal",
 	"node.archetypes.colossus_protector.hearty_meal.desc": "Eating food now grants an 8 minute buff: meat grants Strength II, fruit grants Speed II, milk grants Regeneration I.",
 	"node.archetypes.colossus_protector.instinctive_guard": "Instinctive Guard",
