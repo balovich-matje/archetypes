@@ -576,6 +576,22 @@ public final class ModAttachments {
 			AttachmentRegistry.<Double>create(Archetypes.id("leap_peak_y"));
 
 	/**
+	 * The tick a bare-fisted landing's eight seconds run out. Read only by
+	 * {@code CrusherTicker}, which asserts the extra unarmed ATTACK_DAMAGE for
+	 * as long as it holds, and written only by {@link TitansLeap}.
+	 *
+	 * <p>Transient and unsynced, for the same reason Hardened's plates are: the
+	 * client already sees the ATTACK_DAMAGE attribute vanilla syncs, so there
+	 * is nothing left for a packet to say, and eight seconds of a buff is not
+	 * worth surviving a relog. Deliberately NOT cleared by
+	 * {@link TitansLeap#clear} — clear() runs on the landing tick, immediately
+	 * after the landing set this — so the ticker gates the modifier on owning
+	 * Titan's Leap instead, which is what takes it off a respec.
+	 */
+	public static final AttachmentType<Long> LEAP_STOMP_END =
+			AttachmentRegistry.<Long>create(Archetypes.id("leap_stomp_end"));
+
+	/**
 	 * Hardened's live plates — one entry per hit taken, each with its own
 	 * expiry, read and written only through {@link Hardened}. A list, not a
 	 * count and a deadline, because the node's whole promise is that a new hit

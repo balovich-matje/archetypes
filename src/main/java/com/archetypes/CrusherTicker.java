@@ -24,6 +24,7 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class CrusherTicker {
 	private static final Identifier BARE_KNUCKLE_ID = Archetypes.id("bare_knuckle");
+	private static final Identifier STOMP_DAMAGE_ID = Archetypes.id("titan_leap_stomp_damage");
 	private static final Identifier IRON_SKIN_ARMOR_ID = Archetypes.id("iron_skin_armor");
 	private static final Identifier IRON_SKIN_TOUGHNESS_ID = Archetypes.id("iron_skin_toughness");
 	private static final Identifier CLINCH_ID = Archetypes.id("clinch");
@@ -43,6 +44,7 @@ public final class CrusherTicker {
 
 	private static void tick(final ServerPlayer player) {
 		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
+		AttachmentTarget target = (AttachmentTarget) player;
 		WeaponClass weapon = WeaponClass.of(player);
 		boolean hands = weapon == WeaponClass.HANDS;
 		long now = player.level().getGameTime();
@@ -57,6 +59,22 @@ public final class CrusherTicker {
 				knuckle * (hands ? Tuning.BARE_KNUCKLE_FIST_PER_RANK : Tuning.BARE_KNUCKLE_MACE_PER_RANK),
 				AttributeModifier.Operation.ADD_VALUE);
 
+		// Titan's Leap's bare-fisted landing, on Bare-Knuckle's own channel and
+		// under the same `hands` gate: eight seconds of heavier fists, stamped
+		// by TitansLeap#stomp and spent here. A second modifier rather than a
+		// term added to Bare-Knuckle's, because the two have unrelated
+		// lifetimes and apply() keys everything off one Identifier.
+		//
+		// Gated on still owning the node as well as on the clock — the stamp is
+		// deliberately NOT cleared by TitansLeap#clear (clear() runs on the
+		// landing tick, right after the stamp was written), so this rank test is
+		// what stops a respec from carrying the last landing's damage over.
+		Long stompEnd = target.getAttached(ModAttachments.LEAP_STOMP_END);
+		apply(player.getAttribute(Attributes.ATTACK_DAMAGE), STOMP_DAMAGE_ID,
+				hands && stompEnd != null && now < stompEnd
+						&& TitansLeap.rank(player, ColossusCrusherNodes.Family.TITAN_LEAP) > 0,
+				Tuning.TITAN_LEAP_STOMP_DAMAGE, AttributeModifier.Operation.ADD_VALUE);
+
 		int skin = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.IRON_SKIN);
 		apply(player.getAttribute(Attributes.ARMOR), IRON_SKIN_ARMOR_ID,
 				hands && skin > 0, skin * Tuning.IRON_SKIN_ARMOR_PER_RANK,
@@ -68,7 +86,6 @@ public final class CrusherTicker {
 		// Clinch: bare fists take less knockback (the applied half lives in
 		// the knockback mixin). KNOCKBACK_RESISTANCE is ranged 0..1, so this
 		// can never overshoot into negative knockback.
-		AttachmentTarget target = (AttachmentTarget) player;
 		int clinch = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.CLINCH);
 		apply(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), CLINCH_ID,
 				hands && clinch > 0, clinch * Tuning.CLINCH_KNOCKBACK_REDUCTION_PER_RANK,

@@ -6,8 +6,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
@@ -26,7 +29,9 @@ import net.minecraft.world.phys.Vec3;
  *
  * <p>Nothing about the flight is synced. The only client-visible half is the
  * cooldown ({@code LEAP_READY_AT}, target-only, which the cooldown bar reads)
- * and the particles and sounds this class sends.
+ * and the particles and sounds this class sends. The bare-fisted landing's
+ * eight seconds ({@code LEAP_STOMP_END}) are unsynced too — the client sees
+ * them as the ATTACK_DAMAGE attribute vanilla already syncs.
  *
  * <h2>Why the fall is measured, not asked for</h2>
  * Aftershock pays per block fallen, and by the time an END_SERVER_TICK listener
@@ -184,26 +189,101 @@ public final class TitansLeap {
 	}
 
 	/**
-	 * The landing. Aftershock is the only thing a landing does now — it cannot
-	 * fire without its node, so a root-only Colossus simply comes down.
+	 * The landing, and the fork the whole tree is drawn around: what is in the
+	 * player's hands when they hit the ground decides which one fires. A mace
+	 * slams (Aftershock, and only with that node bought); bare fists stomp,
+	 * which is the leap's own payload and needs nothing beyond the root. The
+	 * two weapon gates are mutually exclusive by construction — {@code MACE} is
+	 * a main-hand test and {@code HANDS} demands both hands empty — so a
+	 * landing is never both.
 	 */
 	private static void land(final ServerPlayer player, final ServerLevel level, final float fell) {
-		if (rank(player, ColossusCrusherNodes.Family.AFTERSHOCK) > 0) {
+		WeaponClass weapon = WeaponClass.of(player);
+
+		if (weapon == WeaponClass.MACE && rank(player, ColossusCrusherNodes.Family.AFTERSHOCK) > 0) {
 			aftershock(player, level, fell);
+		} else if (weapon == WeaponClass.HANDS) {
+			stomp(player, level);
 		}
 	}
 
 	/**
+	 * The bare-fisted landing: everything hostile inside
+	 * {@link Tuning#TITAN_LEAP_STOMP_RADIUS} is slowed, and the fists that did
+	 * it hit harder for {@link Tuning#TITAN_LEAP_STOMP_TICKS}.
+	 *
+	 * <p>Two things it deliberately is NOT. It deals no damage — Aftershock is
+	 * the column that pays for a landing that hits, and a fists landing that
+	 * also hit would have made the left column optional the way a second
+	 * capstone key would. And the damage half is not a hook: it writes a stamp
+	 * that {@code CrusherTicker} turns into a second ATTACK_DAMAGE modifier
+	 * beside Bare-Knuckle's, under that node's own {@code hands} gate, so
+	 * picking up a weapon inside the eight seconds simply stops paying and
+	 * dropping it again resumes.
+	 *
+	 * <p>The radius is enforced twice on purpose. {@code inflate} builds a BOX,
+	 * and a box that covers a 6-block disc reaches 8.49 at its corners, so the
+	 * predicate re-tests real distance — the same clamp the Protector's Shield
+	 * Sweep needs and for the same reason.
+	 */
+	private static void stomp(final ServerPlayer player, final ServerLevel level) {
+		double radius = Tuning.TITAN_LEAP_STOMP_RADIUS;
+		double reach = radius * radius;
+
+		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
+				player.getBoundingBox().inflate(radius),
+				entity -> entity != player && entity.isAlive() && !entity.isSpectator()
+						&& entity instanceof Enemy)) {
+			if (player.distanceToSqr(victim) > reach) {
+				continue;
+			}
+
+			victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS,
+					Tuning.TITAN_LEAP_STOMP_TICKS, Tuning.TITAN_LEAP_STOMP_SLOW_AMPLIFIER), player);
+		}
+
+		((AttachmentTarget) player).setAttached(ModAttachments.LEAP_STOMP_END,
+				level.getGameTime() + Tuning.TITAN_LEAP_STOMP_TICKS);
+
+		stompFx(player, level, radius);
+		ProcIndicators.send(player, SubTree.COLOSSUS_CRUSHER,
+				ColossusCrusherNodes.Family.TITAN_LEAP);
+	}
+
+	/** The fists' answer to {@code CrusherActives.slamFx}: the same ring of
+	 * this ground's own debris, no explosion — nothing detonated, something
+	 * very heavy just arrived. */
+	private static void stompFx(final ServerPlayer player, final ServerLevel level,
+			final double radius) {
+		var ground = player.getBlockStateOn();
+
+		if (!ground.isAir()) {
+			for (int i = 0; i < 32; i++) {
+				double angle = Math.PI * 2.0 * i / 32.0;
+				level.sendParticles(
+						new net.minecraft.core.particles.BlockParticleOption(ParticleTypes.BLOCK, ground),
+						player.getX() + Math.cos(angle) * radius * 0.8,
+						player.getY() + 0.2,
+						player.getZ() + Math.sin(angle) * radius * 0.8,
+						3, 0.15, 0.25, 0.15, 0.1);
+			}
+		}
+
+		level.sendParticles(ParticleTypes.CLOUD,
+				player.getX(), player.getY() + 0.2, player.getZ(), 20, 1.2, 0.1, 1.2, 0.05);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.2F, 1.2F);
+		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.IRON_GOLEM_DAMAGE, SoundSource.PLAYERS, 0.8F, 0.7F);
+	}
+
+	/**
 	 * Aftershock: the landing that hits. Mace in hand — the branch's whole
-	 * premise, and the reason the tooltip says so (a fists Colossus spends the
-	 * leap on closing the distance instead).
+	 * premise, and the reason the tooltip says so. The weapon test itself lives
+	 * in {@link #land}, which is where the mace and the fists fork.
 	 */
 	private static void aftershock(final ServerPlayer player, final ServerLevel level,
 			final float fell) {
-		if (WeaponClass.of(player) != WeaponClass.MACE) {
-			return;
-		}
-
 		int rank = rank(player, ColossusCrusherNodes.Family.AFTERSHOCK);
 		double radius = Tuning.AFTERSHOCK_RADIUS_BASE + Tuning.AFTERSHOCK_RADIUS_PER_RANK * rank;
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)

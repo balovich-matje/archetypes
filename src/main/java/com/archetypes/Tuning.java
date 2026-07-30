@@ -1207,6 +1207,43 @@ public final class Tuning {
 	public static final int TITAN_LEAP_MAX_FLIGHT_TICKS = 200;
 
 	/**
+	 * The bare-fisted landing's reach, in blocks. Six — between Aftershock's
+	 * rank 1 and rank 2 ({@link #AFTERSHOCK_RADIUS_BASE}), because the two
+	 * landings are the same drop paid out differently and neither column should
+	 * out-reach the other on the way in. Applied as a real radius: the box
+	 * query is inflated by it and then clamped by distance, because a box that
+	 * covers a 6-block disc reaches 8.5 blocks at its corners.
+	 */
+	public static final double TITAN_LEAP_STOMP_RADIUS = 6.0;
+	/**
+	 * Slowness <b>II</b>, i.e. amplifier 1. Deliberately far below Haymaker's
+	 * stun ({@link #HAYMAKER_STUN_AMPLIFIER} = 5, a Slowness VI that is a stun
+	 * in all but name): that one lands on ONE jaw the player had to aim at,
+	 * this one lands on a whole ring for eight seconds. A ring-wide stun would
+	 * be the epic tree deciding fights on its own.
+	 */
+	public static final int TITAN_LEAP_STOMP_SLOW_AMPLIFIER = 1;
+	/**
+	 * The bare-fisted landing's one clock, 160 ticks = <b>8 seconds</b>, spent
+	 * on both halves: how long the ring stays slowed AND how long the fists hit
+	 * harder. One constant on purpose — the tooltip says "for 8 seconds" once
+	 * and there is no reading of it under which the two numbers differ, so two
+	 * constants could only ever drift apart into a tooltip that lies.
+	 */
+	public static final int TITAN_LEAP_STOMP_TICKS = 160;
+	/**
+	 * What the landing adds to unarmed damage: 4.0, i.e. <b>2 hearts</b>.
+	 * Two ranks of Bare-Knuckle ({@link #BARE_KNUCKLE_FIST_PER_RANK}) for eight
+	 * seconds once every thirty, and it rides that node's own channel — a
+	 * second ATTACK_DAMAGE modifier asserted by {@code CrusherTicker} under the
+	 * same {@code hands} gate — rather than opening a new entry on the damage
+	 * funnel. A funnel entry would have had to answer for thorns, DoTs and
+	 * every non-swing the shapers already fight about; an attribute answers for
+	 * none of that, and it shows up in the player's own tooltip besides.
+	 */
+	public static final float TITAN_LEAP_STOMP_DAMAGE = 4.0F;
+
+	/**
 	 * Aftershock's radius: 4/6/8 blocks. Quake's own is 3
 	 * ({@link #QUAKE_RADIUS}) and Earth Shatterer's climbs 2/4/6, so rank 3
 	 * sits one notch above the base tree's ceiling — correct for epic.
