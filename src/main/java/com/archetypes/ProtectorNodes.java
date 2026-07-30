@@ -169,9 +169,13 @@ public final class ProtectorNodes {
 		byCell.put(cell(4, 1), new Def(Family.COOLDOWN, 1));
 		byCell.put(cell(4, 2), new Def(Family.COOLDOWN, 2));
 		byCell.put(cell(4, 3), new Def(Family.COOLDOWN, 3));
-		// The SPEARWALL constant inherited the cell: last stop on the centre
-		// column, touching both crown nodes diagonally, so it gates into Braced
-		// and Taunt exactly the way Recovery's top rank used to.
+		// Reinforced Straps. The constant is still SPEARWALL and must stay that
+		// way: it is the save key, so renaming it to match the title would
+		// orphan every purchase of this cell plus the sprite and both lang
+		// keys, which are all derived from the constant's name. Straps is back
+		// where it started in behaviour (a shield that wears slower) but on the
+		// centre column instead of the rim, so it gates into Braced and Taunt
+		// exactly the way Quick Recovery's retired fourth rank used to.
 		byCell.put(cell(4, 4), new Def(Family.SPEARWALL, 1));
 		// The crown: Braced and Taunt side by side above Recovery, each
 		// cross-linked to both capstones (explicit edges in Constellations).

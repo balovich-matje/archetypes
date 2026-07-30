@@ -216,14 +216,19 @@ repurposes saved data.
 
 The same move works in reverse, to delete a skill without deleting a cell.
 Reinforced Straps was one node at `(0,7)` — a flat Unbreaking I on the blocking
-item, a durability discount pretending to be a skill. It is gone and its cell is
-Reflection's second rank, so `REFLECT` now runs `(0,7)`→`(0,8)` at x0.5/x1.0
-returned damage. No migration code exists because none is needed: `PURCHASED`
-stores indices, so an owner of Straps owns the same index and it reads as
-Reflection I, and an owner of both reads Reflection II. Note what this does NOT
-do — it frees no cell. A rank **is** a cell in this system, so folding two
-one-rank skills into one two-rank skill is exactly cell-neutral; the only way to
-free one is the compaction below.
+item. It was folded away and its cell became Reflection's second rank, so
+`REFLECT` runs `(0,7)`→`(0,8)` at x0.5/x1.0 returned damage. No migration code
+existed because none was needed: `PURCHASED` stores indices, so an owner of
+Straps owned the same index and it read as Reflection I, and an owner of both
+read Reflection II. Note what this does NOT do — it frees no cell. A rank **is**
+a cell in this system, so folding two one-rank skills into one two-rank skill is
+exactly cell-neutral; the only way to free one is the compaction below.
+
+(Straps has since come back, on `(4,4)` and under the `SPEARWALL` constant,
+which is the other half of the same lesson: a family's CONSTANT is the save key
+and the derivation root for its sprite path and both lang keys, so it never
+tracks the title. That cell has been a fourth rank of Quick Recovery, Spearwall
+and now Reinforced Straps without one index moving.)
 
 The Protector is the worked example. Quick Recovery (`COOLDOWN`) ran four cells
 up the centre column at a fifth of the bash's ability layer each; it runs three
@@ -427,7 +432,11 @@ Magic Armaments channel glide in an elytra's place — declared common because
 sides), `PlayerAdvancementsMixin` (advancement
 count), `AbstractArrowMixin`/`AbstractArrowAccessor`/`ProjectileMixin` (True Shot
 flight and reflection), `CrossbowItemMixin` (Rapid Reload), `BlocksAttacksMixin`,
-`ItemStackMixin` (Well Fed's faster eating, on `getUseDuration`),
+`ItemStackMixin` (Well Fed's faster eating on `getUseDuration`, and
+Reinforced Straps wrapping the one `EnchantmentHelper.processDurabilityChange`
+call every durability loss in the game funnels through — the node hands that
+roll a stack copy carrying a higher Unbreaking level rather than shrinking the
+amount, so vanilla's own `level / (level + 1)` binomial does the arithmetic),
 `FoodPropertiesMixin` (Well Fed's banked hunger — `FoodData` clamps to a
 hardcoded 20 and holds no reference to its owner, so the top-up is wrapped
 around `FoodData.eat` where the player is a parameter), `ConsumableMixin`

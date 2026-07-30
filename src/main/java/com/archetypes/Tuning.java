@@ -74,6 +74,22 @@ public final class Tuning {
 	/** Braced: each blocked hit shaves this off the bash's remaining cooldown. */
 	public static final int BRACED_REFUND_TICKS = 20;
 
+	/**
+	 * Reinforced Straps: extra Unbreaking levels on a shield this player holds,
+	 * and the ceiling on the TOTAL that produces.
+	 *
+	 * <p>The cap is on the sum, not on the node: a shield already at Unbreaking
+	 * III reads as IV and stops. What one level is worth depends entirely on
+	 * where it lands, because vanilla's chance to ignore a point of damage is
+	 * {@code level / (level + 1)} — 0→1 halves the wear, 3→4 takes another 20%
+	 * off what is left. So the node is at its best on the plain shield somebody
+	 * is actually blocking a mob pack with, and nearly nothing on a fully
+	 * enchanted one, which is the right shape for a single point spent on a
+	 * defensive tree's centre column.
+	 */
+	public static final int REINFORCED_STRAPS_LEVELS = 1;
+	public static final int REINFORCED_STRAPS_LEVEL_CAP = 4;
+
 	/** Taunt: holding the shield up enrages every monster within this radius. */
 	public static final double TAUNT_RADIUS = 8.0;
 
