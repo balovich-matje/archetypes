@@ -67,8 +67,19 @@ public final class Tuning {
 	/** Braced: each blocked hit shaves this off the bash's remaining cooldown. */
 	public static final int BRACED_REFUND_TICKS = 20;
 
-	/** Taunt: bashing enrages every monster within this radius. */
+	/** Taunt: holding the shield up enrages every monster within this radius. */
 	public static final double TAUNT_RADIUS = 8.0;
+
+	/**
+	 * How often the taunt sweep re-asserts itself, in ticks.
+	 *
+	 * <p>Half a second, not every tick: a forced target only has to be forced
+	 * again when something has un-forced it, and the sweep is an AABB query per
+	 * blocking Protector. Mobs already on the taunter are skipped inside the
+	 * query, so the common case — a pack that is already coming — costs the
+	 * query and nothing else.
+	 */
+	public static final int TAUNT_PERIOD_TICKS = 10;
 
 	/**
 	 * Reflection: how much of its bite a returned arrow keeps, by rank. Rank 2

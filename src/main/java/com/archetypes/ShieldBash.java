@@ -11,8 +11,6 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.Mob;
-import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
@@ -53,8 +51,6 @@ public final class ShieldBash {
 		int slam = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.SLAM);
 		int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.COOLDOWN);
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
-		int taunt = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.TAUNT);
-
 		// The bash's shove is flat now. The node that used to buy more of it
 		// (Concussive Blow) is Sure Footing, which is about moving while the
 		// shield is up and never touches this ability at all.
@@ -96,20 +92,6 @@ public final class ShieldBash {
 		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player).setAttached(
 				ModAttachments.BASH_READY_AT, now + Tuning.bashCooldownTicks(slam, recovery));
 		player.resetAttackStrengthTicker();
-
-		// Taunt: the bash is also a challenge — every monster in earshot drops
-		// what it is doing and comes for you. Vanilla target AI does the rest;
-		// no custom goals involved.
-		if (taunt > 0) {
-			for (Mob mob : level.getEntitiesOfClass(Mob.class,
-					player.getBoundingBox().inflate(Tuning.TAUNT_RADIUS),
-					mob -> mob instanceof Enemy && mob.isAlive())) {
-				mob.setTarget(player);
-				level.sendParticles(ParticleTypes.ANGRY_VILLAGER,
-						mob.getX(), mob.getY() + mob.getBbHeight() + 0.3, mob.getZ(),
-						1, 0.1, 0.1, 0.1, 0.0);
-			}
-		}
 
 		if (primary == null) {
 			// Whiffed: a sweep in front is the feedback that the swing happened.
