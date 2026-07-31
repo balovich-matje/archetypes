@@ -110,6 +110,37 @@ stonecutter {
 		// Java stays at 21 (`requiredJava`), so this node adds no toolchain move.
 		match("1.21.1", "fabric")
 
+		// ---- Stage 5: the oldest node in the port, registered as its own commit for the
+		// same single-writer reason (conventions §1).
+		//
+		// TWO frozen boundaries land here TOGETHER, which is what makes this node
+		// different in kind from Stage 4's one deep boundary:
+		//
+		//  * `>=1.21` — no data components, no GUI sprite atlas at all, id-keyed
+		//    `AttributeModifier` becomes the UUID+name form at every call site, the
+		//    datapack tag directory is PLURAL (`tags/items/`, R-16), and looting/sweeping
+		//    move off `EnchantmentHelper`'s modern accessors.
+		//  * `>=1.20.5` — no payload stack (`FabricPacket`/`PacketType` inside the `Net`
+		//    seam), no `StreamCodec`, no attachment SYNC AT ALL (fabric-api 0.92.11 has a
+		//    persistent builder and nothing else), Java 21 -> 17, and
+		//    `ServerLivingEntityEvents.AFTER_DAMAGE` does not exist.
+		//
+		// The Java level moves for the second time in the port and this is the one that
+		// bites: `requiredJava` drops to 17, which is the SHARED-CODE CEILING for the whole
+		// tree from here on (conventions §5e). Stage 0-G audited for it and fixed the two
+		// real violations, so this is a toolchain assertion rather than an expedition.
+		//
+		// PAL is ABSENT on this node — no artifact exists for 1.20.1 on any loader — and
+		// the decision in force is design §2.2's Option B: a no-op animation seam, the five
+		// `*Animations` drivers gated out as whole compilation units, the dependency and its
+		// `depends` line dropped. See the toml for the loss table's pointer.
+		//
+		// The shared tree does NOT compile for this node yet — that IS Stage 5 — so
+		// `:1.20.1-fabric:build` and an unqualified `build` fail by design until the `//?`
+		// forks land. `:1.20.1-fabric:stonecutterGenerate` is green, and every task on the
+		// four registered nodes is unaffected.
+		match("1.20.1", "fabric")
+
 		// The node whose state the shared `src/` is committed in.
 		vcsVersion = "26.2-fabric"
 	}

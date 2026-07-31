@@ -269,6 +269,18 @@ val strippedMixinEntries: List<String> = buildList {
 }
 
 tasks.withType<ProcessResources>().configureEach {
+	// A per-node override directory is a RESOURCE ROOT, so anything documenting it ships
+	// inside that node's jar. Measured on the Stage-4 artifact: `archetypes-1.1.0+1.21.1.jar`
+	// carries a 2,797-byte `README-override.md` at its root, which no other node has — a
+	// resource difference between two jars of the same mod that is pure prose.
+	//
+	// Excluded rather than moved out of the resource tree: the file has to sit NEXT TO the
+	// config it explains or it goes stale the first time someone edits one without the other,
+	// and that config is the one whose drift is a hard boot failure. Stage 5 adds a second
+	// override directory wanting the same README, so the fix is written once, here, for every
+	// node — the pattern is a file NAME, so it catches `versions/*/src/*/resources/` alike.
+	exclude("README-override.md")
+
 	val mixinJava = "JAVA_${requiredJava.majorVersion}"
 	metadataProps.forEach { (k, v) -> inputs.property(k, v) }
 	inputs.property("mixinJava", mixinJava)

@@ -146,3 +146,31 @@ deps.fabric_api = "0.116.14+1.21.1"
 # `setFirstPersonMode`/`setFirstPersonConfiguration` return void here and the controller on
 # 1.2.x — source-compatible, because every call site uses them as statements.
 deps.pal = "FkO8Scek"
+
+["1.20.1"]
+# One release, not a range. 1.20.2 moved `Screen.render`'s background draw and 1.20.5 moved
+# the whole component/attachment/payload world, so neither neighbour is covered by this node
+# and neither is claimed. Skill Proficiencies' 1.20.1 node makes the same single-version
+# claim for the same reason.
+mod.mc_releases = ["1.20.1"]
+
+[fabric."1.20.1"]
+mod.mc_compat = "1.20.1"
+# NOT fabric-api 0.92.11's own floor (`>=0.14.19`), and not this port's 1.21.1 floor either.
+# Loader BUNDLES MixinExtras and this repo has 18 MixinExtras injectors including a
+# `@WrapMethod` (HealOrHarmMobEffectMixin) that needs >= 0.4.0: 0.15.11 -> 0.3.5,
+# 0.16.3 -> 0.4.1. Skill Proficiencies pins its own 1.20.1 node at 0.16.10 and that is
+# adopted here rather than re-derived down to 0.16.3 — a player installing the pair should
+# not be able to satisfy one mod's floor and not the other's on the same launcher profile.
+mod.loader_floor = ">=0.16.10"
+deps.fabric_api = "0.92.11+1.20.1"
+# NO `deps.pal` KEY, AND THAT ABSENCE IS THE DECISION, not an omission (design §2.2,
+# Option B — the decision in force). `player-animation-library` has no artifact for 1.20.1
+# on any loader at any version: the project's lowest `game_version` is 1.21.1. The node
+# script reads this key with `rawOrNull`, so leaving it out is what drops the dependency,
+# the `depends` line in fabric.mod.json (the `strippedMetadataLines` transform) and the five
+# animation drivers (whole-unit `//?` gating) together.
+#
+# Ten animations across five layers go quiet on this node. All ten are cosmetic — every
+# driver reads either vanilla's own broadcast swing state or a synced key the server already
+# owns, so nothing gates damage, cooldown or resource cost. The loss table is design §2.2.
