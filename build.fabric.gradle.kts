@@ -293,7 +293,16 @@ tasks.withType<ProcessResources>().configureEach {
 	// and that config is the one whose drift is a hard boot failure. Stage 5 adds a second
 	// override directory wanting the same README, so the fix is written once, here, for every
 	// node — the pattern is a file NAME, so it catches `versions/*/src/*/resources/` alike.
-	exclude("README-override.md")
+	//
+	// STAGE 5 WIDENED IT TO A GLOB, and the reason is a constraint this comment did not
+	// anticipate: the two legacy nodes now have a SECOND override root (`src/main/resources`,
+	// for the recipes) wanting its own README, and two files named `README-override.md` in
+	// two source sets are one jar-root entry each — which `processResources` de-duplicates
+	// silently (a `SourceDirectorySet` keeps the last srcDir's copy) but `sourcesJar` does
+	// NOT: it fails the build outright with `Entry README-override.md is a duplicate but no
+	// duplicate handling strategy has been set`. So the data-side file is
+	// `README-override-data.md` and the pattern below catches both.
+	exclude("README-override*.md")
 
 	val mixinJava = "JAVA_${requiredJava.majorVersion}"
 	metadataProps.forEach { (k, v) -> inputs.property(k, v) }
@@ -315,6 +324,12 @@ tasks.withType<ProcessResources>().configureEach {
 	// processResources UP-TO-DATE and shipped the sprites at their atlas path.
 	inputs.property("spriteRelocation", sc.current.parsed < "1.21")
 	inputs.property("legacyItemModels", sc.current.parsed < "1.21.4")
+	// Same reason a third time, for R-B9's recipe/advancement relocation. Its value is
+	// identical to `legacyTagDir`'s and it still has to exist under its OWN name: an
+	// up-to-date check compares the property SET, so a new copy-spec action whose predicate
+	// already appears under another key changes nothing Gradle can see and the node ships
+	// the previous run's tree. Measured twice in Stage 5 already; not measured a third time.
+	inputs.property("legacyDatapackDirs", sc.current.parsed < "1.21")
 
 	filesMatching("fabric.mod.json") {
 		expand(metadataProps)
@@ -387,6 +402,54 @@ tasks.withType<ProcessResources>().configureEach {
 				path = path.replace("/tags/item/", "/tags/items/")
 			}
 		}
+	}
+
+	// ---- R-B9: `recipe/` and `advancement/` are PLURAL below 1.21 too, and this one was
+	// MISSED until the 1.20.1 smoke rig existed to ask ----
+	//
+	// The rename that took `tags/items` to `tags/item` took the whole datapack registry
+	// directory set with it, at the same release. MEASURED, on the two cached vanilla server
+	// jars rather than from memory, because "1.21.2" is the plausible wrong answer and both
+	// this repo and Skill Proficiencies would have shipped it:
+	//
+	//   1.20.1 `data/minecraft/` -> advancements/ loot_tables/ recipes/ structures/ tags/
+	//   1.21.1 `data/minecraft/` -> advancement/  loot_table/  recipe/  structure/  tags/
+	//
+	// So the 20 recipes and their 20 recipe-advancements shipped by the 1.20.1 node sat in
+	// `data/archetypes/recipe/` and `data/archetypes/advancement/recipes/`, which nothing on
+	// that version reads. There is no error line for this — a directory the loader does not
+	// walk is not a parse failure, it is an absence — which is why the probe that found it is
+	// a POSITIVE one (`/recipe give @a archetypes:<id>`, with a bogus control) and not a
+	// log grep. Exactly R-16's lesson, one directory over.
+	//
+	// This mod has no loot tables, predicates or structures, so the two rules below are the
+	// whole of the exposure; a third directory arriving means a third rule here.
+	if (sc.current.parsed < "1.21") {
+		eachFile {
+			if (path.contains("/recipe/")) {
+				path = path.replace("/recipe/", "/recipes/")
+			}
+
+			if (path.contains("/advancement/")) {
+				path = path.replace("/advancement/", "/advancements/")
+			}
+		}
+	}
+
+	// ---- R-B9's second half: `minecraft:breeze_rod` does not EXIST on 1.20.1. ----
+	//
+	// The other nineteen recipes are a schema problem and are solved by the per-node
+	// overrides in `versions/1.2*.*-fabric/src/main/resources/` (read the README beside
+	// them). This one is not: the Breeze Wand's only ingredient is an item added in 1.21, so
+	// there is no legacy spelling to write. The ITEM stays registered and obtainable by
+	// command — only the recipe and its unlock advancement go, which is the same shape as
+	// Stage 5's other excisions and is stated where it happens rather than in a list.
+	//
+	// Excluded rather than overridden with something else, deliberately: substituting a
+	// different ingredient would make the same item cost something different on one node,
+	// which is a silent balance divergence and exactly what R-20 exists to catch.
+	if (sc.current.parsed < "1.21") {
+		exclude("data/*/recipe/breeze_wand.json", "data/*/advancement/recipes/breeze_wand.json")
 	}
 
 	// ---- R-16's neighbour: the item MODEL DEFINITION layer is `>= 1.21.4` ----

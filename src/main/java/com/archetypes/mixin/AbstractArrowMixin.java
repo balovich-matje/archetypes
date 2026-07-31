@@ -66,11 +66,27 @@ public abstract class AbstractArrowMixin {
 	// `if (!this.isNoGravity())` — the same short-circuit the modern hook composes with, so a
 	// True Shot's no-gravity arrow still ignores both marks in the same order.
 	//
-	// MEASURED, not assumed (`javap -c` on the 1.20.1 mojmap jar): `tick()` contains exactly
-	// ONE `double 0.05` (offset 859, the `Vec3.y` subtraction) and one unrelated `float
-	// 0.05f` (offset 739, the water/air inertia pair) which a doubleValue constant cannot
-	// match. So the injection point is unambiguous, and the product it produces —
-	// `0.05 * SPELLBOW_ARROW_GRAVITY_FACTOR` — is the same number the modern arm returns.
+	// MEASURED (`javap -c -constants` on the 1.20.1 mojmap jar): `tick()` guards the
+	// subtraction with `832: isNoGravity()` / `835: ifne`, then does
+	// `setDeltaMovement(v.x, v.y - <const>, v.z)` across offsets 848-868 — vanilla's own
+	// short-circuit, exactly as the modern arm composes with.
+	//
+	// AND THE CONSTANT IS NOT `0.05`. Stage 5 wrote `doubleValue = 0.05` from a reading of
+	// that javap dump that stopped at the third character, and `injectors.defaultRequire: 1`
+	// duly failed the node's boot with `expected 1 invocation(s) but 0 succeeded`. The
+	// literal at offset 859 is `ldc2_w double 0.05000000074505806d` — vanilla writes the
+	// gravity as a FLOAT and javac widens it, so the double in the constant pool is
+	// `(double) 0.05F` and nothing else. Spelled that way here rather than as the 17 digits,
+	// because the digits are what invites the same mistake back: this is a widened float, and
+	// the annotation's own widening produces the identical bits.
+	//
+	// Nothing else in `tick()` can be caught by it: the only other 0.05 in the method is the
+	// unrelated `float 0.05f` at 739 (the water/air inertia pair), which a `doubleValue`
+	// constant cannot match, and no other `ldc2_w` in the method carries this value.
+	//
+	// The product it produces — `(double) 0.05F * SPELLBOW_ARROW_GRAVITY_FACTOR` — is the
+	// same number the modern arm returns, because `getDefaultGravity()` returns that same
+	// widened float from 1.20.5 up.
 	//? if >=1.20.5 {
 	@ModifyReturnValue(method = "getDefaultGravity()D", at = @At("RETURN"))
 	private double archetypes$spellbowGravity(final double original) {
@@ -78,7 +94,7 @@ public abstract class AbstractArrowMixin {
 	}
 	//?} else {
 	/*@org.spongepowered.asm.mixin.injection.ModifyConstant(method = "tick()V",
-			constant = @org.spongepowered.asm.mixin.injection.Constant(doubleValue = 0.05))
+			constant = @org.spongepowered.asm.mixin.injection.Constant(doubleValue = (double) 0.05F))
 	private double archetypes$spellbowGravity(final double original) {
 		return archetypes$spellbowGravityImpl(original);
 	}

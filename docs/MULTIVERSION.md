@@ -1286,6 +1286,98 @@ Also untested on this node: `ALL_TRACKING` sync (R-B1's two-client proof), the 2
 their advancements (R-B9's datapack probe — the smithing schema churned at 1.20.5), and the
 `magical` damage-type tag's eight entries (R-C2).
 
+#### 5.6.2 Stage 5-D, as landed — **the rig existed for twenty minutes and found five bugs**
+
+The 1.20.1 rig is `scratchpad/smoke-1.20.1` (fabric server 1.20.1 / loader 0.16.10,
+fabric-api 0.92.11, Skill Proficiencies 1.6.0+1.20.1, **no PAL**, `eula.txt` copied from the
+1.21.1 rig and never freshly accepted); the driver is `arch-gate/smoke1201.sh`, Java **17**.
+The node now **boots clean, stops clean, exits 0**, with **17/19 common mixins applied** (the
+two absent are `FoodDataMixin` and `PlayerAdvancementsMixin`, whose target classes no
+player-free server ever loads), **zero** injection failures, **zero** `Couldn't load tag`,
+**zero** datapack parse errors, and the only two failing probes are the two bogus controls.
+
+**FIVE BUGS, and every one of them was invisible to the build.** In the order the rig found
+them, because the order is the argument for building a rig per node early:
+
+1. **`PlayerMixin.archetypes$stashAttackKnockback` did not resolve.** Its `@Local DamageSource`
+   has nothing to bind to: 1.20.1 does not hoist the attack's source into a local, it builds
+   `damageSources().playerAttack(this)` inline at BOTH sites. Stage 4 predicted a failure here
+   and predicted the wrong cause (it guessed the sweep would be spelled differently; the sweep
+   is identical — two `knockback(DDD)V` calls at 479 and 714, both inside the
+   `if (target.hurt(...))` branch). Fixed by narrowing that arm to `>=1.21` and adding a
+   `<1.21` arm that REBUILDS the source with vanilla's own expression — faithful, because the
+   impl reads only `getEntity()`/`getDirectEntity()` off it.
+2. **`AbstractArrowAccessor` died in `Apply Accessors`.** `pickupItemStack` is a field from
+   1.21 and a `protected abstract getPickupItem()` below it. The build had SAID so — `Cannot
+   remap pickupItemStack because it does not exist in any of the targets` — as a warning, and
+   shipped the jar. **A remap warning on a mixin member name is a boot failure that has not
+   happened yet.** Fixed with an `@Invoker` arm.
+3. **`archetypes$spellbowGravity` did not resolve.** Stage 5 wrote `doubleValue = 0.05` from a
+   javap dump it read three characters into. The literal is `0.05000000074505806d` — vanilla
+   writes the gravity as a FLOAT and javac widens it. Now spelled `(double) 0.05F`, which
+   produces the identical bits and does not invite the same misreading back.
+4. **R-B9, and it was never a 1.20.1 problem alone.** The datapack registry directories are
+   PLURAL below 1.21 (`recipes/`, `advancements/`), so the 20 recipes and 20 advancements sat
+   where nothing reads them — no error, just absence. Relocating them then exposed the real
+   finding: **the recipe SCHEMA breaks on 1.21.1 too**, and the 1.21.1 smoke Stage 4 called
+   green had been logging twenty `Parsing error loading recipe` lines that the gate never
+   grepped for. Ingredients stopped being bare id strings at 1.21.2, `result` carries `count`
+   below it and is `{"item": …}` below 1.21, `ItemPredicate.items` must be an ARRAY below
+   1.21, and the seven `#minecraft:*_tool_materials` tags do not exist below 1.21.11 at all.
+   Fixed with per-node resource overrides (20 recipes on 1.21.1; 19 recipes + 19 advancements
+   + the `meat` tag on 1.20.1), each README'd beside the files. `breeze_wand` is EXCISED on
+   1.20.1: `minecraft:breeze_rod` does not exist there and substituting another ingredient
+   would make one item cost something different on one node.
+5. **R-B1's client half had never been written.** `platform/LegacyStateSync` encodes on
+   change, routes by scope, replays on start-tracking and replays on join — and
+   `grep -rn LegacyStateSync src/client` returned **nothing**. Every packet it sent was
+   dropped by a client that had not registered the channel. There is no error for this
+   anywhere: server state stays perfect, so every server-authoritative behaviour keeps
+   working and the whole VISIBLE half is blank on that one node. Fixed by
+   `client/LegacyStateSyncClient` (a `<1.20.5` whole-file block, registered from
+   `ArchetypesClient` — it needs `Minecraft` to resolve the entity id, so it cannot live
+   behind the seam).
+
+**GATES 2/3/5/6, as measured.** The funnel on 1.20.1 is the 1.21.1 sequence plus exactly two
+entries — `archetypes$afterDamage` then `specialities$afterDamageXp`, both mods' AFTER_DAMAGE
+substitutes, and both land where §5.9 gate 5 wanted them: `traceFinish` (500) < `hardened`
+(900) < `afterDamage` (1000) at **every** RETURN. Cross-mod ordering holds: SP's
+`applyCombatDamage` / `uncapFallProtection` / `stealthCrit` sit between `barbarian` and
+`archetypes$flense`, i.e. Flense is still last. `mixincheck` reports **ALL RESOLVE** on all
+five nodes (101 / 105 / 104 / 104 / 99 targets).
+
+**WHAT A HEADLESS SERVER STILL CANNOT REACH, stated rather than glossed.**
+
+* **The client mixin tree is unexercised** — a dedicated server loads none of it. The three
+  anchors that worried Stage 4 are therefore proven STATICALLY, by `javap` on the node's own
+  mojmap jar, and that is the strongest available: `LocalPlayer.aiStep` holds exactly two
+  `float 0.2f` (offsets 178 and 193) and they are the only two in the whole class, and
+  exactly ONE `Mth.clamp(FFF)F` (the other two clamps are the `(III)I` overload).
+* **R-B1's two-client proof is not done and cannot be done headless.** What IS proven, in the
+  shipped 1.20.1 bytecode: the routing graph end to end — `set`/`remove` call `push`, `push`
+  reads `key.sync()` and fans out through `PlayerLookup.tracking` plus the owner,
+  `register` arms `EntityTrackingEvents.START_TRACKING`, `resyncAll`/`syncOnStartTracking`
+  call `replay`, and `LegacyStateSyncClient.install` registers `ClientPlayNetworking` on
+  `LegacyStateSync.CHANNEL` — plus key-table parity BY CONSTRUCTION (16 `ALL_TRACKING` / 31
+  `TARGET_ONLY` / 47 wire-carrying, one declaration read by both the `syncWith` arm and the
+  legacy arm). **What remains is exactly the visual: A's flag on B's screen.** It belongs to
+  §5.9 gate 7.
+* **A per-recipe positive probe needs a connected player.** `/recipe give` resolves its
+  target selector before its recipe id, so on an empty server every id — bogus control
+  included — answers `No player was found`. The recipes are instead proven by a three-state
+  argument: singular directory → 0 parse errors and 0 recipes read; plural directory with the
+  26.2 schema → **20** parse errors, which is the positive control that the loader now reads
+  them; plural directory with the legacy schema → 0. The advancements have a direct count:
+  1271 → **1290**, exactly the 19 files.
+
+**R-C2 IS CLOSED, and needed no change.** All eight `minecraft:*` damage types the `magical`
+tag references exist on 1.20.1 and on 1.21.1 (checked against `data/minecraft/damage_type/`
+in both server jars). No `required: false` is warranted.
+
+**PRIOR-NODE IDENTITY.** 26.2 244/244, 26.1 244/244, 1.21.11 250/250 classes instruction-
+identical and **385/385 resources byte-identical**. 1.21.1: 250/250 classes identical, +0/-0
+shape, and **exactly the 20 recipe resources changed** — the R-B9 fix and nothing else.
+
 ### 5.7 Stage 6 — the loader axis
 
 `1.21.1-neoforge` and `1.20.1-forge`, registered as **two separate bottleneck commits**. Copy SP's `build.neoforge.gradle.kts` / `build.forge.gradle.kts` / `buildSrc` mutex. **R-10 JiJ is mandatory** (18 injectors). **R-11's HUD answers transfer**: NeoForge `wrapLayer` with `GuiMixin.class` present-but-unlisted; Forge per-node `ForgeGuiMixin`. **R-22 applies and widens** (§3.4). The 12 new event arms (§3.4) and the four new registration seams land here. `[modproperties]` interop needs the sign-off from §3.5.

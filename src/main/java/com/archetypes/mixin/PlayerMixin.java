@@ -297,11 +297,13 @@ public abstract class PlayerMixin {
 	// 458 runs to completion — with LivingEntityMixin's own push/pop around the knockback
 	// INSIDE it — before either of these, and push/pop is save-and-restore.
 	//
-	// The predicate is `<1.21.11` and not `>=1.21 && <1.21.11` on purpose: 1.20.1 spells the
-	// sweep the same way, so Stage 5 should inherit this rather than rediscover it, and if the
-	// shape turns out to differ there `injectors.defaultRequire: 1` fails loudly at that
-	// node's first boot instead of dropping the leg in silence.
-	//? if <1.21.11 {
+	// STAGE 5 NARROWED THE PREDICATE from `<1.21.11`, and the mechanism that forced it is the
+	// one Stage 4 said would: `injectors.defaultRequire: 1` failed this handler LOUDLY on the
+	// 1.20.1 node's first boot — `expected 1 invocation(s) but 0 succeeded. Scanned 0
+	// target(s).`, with MixinExtras' own `Failed to validate sugar @Local LocalRef` underneath
+	// it. The prediction in this comment was that the SWEEP might be spelled differently
+	// there. It is not; what differs is the SOURCE. See the `<1.21` arm below.
+	//? if >=1.21 && <1.21.11 {
 	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
 			method = "attack(Lnet/minecraft/world/entity/Entity;)V",
 			at = @At(value = "INVOKE",
@@ -312,6 +314,52 @@ public abstract class PlayerMixin {
 			@com.llamalad7.mixinextras.sugar.Local final net.minecraft.world.damagesource.DamageSource source) {
 		net.minecraft.world.damagesource.DamageSource previous =
 				com.archetypes.KnockbackSource.push(source);
+
+		try {
+			original.call(victim, strength, x, z);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
+	}
+	*///?}
+
+	// ---- The same two sites on 1.20.1, where there is NO SOURCE TO CAPTURE. ----
+	//
+	// MEASURED (`javap -c -p -l` on the mojmap 1.20.1 `Player`), and this is the whole of the
+	// difference from the arm above:
+	//
+	//   * `attack` still contains EXACTLY TWO `LivingEntity.knockback(DDD)V` calls, offsets
+	//     479 (the sprint bonus plus the Knockback enchantment) and 714 (the sweep loop) —
+	//     so one un-ordinal'd wrap still covers exactly the melee extra shove and the sweep's,
+	//     which is what the arm above covers and what `causeExtraKnockback` +
+	//     `doSweepAttack` cover between them on 26.1/1.21.11.
+	//   * Both still sit inside the `if (target.hurt(...))` branch — `423: istore 16`,
+	//     `427: ifeq 1169` — so the no-client-early-out argument above is unchanged and is
+	//     measured here too, not inherited.
+	//   * The `DamageSource` local IS GONE. 1.20.1 does not hoist it: it builds
+	//     `damageSources().playerAttack(this)` inline at 412 for the main hit and AGAIN at
+	//     720 for the sweep's. The LocalVariableTable of `attack` has 20 entries and not one
+	//     of them is a `DamageSource`, so `@Local` has nothing to bind and MixinExtras says so.
+	//
+	// So the source is REBUILT rather than captured, with the identical expression vanilla
+	// uses at both sites. That is faithful and not an approximation, and the reason is that
+	// `archetypes$daggerKnockbackImpl` reads exactly two things off the source —
+	// `getEntity()` and `getDirectEntity()` — and `playerAttack(this)` sets both to this
+	// player on every version. Nothing downstream compares sources by identity.
+	//
+	// The boundary is `>=1.21` and not a new predicate: 1.21.1 hoists the local (slot 4, live
+	// 55..1344, measured in Stage 4) and 1.20.1 does not, and `>=1.21` is exactly that line.
+	//? if <1.21 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "attack(Lnet/minecraft/world/entity/Entity;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"))
+	private void archetypes$stashAttackKnockback(final net.minecraft.world.entity.LivingEntity victim,
+			final double strength, final double x, final double z,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+		Player self = (Player) (Object) this;
+		net.minecraft.world.damagesource.DamageSource previous =
+				com.archetypes.KnockbackSource.push(self.damageSources().playerAttack(self));
 
 		try {
 			original.call(victim, strength, x, z);

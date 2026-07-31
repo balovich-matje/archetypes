@@ -359,6 +359,17 @@ public class ArchetypesClient implements ClientModInitializer {
 		/*ClientHandDown.install();
 		*///?}
 
+		// R-B1's missing half. On the one node whose fabric-api cannot sync an attachment,
+		// `platform/LegacyStateSync` moves all 47 wire-carrying keys over a channel of its
+		// own, and until Stage 5's gate went looking, nothing on this side had ever
+		// registered to receive them. Read that file's header for what the silence looked
+		// like. Registered here rather than through `Net#clientReceivers` because the sink
+		// needs the ENTITY the packet names, and resolving an entity id needs `Minecraft`
+		// — which is the one thing the seam is not allowed to see.
+		//? if <1.20.5 {
+		/*LegacyStateSyncClient.install();
+		*///?}
+
 		// The two clientbound channels, handed down to the seam so registration itself
 		// stays in common init on every loader (see Net#clientReceivers). Each sink
 		// schedules its own hop onto the client thread — the buffer is ours, so a
