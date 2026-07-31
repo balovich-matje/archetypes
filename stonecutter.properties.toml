@@ -203,3 +203,38 @@ deps.fabric_api = "0.92.11+1.20.1"
 # Ten animations across five layers go quiet on this node. All ten are cosmetic — every
 # driver reads either vanilla's own broadcast swing state or a synced key the server already
 # owns, so nothing gates damage, cooldown or resource cost. The loss table is design §2.2.
+
+[forge."1.20.1"]
+# Maven range, not Fabric's `mod.mc_compat` syntax — see the note under [neoforge."1.21.1"].
+# ONE RELEASE, matching `mod.mc_releases` above and NOT copying Skill Proficiencies'
+# `[1.20,1.20.2)`: 1.20.2 moved `Screen.render`'s background draw, so the node's own claim is
+# 1.20.1 alone and the metadata says the same thing the Modrinth listing will.
+mod.mc_range = "[1.20.1,1.20.2)"
+# The version string WITHOUT the `1.20.1-` prefix: build.forge.gradle.kts assembles the
+# coordinate as `net.minecraftforge:forge:${sc.current.version}-${deps.forge}`. Architectury
+# Loom 1.17.491 + this pin build green next door.
+deps.forge = "47.4.22"
+# The mods.toml FLOOR is deliberately looser than the compile pin, and this is a lesson the
+# other repo learned AFTER shipping: 47.4.22 was latest-at-scoping, not a functional
+# requirement, and launcher metas lag the Forge maven — the Modrinth App installs 47.4.20
+# today, which would have refused a `[47.4.22,)` mod for no reason. Any Forge 47 (MC 1.20.1)
+# works.
+deps.forge_floor = "47"
+# R-10, AND IT IS MANDATORY HERE RATHER THAN MERELY PRUDENT. LexForge bundles NO MixinExtras —
+# measured next door from forge-1.20.1-47.4.22-userdev.jar's own config.json, which lists
+# `org.spongepowered:mixin:0.8.5` and zero llamalad7 entries — and this repo has 18 MixinExtras
+# injectors: 2 `@WrapMethod`, 3 `@ModifyExpressionValue`, 5 `@WrapOperation`, 8
+# `@ModifyReturnValue`, plus `@Local` sugar in the legacy damage hooks. Without the jar-in-jar
+# every one of them fails at mixin apply. 0.5.4 is what fabric-loader 0.19.3 bundles, i.e. the
+# same library the 26.x nodes run against, so the injector behaviour is one implementation
+# across all seven.
+deps.mixinextras = "0.5.4"
+# NO `deps.pal` KEY, for the same reason the Fabric sibling has none and one more besides:
+# `player-animation-library` declares loaders ["fabric","neoforge"] and has no LexForge build
+# at ANY Minecraft version. This node inherits 1.20.1-fabric's Option B animation decision
+# automatically (design §5.7) — the five `*Animations` drivers are already whole-unit gated on
+# the key's absence, so nothing here has to say so twice.
+#
+# `loom.platform=forge` deliberately does NOT live here: Arch Loom reads it during plugin
+# APPLY, which is earlier than Stonecutter's properties exist. It is in
+# versions/1.20.1-forge/gradle.properties, the tree's only per-node property file.

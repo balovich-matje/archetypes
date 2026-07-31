@@ -161,7 +161,30 @@ stonecutter {
 		// `:1.20.1-fabric:build` and an unqualified `build` fail by design until the `//?`
 		// forks land. `:1.20.1-fabric:stonecutterGenerate` is green, and every task on the
 		// four registered nodes is unaffected.
-		match("1.20.1", "fabric")
+		//
+		// ---- Stage 6's second loader node, `1.20.1-forge`, registered as its own commit for
+		// the same single-writer reason (conventions §1).
+		//
+		// It is the only node in the port that is not on a fabric-family loom:
+		// `build.forge.gradle.kts` applies Architectury Loom, and
+		// `versions/1.20.1-forge/gradle.properties` carries `loom.platform=forge` because Arch
+		// Loom reads that key during PLUGIN APPLY, earlier than Stonecutter's properties exist.
+		// That file plus R-01's `[fabric]` table in the toml are the two halves of "one loom per
+		// node"; either one alone is not enough.
+		//
+		// It is also the only node with NO TEMPLATE of any kind behind its script (design R-12 —
+		// the maintained multiloader template ships fabric and neoforge and nothing else), the
+		// only one that must jar-in-jar MixinExtras (R-10, 18 injectors), and — being below
+		// 1.20.5 — the only one that lands on the shared tree's `<1.20.5` branches while carrying
+		// a non-Fabric loader. That last one is what makes it the harder of the two: it inherits
+		// 1.20.1-fabric's UUID-keyed attribute modifiers, plural datapack directories, absent
+		// sprite atlas, Java 17 ceiling and no-PAL animation decision, AND has capabilities
+		// instead of attachments with no sync of any kind.
+		//
+		// Same as the NeoForge node: `:1.20.1-forge:build` FAILS by design until the Forge seam
+		// implementations land; `stonecutterGenerate`/`stonecutterGenerateClient` are green and
+		// every Fabric node is unaffected.
+		match("1.20.1", "fabric", "forge")
 
 		// The node whose state the shared `src/` is committed in.
 		vcsVersion = "26.2-fabric"
