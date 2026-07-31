@@ -11,6 +11,8 @@ import com.archetypes.client.mixin.AbstractContainerScreenAccessor;
 import com.archetypes.platform.Net;
 import com.archetypes.state.WireId;
 
+import com.archetypes.platform.Platform;
+
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.api.ClientModInitializer;
@@ -20,7 +22,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -341,7 +342,7 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		// Slot in after the Skills bookmark, whose width both mods compute
 		// with the same label-plus-padding formula.
-		if (FabricLoader.getInstance().isModLoaded(SPECIALITIES)) {
+		if (Platform.INSTANCE.isModLoaded(SPECIALITIES)) {
 			x += BookmarkTab.widthFor(Component.translatable("screen.specialities.skills")) + 2;
 		}
 
@@ -362,7 +363,7 @@ public class ArchetypesClient implements ClientModInitializer {
 
 	private static void anchorButton(final AbstractContainerScreen<?> screen, final Button button) {
 		AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
-		int slot = FabricLoader.getInstance().isModLoaded(SPECIALITIES) ? 1 : 0;
+		int slot = Platform.INSTANCE.isModLoaded(SPECIALITIES) ? 1 : 0;
 		button.setX(accessor.archetypes$getLeftPos() + accessor.archetypes$getImageWidth() + 4);
 		button.setY(accessor.archetypes$getTopPos() + slot * (BUTTON_SIZE + 4));
 	}

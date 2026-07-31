@@ -2,7 +2,8 @@ package com.archetypes.client;
 
 import com.archetypes.Archetypes;
 
-import net.fabricmc.loader.api.FabricLoader;
+import com.archetypes.compat.SpecialitiesBridge;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -75,18 +76,12 @@ public final class BankedHungerHud {
 	/** Vanilla's hunger row: {@code guiHeight() - 39}, the same line the hearts
 	 * are drawn on. */
 	private static final int BOTTOM = 39;
-	/** Specialities raises the whole vanilla stack by this much (its HUD_SHIFT),
-	 * and the hunger row goes with it. Mirrored from {@code ManaHud}. */
-	private static final int SPECIALITIES_SHIFT = 7;
 	/** Steel, not gold. Gold is already spoken for on this corner of the HUD:
 	 * Battle Trance banks raw vanilla Absorption, which draws gold hearts one
 	 * row up, and gilding the row below it would read as more of the same
 	 * thing. Blue is the Seeker's mana orbs directly above. The exact
 	 * highlight and shadow live in the textures — see the class comment. */
 	private static final int NO_TINT = 0xFFFFFFFF;
-
-	private static final boolean SPECIALITIES_LOADED =
-			FabricLoader.getInstance().isModLoaded("specialities");
 
 	private BankedHungerHud() {
 	}
@@ -125,8 +120,10 @@ public final class BankedHungerHud {
 		boolean halfEdge = (banked & 1) == 1;
 
 		int right = client.getWindow().getGuiScaledWidth() / 2 + 91;
+		// Same live read as ManaHud's, and for the same reason (design R-C4): the
+		// hunger row rides the vanilla stack Specialities may or may not be raising.
 		int y = client.getWindow().getGuiScaledHeight() - BOTTOM
-				- (SPECIALITIES_LOADED ? SPECIALITIES_SHIFT : 0);
+				- SpecialitiesBridge.hudShift();
 
 		for (int i = edge; i < SLOTS; i++) {
 			int x = right - i * STEP - SPRITE;

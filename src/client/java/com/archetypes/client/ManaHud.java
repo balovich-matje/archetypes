@@ -5,7 +5,8 @@ import com.archetypes.Archetypes;
 import com.archetypes.Mana;
 import com.archetypes.ModState;
 
-import net.fabricmc.loader.api.FabricLoader;
+import com.archetypes.compat.SpecialitiesBridge;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -29,12 +30,6 @@ public final class ManaHud {
 	private static final int STEP = 8;
 	/** The hunger row's height above the screen bottom, plus one row. */
 	private static final int BOTTOM = 49;
-	/** Specialities raises the whole vanilla stack by this much (its HUD_SHIFT). */
-	private static final int SPECIALITIES_SHIFT = 7;
-
-	private static final boolean SPECIALITIES_LOADED =
-			FabricLoader.getInstance().isModLoaded("specialities");
-
 	private ManaHud() {
 	}
 
@@ -65,7 +60,9 @@ public final class ManaHud {
 		int width = client.getWindow().getGuiScaledWidth();
 		int height = client.getWindow().getGuiScaledHeight();
 		int right = width / 2 + 91;
-		int y = height - BOTTOM - (SPECIALITIES_LOADED ? SPECIALITIES_SHIFT : 0);
+		// Whatever Specialities has raised the vanilla stack by THIS FRAME, read from
+		// it rather than mirrored — its HUD-bar toggle can make that 0 (design R-C4).
+		int y = height - BOTTOM - SpecialitiesBridge.hudShift();
 
 		// Right-to-left like the hunger bar beneath: the first full orb is
 		// the outermost right one.

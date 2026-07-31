@@ -1,6 +1,7 @@
 package com.archetypes.compat;
 
-import net.fabricmc.loader.api.FabricLoader;
+import com.archetypes.platform.Platform;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -12,7 +13,7 @@ import net.minecraft.world.entity.player.Player;
  * mana pool just stays at its base size, growing nowhere.
  */
 public final class SpecialitiesBridge {
-	private static final boolean LOADED = FabricLoader.getInstance().isModLoaded("specialities");
+	private static final boolean LOADED = Platform.INSTANCE.isModLoaded("specialities");
 
 	private SpecialitiesBridge() {
 	}
@@ -57,6 +58,20 @@ public final class SpecialitiesBridge {
 		return LOADED ? Linked.grantLevels(player, levels) : -1;
 	}
 
+	/**
+	 * How far Skill Proficiencies has raised the vanilla bottom HUD <b>this frame</b>,
+	 * or 0 without the mod.
+	 *
+	 * <p>Read live, never mirrored. Both of this mod's bottom-HUD rows used to carry
+	 * their own hardcoded {@code SPECIALITIES_SHIFT = 7} applied on mere PRESENCE of
+	 * the other mod, and since its 1.6.0 HUD-bar toggle that number can be 0 at
+	 * runtime — a divergence neither build could see, because both compile and both
+	 * draw, just seven pixels apart (design R-C4).
+	 */
+	public static int hudShift() {
+		return LOADED ? Linked.hudShift() : 0;
+	}
+
 	/** Everything that names a Specialities class, loaded lazily and only
 	 * behind the LOADED check above. */
 	private static final class Linked {
@@ -77,6 +92,10 @@ public final class SpecialitiesBridge {
 
 		private static void award(final ServerPlayer player, final int amount) {
 			com.specialities.skills.SkillManager.addXp(player, SpellcastingSkill.INSTANCE, amount);
+		}
+
+		private static int hudShift() {
+			return com.specialities.client.SpecialitiesClient.hudShift();
 		}
 
 		private static int grantLevels(final ServerPlayer player, final int levels) {
