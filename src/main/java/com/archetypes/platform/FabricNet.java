@@ -137,10 +137,22 @@ final class FabricNet implements Net {
 	}
 
 	private static <P extends CustomPacketPayload> void register(final WireId id, final Wire<P> w) {
+		// 26.1 renamed both accessors: `playS2C()`/`playC2S()` -> `clientboundPlay()`/
+		// `serverboundPlay()`. Same registry, same `register(type, codec)` (measured on
+		// fabric-networking-api-v1 6.3.x and 5.1.6) — only the getter's name moves, so the
+		// direction branch itself is shared.
 		if (id.direction() == WireId.Direction.CLIENTBOUND) {
+			//? if >=26.1 {
 			PayloadTypeRegistry.clientboundPlay().register(w.type(), w.codec());
+			//?} else {
+			/*PayloadTypeRegistry.playS2C().register(w.type(), w.codec());
+			*///?}
 		} else {
+			//? if >=26.1 {
 			PayloadTypeRegistry.serverboundPlay().register(w.type(), w.codec());
+			//?} else {
+			/*PayloadTypeRegistry.playC2S().register(w.type(), w.codec());
+			*///?}
 		}
 	}
 
@@ -183,30 +195,41 @@ final class FabricNet implements Net {
 	 * {@code ClientPlayNetworking} — this class initialises only when one of its own
 	 * methods is first entered, and neither is reachable from the server.
 	 *
-	 * <p>It compiles here at all because this project puts the fabric-api umbrella on
-	 * the {@code implementation} configuration, so {@code src/main} does see the
-	 * client half. Skill Proficiencies measured the opposite on its per-module layout.
-	 * If the workspace's node script moves to per-module dependencies and takes
-	 * {@code fabric-networking-api-v1}'s client classes off this source set, this
-	 * holder is the one place that breaks, and it moves to {@code src/client} behind
-	 * a hook installed the way {@link Net#clientReceivers} is.
+	 * <p><b>It compiles here at all on 26.x only</b>, and Stage 3 measured why: the two
+	 * 26.x nodes run plain fabric-loom, which puts the WHOLE fabric-api module jar on
+	 * {@code src/main}'s compile classpath. From 1.21.11 down the node runs
+	 * fabric-loom-remap, which honours the module's {@code Fabric-Loom-Split-Environment}
+	 * header and hands this source set the {@code -common} half only. So the prediction
+	 * this javadoc used to carry has come true, on the boundary it was always going to:
+	 * below 26.1 the two calls move to {@code src/client} behind a hook installed the way
+	 * {@link Net#clientReceivers} is, and {@link ClientNetHooks} is that hook.
 	 */
 	private static final class ClientSide {
 		private ClientSide() {
 		}
 
 		static void send(final CustomPacketPayload payload) {
+			//? if >=26.1 {
 			net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(payload);
+			//?} else {
+			/*ClientNetHooks.calls().send(payload);
+			*///?}
 		}
 
 		// Deliberately does NOT touch `context.client()`: that returns Minecraft, and
 		// Minecraft is the one client type src/main genuinely cannot name here. The sink
-		// schedules itself onto the client thread instead — see Net#clientReceivers.
+		// schedules itself onto the client thread instead — see Net#clientReceivers. That
+		// is also what keeps the below-26.1 hook's signature free of any client type: it
+		// hands back the payload and nothing else.
 		static <P extends CustomPacketPayload> void receive(final WireId id, final Wire<P> w,
 				final Consumer<FriendlyByteBuf> sink) {
+			//? if >=26.1 {
 			net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 					.registerGlobalReceiver(w.type(), (payload, context) ->
 							sink.accept(decode(id, payload)));
+			//?} else {
+			/*ClientNetHooks.calls().receive(w.type(), payload -> sink.accept(decode(id, payload)));
+			*///?}
 		}
 	}
 }

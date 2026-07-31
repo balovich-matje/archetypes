@@ -10,7 +10,11 @@ import com.archetypes.SlayerNodes;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
@@ -150,7 +154,11 @@ public final class ProcIndicatorHud {
 				ThreadLocalRandom.current().nextBoolean() ? 1 : -1, System.currentTimeMillis()));
 	}
 
+	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
+	//?} else {
+	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?}
 		if (ACTIVE.isEmpty()) {
 			return;
 		}
@@ -183,7 +191,11 @@ public final class ProcIndicatorHud {
 				var pose = graphics.pose();
 				pose.pushMatrix();
 				pose.scale(scale, scale);
+				//? if >=26.1 {
 				graphics.fakeItem(proc.item(),
+				//?} else {
+				/*graphics.renderFakeItem(proc.item(),
+				*///?}
 						Math.round((x + (SIZE - drawn) / 2.0F) / scale),
 						Math.round((y + (SIZE - drawn) / 2.0F) / scale));
 				pose.popMatrix();

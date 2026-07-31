@@ -5,16 +5,39 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
-// 26.2 split the old `Gui` in two: the HUD renderer became `net.minecraft.client.gui.Hud`
-// and `Gui` kept screen/toast management. Both class files exist on 26.2, so this is a
-// MOVE of the heart drawing rather than a rename of one class, and only the owner forks —
-// `extractHeart(GuiGraphicsExtractor, <owner>$HeartType, IIZZZ)V` and the
-// `GuiGraphicsExtractor.blitSprite` target are otherwise identical on 26.1.2 (measured).
+// THE HEART DRAW IS THE MOD'S MOST FORKED SINGLE HOOK, and after Stage 3 it is a THREE-arm
+// chain on two independent boundaries that happen to meet in one descriptor:
+//
+//   >=26.2   `net.minecraft.client.gui.Hud.extractHeart(GuiGraphicsExtractor, Hud$HeartType, IIZZZ)V`
+//   >=26.1   `net.minecraft.client.gui.Gui.extractHeart(GuiGraphicsExtractor, Gui$HeartType, IIZZZ)V`
+//   else     `net.minecraft.client.gui.Gui.renderHeart(GuiGraphics,          Gui$HeartType, IIZZZ)V`
+//
+//   * the OWNER moves at 26.2, which split the old `Gui` in two — the HUD renderer became
+//     `Hud`, `Gui` kept screen/toast management. Both class files exist on 26.2, so this is a
+//     move of the heart drawing rather than a rename of one class.
+//   * the METHOD and its first parameter move at 26.1, the extract-vs-immediate boundary.
+//
+// What does NOT move, and it is what keeps one handler body serving every node: the wrapped
+// call is `blitSprite(RenderPipeline, Identifier, IIII)V` on BOTH graphics types.
+// Read out of the 1.21.11 `Gui.renderHeart` bytecode rather than assumed —
+//     21: invokevirtual  // Method …/GuiGraphics.blitSprite:(L…/RenderPipeline;L…/Identifier;IIII)V
+// — the same six-arg overload 26.x's extractHeart calls, in the same position, taking the
+// sprite the `HeartType.getSprite(ZZZ)` immediately above it produced. So conventions §5a
+// holds in its strongest form here: three annotations, one implementation.
+//
+// A NOTE ON THE DESCRIPTOR, because this is the first REMAPPED node (conventions §5h): every
+// `method =` and `target =` here is a full descriptor, which is what makes the below-26.1
+// arm resolvable at all. `Gui` after remap has ~20 overloads named `a`; a bare `renderHeart`
+// would be a coin toss, not a lookup.
 //? if >=26.2 {
 import net.minecraft.client.gui.Hud;
 //?} else {
 /*import net.minecraft.client.gui.Gui;
+*///?}
+//? if >=26.1 {
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
 *///?}
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Mixin;
@@ -27,7 +50,7 @@ import org.spongepowered.asm.mixin.injection.At;
  * deliberately left alone: it means the Wither, and only the Wither.
  *
  * <p>The swap happens at the blit rather than at {@code HeartType.forPlayer}
- * because that enum is private to {@code Hud} and cannot be named from here.
+ * because that enum is private to the HUD class and cannot be named from here.
  * Wrapping the sprite id instead needs no access widener, and it catches the
  * absorption and poisoned rows too, which the type alone would not.
  */
@@ -44,14 +67,24 @@ public abstract class HudMixin {
 					target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite("
 							+ "Lcom/mojang/blaze3d/pipeline/RenderPipeline;"
 							+ "Lnet/minecraft/resources/Identifier;IIII)V"))
-	//?} else {
+	//?} elif >=26.1 {
 	/*@WrapOperation(method = "extractHeart(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Gui$HeartType;IIZZZ)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite("
 							+ "Lcom/mojang/blaze3d/pipeline/RenderPipeline;"
 							+ "Lnet/minecraft/resources/Identifier;IIII)V"))
+	*///?} else {
+	/*@WrapOperation(method = "renderHeart(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/gui/Gui$HeartType;IIZZZ)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite("
+							+ "Lcom/mojang/blaze3d/pipeline/RenderPipeline;"
+							+ "Lnet/minecraft/resources/Identifier;IIII)V"))
 	*///?}
+	//? if >=26.1 {
 	private void archetypes$undeadHearts(final GuiGraphicsExtractor graphics,
+	//?} else {
+	/*private void archetypes$undeadHearts(final GuiGraphics graphics,
+	*///?}
 			final RenderPipeline pipeline, final Identifier sprite, final int x, final int y,
 			final int width, final int height, final Operation<Void> original) {
 		original.call(graphics, pipeline, UndeadHud.drain(sprite), x, y, width, height);

@@ -8,7 +8,15 @@ import com.archetypes.platform.Net;
 import com.archetypes.state.WireId;
 
 import net.minecraft.ChatFormatting;
+//? if >=26.1 {
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -233,7 +241,12 @@ public class ArchetypePickerScreen extends Screen {
 	}
 
 	@Override
+	// The same `Screen` draw-method move as ArchetypeScreen's — see the note there.
+	//? if >=26.1 {
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
+	//?} else {
+	/*public void render(final GuiGraphics graphics, final int mouseX, final int mouseY, final float a) {
+	*///?}
 		this.advanceHover(mouseX, mouseY);
 
 		int panelLeft = this.panelLeft();
@@ -241,11 +254,19 @@ public class ArchetypePickerScreen extends Screen {
 
 		VanillaUi.window(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT);
 
+		//? if >=26.1 {
 		graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, panelTop + 8,
+		//?} else {
+		/*graphics.drawString(this.font, this.title, (this.width - this.font.width(this.title)) / 2, panelTop + 8,
+		*///?}
 				VanillaUi.LABEL, false);
 
 		Component prompt = Component.translatable("screen.archetypes.picker.prompt");
+		//? if >=26.1 {
 		graphics.text(this.font, prompt, (this.width - this.font.width(prompt)) / 2, panelTop + 21,
+		//?} else {
+		/*graphics.drawString(this.font, prompt, (this.width - this.font.width(prompt)) / 2, panelTop + 21,
+		*///?}
 				VanillaUi.LABEL_FAINT, false);
 
 		int top = this.framesTop();
@@ -268,14 +289,22 @@ public class ArchetypePickerScreen extends Screen {
 			}
 
 			Component name = archetype.tierName(0);
+			//? if >=26.1 {
 			graphics.text(this.font, name, left + (FRAME_W - this.font.width(name)) / 2, top + 6,
+			//?} else {
+			/*graphics.drawString(this.font, name, left + (FRAME_W - this.font.width(name)) / 2, top + 6,
+			*///?}
 					archetype.color(), true);
 
 			// The role line: what you'll be doing, always visible.
 			int roleY = top + ROLE_TOP;
 
 			for (FormattedCharSequence line : this.font.split(archetype.role(), FRAME_W - 8)) {
+				//? if >=26.1 {
 				graphics.text(this.font, line, left + (FRAME_W - this.font.width(line)) / 2, roleY,
+				//?} else {
+				/*graphics.drawString(this.font, line, left + (FRAME_W - this.font.width(line)) / 2, roleY,
+				*///?}
 						VanillaUi.LABEL_FAINT, false);
 				roleY += 9;
 			}
@@ -296,7 +325,11 @@ public class ArchetypePickerScreen extends Screen {
 
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
 		// anything drawn after it covers the buttons.
+		//? if >=26.1 {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
+		//?} else {
+		/*super.render(graphics, mouseX, mouseY, a);
+		*///?}
 
 		// The ability preview floats over everything, Cancel included.
 		Slot slot = this.abilitySlotAt(mouseX, mouseY);
@@ -307,7 +340,11 @@ public class ArchetypePickerScreen extends Screen {
 	}
 
 	/** One card's row of active-ability previews. */
+	//? if >=26.1 {
 	private void abilityRow(final GuiGraphicsExtractor graphics, final int frameIndex,
+	//?} else {
+	/*private void abilityRow(final GuiGraphics graphics, final int frameIndex,
+	*///?}
 			final Archetype archetype, final int mouseX, final int mouseY) {
 		int y = this.framesTop() + ABILITY_ROW_TOP;
 
@@ -360,7 +397,11 @@ public class ArchetypePickerScreen extends Screen {
 	 * One frame's crest, grown by {@code progress} (0 at rest, 1 fully hovered),
 	 * centered in the crest band between the role line and the ability row.
 	 */
+	//? if >=26.1 {
 	private void figure(final GuiGraphicsExtractor graphics, final Archetype archetype,
+	//?} else {
+	/*private void figure(final GuiGraphics graphics, final Archetype archetype,
+	*///?}
 			final int index, final float progress) {
 		float eased = progress * progress * (3.0F - 2.0F * progress);
 		int size = Math.round(PORTRAIT * Mth.lerp(eased, 1.0F, HOVER_SCALE));
@@ -403,7 +444,11 @@ public class ArchetypePickerScreen extends Screen {
 						-12, -19, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_ICON,
 						-7, -16, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
+				//? if >=26.1 {
 				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+				//?} else {
+				/*graphics.renderFakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+				*///?}
 						net.minecraft.world.item.Items.POTION,
 						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -1);
 			}

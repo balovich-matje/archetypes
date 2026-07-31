@@ -17,7 +17,22 @@ import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+// 26.1 renamed the MODULE and the class with it: `fabric-key-binding-api-v1` /
+// `client.keybinding.v1.KeyBindingHelper.registerKeyBinding` became
+// `fabric-key-mapping-api-v1` / `client.keymapping.v1.KeyMappingHelper.registerKeyMapping`.
+// The node script swaps the module at the same boundary.
+//
+// WATCH THE ADJACENT LINE (conventions §5k): the KeyMapping CONSTRUCTOR's category argument
+// is a different boundary — `KeyMapping.Category` is `>=1.21.11` and 1.21.11 HAS it
+// (`javap`: `KeyMapping(String, InputConstants$Type, int, KeyMapping$Category)` plus the
+// `Category` record with `register(Identifier)`), so the `new KeyMapping(...)` below is
+// SHARED on this node and only breaks at Stage 4. Collapsing the two into one predicate is
+// exactly the bug §5k describes.
+//? if >=26.1 {
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+//?} else {
+/*import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+*///?}
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -82,7 +97,15 @@ public class ArchetypesClient implements ClientModInitializer {
 		NightFormFx.initialize();
 		RadianceLight.initialize();
 
+		// Another straight 26.1 rename inside fabric-api: `ParticleFactoryRegistry` became
+		// `ParticleProviderRegistry` (and `PendingParticleFactory` -> `PendingParticleProvider`).
+		// `getInstance()` and both `register` overloads are shape-identical (`javap` on
+		// fabric-particles-v1 5.0.18 and 4.2.12), so the constructor reference is shared.
+		//? if >=26.1 {
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
+		//?} else {
+		/*net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry.getInstance()
+		*///?}
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
 
 		// Rebindable slot keys — what a slot casts depends on the archetype,
@@ -92,7 +115,11 @@ public class ArchetypesClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_N, GLFW.GLFW_KEY_M, GLFW.GLFW_KEY_J };
 
 		for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
+			//? if >=26.1 {
 			ABILITY_KEYS[slot] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
+			//?} else {
+			/*ABILITY_KEYS[slot] = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+			*///?}
 					"key.archetypes.ability_" + (slot + 1), InputConstants.Type.KEYSYM, defaults[slot],
 					KEY_CATEGORY));
 		}
@@ -246,7 +273,11 @@ public class ArchetypesClient implements ClientModInitializer {
 		HudElementRegistry.replaceElement(VanillaHudElements.FOOD_BAR, original ->
 				(graphics, tickCounter) -> {
 					if (!UndeadHud.active()) {
+						//? if >=26.1 {
 						original.extractRenderState(graphics, tickCounter);
+						//?} else {
+						/*original.render(graphics, tickCounter);
+						*///?}
 					}
 				});
 
@@ -254,15 +285,38 @@ public class ArchetypesClient implements ClientModInitializer {
 		// bubbles step up one row instead of hiding the orbs underwater.
 		HudElementRegistry.replaceElement(VanillaHudElements.AIR_BAR, original ->
 				(graphics, tickCounter) -> {
+					// `HudElement`'s own functional method is the same extract-vs-immediate
+					// move — `extractRenderState(GuiGraphicsExtractor, DeltaTracker)` is
+					// `render(GuiGraphics, DeltaTracker)` below 26.1. The registry around it
+					// does NOT move: `HudElementRegistry.replaceElement/attachElementAfter`
+					// and every `VanillaHudElements` id are declared the same on
+					// fabric-rendering-v1 16.2.10 (measured). `pose()` is a
+					// `Matrix3x2fStack` on both, so the shift math is shared.
 					if (ManaHud.visible()) {
 						graphics.pose().pushMatrix();
 						graphics.pose().translate(0.0F, -10.0F);
+						//? if >=26.1 {
 						original.extractRenderState(graphics, tickCounter);
+						//?} else {
+						/*original.render(graphics, tickCounter);
+						*///?}
 						graphics.pose().popMatrix();
 					} else {
+						//? if >=26.1 {
 						original.extractRenderState(graphics, tickCounter);
+						//?} else {
+						/*original.render(graphics, tickCounter);
+						*///?}
 					}
 				});
+
+		// Below 26.1 the remapping loom splits every split-environment mod jar and
+		// `src/main` sees the common half only, so two things it reaches — fabric-api's
+		// `ClientPlayNetworking` and Skill Proficiencies' `SpecialitiesClient.hudShift()` —
+		// have to be handed down from here. Must run BEFORE `clientReceivers` below.
+		//? if <26.1 {
+		/*ClientHandDown.install();
+		*///?}
 
 		// The two clientbound channels, handed down to the seam so registration itself
 		// stays in common init on every loader (see Net#clientReceivers). Each sink
@@ -296,7 +350,13 @@ public class ArchetypesClient implements ClientModInitializer {
 				// archetype can be picked while this screen is still alive.
 				BookmarkTab tab = new BookmarkTab(tabLabel(client), () -> openArchetypeUi(client, screen));
 				anchorTab((AbstractContainerScreen<?>) screen, tab);
+				// `Screens.getButtons` was renamed `getWidgets` at 26.1 — same list, same
+				// element type (measured on fabric-screen-api-v1 3.1.7 and 5.1.0).
+				//? if >=26.1 {
 				Screens.getWidgets(screen).add(tab);
+				//?} else {
+				/*Screens.getButtons(screen).add(tab);
+				*///?}
 
 				ScreenEvents.afterTick(screen).register(s -> {
 					anchorTab((AbstractContainerScreen<?>) s, tab);
@@ -311,7 +371,11 @@ public class ArchetypesClient implements ClientModInitializer {
 						.tooltip(Tooltip.create(Component.translatable("screen.archetypes.button")))
 						.build();
 				anchorButton((AbstractContainerScreen<?>) screen, button);
+				//? if >=26.1 {
 				Screens.getWidgets(screen).add(button);
+				//?} else {
+				/*Screens.getButtons(screen).add(button);
+				*///?}
 
 				ScreenEvents.afterTick(screen).register(s -> {
 					anchorButton((AbstractContainerScreen<?>) s, button);

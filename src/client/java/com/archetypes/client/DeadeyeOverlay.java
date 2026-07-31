@@ -5,7 +5,11 @@ import com.archetypes.Tuning;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
 import net.minecraft.world.entity.player.Player;
@@ -43,7 +47,11 @@ public final class DeadeyeOverlay {
 	private DeadeyeOverlay() {
 	}
 
+	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
+	//?} else {
+	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?}
 		long now = Util.getMillis();
 		float dt = Math.min((now - lastFrameMs) / 1000.0F, 0.1F);
 		lastFrameMs = now;

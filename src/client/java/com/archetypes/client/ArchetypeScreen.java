@@ -14,7 +14,15 @@ import com.archetypes.platform.Net;
 import com.archetypes.state.WireId;
 
 import net.minecraft.ChatFormatting;
+//? if >=26.1 {
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -323,7 +331,15 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	@Override
+	// `Screen`'s own draw method is the same extract-vs-immediate move as every other GUI
+	// surface: `extractRenderState(GuiGraphicsExtractor, int, int, float)` is
+	// `render(GuiGraphics, int, int, float)` below 26.1, super call included. The comment two
+	// lines down about widgets keeps holding — `Screen.render` walks the renderables there too.
+	//? if >=26.1 {
 	public void extractRenderState(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY, final float a) {
+	//?} else {
+	/*public void render(final GuiGraphics graphics, final int mouseX, final int mouseY, final float a) {
+	*///?}
 		int panelLeft = this.panelLeft();
 		int panelTop = this.panelTop();
 
@@ -452,7 +468,11 @@ public class ArchetypeScreen extends Screen {
 
 		// Widgets last: Screen.extractRenderState only walks the renderables, so
 		// anything drawn after it covers the buttons.
+		//? if >=26.1 {
 		super.extractRenderState(graphics, mouseX, mouseY, a);
+		//?} else {
+		/*super.render(graphics, mouseX, mouseY, a);
+		*///?}
 
 		// Click-only (user call — no hover preview): the pinned legend sits
 		// anchored under its button until clicked again. Node tooltips win
@@ -504,7 +524,11 @@ public class ArchetypeScreen extends Screen {
 	 * <p>Read straight off the attachment, which syncs to its owning client, so
 	 * there is no separate packet to keep in step.
 	 */
+	//? if >=26.1 {
 	private void progressBars(final GuiGraphicsExtractor graphics, final int mouseX, final int mouseY) {
+	//?} else {
+	/*private void progressBars(final GuiGraphics graphics, final int mouseX, final int mouseY) {
+	*///?}
 		if (this.minecraft.player == null) {
 			return;
 		}
@@ -551,7 +575,11 @@ public class ArchetypeScreen extends Screen {
 		if (epicView) {
 			Component cap = Component.translatable("screen.archetypes.tree.epic.cap",
 					SkillPoints.MAX_POINTS_PER_EPIC_SUB_TREE);
+			//? if >=26.1 {
 			graphics.text(this.font, cap, left + (width - this.font.width(cap)) / 2, top,
+			//?} else {
+			/*graphics.drawString(this.font, cap, left + (width - this.font.width(cap)) / 2, top,
+			*///?}
 					VanillaUi.LABEL_FAINT, false);
 		}
 
@@ -560,8 +588,16 @@ public class ArchetypeScreen extends Screen {
 				this.archetype.tierName(0), this.archetype.tierName(1));
 		Component levelText = Component.translatable("screen.archetypes.tree.bar.level", level
 				+ "/" + SkillPoints.MAX_LEVEL);
+		//? if >=26.1 {
 		graphics.text(this.font, road, left, top, VanillaUi.LABEL, false);
+		//?} else {
+		/*graphics.drawString(this.font, road, left, top, VanillaUi.LABEL, false);
+		*///?}
+		//? if >=26.1 {
 		graphics.text(this.font, levelText, left + width - this.font.width(levelText), top,
+		//?} else {
+		/*graphics.drawString(this.font, levelText, left + width - this.font.width(levelText), top,
+		*///?}
 				VanillaUi.LABEL, false);
 		VanillaUi.progressBar(graphics, left, top + 10, width, BAR_HEIGHT,
 				SkillPoints.archetypeProgress(player), this.archetype.color());
@@ -573,7 +609,11 @@ public class ArchetypeScreen extends Screen {
 		Component next = Component.literal(SkillPoints.xpIntoLevel(player)
 				+ "/" + SkillPoints.costForNextLevel(player) + " XP  (x"
 				+ String.format(java.util.Locale.ROOT, "%.2f", rate) + ")");
+		//? if >=26.1 {
 		graphics.text(this.font, next, left, top + 18, VanillaUi.LABEL_FAINT, false);
+		//?} else {
+		/*graphics.drawString(this.font, next, left, top + 18, VanillaUi.LABEL_FAINT, false);
+		*///?}
 
 		// The rate earns an explanation on hover. Both lines go through
 		// font.split at VanillaUi.TOOLTIP_WIDTH, the same width every other
@@ -632,7 +672,11 @@ public class ArchetypeScreen extends Screen {
 	 * washed-out tone so it sits into the backdrop art rather than competing with
 	 * the nodes.
 	 */
+	//? if >=26.1 {
 	private void sectionTitle(final GuiGraphicsExtractor graphics, final SubTree tree, final int section) {
+	//?} else {
+	/*private void sectionTitle(final GuiGraphics graphics, final SubTree tree, final int section) {
+	*///?}
 		Component label = tree.displayName().copy().withStyle(ChatFormatting.BOLD);
 		float x = this.sectionCenter(section) - this.font.width(label) * SECTION_TITLE_SCALE / 2.0F;
 		float y = this.canvasTop() + 6;
@@ -640,7 +684,11 @@ public class ArchetypeScreen extends Screen {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE);
+		//? if >=26.1 {
 		graphics.text(this.font, label, 0, 0, VanillaUi.SECTION_TITLE, false);
+		//?} else {
+		/*graphics.drawString(this.font, label, 0, 0, VanillaUi.SECTION_TITLE, false);
+		*///?}
 		graphics.pose().popMatrix();
 	}
 }

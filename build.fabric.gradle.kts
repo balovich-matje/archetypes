@@ -164,7 +164,18 @@ dependencies {
 		"../specialities/build/libs/$specialitiesVersion/" +
 			"specialities-$specialitiesVersion+${sc.current.version}.jar",
 	)
-	compileOnly(files(specialitiesJar))
+	if (sc.current.parsed >= "26.1") {
+		compileOnly(files(specialitiesJar))
+	} else {
+		// From 1.21.11 down the jar is `Fabric-Mapping-Namespace: intermediary` (checked in
+		// its manifest), so it has to go through Loom's remapper or every Minecraft type in
+		// its signatures stays spelled `class_2960`. Same fork, same reason as PAL's above,
+		// and the same silent failure mode if it is missed — `SkillType.iconTexture()`
+		// returning `class_2960` does not fail to resolve, it fails to MATCH the
+		// `Identifier` this repo's SpellcastingSkill declares, one compile error away from
+		// looking like an unrelated typo.
+		modCompileOnly(files(specialitiesJar))
+	}
 }
 
 // LOADER-AXIS EXCLUSIONS (conventions §5e-ter). They are here BEFORE the first

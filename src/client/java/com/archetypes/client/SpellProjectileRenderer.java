@@ -7,7 +7,15 @@ import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
 import net.minecraft.client.renderer.entity.ThrownItemRenderer;
 import net.minecraft.client.renderer.entity.state.ThrownItemRenderState;
+// The same 26.1 package move as GreatswordSweepParticle's `QuadParticleRenderState` — see
+// the note there. `SubmitNodeCollector`, `ThrownItemRenderState`, `createRenderState`,
+// `extractRenderState` and `submit` all keep their 26.x names and shapes on 1.21.11, so the
+// render-state architecture this class is built on survives the node intact.
+//? if >=26.1 {
 import net.minecraft.client.renderer.state.level.CameraRenderState;
+//?} else {
+/*import net.minecraft.client.renderer.state.CameraRenderState;
+*///?}
 
 /**
  * The vanilla thrown-item renderer, except Mind Well's empowered missile is

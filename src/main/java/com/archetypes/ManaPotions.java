@@ -1,6 +1,16 @@
 package com.archetypes;
 
+// Brewing registration is a THREE-way split across this port and only its NAME moves at
+// this boundary: `registerPotionRecipe(Holder<Potion>, Ingredient, Holder<Potion>)` and the
+// `BUILD` event are shape-identical on both types (`javap` on 26.x's
+// fabric-content-registries-v0 11.3.0 and 1.21.11's 10.2.14), so the lambda below is shared.
+// The third arm — `FabricBrewingRecipeRegistry`, no builder at all — is 0.92.11's and lands
+// at Stage 5.
+//? if >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
+//?} else {
+/*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
+*///?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -42,7 +52,11 @@ public final class ManaPotions {
 	}
 
 	public static void initialize() {
+		//? if >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
+		//?} else {
+		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
+		*///?}
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE);
 			builder.registerPotionRecipe(MANA_RESTORE, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE);
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.AMETHYST_SHARD), MANA_REGENERATION);

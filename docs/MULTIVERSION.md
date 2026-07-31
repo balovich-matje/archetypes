@@ -445,6 +445,60 @@ invented, and no new predicate was needed for the whole beachhead.
 the shield cluster survives this node intact and its excision question (R-A5) stays where
 the design put it, at Stage 4.
 
+**STAGE 3 ADDITIONS to the `>=26.1` row — measured on the node.** Same rule as Stage 2's: a
+boundary a `//?` block relies on is written down in the same commit that first uses it. Every
+one of these is the SAME `>=26.1` boundary. **No new predicate was invented for the whole
+node**, and the one compound predicate that appears (`>=1.21.11 && <26.2`) is a conjunction of
+two frozen ones, not a synonym.
+
+*Vanilla:*
+
+| API | 26.x | 1.21.11 and below | Used by |
+|---|---|---|---|
+| `net.minecraft.client.gui.GuiGraphicsExtractor` | extract-then-draw | **`GuiGraphics`**, immediate | 12 client files. `fill` and all five `blit` overloads are declared IDENTICALLY on both (`javap -p`), so only the type name, `text()`→`drawString()` and `fakeItem()`→`renderFakeItem()` move, each on a single line |
+| `Screen.extractRenderState(GuiGraphicsExtractor,III F)` | that | **`render(GuiGraphics,int,int,float)`** | both screens, super call included |
+| `AbstractWidget.extractWidgetRenderState` | that | **`renderWidget(GuiGraphics,int,int,float)`** | `BookmarkTab`. `onClick(MouseButtonEvent, boolean)`, `playDownSound`, `updateWidgetNarration`, `isHovered()` are UNCHANGED |
+| `Toast.extractRenderState(GuiGraphicsExtractor,Font,long)` | that | **`render(GuiGraphics,Font,long)`** | `ArchetypeLevelUpToast`. The rest of the interface — `getWantedVisibility`, `update(ToastManager,long)`, default `getSoundEvent()` — is unchanged on 1.21.11 |
+| `Hud`/`Gui.extractHeart(GuiGraphicsExtractor, …$HeartType, IIZZZ)V` | that | **`Gui.renderHeart(GuiGraphics, Gui$HeartType, IIZZZ)V`** | `HudMixin`, now a THREE-arm chain (owner moves at 26.2, method at 26.1). The wrapped `blitSprite(RenderPipeline,Identifier,IIII)V` is the same overload on both graphics types — read out of the 1.21.11 `renderHeart` bytecode, not assumed |
+| `net.minecraft.client.renderer.state.level.{QuadParticleRenderState,CameraRenderState}` | that package | **`net.minecraft.client.renderer.state`** — a package MOVE only | `GreatswordSweepParticle`, `SpellProjectileRenderer`. ⚠ **The design predicted a particle REWRITE here and was wrong**: `SingleQuadParticle.extract`/both `extractRotatedQuad` overloads exist on 1.21.11 with identical shapes, so the extract-based particle pipeline survives this node and the `render(VertexConsumer, Camera, float)` rewrite belongs to Stage 4 |
+| `Particle.getLightColor(float)` | **`getLightCoords(float)`** | `getLightColor(float)` | `GreatswordSweepParticle` |
+| `Level.getDayTime()` | **`getOverworldClockTime()`** (26.x moved the clock behind `WorldClock` holders) | `getDayTime()` | `ShadowTicker.isNight` |
+| `Player.displayClientMessage(Component, boolean)` | **`sendOverlayMessage(Component)`** | `displayClientMessage(c, true)` | `NightForm`, `SkillTokenItem`, `SpellcastingTomeItem` |
+| `BlocksAttacks.bypassedBy()` | `Optional<HolderSet<DamageType>>` | **`Optional<TagKey<DamageType>>`** | `ColossusProtector`. `DamageSource.is(TagKey)` exists on every node, so the legacy arm is a direct read |
+*fabric-api:*
+
+| API | `>=26.1` | below | Used by |
+|---|---|---|---|
+| `PayloadTypeRegistry.clientboundPlay()`/`serverboundPlay()` | that | **`playS2C()`/`playC2S()`** | `FabricNet` |
+| `creativetab.v1.{CreativeModeTabEvents.modifyOutputEvent, FabricCreativeModeTab.builder}` | that | **`itemgroup.v1.{ItemGroupEvents.modifyEntriesEvent, FabricItemGroup.builder}`** | `ModItems`. Both callback types implement vanilla's `CreativeModeTab.Output`, so every `output.accept(...)` is shared |
+| `registry.FabricPotionBrewingBuilder` | that | **`FabricBrewingRecipeRegistryBuilder`** | `ManaPotions`, `AmnesiaPotions`. `BUILD` + `registerPotionRecipe(Holder,Ingredient,Holder)` identical |
+| `client.keymapping.v1.KeyMappingHelper.registerKeyMapping` | that | **`client.keybinding.v1.KeyBindingHelper.registerKeyBinding`** | `ArchetypesClient` |
+| `client.particle.v1.ParticleProviderRegistry` (+ `PendingParticleProvider`) | that | **`ParticleFactoryRegistry`** (+ `PendingParticleFactory`) | `ArchetypesClient` |
+| `client.screen.v1.Screens.getWidgets` | that | **`getButtons`** | `ArchetypesClient` ×2 |
+| `hud.HudElement`'s functional method | `extractRenderState(GuiGraphicsExtractor, DeltaTracker)` | **`render(GuiGraphics, DeltaTracker)`** | `ArchetypesClient`'s two `replaceElement` wrappers. `HudElementRegistry` itself and every `VanillaHudElements` id are UNCHANGED |
+
+**STAGE 3, A BOUNDARY THAT IS NOT AN API AT ALL — and it is the finding with the longest
+reach.** At `>=26.1` the node runs plain fabric-loom (Minecraft is unobfuscated); below it,
+`dev.kikugie.loom-back-compat` switches to fabric-loom-**remap**. The remapping loom honours a
+mod jar's `Fabric-Loom-Split-Environment` header and puts only the `-common` half on
+`src/main`'s compile classpath. Measured:
+
+```
+:26.2-fabric    compileClasspath   net.fabricmc.fabric-api:fabric-networking-api-v1:6.3.3
+:26.1-fabric    compileClasspath   net.fabricmc.fabric-api:fabric-networking-api-v1:6.3.1
+:1.21.11-fabric compileClasspath   remapped.…:fabric-networking-api-v1-…-COMMON:5.1.6
+:1.21.11-fabric clientCompileClasspath  …-CLIENT + …-common
+```
+
+So from 1.21.11 down, **`src/main` cannot name `net.fabricmc.fabric.api.client.…` or
+`com.specialities.client.…` at all.** That is Skill Proficiencies' conventions §5g ("a seam in
+`src/main` cannot reach client-only API") restated as a build fact; this repo had been getting
+away with two violations because 26.x's loom does not split. Both are now hand-downs from
+client init (`platform/ClientNetHooks`, `SpecialitiesBridge#installClientHudShift`,
+`client/ClientHandDown`), gated `<26.1` so the two 26.x jars do not move a byte. **Review test
+for every later stage: a new `src/main` reference to any `…api.client…` package compiles green
+on 26.x and fails only on a remapped node.**
+
 **Also record (not new predicates, but new *three-way* splits):**
 - **Brewing is three-way**: `FabricPotionBrewingBuilder` (`>=26.1`) / `FabricBrewingRecipeRegistryBuilder` (1.21.11, 1.21.1) / `FabricBrewingRecipeRegistry` (0.92.11 only). Two arms plus an else.
 - **The heart draw is four-way** (§4.3).

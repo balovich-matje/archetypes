@@ -9,7 +9,11 @@ import com.archetypes.compat.SpecialitiesBridge;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
@@ -40,7 +44,11 @@ public final class ManaHud {
 				&& ModState.get(client.player) == Archetype.INTELLECT;
 	}
 
+	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
+	//?} else {
+	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?}
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
 
@@ -81,10 +89,30 @@ public final class ManaHud {
 		int textX = right - rowWidth + (rowWidth - client.font.width(label)) / 2;
 		int textY = y - 1;
 
+		//? if >=26.1 {
 		graphics.text(client.font, label, textX + 1, textY, 0xFF000000, false);
+		//?} else {
+		/*graphics.drawString(client.font, label, textX + 1, textY, 0xFF000000, false);
+		*///?}
+		//? if >=26.1 {
 		graphics.text(client.font, label, textX - 1, textY, 0xFF000000, false);
+		//?} else {
+		/*graphics.drawString(client.font, label, textX - 1, textY, 0xFF000000, false);
+		*///?}
+		//? if >=26.1 {
 		graphics.text(client.font, label, textX, textY + 1, 0xFF000000, false);
+		//?} else {
+		/*graphics.drawString(client.font, label, textX, textY + 1, 0xFF000000, false);
+		*///?}
+		//? if >=26.1 {
 		graphics.text(client.font, label, textX, textY - 1, 0xFF000000, false);
+		//?} else {
+		/*graphics.drawString(client.font, label, textX, textY - 1, 0xFF000000, false);
+		*///?}
+		//? if >=26.1 {
 		graphics.text(client.font, label, textX, textY, blocked ? 0xFF999999 : 0xFF7FB2FF, false);
+		//?} else {
+		/*graphics.drawString(client.font, label, textX, textY, blocked ? 0xFF999999 : 0xFF7FB2FF, false);
+		*///?}
 	}
 }

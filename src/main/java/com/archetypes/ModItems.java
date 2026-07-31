@@ -2,7 +2,18 @@ package com.archetypes;
 
 import com.archetypes.items.SkillTokenItem;
 
+// 26.1 renamed the module and every type in it: `fabric-item-group-api-v1` /
+// `itemgroup.v1` became `fabric-creative-tab-api-v1` / `creativetab.v1`, and with it
+// `ItemGroupEvents.modifyEntriesEvent` -> `CreativeModeTabEvents.modifyOutputEvent` and
+// `FabricItemGroup.builder()` -> `FabricCreativeModeTab.builder()`. The node script swaps
+// the MODULE at the same boundary. Only the two head lines and the builder call fork; every
+// `output.accept(...)` below is shared, because both callback types implement vanilla's
+// `CreativeModeTab.Output` and inherit the same `accept(ItemLike)` (measured on both jars).
+//? if >=26.1 {
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
+//?} else {
+/*import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+*///?}
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
@@ -281,14 +292,23 @@ public final class ModItems {
 	}
 
 	public static void initialize() {
+		//? if >=26.1 {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
 				.register(output -> {
+		//?} else {
+		/*ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
+				.register(output -> {
+		*///?}
 					output.accept(SKILL_TOKEN);
 					output.accept(SPELLCASTING_TOME_25);
 					output.accept(SPELLCASTING_TOME_100);
 				});
 
+		//? if >=26.1 {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output -> {
+		//?} else {
+		/*ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT).register(output -> {
+		*///?}
 			output.accept(WOODEN_GREATSWORD);
 			output.accept(STONE_GREATSWORD);
 			output.accept(COPPER_GREATSWORD);
@@ -316,7 +336,11 @@ public final class ModItems {
 				net.minecraft.resources.ResourceKey.create(Registries.CREATIVE_MODE_TAB,
 						Archetypes.id("archetypes"));
 		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, tabKey,
+				//? if >=26.1 {
 				net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab.builder()
+				//?} else {
+				/*net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup.builder()
+				*///?}
 						.title(net.minecraft.network.chat.Component.translatable("itemGroup.archetypes.archetypes"))
 						.icon(() -> new net.minecraft.world.item.ItemStack(MAGIC_WAND))
 						.displayItems((parameters, output) -> {

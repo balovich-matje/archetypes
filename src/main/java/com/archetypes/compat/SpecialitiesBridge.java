@@ -72,6 +72,25 @@ public final class SpecialitiesBridge {
 		return LOADED ? Linked.hudShift() : 0;
 	}
 
+	// From 1.21.11 down `src/main` cannot name `com.specialities.client` AT ALL, and it is
+	// not an API change: Skill Proficiencies' jar is split-environment, the node runs
+	// fabric-loom-remap from here down, and the remapping loom honours the split and puts
+	// only the common half on this source set (the full measurement is in
+	// platform/ClientNetHooks). So on those nodes the value is handed down from client init
+	// — the same shape as `Net#clientReceivers` and `ClientNetHooks` — and every CALLER
+	// keeps the one spelling `SpecialitiesBridge.hudShift()` on all seven nodes, which is
+	// the point: `ManaHud` and `BankedHungerHud` get re-forked at three more boundaries
+	// before this port is done, and none of those forks should have to know about this one.
+	//? if <26.1 {
+	/*private static volatile java.util.function.IntSupplier clientHudShift = () -> 0;
+
+	// Called once from client init, and only when Skill Proficiencies is actually loaded —
+	// the supplier resolves one of its client classes.
+	public static void installClientHudShift(final java.util.function.IntSupplier supplier) {
+		clientHudShift = supplier;
+	}
+	*///?}
+
 	/** Everything that names a Specialities class, loaded lazily and only
 	 * behind the LOADED check above. */
 	private static final class Linked {
@@ -95,7 +114,11 @@ public final class SpecialitiesBridge {
 		}
 
 		private static int hudShift() {
+			//? if >=26.1 {
 			return com.specialities.client.SpecialitiesClient.hudShift();
+			//?} else {
+			/*return clientHudShift.getAsInt();
+			*///?}
 		}
 
 		private static int grantLevels(final ServerPlayer player, final int levels) {

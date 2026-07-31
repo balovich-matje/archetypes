@@ -223,9 +223,18 @@ public final class ColossusProtector {
 		ItemStack shield = player.getItemInHand(hand);
 		BlocksAttacks blocksAttacks = shield.get(DataComponents.BLOCKS_ATTACKS);
 
+		// `BlocksAttacks.bypassedBy()` carries a resolved `HolderSet<DamageType>` on 26.x and
+		// the unresolved `TagKey<DamageType>` below it (measured on all three jars). Only the
+		// membership TEST forks; the `orElse(false)` default and everything around it is
+		// shared, and `DamageSource.is(TagKey)` exists on every node so the legacy arm is a
+		// direct read rather than a resolution the caller has to do.
 		if (blocksAttacks == null
+				//? if >=26.1 {
 				|| blocksAttacks.bypassedBy().map(types -> types.contains(source.typeHolder()))
 						.orElse(false)
+				//?} else {
+				/*|| blocksAttacks.bypassedBy().map(source::is).orElse(false)
+				*///?}
 				|| source.getDirectEntity() instanceof AbstractArrow arrow && arrow.getPierceLevel() > 0) {
 			return amount;
 		}

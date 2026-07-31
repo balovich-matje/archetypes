@@ -1,7 +1,11 @@
 package com.archetypes.client;
 
 import net.minecraft.client.Minecraft;
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -47,8 +51,18 @@ final class BookmarkTab extends AbstractWidget {
 		this.defaultButtonNarrationText(output);
 	}
 
+	// `AbstractWidget`'s draw method is the widget-shaped half of the same extract-vs-immediate
+	// boundary: `extractWidgetRenderState(GuiGraphicsExtractor, ...)` is `renderWidget(GuiGraphics,
+	// ...)` below 26.1, same three ints, same abstract contract. NOTHING ELSE about this widget
+	// moves here — `onClick(MouseButtonEvent, boolean)`, `playDownSound`, `updateWidgetNarration`
+	// and `isHovered()` are all declared identically on 1.21.11 (`javap -p`). `MouseButtonEvent`
+	// itself is `>=1.21.11`, so it survives this node and breaks at Stage 4.
 	@Override
+	//? if >=26.1 {
 	protected void extractWidgetRenderState(final GuiGraphicsExtractor graphics, final int mouseX,
+	//?} else {
+	/*protected void renderWidget(final GuiGraphics graphics, final int mouseX,
+	*///?}
 			final int mouseY, final float partialTick) {
 		int x = this.getX();
 		int y = this.getY();
@@ -70,7 +84,11 @@ final class BookmarkTab extends AbstractWidget {
 		// body washes out without one, same lesson as the picker's names.
 		boolean styled = this.getMessage().getStyle().getColor() != null;
 		var font = Minecraft.getInstance().font;
+		//? if >=26.1 {
 		graphics.text(font, this.getMessage(), x + (w - font.width(this.getMessage())) / 2,
+		//?} else {
+		/*graphics.drawString(font, this.getMessage(), x + (w - font.width(this.getMessage())) / 2,
+		*///?}
 				y + (h - font.lineHeight) / 2 + 1, styled ? 0xFFFFFFFF : VanillaUi.LABEL, styled);
 	}
 }

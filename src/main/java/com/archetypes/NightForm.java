@@ -272,8 +272,15 @@ public final class NightForm {
 			// Overlay, not chat: the key can be pressed repeatedly and this
 			// line overwrites itself instead of stacking. No sound, for the
 			// same reason.
+			// 26.1 renamed `displayClientMessage(component, true)` to `sendOverlayMessage`
+			// and dropped the old spelling (measured on both 26.x jars and on 1.21.11).
+			//? if >=26.1 {
 			player.sendOverlayMessage(Component.translatable("message.archetypes.night_form.locked",
 					(left + 59 * 20) / (60 * 20)));
+			//?} else {
+			/*player.displayClientMessage(Component.translatable("message.archetypes.night_form.locked",
+					(left + 59 * 20) / (60 * 20)), true);
+			*///?}
 			return;
 		}
 

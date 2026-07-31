@@ -1,6 +1,27 @@
 package com.archetypes.client;
 
+// THE `>=26.1` EXTRACT-VS-IMMEDIATE BOUNDARY, and this file is where it is cheapest to
+// understand: 26.x GUI rendering builds a render STATE and draws it later
+// (`GuiGraphicsExtractor`), 1.21.11 and below draw immediately (`GuiGraphics`). For
+// everything this file does the two types are the same API under two names — `fill` and all
+// five `blit` overloads are declared identically on both (`javap -p`, measured) — so only
+// three spellings move, and each one moves on a single line:
+//
+//     GuiGraphicsExtractor   ->  GuiGraphics
+//     graphics.text(         ->  graphics.drawString(
+//     graphics.fakeItem(     ->  graphics.renderFakeItem(
+//
+// The fork is therefore always ONE LINE WIDE: a multi-line signature or call keeps its
+// continuation lines shared, and no drawing arithmetic is ever inside a `//?` block
+// (conventions §5b). The same three renames run through ManaHud, BankedHungerHud,
+// CooldownBarHud, ProcIndicatorHud, SunBlindOverlay, DeadeyeOverlay, BookmarkTab,
+// ArchetypeLevelUpToast and both screens — this file carries them for all of them, which is
+// why it is done first.
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 
 /**
  * The classic container look, drawn with fills. Palette sampled from 26.2's
@@ -27,7 +48,11 @@ public final class VanillaUi {
 	private VanillaUi() {
 	}
 
+	//? if >=26.1 {
 	public static void window(final GuiGraphicsExtractor graphics, final int x, final int y,
+	//?} else {
+	/*public static void window(final GuiGraphics graphics, final int x, final int y,
+	*///?}
 			final int w, final int h) {
 		graphics.fill(x + 2, y + 2, x + w - 2, y + h - 2, WINDOW_BODY);
 
@@ -43,7 +68,11 @@ public final class VanillaUi {
 	}
 
 	/** Slot-style sunken area: dark top/left, white bottom/right, grey body. */
+	//? if >=26.1 {
 	public static void inset(final GuiGraphicsExtractor graphics, final int x, final int y,
+	//?} else {
+	/*public static void inset(final GuiGraphics graphics, final int x, final int y,
+	*///?}
 			final int w, final int h) {
 		graphics.fill(x, y, x + w, y + h, INSET_BODY);
 		insetBorder(graphics, x, y, w, h);
@@ -55,7 +84,11 @@ public final class VanillaUi {
 	 * effect layer over or under. Shared with the picker's ability previews
 	 * so they stay pixel-identical to the tree.
 	 */
+	//? if >=26.1 {
 	public static void nodeIcon(final GuiGraphicsExtractor graphics, final com.archetypes.SubTree tree,
+	//?} else {
+	/*public static void nodeIcon(final GuiGraphics graphics, final com.archetypes.SubTree tree,
+	*///?}
 			final int index, final int x, final int y) {
 		var sprite = com.archetypes.TreeNodes.iconSprite(tree, index);
 
@@ -81,7 +114,11 @@ public final class VanillaUi {
 					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
 		}
 
+		//? if >=26.1 {
 		graphics.fakeItem(new net.minecraft.world.item.ItemStack(icon), x, y);
+		//?} else {
+		/*graphics.renderFakeItem(new net.minecraft.world.item.ItemStack(icon), x, y);
+		*///?}
 
 		if (overlay != null && !behind) {
 			int tex = com.archetypes.TreeNodes.iconOverlaySize(tree, index);
@@ -97,16 +134,28 @@ public final class VanillaUi {
 	 * supplies the contrast so the pastel can stay itself, the way the
 	 * picker's colored names read fine on the darker card body.
 	 */
+	//? if >=26.1 {
 	public static void chipText(final GuiGraphicsExtractor graphics,
+	//?} else {
+	/*public static void chipText(final GuiGraphics graphics,
+	*///?}
 			final net.minecraft.client.gui.Font font,
 			final net.minecraft.network.chat.Component text, final int x, final int y, final int color) {
 		int width = font.width(text);
 		graphics.fill(x - 3, y - 2, x + width + 3, y + 10, INSET_DARK);
+		//? if >=26.1 {
 		graphics.text(font, text, x, y, color, true);
+		//?} else {
+		/*graphics.drawString(font, text, x, y, color, true);
+		*///?}
 	}
 
 	/** The inset bevel alone — for sinking artwork into the page without hiding it. */
+	//? if >=26.1 {
 	public static void insetBorder(final GuiGraphicsExtractor graphics, final int x, final int y,
+	//?} else {
+	/*public static void insetBorder(final GuiGraphics graphics, final int x, final int y,
+	*///?}
 			final int w, final int h) {
 		graphics.fill(x, y, x + w - 1, y + 1, INSET_DARK);
 		graphics.fill(x, y + 1, x + 1, y + h - 1, INSET_DARK);
@@ -115,7 +164,11 @@ public final class VanillaUi {
 	}
 
 	/** A vanilla 18x18 item slot. */
+	//? if >=26.1 {
 	public static void slot(final GuiGraphicsExtractor graphics, final int x, final int y) {
+	//?} else {
+	/*public static void slot(final GuiGraphics graphics, final int x, final int y) {
+	*///?}
 		inset(graphics, x, y, 18, 18);
 	}
 
@@ -123,7 +176,11 @@ public final class VanillaUi {
 	 * Thin engraved groove, the vanilla separator: 1px dark + 1px light, 2px
 	 * total — deliberately slimmer than the 2px-per-side bevel of a window.
 	 */
+	//? if >=26.1 {
 	public static void verticalDivider(final GuiGraphicsExtractor graphics, final int x,
+	//?} else {
+	/*public static void verticalDivider(final GuiGraphics graphics, final int x,
+	*///?}
 			final int top, final int bottom) {
 		graphics.fill(x, top, x + 1, bottom, INSET_DARK);
 		graphics.fill(x + 1, top, x + 2, bottom, HIGHLIGHT);
@@ -133,7 +190,11 @@ public final class VanillaUi {
 	 * Sunken progress bar: an inset groove with a filled portion. {@code progress}
 	 * is clamped, so a caller cannot overdraw the track by passing >1.
 	 */
+	//? if >=26.1 {
 	public static void progressBar(final GuiGraphicsExtractor graphics, final int x, final int y,
+	//?} else {
+	/*public static void progressBar(final GuiGraphics graphics, final int x, final int y,
+	*///?}
 			final int width, final int height, final float progress, final int fill) {
 		graphics.fill(x, y, x + width, y + height, 0xFF2A2A2A);
 		insetBorder(graphics, x, y, width, height);
@@ -146,7 +207,11 @@ public final class VanillaUi {
 	}
 
 	/** Stepped 2px-thick line between two points, for tree connections. */
+	//? if >=26.1 {
 	public static void line(final GuiGraphicsExtractor graphics, final int x1, final int y1,
+	//?} else {
+	/*public static void line(final GuiGraphics graphics, final int x1, final int y1,
+	*///?}
 			final int x2, final int y2, final int color) {
 		int dx = Math.abs(x2 - x1);
 		int dy = Math.abs(y2 - y1);

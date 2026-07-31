@@ -6,7 +6,21 @@ import net.minecraft.client.particle.Particle;
 import net.minecraft.client.particle.ParticleProvider;
 import net.minecraft.client.particle.SingleQuadParticle;
 import net.minecraft.client.particle.SpriteSet;
+// A PACKAGE MOVE at exactly 26.1, and the surprise is what did NOT move with it: the
+// extract-based particle pipeline already exists on 1.21.11. `SingleQuadParticle` declares
+// `extract(QuadParticleRenderState, Camera, float)` and BOTH `extractRotatedQuad` overloads
+// there, byte for byte the same shapes as 26.1's (`javap -p` on both jars) — only the render
+// state's package differs:
+//     26.x      net.minecraft.client.renderer.state.level.QuadParticleRenderState
+//     1.21.11   net.minecraft.client.renderer.state.QuadParticleRenderState
+// So this whole particle needs one import fork and nothing else. The design's plan for it
+// (`render(VertexConsumer, Camera, float)`, a rewrite of the draw) is the PRE-1.21.11 shape
+// and lands at Stage 4.
+//? if >=26.1 {
 import net.minecraft.client.renderer.state.level.QuadParticleRenderState;
+//?} else {
+/*import net.minecraft.client.renderer.state.QuadParticleRenderState;
+*///?}
 import net.minecraft.core.particles.SimpleParticleType;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
@@ -70,8 +84,14 @@ public class GreatswordSweepParticle extends SingleQuadParticle {
 		}
 	}
 
+	// The one other 26.1 rename this particle meets: `Particle.getLightColor(float)` became
+	// `getLightCoords(float)`. Protected on both; widening it to public here is legal on both.
 	@Override
+	//? if >=26.1 {
 	public int getLightCoords(final float partialTick) {
+	//?} else {
+	/*public int getLightColor(final float partialTick) {
+	*///?}
 		return 15728880;
 	}
 

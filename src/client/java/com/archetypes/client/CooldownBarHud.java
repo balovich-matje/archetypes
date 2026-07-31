@@ -15,7 +15,11 @@ import com.archetypes.state.StateKey;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -76,7 +80,11 @@ public final class CooldownBarHud {
 	private CooldownBarHud() {
 	}
 
+	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
+	//?} else {
+	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?}
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
 
@@ -125,7 +133,11 @@ public final class CooldownBarHud {
 				// threshold only decides when it greys out.
 				int shown = ability.spendsAll() && current >= ability.manaCost()
 						? (int) current : Math.round(ability.manaCost());
+				//? if >=26.1 {
 				graphics.text(client.font, Integer.toString(shown),
+				//?} else {
+				/*graphics.drawString(client.font, Integer.toString(shown),
+				*///?}
 						x + 1, y + 1, 0xFF7FB2FF, true);
 			}
 
@@ -136,7 +148,11 @@ public final class CooldownBarHud {
 						0xB3000000);
 
 				String label = clock(remaining);
+				//? if >=26.1 {
 				graphics.text(client.font, label,
+				//?} else {
+				/*graphics.drawString(client.font, label,
+				*///?}
 						x + FRAME / 2 - client.font.width(label) / 2,
 						y + FRAME / 2 - 4, 0xFFFFFFFF, true);
 			}
@@ -145,7 +161,11 @@ public final class CooldownBarHud {
 			String bind = ability.key().getTranslatedKeyMessage().getString();
 
 			if (bind.length() <= 3) {
+				//? if >=26.1 {
 				graphics.text(client.font, bind,
+				//?} else {
+				/*graphics.drawString(client.font, bind,
+				*///?}
 						x + FRAME - 1 - client.font.width(bind), y + FRAME - 9, 0xFFFFFF55, true);
 			}
 

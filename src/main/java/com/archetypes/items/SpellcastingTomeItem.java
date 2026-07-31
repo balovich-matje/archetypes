@@ -34,9 +34,16 @@ public class SpellcastingTomeItem extends Item {
 		}
 
 		int reached = SpecialitiesBridge.grantSpellcastingLevels((ServerPlayer) player, this.levels);
+		// The 26.1 `sendOverlayMessage` rename — see SkillTokenItem.
+		//? if >=26.1 {
 		player.sendOverlayMessage(reached < 0
 				? Component.translatable("item.archetypes.spellcasting_tome.no_specialities")
 				: Component.translatable("item.archetypes.spellcasting_tome.granted", reached));
+		//?} else {
+		/*player.displayClientMessage(reached < 0
+				? Component.translatable("item.archetypes.spellcasting_tome.no_specialities")
+				: Component.translatable("item.archetypes.spellcasting_tome.granted", reached), true);
+		*///?}
 		return InteractionResult.SUCCESS;
 	}
 }

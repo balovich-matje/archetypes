@@ -36,9 +36,16 @@ public class SkillTokenItem extends Item {
 
 		SkillPoints.grantLevels(player, this.levels);
 		// Action bar rather than chat: this fires on every click while testing.
-		// 26.2 renamed displayClientMessage(component, true) to sendOverlayMessage.
+		// 26.1 renamed displayClientMessage(component, true) to sendOverlayMessage — the
+		// boundary is 26.1, not 26.2: both 26.x jars carry only the new spelling and
+		// 1.21.11 only the old one (measured).
+		//? if >=26.1 {
 		player.sendOverlayMessage(Component.translatable("item.archetypes.skill_token.granted",
 				SkillPoints.level(player), SkillPoints.MAX_LEVEL));
+		//?} else {
+		/*player.displayClientMessage(Component.translatable("item.archetypes.skill_token.granted",
+				SkillPoints.level(player), SkillPoints.MAX_LEVEL), true);
+		*///?}
 		return InteractionResult.SUCCESS;
 	}
 }

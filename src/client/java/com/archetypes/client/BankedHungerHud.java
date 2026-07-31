@@ -6,7 +6,11 @@ import com.archetypes.compat.SpecialitiesBridge;
 
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+//?} else {
+/*import net.minecraft.client.gui.GuiGraphics;
+*///?}
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
@@ -86,7 +90,11 @@ public final class BankedHungerHud {
 	private BankedHungerHud() {
 	}
 
+	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
+	//?} else {
+	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?}
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
 

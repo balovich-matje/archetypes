@@ -1,6 +1,11 @@
 package com.archetypes;
 
+// The same rename as ManaPotions' — see the note there.
+//? if >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
+//?} else {
+/*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
+*///?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -53,7 +58,11 @@ public final class AmnesiaPotions {
 	}
 
 	public static void initialize() {
+		//? if >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
+		//?} else {
+		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
+		*///?}
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA);
 			builder.registerPotionRecipe(AMNESIA, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA);
 		});

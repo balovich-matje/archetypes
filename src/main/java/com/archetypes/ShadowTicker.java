@@ -155,7 +155,16 @@ public final class ShadowTicker {
 
 	/** Overworld clock says it's night — monsters-spawn range, any dimension. */
 	private static boolean isNight(final net.minecraft.world.level.Level level) {
+		// 26.x moved the day/night clock behind `WorldClock` holders: `getDayTime()` is
+		// gone and `getOverworldClockTime()` is the reader that still means "the overworld's
+		// clock, whatever dimension you are standing in". Below 26.1 `getDayTime()` IS that
+		// reader — `Level.getDayTime()` returns `levelData.getDayTime()`, which the server
+		// keeps on the overworld's value for every dimension. Same number, same intent.
+		//? if >=26.1 {
 		long t = level.getOverworldClockTime() % 24000L;
+		//?} else {
+		/*long t = level.getDayTime() % 24000L;
+		*///?}
 		return t >= 13000L && t < 23000L;
 	}
 
