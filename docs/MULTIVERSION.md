@@ -1661,6 +1661,88 @@ runs — it builds, it resolves, it boots, the bytecode is right, and the two sc
 byte-identical across each loader pair *while being wrong on four nodes*. The bug is not in
 what the code does but in **when** it does it, and only a launched client can see a phase.
 
+#### 5.8.2 Stage 7, second in-game finding — **the screens were authored at GUI scale 2**
+
+**Reported:** on `1.21.1-fabric`, at GUI scale 3 the tree screen draws its node squares with
+**no icons in them**; at GUI scale 1 the nodes are tiny with huge gaps. Scale 2 is right. The
+report is version-shaped only by accident — the layout is shared code with no `//?` in it, so
+all seven nodes had it, 26.2 included.
+
+**Not a rendering defect. A units defect, and one the code stated out loud.** Everything a
+`Screen` measures is already in GUI-scaled pixels, so a constant like `MAX_NODE = 18` does not
+mean "18 pixels of screen", it means "18 pixels *at whatever scale the player picked*". The
+tree's geometry was written in those constants, and the two failures are the two ends of that:
+
+```
+                       scale 1            scale 2 (authored)   scale 3
+surface (user's)       2000x1040          1000x520             665x347
+section box            578x815            278x347              178x191
+OLD pitch / node       30 / 18 (clamped)  30 / 18              15-20 / 11-16
+NEW pitch / node       62-74 / 38-44      27-32 / 16-19        15-19 /  9-11
+```
+
+1. **`if (size >= 16)` around the icon draw.** `VanillaUi.nodeIcon` could only draw its native
+   16x16 — a sprite blit and an item render side by side, and the item render has no width
+   argument — so the tree guarded the call rather than scaling it. At scale 3 the fitted node
+   is 11-15px on **eight of the nine base sub-trees** (measured per grid: staff 11, ankh 12,
+   bow/dagger/moon 13, sword/mace/flame 15); only the Protector shield, the one 9x9 grid,
+   reaches 16. So eight of nine sections drew empty squares. Not a threshold that was
+   *too high* — a threshold that should never have existed.
+2. **`MAX_SPACING = 30` and `MAX_NODE = 18` bind at scale 1.** Both clamps are absolute, so a
+   578x815 section drew the same 258px tree of 18px squares it draws in a 278px one, at half
+   the physical size, with the rest of the section empty. The old fit *did* shrink to fit
+   (that is why scale 3 stayed on screen) but could never grow.
+3. **The pitch was an integer.** `(available + gap) / grid` truncates, and nine columns of a
+   shield lose up to 8px off the width — the tree reads as having drifted off its centre.
+4. **The section title was a hard 1.5x** with a fixed 22px reserve, so on a narrow surface a
+   long epic name ("Colossus Crusher") runs over the divider into the next section.
+5. **`ArchetypePickerScreen`'s panel is a fixed 380 wide.** Minecraft's own
+   `Window.calculateScale` clamps the GUI scale so the scaled surface is **at least 320x240**
+   and gives no upper guarantee, so 380 is off the end of the guaranteed width: at the largest
+   scale a player can pick on a small window, `panelLeft()` is negative and the outer cards run
+   off both edges. 212 tall clears the 240 floor, so it is a width-only defect.
+
+**The model, and the line it draws.** Chrome and text stay FIXED — header, buttons, epic
+switchers, progress bars, tooltips are text-sized things, and vanilla's own screens do not grow
+them either; at a smaller GUI scale you are asking for more room, not bigger text. The
+constellation is a *diagram*, so it is FLUID and derived from **one** unit, `pitch()`: the cell
+at which the largest grid this archetype can show fills the tighter axis of a section. Node
+size, halo ring, connection stroke and icon size all come off that unit, clamped on the NODE
+and never on the pitch (clamping the pitch up on a cramped screen would push the bottom rows
+out through the canvas floor; a node that has stopped shrinking merely closes its gaps). The
+unit is sized against every sub-tree the archetype owns, **base and epic**, so nothing can
+overflow whatever the switchers are set to and flipping one section does not resize its
+neighbours. The picker takes the same treatment one level up: its card width is the unit, a
+ceiling of the authored 112 that shrinks to fit, with the ability row and the crest quoted as
+fractions of it.
+
+**Icons at any size go through the pose**, and that it works on all four draw pipelines is
+measured, not assumed: 26.x `GuiGraphicsExtractor.fakeItem` → `item(...)` builds
+`new GuiItemRenderState(new Matrix3x2f(this.pose), …)`; 1.21.11 `GuiGraphics.renderItem` does
+the same; 1.21.1 and 1.20.1 `renderItem` `pushPose()` **this.pose** and then translate by
+(x+8, y+8) and scale by 16 — so an outer scale multiplies through in every one. The sprite
+blits carry the pose the same way. Drawing at 16 and scaling is what keeps the sprite path and
+the item path identical.
+
+**Scale 2 is preserved as the reference on purpose.** At an 18px node the ring, the stroke and
+the icon inset all evaluate to 1px and the icon comes out at its native 16 — the authored draw,
+unchanged. Re-fitted, a scale-2 section lands on pitch 27-32 / node 16-19 against the old fixed
+30 / 18.
+
+**Predicates: none added, none moved.** The only new `//?` in the change is `nodeIcon`'s
+push/scale/pop on the existing `>=1.21.11` 2-D-pose boundary — the same fork the section title
+and the picker's crest already carry. All seven nodes build; both loader pairs' `ArchetypeScreen`,
+`ArchetypePickerScreen` and `VanillaUi` stay **byte-identical** to their same-MC Fabric sibling
+at the pre-remap class level.
+
+**The lesson, and it is a different one from §5.8.1's.** That bug was a phase — *when* the draw
+happens. This one is a **unit**: GUI-scaled pixels are not screen pixels, and any constant in
+them is a claim about the player's GUI scale setting. Every gate this port runs is scale-blind
+(a headless server has no GUI scale at all, and a bytecode diff cannot see that 18 is the wrong
+kind of 18), and the in-game pass that found it was run at ONE scale. **An in-game pass now has
+to be run at more than one GUI scale to count** — scale 1, the authored scale, and the largest
+the window allows.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:
@@ -1671,7 +1753,7 @@ Every stage, without exception:
 4. **`injectors.defaultRequire: 1` on every node's config, both common and client.**
 5. **NEW, no SP precedent — the damage-shaper ordering audit.** Archetypes has 15 `@ModifyVariable`s on one method and they do **not** all commute (§4.2b). Per node, read the transformed `hurtServer`/`hurt` and assert the handler offsets are in source order and that `FlenseMixin` (priority 1500) is last and `DamageTraceMixin` (priority 500) is first. **This is Archetypes' R-07.**
 6. **Cross-mod ordering gate** (Archetypes-only): with Skill Proficiencies also installed, re-verify by bytecode export that `FlenseMixin` still lands after SP's Combat multiplier and stealth crit, and that `UseDurationMixin` still divides out exactly SP's applied Archery reduction. Per node — mixin ordering is not guaranteed by priority docs, which is why `ARCHITECTURE.md` says it was verified by export.
-7. **In-game pass per node family** — not deferred to the end. SP's Stage-5 item-model bug and Stage-6 missing-Forge-client-bootstrap were both in-game-only, and Archetypes' client half is 3× the risk.
+7. **In-game pass per node family** — not deferred to the end. SP's Stage-5 item-model bug and Stage-6 missing-Forge-client-bootstrap were both in-game-only, and Archetypes' client half is 3× the risk. **At more than one GUI scale** (§5.8.2): a screen is measured in GUI-scaled pixels, every gate here is scale-blind, and the first in-game pass ran at one scale and passed a screen that drew no node icons at another.
 8. **At the end: balance-parity review + Tuning-propagation proof.** `Tuning.java` is 1,653 lines with **verified zero `net.minecraft`/`net.fabricmc` imports** — the ideal oracle, exactly SP's. Proof: a 1-character edit changes that value in all seven `Tuning.class` files and **nothing else changes** (whole-class `javap` diff, constant-pool indices normalised). Plus an adversarial per-node behavioural review against 26.2 — **R-20's lesson is that every build-shaped gate passed while four behavioural regressions sat in one re-rooted event.** Archetypes has *three* re-rootings queued (knockback, `EnchantmentHelper.processDurabilityChange`, the `ALL_TRACKING` sync) plus one excision, so budget this review generously.
 
 ### 5.10 Conflict analysis for parallel lanes

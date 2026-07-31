@@ -617,7 +617,7 @@ tick.
 | Class | Owns |
 | --- | --- |
 | `ArchetypesClient` | keybinds, HUD registration, the inventory bookmark/button, level-up toast, channel/rush/disengage input edges |
-| `ArchetypePickerScreen` | the pre-pick screen: three archetype cards, crest, preview actives |
+| `ArchetypePickerScreen` | the pre-pick screen: three archetype cards, crest, preview actives. Card width is the screen's unit — a ceiling of 112 that shrinks to fit, because the guaranteed GUI-scaled surface is only 320 wide |
 | `ArchetypeScreen` | the skill tree: full-screen window, three constellation sections, buy-on-click, the two progress bars, Back/Reset |
 | `CooldownBarHud` | one slot per owned active docked right of the hotbar, reading the synced `*_READY_AT` timestamps and mana cost |
 | `ManaHud` | the Seeker's ten mana orbs above the hunger bar |
@@ -632,6 +632,25 @@ tick.
 | `ExtraSensoryPerception` | the sensed-creature outline colours *and* Death Mark's red (the mark wins over ESP and over anything vanilla paints; Stalk adds only the through-walls exemption) |
 | `RadianceLight` | Aura of Radiance's block light, placed in the client's own level copy only |
 | `BankedHungerHud` | Well Fed's hunger above 20, as a bevelled 1px halo around the vanilla drumsticks that bank is currently backing (leftmost first, the end vanilla drains first). Anchored after `FOOD_BAR`, not `HOTBAR`, or it would draw under the row it marks; hidden in creative and spectator |
+
+**What scales with the GUI scale and what does not.** A `Screen` measures in
+GUI-scaled pixels, so a constant there is a claim about the player's scale
+setting — which is how the tree screen came to be authored at scale 2 and drawn
+wrong everywhere else (`MULTIVERSION.md` §5.8.2). The rule the two screens now
+follow: **chrome and text are fixed, diagrams are fluid.** Headers, buttons, the
+epic switchers, the progress bars and every tooltip keep their pixel sizes, the
+way vanilla's screens do — a smaller GUI scale buys more room, not bigger text.
+The constellation is derived entirely from one unit, `ArchetypeScreen.pitch()`:
+the grid cell at which the largest sub-tree of this archetype (base *or* epic, so
+a switcher flip never resizes anything) fills the tighter axis of a section. Node
+size, halo ring, connection stroke and icon size are all fractions of that unit,
+and the clamps sit on the node rather than the pitch so a cramped screen closes
+its gaps instead of pushing rows out through the canvas floor. `VanillaUi.nodeIcon`
+takes a size and reaches it through the pose — the one idiom that scales a sprite
+blit and an item render together, an item render having no width argument to pass.
+When you add a surface here, size it off the live `width`/`height` or off a unit
+derived from them; the picker's fixed 380px panel was wider than the 320px
+Minecraft guarantees, and no build- or server-shaped gate can see that.
 
 **The night form's client half.** Everything the Nemesis Shadow's night form
 looks and sounds like reads the synced attachments through `NightForm`'s static
