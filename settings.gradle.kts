@@ -80,6 +80,36 @@ stonecutter {
 		// first time the shared tree is compiled below 25.
 		match("1.21.11", "fabric")
 
+		// ---- Stage 4: the biggest single step in the port, registered as its own commit
+		// for the same single-writer reason (conventions §1).
+		//
+		// The `>=1.21.11` boundary lands here WHOLE, and unlike Stage 3's it is deep as
+		// well as wide. What is new here and nowhere above it:
+		//
+		//  * `hurtServer(ServerLevel,DamageSource,F)Z` does not exist. Every damage
+		//    handler in the mod re-targets `hurt(DamageSource,F)Z`, which runs on BOTH
+		//    logical sides — so each one needs the `isClientSide()` early-out Skill
+		//    Proficiencies settled in its R-08. 18 handlers in LivingEntityMixin plus
+		//    DamageTraceMixin's pair and FlenseMixin.
+		//  * `world.item.component.BlocksAttacks` and `LivingEntity.applyItemBlocking`
+		//    are gone, and the shield-disable path is plural rather than one call. The
+		//    decision in force is EXCISION on this node family (design R-A5): the two
+		//    Colossus Protector nodes stay purchasable and their effects no-op, and the
+		//    descriptions say so. Approximating a defensive multiplier through a
+		//    different chokepoint is the silent-divergence class R-20 exists to catch.
+		//  * Player Animation Library's API forks for the first time — 1.1.5 spells the
+		//    accessor `IAnimatedPlayer` and takes `AbstractClientPlayer` where 1.1.9/1.2.x
+		//    spell it `IAnimatedAvatar` and take `Avatar`. One arm, because the library
+		//    rename coincides exactly with the vanilla one. The dependency CONFIGURATION
+		//    does not fork again: `FkO8Scek` is a Fabric jar declaring
+		//    `Fabric-Mapping-Namespace: intermediary`, same as 1.21.11's, so
+		//    `modImplementation` carries over unchanged.
+		//  * `client.rendering.v1.hud` does not exist, so the HUD registration becomes a
+		//    client `GuiMixin` — Skill Proficiencies' proven file shape, not a new one.
+		//
+		// Java stays at 21 (`requiredJava`), so this node adds no toolchain move.
+		match("1.21.1", "fabric")
+
 		// The node whose state the shared `src/` is committed in.
 		vcsVersion = "26.2-fabric"
 	}

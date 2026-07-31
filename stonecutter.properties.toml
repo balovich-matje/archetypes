@@ -100,3 +100,49 @@ deps.fabric_api = "0.141.5+1.21.11"
 # spelled in (`class_11890` here vs `Avatar` there), which is exactly what the remap fixes.
 # The 1.1.x/1.2.x API split the design warns about starts one node lower, at 1.21.1's 1.1.5.
 deps.pal = "BXYewCJb"
+
+["1.21.1"]
+# Skill Proficiencies' claim for this node, adopted rather than re-derived so a player on
+# 1.21 does not end up able to install one half of the pair and not the other. Stated with
+# its provenance rather than as a measurement: the headless smoke and every gate in Stage 4
+# ran on 1.21.1, and 1.21 is covered because the mod's whole surface — 20 mixin targets, the
+# item/tag/recipe set, the damage funnel — is identical between the two, 1.21.1 being a
+# bugfix release. If a 1.21-only report ever arrives, narrow this key, not the node.
+mod.mc_releases = ["1.21", "1.21.1"]
+
+[fabric."1.21.1"]
+mod.mc_compat = ">=1.21 <=1.21.1"
+# NOT fabric-api's own floor, and this is the one node in the range where that distinction
+# is a real finding rather than boilerplate — Skill Proficiencies measured it and it binds
+# here for a stronger reason. Every module of fabric-api 0.116.14+1.21.1 declares only
+# `fabricloader >=0.15.11`, which BUNDLES MixinExtras 0.3.5. Loader bundles MixinExtras
+# (0.15.11 -> 0.3.5, 0.16.3 -> 0.4.1, 0.17.3 -> 0.5.0, 0.19.3 -> 0.5.4) and this repo has
+# 18 MixinExtras injectors including one `@WrapMethod` (HealOrHarmMobEffectMixin), which
+# needs >= 0.4.0 and does not exist at all in 0.3.5. Taking fabric-api's floor would turn
+# "update your loader" into a cryptic mixin-apply crash at boot. >=0.16.3 is the lowest
+# loader that bundles a MixinExtras with `@WrapMethod`.
+#
+# Equally: do NOT copy the 26.x nodes' `>=0.19.3` downward — it locks out this node's whole
+# audience for nothing.
+mod.loader_floor = ">=0.16.3"
+deps.fabric_api = "0.116.14+1.21.1"
+# `1.1.5` for MC 1.21.1 — and THE FIRST NODE WHERE PAL'S API FORKS AT SOURCE LEVEL. The
+# dependency CONFIGURATION does not fork again: this is a Fabric jar declaring
+# `Fabric-Mapping-Namespace: intermediary` (read out of its MANIFEST.MF, not assumed), the
+# same as 1.21.11's BXYewCJb, so `modImplementation` carries over unchanged from Stage 3.
+#
+# The version ID and not the number, and here that is not a formality: `1.1.5` is published
+# on BOTH the Fabric and the NeoForge listing of `player-animation-library`, and only the id
+# tells them apart — `FkO8Scek` is Fabric, `ReDTdA0C` is NeoForge (design R-C5). The
+# NeoForge one is Stage 6's, on the sibling node at the same MC version.
+#
+# The source fork it brings, measured with `javap -p` on this jar against 1.21.11's:
+#   IAnimatedAvatar        -> IAnimatedPlayer
+#   PlayerAnimationController(Avatar, …)  -> (AbstractClientPlayer, …)
+#   PlayerAnimationFactory…registerFactory's lambda takes AbstractClientPlayer
+# Unchanged across the fork, so nothing else in the five driver files moves:
+# FirstPersonMode, FirstPersonConfiguration(b,b,b,b), PlayState, triggerAnimation(id),
+# isActive(), getTriggeredAnimation(), stop(), and the layer-id/priority registration shape.
+# `setFirstPersonMode`/`setFirstPersonConfiguration` return void here and the controller on
+# 1.2.x — source-compatible, because every call site uses them as statements.
+deps.pal = "FkO8Scek"
