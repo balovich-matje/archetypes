@@ -70,10 +70,23 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(value = LivingEntity.class, priority = 900)
 public abstract class HardenedMixin {
+	// `hurtServer` -> `hurt` below 1.21.2: the signature-only fork documented in full at
+	// LivingEntityMixin's greatsword handler. Legacy arm early-outs on a client level,
+	// which is what makes it the same funnel and not a wider one.
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
 	private void archetypes$hardened(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
+	private void archetypes$hardened(final DamageSource source, final float amount,
+			final CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$hardenedImpl(source, cir);
 	}
 

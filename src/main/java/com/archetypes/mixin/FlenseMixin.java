@@ -78,10 +78,23 @@ public abstract class FlenseMixin {
 	 * trace's stage pair stops describing one chain, and a shared helper would
 	 * hide that they have to agree.
 	 */
+	// `hurtServer` -> `hurt` below 1.21.2: the signature-only fork documented in full at
+	// LivingEntityMixin's greatsword handler. Legacy arm early-outs on a client level,
+	// which is what makes it the same funnel and not a wider one.
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$flense(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$flense(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
 				|| !com.archetypes.MeleeSwing.isSwinging(player)

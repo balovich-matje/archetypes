@@ -209,10 +209,47 @@ public abstract class LivingEntityMixin {
 	 * <p>A Decimate reaches this hook too — {@code SlayerActives.resolve} opens
 	 * a {@code MeleeSwing} around its damage precisely so it does.
 	 */
+	// ---- THE `hurtServer` FAMILY FORK. Read this once; the other sixteen in this file, the
+	// two in DamageTraceMixin, the one in FlenseMixin and the one in HardenedMixin are the
+	// same shape and carry no note of their own. ----
+	//
+	// 1.21.2 split `hurt` into `hurtServer`/`hurtClient`. Below it the one method is
+	// `hurt(DamageSource,F)Z`, it is the same funnel, and it RUNS ON BOTH LOGICAL SIDES —
+	// vanilla's own `return false` for a client level sits at bytecode offset 10-21, i.e.
+	// AFTER every HEAD injection. So the legacy arm needs an `isClientSide()` early-out that
+	// the arm above must NOT have, and that early-out is what makes the two arms mean the
+	// same thing: "this handler sees exactly the calls `hurtServer` would have seen".
+	// Without it ten of these Impls throw on the first client-side hit — they open with
+	// `(ServerLevel) this.level()`.
+	//
+	// THE FORK IS THE SIGNATURE ONLY: the annotation, the parameter list and the opening
+	// brace. The body stays outside the block, shared, exactly as conventions §5a requires —
+	// one implementation for every node, and no balance expression written twice. The
+	// `ServerLevel level` parameter is not lost, it was never used: Stage 0-D pushed it off
+	// every impl, which derives it from `this.level()`.
+	//
+	// It also has to be the signature only for a MEASURED reason (§5.5.1 finding 3): the
+	// three prior nodes' transformed classes must not move an instruction, and hoisting the
+	// early-out or the delegation into a shared helper adds a method and a call to all of
+	// them. The knockback stash below is the same lesson, learned the same way.
+	//
+	// `@ModifyVariable` handlers capture the value plus a PREFIX of the target's arguments
+	// (this is what the shipped 26.2 jar already does — value + 2 of `hurtServer`'s 3), so
+	// the legacy arm's `(float, DamageSource)` is the same construction one argument shorter.
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$greatswordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$greatswordDamage(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$greatswordDamageImpl(amount, source);
 	}
 
@@ -293,10 +330,20 @@ public abstract class LivingEntityMixin {
 	 * combat multiplier — the same open question the greatsword path already has,
 	 * and deliberately not answered differently here.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$swordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$swordDamage(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$swordDamageImpl(amount, source);
 	}
 
@@ -325,10 +372,20 @@ public abstract class LivingEntityMixin {
 	 * death resolution — Combustion on a kill-shot must still detonate, and
 	 * AFTER_DAMAGE never fires for lethal hits.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$marksmanArrowHit(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$marksmanArrowHit(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$marksmanArrowHitImpl(amount, source);
 	}
 
@@ -371,10 +428,20 @@ public abstract class LivingEntityMixin {
 	 * arrow is a projectile and can never be confused for a swing, so it keeps
 	 * answering on its own marked-arrow evidence.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$magicArmamentHit(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$magicArmamentHit(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$magicArmamentHitImpl(amount, source);
 	}
 
@@ -430,10 +497,20 @@ public abstract class LivingEntityMixin {
 	 * {@code Player.attack} ({@code AgilityActives.strike}) and so is a swing by
 	 * the only definition that counts.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$daggerDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$daggerDamage(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$daggerDamageImpl(amount, source);
 	}
 
@@ -715,9 +792,19 @@ public abstract class LivingEntityMixin {
 	 * Sidestep: sometimes the blow simply meets air. Melee only — the
 	 * attacker must BE the damage, not have thrown it.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$sidestep(final ServerLevel level, final DamageSource source,
 			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$sidestep(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$sidestepImpl(source, cir);
 	}
 
@@ -751,10 +838,20 @@ public abstract class LivingEntityMixin {
 	 * but only while a wand is actually in hand; a Seeker gone sword-mode
 	 * gave up the ward with the regen.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$manaShield(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$manaShield(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$manaShieldImpl(amount);
 	}
 
@@ -844,10 +941,20 @@ public abstract class LivingEntityMixin {
 	 * hook's benefit — they are the mace doing its job, and Meteor and the batch
 	 * are supposed to ride them.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$sunderDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$sunderDamage(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$sunderDamageImpl(amount, source);
 	}
 
@@ -912,9 +1019,19 @@ public abstract class LivingEntityMixin {
 	 * player takes nothing at all — the capstone's promise is "you got away",
 	 * and a skeleton double-tapping the escape would break it.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$cheatDeathGrace(final ServerLevel level, final DamageSource source,
 			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$cheatDeathGrace(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$cheatDeathGraceImpl(cir);
 	}
 
@@ -972,10 +1089,20 @@ public abstract class LivingEntityMixin {
 	 * and {@code /kill}. Nothing this mod grants may make a hard kill fail —
 	 * at rank 3 a /kill would miss three times in four.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$ghostForm(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$ghostForm(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$ghostFormImpl(source, cir);
 	}
 
@@ -1028,10 +1155,20 @@ public abstract class LivingEntityMixin {
 	 * ({@code AgilityActives.strike}) and so is a swing by the only definition
 	 * that counts here.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
 	private void archetypes$feast(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
+	private void archetypes$feast(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$feastImpl(source);
 	}
 
@@ -1187,10 +1324,20 @@ public abstract class LivingEntityMixin {
 	 * Form is a dice roll on every source and this is a certainty about one.
 	 * Slow Falling, the node's other half, is re-asserted by the ticker.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$onTheWing(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$onTheWing(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$onTheWingImpl(source, cir);
 	}
 
@@ -1349,10 +1496,20 @@ public abstract class LivingEntityMixin {
 	 * still crater the ground between them. Both hooks are Siegebreaker, and
 	 * Siegebreaker is about a blow.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$clash(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$clash(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$clashImpl(source, cir);
 	}
 
@@ -1378,10 +1535,20 @@ public abstract class LivingEntityMixin {
 	 * smash, and every one of them reads the fall it would have zeroed. Same
 	 * shape as On the Wing's.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$titansLeapFall(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$titansLeapFall(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$titansLeapFallImpl(source, cir);
 	}
 
@@ -1414,10 +1581,20 @@ public abstract class LivingEntityMixin {
 	 * lands too. The whole of the rule is in
 	 * {@link com.archetypes.ColossusProtector#instinctiveGuard}.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$instinctiveGuard(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$instinctiveGuard(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$instinctiveGuardImpl(amount, source);
 	}
 
@@ -1444,10 +1621,20 @@ public abstract class LivingEntityMixin {
 	 * argument at HEAD either way, and every shaper on this funnel that could
 	 * touch it belongs to a different archetype.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$parry(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
+	private void archetypes$parry(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$parryImpl(source, amount, cir);
 	}
 
@@ -1467,10 +1654,20 @@ public abstract class LivingEntityMixin {
 	 * Shield's shape — a victim-side shaper on the shared {@code amount}, so it
 	 * composes multiplicatively with whatever else shaped the blow.
 	 */
+	//? if >=1.21.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$barbarian(final float amount, final ServerLevel level,
 			final DamageSource source) {
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At("HEAD"), argsOnly = true)
+	private float archetypes$barbarian(final float amount, final DamageSource source) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return amount;
+		}
+
+	*///?}
 		return archetypes$barbarianImpl(amount, source);
 	}
 

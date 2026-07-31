@@ -55,9 +55,22 @@ public abstract class DamageTraceMixin {
 	 * Form, the parry), so a hit one of them voids opens a frame that never
 	 * closes — {@link DamageTrace} expects that and drains it.
 	 */
+	// `hurtServer` -> `hurt` below 1.21.2: the signature-only fork documented in full at
+	// LivingEntityMixin's greatsword handler. Legacy arm early-outs on a client level,
+	// which is what makes it the same funnel and not a wider one.
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
 	private void archetypes$traceBegin(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
+	private void archetypes$traceBegin(final DamageSource source, final float amount,
+			final CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$traceBeginImpl(source, amount);
 	}
 
@@ -87,9 +100,19 @@ public abstract class DamageTraceMixin {
 	 * absorption, and it must sample them before anything downstream of the hit
 	 * gets to move either.
 	 */
+	//? if >=1.21.2 {
 	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
 	private void archetypes$traceFinish(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
+	private void archetypes$traceFinish(final DamageSource source, final float amount,
+			final CallbackInfoReturnable<Boolean> cir) {
+		if (((LivingEntity) (Object) this).level().isClientSide()) {
+			return;
+		}
+
+	*///?}
 		archetypes$traceFinishImpl(cir);
 	}
 
