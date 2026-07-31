@@ -1,0 +1,127 @@
+# The 1.21.1-neoforge node's mod metadata — the counterpart of fabric.mod.json.
+#
+# WHY THIS FILE IS A PER-NODE OVERRIDE (`versions/1.21.1-neoforge/src/main/resources/`) AND
+# NOT IN THE SHARED `src/main/resources/`: the shared resource root ships into EVERY node's
+# jar. build.fabric.gradle.kts excludes the loader-only JAVA files by glob but has no resource
+# exclusion, and that script is not this node's to edit — so a shared
+# META-INF/neoforge.mods.toml would land in all five Fabric jars and move their resource bytes,
+# which is exactly the reproduction gate this stage is required to keep. pack.mcmeta and this
+# node's client mixin config are per-node overrides for the same reason (conventions §4
+# mechanism 2). The cost is the usual drift hazard: an override does not inherit, so anything
+# added to the shared metadata has to be mirrored here by hand.
+#
+# NOTE THE FILE NAME: `neoforge.mods.toml`, not `mods.toml`. LexForge 1.20.1 still reads
+# META-INF/mods.toml, so the two loader nodes' metadata files differ in NAME as well as in
+# content — which is why neither node needs a processResources rename.
+#
+# The dollar-brace placeholders below are filled by build.neoforge.gradle.kts's
+# processResources expand, exactly as fabric.mod.json's are.
+#
+# CARE, MEASURED THE HARD WAY NEXT DOOR (twice): expand runs the WHOLE file through Groovy's
+# SimpleTemplateEngine, comments included. A dollar sign followed by a brace or by a word is a
+# GString expression even inside a comment, and a JVM inner-class separator in a class name is
+# read as a property lookup. So: no placeholder syntax is quoted anywhere below, and any inner
+# class is written with a dot.
+#
+# TOML, not JSON — but a Stonecutter directive would still be wrong here, and is unnecessary:
+# this file exists on one node only.
+
+modLoader = "javafml"
+# The javafml LANGUAGE PROVIDER's version, not the Minecraft or NeoForge version. It lives in
+# net.neoforged.fancymodloader:loader, which the neoforge 21.1.243 POM pins at 4.0.43 — hence
+# the 4 floor. Skill Proficiencies' 1.21.1-neoforge node states the same floor for the same
+# artifact, and the two mods are installed together.
+loaderVersion = "[4,)"
+license = "MIT"
+issueTrackerURL = "https://github.com/balovich-matje/archetypes/issues"
+# Jar-root-relative, the way NeoForge's own logo entry is. The mod's icon has always lived at
+# assets/archetypes/icon.png (fabric.mod.json points there too) and is NOT moved: moving it
+# would change the shared resource tree and every Fabric jar with it.
+logoFile = "assets/archetypes/icon.png"
+
+[[mods]]
+modId = "${id}"
+version = "${version}"
+displayName = "${name}"
+authors = "balovich-matje"
+displayURL = "https://github.com/balovich-matje/archetypes"
+description = '''
+Pick your class in the first minute. Brawler, Cutpurse or Seeker — and what they become.
+'''
+
+# HOW THIS MOD REGISTERS ITS SPELLCASTING SKILL WITH SKILL PROFICIENCIES ON THIS LOADER.
+#
+# On the Fabric nodes it is the `specialities:skills` entrypoint in fabric.mod.json. NeoForge
+# has no entrypoint mechanism a third-party mod can be enumerated through, and Skill
+# Proficiencies' own NeoForgePlatform records that InterModComms and ServiceLoader were both
+# rejected (timing; cannot name the owning mod). What it IMPLEMENTS is this: it walks
+# ModList.get().getMods() and reads each mod's `modproperties` for a `specialities_skills` key
+# naming a class with a no-argument constructor that implements its SkillsEntrypoint.
+#
+# So the whole Archetypes side of the interop on this loader is the two lines below. If Skill
+# Proficiencies is absent, nothing reads the key and nothing loads the class — same
+# soft-dependency behaviour as the Fabric entrypoint.
+#
+# INTERNAL-ONLY BY DECISION (design §3.5 / R-A4, and the user's call): this is a second
+# published API surface on Skill Proficiencies' side and its README is deliberately not edited
+# for it. Archetypes uses it as the first and so far only consumer; nothing here documents it
+# as a contract for other mods.
+[modproperties.archetypes]
+specialities_skills = "com.archetypes.compat.SpellcastingEntrypoint"
+
+# Mixin configs: NeoForge reads them from these tables, the same way its own
+# neoforge.mods.toml declares its own config. LexForge 1.20.1 has no such support and uses the
+# jar manifest attribute instead, so this is one of the two places the loader nodes genuinely
+# differ in mechanism.
+[[mixins]]
+config = "archetypes.mixins.json"
+
+# Listed unconditionally, because NeoForge's mixin table has no per-config `environment` key
+# the way fabric.mod.json does. Measured next door on a real headless dedicated server: this
+# loader SELECTS a client config's mixins on a dedicated server (the boot log prints the
+# "Preparing" line for it), and it is still harmless — none of them ever APPLIES, because
+# Mixin does not resolve a target class until that class is loaded and a dedicated server
+# never loads net.minecraft.client. What is NOT established is why the config's own "client"
+# array does not gate selection, so do not turn this into a claim that it does, and do not add
+# a client mixin whose target class IS present server-side expecting the array to protect it.
+[[mixins]]
+config = "archetypes.client.mixins.json"
+
+[[dependencies.${id}]]
+modId = "neoforge"
+type = "required"
+# The floor is `deps.neoforge` from stonecutter.properties.toml, and it is not cosmetic: data
+# attachment SYNC arrived at NeoForge 21.1.200 (design R-09). This mod has 47 synced keys, 16
+# of them broadcast to every tracking client. Below the floor the mod loads and then shows a
+# blank tree screen, a blank cooldown bar, no mana row and no other player's Bulwark, with no
+# crash and no log line. build.neoforge.gradle.kts asserts it at configuration time too.
+versionRange = "[${neoforge_floor},)"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${id}]]
+modId = "minecraft"
+type = "required"
+# NOT `mod.mc_compat` — that value is Fabric range syntax. This file wants a Maven range, so
+# the loader-axis nodes read their own toml key, `mod.mc_range`.
+versionRange = "${minecraft_range}"
+ordering = "NONE"
+side = "BOTH"
+
+[[dependencies.${id}]]
+modId = "player_animation_library"
+type = "required"
+# The mod id is read out of the pinned artifact's own metadata rather than guessed — the
+# NeoForge build of PAL 1.1.5, Modrinth version id ReDTdA0C, declares modId
+# "player_animation_library", the same string fabric.mod.json depends on. The node script puts
+# that jar on the compile classpath and on the dev run's runtime classpath; the shipped jar
+# never bundles it.
+#
+# REQUIRED, matching fabric.mod.json's `depends`, and deliberately not softened to `optional`:
+# five animation drivers name PAL types directly on this node, so its absence is a
+# NoClassDefFoundError at first use rather than a missing cosmetic. The two 1.20.1 nodes are
+# the ones where PAL does not exist at all, and there the drivers are gated out as whole
+# compilation units and the dependency line is dropped with them (design §2.2, Option B).
+versionRange = "[1.1.5,)"
+ordering = "NONE"
+side = "BOTH"

@@ -7,12 +7,15 @@ import java.util.UUID;
 import com.archetypes.RadianceAura;
 import com.archetypes.Tuning;
 
-// STAGE 6 — the IMPORT is gated even though the class body below it already is, and the two
-// gates are deliberately different. The body is `>=1.21.11` (design R-C1: a mis-driven client
-// light engine strobes or corrupts the section cache, so this cosmetic feature is off below
-// the boundary rather than approximated). The import is not inside that block, so on
-// 1.21.1-neoforge it stayed LIVE while the class it serves was gone — a fabric-api import on
-// a node with no fabric-api, which is a compile error that no Fabric node can see.
+// STAGE 6 — the import is gated `fabric` because fabric-api is not on the loader axis at all.
+//
+// STAGE 6a CORRECTION, and it is worth reading before trusting a comment here again. This
+// header used to claim the class BODY was `>=1.21.11` gated and that only the import had been
+// missed. It is not: the only version block in this file is the twelve lines at the bottom of
+// `Placement`, so `initialize()` runs on every node and its END_CLIENT_TICK registration is
+// live everywhere. Gating the import and not its one use is a compile error that NO FABRIC
+// NODE CAN SEE — the 1.21.1-neoforge build is what found it — and the fix is the ordinary
+// three-arm chain at the registration, not a wider gate.
 //? if fabric {
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 //?}
@@ -133,7 +136,15 @@ public final class RadianceLight {
 	}
 
 	public static void initialize() {
+		// Registration only; the body is shared. Same three-arm chain as every other
+		// END_CLIENT_TICK site — see NightFormFx for the contract a loader helper owes.
+		//? if fabric {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.endClientTick(client -> {
+		*///?} elif forge {
+		/*ForgeClientEvents.endClientTick(client -> {
+		*///?}
 			ClientLevel level = client.level;
 
 			if (level != tracked) {

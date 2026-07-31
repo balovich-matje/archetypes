@@ -118,7 +118,51 @@ public abstract class ItemStackMixin {
 	// which is exactly the claim the javadoc above makes. What is handed to the original
 	// operation is still the BOOSTED COPY and never the real stack, so vanilla's own
 	// binomial runs at the raised level and nothing else on the stack moves.
-	//? if >=1.21.11 {
+	// STAGE 6a RE-ROOTS IT A THIRD TIME, ON 1.21.1-NEOFORGE ONLY, AND THE NODE'S FIRST BOOT IS
+	// WHAT FOUND IT — `Scanned 0 target(s)`, a hard mixin-apply failure at `Preparing`, not a
+	// silent no-op, because `injectors.defaultRequire: 1` is on every variant.
+	//
+	// What NeoForge 21.1.243 did to `ItemStack` (its own patched source, `:448-476`): it SPLIT
+	// `hurtAndBreak` in two. The `(I, ServerLevel, ServerPlayer, Consumer)` overload the arm
+	// below names still exists, but its whole body is now one forwarding line to a NEW
+	// `(I, ServerLevel, LivingEntity, Consumer)` overload — and every statement that used to be
+	// in it, including the `EnchantmentHelper.processDurabilityChange` call this wraps, moved
+	// there. So the descriptor resolves, the method is found, and the injection point is not in
+	// it.
+	//
+	// R-20's test, and it passes for the same reason the two re-rootings below it do. The
+	// LivingEntity overload is the SINGLE funnel on this loader: the ServerPlayer overload
+	// forwards to it, `hurtAndBreak(I, LivingEntity, EquipmentSlot)` forwards to it, and the
+	// call this wraps is the same call in the same position relative to
+	// `hasInfiniteMaterials()` and `setDamageValue`. The only widening is that non-player
+	// holders now reach the handler at all — vanilla's ServerPlayer overload was called with
+	// `null` for those — and `player == null` sends those straight to the original operation,
+	// which is exactly what the null branch already did. The set of (player, stack) pairs that
+	// get a boosted copy is identical.
+	//
+	// The four-line body is duplicated rather than delegated to a shared `@Unique` helper, and
+	// that is deliberate: extracting one would add a method and rewrite this handler on five
+	// Fabric nodes that are required to stay instruction-identical while this axis lands. It is
+	// a WIRING line — the balance lives in `ReinforcedStraps.forDurabilityRoll`, which is
+	// shared and untouched — and it is the same trade `Archetypes.onPlayerJoin` records. Keep
+	// the arms in step.
+	//? if neoforge {
+	/*@WrapOperation(method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;"
+			+ "Lnet/minecraft/world/entity/LivingEntity;Ljava/util/function/Consumer;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
+							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"
+							+ "Lnet/minecraft/world/item/ItemStack;I)I"))
+	private int archetypes$reinforcedStraps(final ServerLevel level, final ItemStack stack,
+			final int amount, final Operation<Integer> original,
+			@Local(argsOnly = true) final @Nullable net.minecraft.world.entity.LivingEntity holder) {
+		net.minecraft.server.level.ServerPlayer player =
+				holder instanceof net.minecraft.server.level.ServerPlayer sp ? sp : null;
+		return original.call(level,
+				player == null ? stack : ReinforcedStraps.forDurabilityRoll(level, player, stack),
+				amount);
+	}
+	*///?} elif >=1.21.11 {
 	@WrapOperation(method = "processDurabilityChange(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;)I",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
