@@ -32,8 +32,28 @@ stonecutter {
 			for (loader in loaders) version("$project-$loader", version).buildscript("build.$loader.gradle.kts")
 		}
 
-		// ---- Stage 1: the home node, and nothing else yet. ----
+		// ---- Stage 1: the home node. ----
 		match("26.2", "fabric")
+		// ---- Stage 2's beachhead, registered here as its own commit per the
+		// bottleneck-file rule (conventions §1) so the stage can start.
+		//
+		// This is a deliberate deviation from Skill Proficiencies, whose beachhead was
+		// 1.21.11 because its 26.1 was nearly free. Archetypes' 26.1 is NOT free, and the
+		// measurements are in docs/MULTIVERSION.md §5.3: `LivingEntity.knockback(…,
+		// DamageSource, …)`, the 3-arg `blockedByItem`, the 4-arg `Player.blockUsingItem`,
+		// `net.minecraft.client.gui.Hud` and `net.minecraft.client.renderer.extract.
+		// LevelExtractor` are ALL 26.2-only — the damage funnel's knockback trio, the
+		// shield-block hook, the undead heart swap and ESP's wall-piercing, breaking at the
+		// very first step down. Those are worth finding on the node that is otherwise
+		// closest to home (Java 25, jspecify, Identifier, extract-render, the render-state
+		// architecture, HudElementRegistry, and a PAL artifact that needs no
+		// dependency-configuration fork).
+		//
+		// The shared tree does NOT compile for this node yet — that IS Stage 2 — so
+		// `:26.1-fabric:build` and an unqualified `build`/`buildAndCollect` fail by design
+		// until the `//?` forks land. `:26.1-fabric:stonecutterGenerate` is green, and
+		// every task on the 26.2 node is unaffected.
+		match("26.1", "fabric", version = "26.1.2")
 
 		// The node whose state the shared `src/` is committed in.
 		vcsVersion = "26.2-fabric"

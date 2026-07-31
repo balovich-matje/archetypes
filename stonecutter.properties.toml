@@ -56,3 +56,18 @@ deps.fabric_api = "0.155.2+26.2"
 # risk for nothing. The R-C5 requirement is that the coordinate be an ID, and it is. Moving
 # the number is a deps-lane call, made with the runtime updated in the same breath.
 deps.pal = "g8XDqDTi"
+
+["26.1"]
+mod.mc_releases = ["26.1", "26.1.1", "26.1.2"]
+
+[fabric."26.1"]
+mod.mc_compat = "~26.1"
+mod.loader_floor = ">=0.19.3"
+deps.fabric_api = "0.154.2+26.1.2"
+# `1.2.5` for MC 26.1, a Merged jar exactly like 26.2's — so still a plain `implementation`,
+# no dependency-configuration fork at this boundary. The version NUMBER differs from 26.2's
+# 1.2.4 because PAL published no 1.2.4 for 26.1, and that asymmetry is safe rather than
+# assumed: all six PAL types this repo imports — IAnimatedAvatar, PlayerAnimationController,
+# PlayerAnimationFactory, FirstPersonConfiguration, FirstPersonMode, PlayState — are
+# signature-identical between the two jars (`javap -p`, measured on both).
+deps.pal = "SdKAeB6x"
