@@ -7,7 +7,16 @@ import com.archetypes.NemesisAssassinNodes;
 import com.archetypes.NightForm;
 
 import net.minecraft.client.Minecraft;
+// STAGE 4 — `EntityRenderState` is `>=1.21.11`, and with it the single field that was both
+// the ticket into the outline pass and the colour drawn. Below the boundary those are TWO
+// channels and the mixin side is rebuilt by hand (see LevelRendererMixin); on THIS side the
+// only thing that moves is the name of the "no outline" sentinel. It is a compile-time
+// constant int with the value 0 (`javap -c -constants` on the 1.21.11 jar), so the four
+// forks below emit exactly the instruction the shared arm always emitted, and the two arms
+// cannot drift apart in value — only in spelling.
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
+//?}
 import net.minecraft.util.ARGB;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
@@ -48,6 +57,18 @@ import net.minecraft.world.entity.player.Player;
  * along, and a non-zero value is both the ticket into the outline pass and the
  * colour that comes out. Glowing, team colours and Umbral Sight's borrowed
  * Glowing therefore all lose to the red.
+ *
+ * <p><b>Below 1.21.11 that one field does not exist and the precedence has to be
+ * rebuilt from two separate channels</b> — membership from
+ * {@code Minecraft.shouldEntityAppearGlowing(Entity)} and colour from
+ * {@code Entity.getTeamColor()}, the two calls {@code LevelRenderer.renderLevel}
+ * makes back to back before it hands the entity to the outline buffer source.
+ * {@code LevelRendererMixin} wraps exactly those two, scoped to that one method,
+ * and answers this class on both — so the rule above holds unchanged: our colour
+ * replaces the team colour outright, and an entity we neither mark nor sense
+ * keeps vanilla's glow exactly as it was. What is NOT rebuilt is the wall-piercing
+ * exemption: {@link #piercesWalls} has no caller below 26.2, because
+ * {@code LevelExtractor} is 26.2-only (design §4.3).
  */
 public final class ExtraSensoryPerception {
 	/** Players read AMBER: the thing that can plan against you is never the same
@@ -85,7 +106,11 @@ public final class ExtraSensoryPerception {
 		Player self = Minecraft.getInstance().player;
 
 		if (self == null || entity == self) {
+			//? if >=1.21.11 {
 			return EntityRenderState.NO_OUTLINE;
+			//?} else {
+			/*return 0;
+			*///?}
 		}
 
 		if (DeathMark.isMarkedBy(entity, self)) {
@@ -97,8 +122,13 @@ public final class ExtraSensoryPerception {
 			// world, so a mark two blocks behind a wall would already glow.
 			// Refusing the colour here is what keeps Stalk's whole perk from
 			// being free.
+			//? if >=1.21.11 {
 			return DeathMark.rank(self, NemesisAssassinNodes.Family.STALK) > 0
 					|| self.hasLineOfSight(entity) ? MARK_COLOR : EntityRenderState.NO_OUTLINE;
+			//?} else {
+			/*return DeathMark.rank(self, NemesisAssassinNodes.Family.STALK) > 0
+					|| self.hasLineOfSight(entity) ? MARK_COLOR : 0;
+			*///?}
 		}
 
 		return sensedColor(self, entity);
@@ -135,7 +165,11 @@ public final class ExtraSensoryPerception {
 	 * disagree about who is sensed. */
 	private static int sensedColor(final Player self, final Entity entity) {
 		if (!NightForm.isActive(self)) {
+			//? if >=1.21.11 {
 			return EntityRenderState.NO_OUTLINE;
+			//?} else {
+			/*return 0;
+			*///?}
 		}
 
 		int id = entity.getId();
@@ -144,8 +178,12 @@ public final class ExtraSensoryPerception {
 			return PLAYER_COLOR;
 		}
 
+		//? if >=1.21.11 {
 		return contains(NightForm.sensed(self), id) ? CREATURE_COLOR
 				: EntityRenderState.NO_OUTLINE;
+		//?} else {
+		/*return contains(NightForm.sensed(self), id) ? CREATURE_COLOR : 0;
+		*///?}
 	}
 
 	/** Indexed rather than {@code List.contains}, which would box the id for

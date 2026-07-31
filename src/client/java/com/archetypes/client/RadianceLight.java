@@ -259,8 +259,17 @@ public final class RadianceLight {
 	 * the emission level, which is the furthest block light can travel from
 	 * here.
 	 */
+	// STAGE 4 — the one line of this file that moves, and it moves in units as well as in name.
+	// `ClientLevel.setSectionRangeDirty(IIIIII)` is `>=1.21.11` and takes SECTION coordinates,
+	// which is why the six arguments are converted here. Below the boundary the reachable call
+	// is `LevelRenderer.setBlocksDirty(IIIIII)`, which takes BLOCK coordinates and does the
+	// `SectionPos.blockToSectionCoord` itself — measured on the 1.21.1 mojmap jar, where it
+	// also widens the box by one BLOCK on every face before converting, so the arm below dirties
+	// the same sections and at most one more ring of them. `Minecraft.levelRenderer` is a public
+	// final field there. Neither version has the other's method (`javap -p` on both).
 	private static void relight(final ClientLevel level, final BlockPos pos) {
 		int reach = Tuning.RADIANCE_LIGHT_LEVEL;
+		//? if >=1.21.11 {
 		level.setSectionRangeDirty(
 				SectionPos.blockToSectionCoord(pos.getX() - reach),
 				SectionPos.blockToSectionCoord(pos.getY() - reach),
@@ -268,6 +277,11 @@ public final class RadianceLight {
 				SectionPos.blockToSectionCoord(pos.getX() + reach),
 				SectionPos.blockToSectionCoord(pos.getY() + reach),
 				SectionPos.blockToSectionCoord(pos.getZ() + reach));
+		//?} else {
+		/*net.minecraft.client.Minecraft.getInstance().levelRenderer.setBlocksDirty(
+				pos.getX() - reach, pos.getY() - reach, pos.getZ() - reach,
+				pos.getX() + reach, pos.getY() + reach, pos.getZ() + reach);
+		*///?}
 	}
 
 	/**

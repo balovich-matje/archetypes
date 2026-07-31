@@ -8,13 +8,23 @@ completely.
 
 * `GhostArmorMixin` — below 1.21.11 there is no render state whose `*Equipment` fields
   Ghost Armor can blank, so the three vanilla layers that draw gear are cancelled instead.
-  The class is inside a `//? if <1.21.11` block, so it is not in any other node's jar; a
-  mixin named in a config whose class is absent is a hard boot failure, which is exactly
-  why it must NOT go in the shared config.
+* `LevelRendererMixin` — `EntityRendererMixin`'s replacement, not its companion. Above
+  1.21.11 one field is both the outline's ticket and its colour; below, those are two
+  calls in `LevelRenderer.renderLevel` and both get wrapped there.
+
+Both classes sit inside a `//? if <1.21.11` block, so they are in no other node's jar; a
+mixin named in a config whose class is absent is a hard boot failure, which is exactly why
+they must NOT go in the shared config.
 
 ## Entries that have to leave
 
-Two of them, and the transform cannot do both:
+Three of them now, and the transform cannot do any two of them:
+
+* `EntityRendererMixin` — `EntityRenderer.extractRenderState` and the
+  `EntityRenderState.outlineColor` it writes are both `>=1.21.11`. The whole compilation
+  unit is inside a `//?` block, so the class is not in this jar and the entry has to go.
+  Both halves are load-bearing: a config naming an absent class is a hard boot failure, and
+  a class present but unlisted is a silent no-op.
 
 * `LevelExtractorMixin` — `client.renderer.extract` is 26.2-only; the transform already
   blanks this one everywhere below 26.2, and it is repeated here only because a per-node

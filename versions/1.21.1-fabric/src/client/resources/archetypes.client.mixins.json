@@ -5,9 +5,9 @@
 	"client": [
 		"AbstractContainerScreenAccessor",
 		"AvatarRendererMixin",
-		"EntityRendererMixin",
 		"GhostArmorMixin",
 		"HudMixin",
+		"LevelRendererMixin",
 		"LivingEntityRendererAccessor",
 		"LocalPlayerMixin",
 		"MinecraftMixin"

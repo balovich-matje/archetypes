@@ -1,5 +1,17 @@
 package com.archetypes.client.mixin;
 
+// STAGE 4 — THE WHOLE FILE IS ABOVE-1.21.11 ONLY. `EntityRenderer.extractRenderState` and the
+// `EntityRenderState.outlineColor` field it writes are both `>=1.21.11`; below the boundary
+// there is no render state and no single field to overwrite, so the two questions this mixin
+// answers in one place are answered in two, by `LevelRendererMixin`. See that file's header
+// and ExtraSensoryPerception's class doc for how the precedence survives the split.
+//
+// A compilation unit with a package declaration and no type declaration is legal and emits no
+// `.class`, which is what keeps the name out of the 1.21.1 jar — and the per-node client mixin
+// config at versions/1.21.1-fabric/src/client/resources/ drops the entry to match. Both halves
+// are needed: a config naming an absent class is a hard boot failure, and a class present but
+// unlisted is a silent no-op.
+//? if >=1.21.11 {
 import com.archetypes.client.ExtraSensoryPerception;
 
 import net.minecraft.client.renderer.entity.EntityRenderer;
@@ -51,3 +63,4 @@ public abstract class EntityRendererMixin {
 		}
 	}
 }
+//?}
