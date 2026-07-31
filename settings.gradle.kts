@@ -55,6 +55,31 @@ stonecutter {
 		// every task on the 26.2 node is unaffected.
 		match("26.1", "fabric", version = "26.1.2")
 
+		// ---- Stage 3: the first REMAPPED node, registered as its own commit for the
+		// same single-writer reason (conventions §1).
+		//
+		// What is new here and nowhere above it, all of it measured rather than assumed:
+		//
+		//  * The `>=26.1` boundary lands whole. 26.x GUI rendering is EXTRACT-based
+		//    (`GuiGraphicsExtractor`, `extractRenderState`, `text()`, `fakeItem()`); from
+		//    1.21.11 down it is immediate (`GuiGraphics`, `render`, `drawString()`,
+		//    `renderFakeItem()`). Twelve client files carry that type.
+		//  * Loom REMAPS this node to intermediary, so every mixin `method =` is resolved
+		//    through mappings.tiny for the first time. Stage 0-E's full descriptors are
+		//    what make that safe; a bare name would resolve here by luck, not by rule.
+		//  * Player Animation Library's dependency CONFIGURATION forks here and the
+		//    failure is silent, not loud: 1.1.9 `BXYewCJb` declares
+		//    `Fabric-Mapping-Namespace: intermediary` (checked in the jar), so it must go
+		//    through `modImplementation`, where the 26.x Merged jars must NOT.
+		//    Its API needs no source fork — all six types this repo imports are
+		//    signature-identical to 1.2.5 (`javap -p` on both jars, §2.1).
+		//  * Skill Proficiencies' matching artifact is `intermediary` too, so the interop
+		//    dependency becomes `modCompileOnly` (design §3.5).
+		//
+		// Java drops to 21 on this node (`requiredJava` in the node script), which is the
+		// first time the shared tree is compiled below 25.
+		match("1.21.11", "fabric")
+
 		// The node whose state the shared `src/` is committed in.
 		vcsVersion = "26.2-fabric"
 	}

@@ -71,3 +71,32 @@ deps.fabric_api = "0.154.2+26.1.2"
 # PlayerAnimationFactory, FirstPersonConfiguration, FirstPersonMode, PlayState — are
 # signature-identical between the two jars (`javap -p`, measured on both).
 deps.pal = "SdKAeB6x"
+
+["1.21.11"]
+mod.mc_releases = ["1.21.11"]
+
+[fabric."1.21.11"]
+mod.mc_compat = "1.21.11"
+# Skill Proficiencies' floor for this node, adopted rather than re-derived, and it is NOT
+# `>=0.19.3`: fabric-api 0.141.5 already demands loader 0.17.3, and 0.17.3 bundles
+# MixinExtras 0.5.0. That matters more here than it does next door — this repo has 18
+# MixinExtras injectors (2 `@WrapMethod`, 3 `@ModifyExpressionValue`, 5 `@WrapOperation`,
+# 8 `@ModifyReturnValue`), and `@WrapMethod` needs >=0.4.0. Below that floor the failure is
+# a cryptic mixin-apply crash, not a version message.
+mod.loader_floor = ">=0.17.3"
+deps.fabric_api = "0.141.5+1.21.11"
+# `1.1.9` for MC 1.21.11 — and THE FIRST NODE WHERE THE DEPENDENCY CONFIGURATION FORKS.
+# This is a Fabric jar, not a Merged one: its manifest declares
+# `Fabric-Mapping-Namespace: intermediary` (checked), so Loom must remap it and the node
+# script puts it through `modImplementation`. Putting a 26.x Merged jar (mojmap, no header)
+# through the same configuration would have Loom remap it as if it were intermediary — a
+# silent mis-remap, not a build failure (design §2.1 / R-C5).
+#
+# No SOURCE fork, and that is measured rather than assumed: `javap -p` on this jar and on
+# 26.1's SdKAeB6x shows all six imported types — IAnimatedAvatar, PlayerAnimationController,
+# PlayerAnimationFactory, FirstPersonConfiguration, FirstPersonMode, PlayState —
+# signature-identical INCLUDING return types (`setFirstPersonMode`/`setFirstPersonConfiguration`
+# return the controller on both). The only difference is the namespace the MC types are
+# spelled in (`class_11890` here vs `Avatar` there), which is exactly what the remap fixes.
+# The 1.1.x/1.2.x API split the design warns about starts one node lower, at 1.21.1's 1.1.5.
+deps.pal = "BXYewCJb"
