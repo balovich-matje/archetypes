@@ -70,11 +70,42 @@ public abstract class ItemStackMixin {
 	 * arguments; it is the only {@code ServerPlayer} parameter, and it is null
 	 * whenever a non-player wears an item down.
 	 */
+	// RE-ROOTED below 1.21.11, and it is a re-root rather than a rename because the HOST moved,
+	// not the call. `ItemStack.processDurabilityChange` does not exist there; the call this
+	// wraps does, unchanged, and sits at offset 27 of
+	// `hurtAndBreak(I,ServerLevel,ServerPlayer,Consumer)V` — the only occurrence in the whole
+	// 1.21.1 `ItemStack`.
+	//
+	// R-20's test is the CONTRACT, and the contract here is the javadoc's own claim: "every
+	// path that damages an item reaches it". Measured on 1.21.1 rather than assumed:
+	// `hurtWithoutBreaking` does not exist on that version at all, and the other
+	// `hurtAndBreak(I,LivingEntity,EquipmentSlot)V` overload delegates to this one (offset 51).
+	// So the four-arg `hurtAndBreak` IS the single funnel there, which is exactly the role the
+	// private method plays above the boundary. Nothing is lost and nothing new is covered.
+	//
+	// `@Local(argsOnly = true) ServerPlayer` still resolves for the same reason as above: it is
+	// slot 3 of the new host, the only ServerPlayer argument, and null whenever a non-player
+	// wears an item down.
+	//
+	// The boundary is `>=1.21.11` because that is the pair actually measured (present on
+	// 1.21.11, absent on 1.21.1). If a node ever lands between 1.21.2 and 1.21.10 the legacy
+	// arm is the safer bet of the two — and if the extraction had already happened there,
+	// `injectors.defaultRequire: 1` says so at that node's first boot instead of silently
+	// dropping the node.
+	//? if >=1.21.11 {
 	@WrapOperation(method = "processDurabilityChange(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;)I",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
 							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"
 							+ "Lnet/minecraft/world/item/ItemStack;I)I"))
+	//?} else {
+	/*@WrapOperation(method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;"
+			+ "Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
+							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"
+							+ "Lnet/minecraft/world/item/ItemStack;I)I"))
+	*///?}
 	private int archetypes$reinforcedStraps(final ServerLevel level, final ItemStack stack,
 			final int amount, final Operation<Integer> original,
 			@Local(argsOnly = true) final @Nullable ServerPlayer player) {

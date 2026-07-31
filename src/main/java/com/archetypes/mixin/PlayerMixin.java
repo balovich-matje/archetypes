@@ -92,6 +92,42 @@ public abstract class PlayerMixin {
 	 * victim through {@code Player.attack} with a forced full-strength ticker
 	 * (see {@code AgilityActives.strike}) and would otherwise sweep on landing.
 	 */
+	// ---- R-20 DECISION: `isSweepAttack` DOES NOT EXIST below 1.21.11. ----
+	//
+	// It is not a rename either: below the boundary the decision is not a method at all, it is
+	// five conditions and a boolean local inside `Player.attack`. Read out of the 1.21.1
+	// bytecode (offsets 368-424, local slot 11 `bl4`, live 356..1343):
+	//
+	//     if (fullStrength && !crit && !knockback && this.onGround() && d0 < this.getSpeed()) {
+	//         ItemStack itemStack2 = this.getItemInHand(InteractionHand.MAIN_HAND);   // 405
+	//         if (itemStack2.getItem() instanceof SwordItem) {                        // 415
+	//             bl4 = true;                                                         // 422
+	//         }
+	//     }
+	//
+	// THE CONTRACT, not a plausible fire-site: what the node promises is that the sweep FLAG is
+	// false for a dagger — the javadoc above says why it has to be the flag and not the
+	// `doSweepAttack` call (the flag also gates the ordinary strong/weak hit sound, so
+	// suppressing the call alone leaves the swing silent). This arm makes the flag false, by
+	// answering vanilla's own weapon question with an empty hand.
+	//
+	// WHY THAT ANCHOR. `getItemInHand` is called EXACTLY ONCE in the whole of `attack` (so no
+	// ordinal, and `defaultRequire: 1` pins it), and the stack it returns is consumed by
+	// nothing but the `instanceof` two instructions later: the local it is stored in (slot 14)
+	// is overwritten by a float at offset 424, i.e. the scope ends with the if-block. So an
+	// empty stack here reaches the sweep test and nothing else. `ItemStack.EMPTY.getItem()` is
+	// `Items.AIR`, which is not a SwordItem, so `bl4` stays false and the whole cleave — extra
+	// damage, sweep sound, sweep particle — never happens, while the thud does.
+	//
+	// It is also the SAME QUESTION: `original` IS `getItemInHand(MAIN_HAND)`, which is what
+	// `getMainHandItem()` returns, so both arms ask `ModItems.isDagger` about the same stack.
+	//
+	// AND THE NODE IS REACHABLE THERE, which is what makes this worth doing rather than
+	// deleting: on this version vanilla gates the sweep on `instanceof SwordItem`, and
+	// ModItems' legacy arm builds the daggers AS `SwordItem`s deliberately (see the note there
+	// — repairability and enchantment value still live in the class below 1.21.11). Without
+	// this arm a legacy dagger would cleave where a 26.x dagger does not.
+	//? if >=1.21.11 {
 	@Inject(method = "isSweepAttack(ZZZ)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$daggersNeverSweep(final boolean fullStrengthAttack,
 			final boolean criticalAttack, final boolean knockbackAttack,
@@ -108,6 +144,17 @@ public abstract class PlayerMixin {
 			cir.setReturnValue(false);
 		}
 	}
+	//?} else {
+	/*@com.llamalad7.mixinextras.injector.ModifyExpressionValue(
+			method = "attack(Lnet/minecraft/world/entity/Entity;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/player/Player;getItemInHand("
+							+ "Lnet/minecraft/world/InteractionHand;)Lnet/minecraft/world/item/ItemStack;"))
+	private net.minecraft.world.item.ItemStack archetypes$daggersNeverSweep(
+			final net.minecraft.world.item.ItemStack original) {
+		return ModItems.isDagger(original) ? net.minecraft.world.item.ItemStack.EMPTY : original;
+	}
+	*///?}
 
 	/**
 	 * Mark the one path a real swing takes, so the Slayer's on-hit passives can
@@ -150,7 +197,11 @@ public abstract class PlayerMixin {
 	// `damageSource` is the ONLY DamageSource local in Player.attack on 26.1 (slot 4, live
 	// from bytecode offset 44 to 351, and the call sits at 276), so @Local resolves it
 	// without an ordinal. Touches no balance itself: set, call unchanged, restore.
-	//? if <26.2 {
+	//
+	// STAGE 4 NARROWED THE PREDICATE from a bare `<26.2`: `causeExtraKnockback` is itself
+	// 1.21.11-and-up. Below that the extra shove is inline in `attack` and the arm after this
+	// one covers it.
+	//? if >=1.21.11 && <26.2 {
 	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
 			method = "attack(Lnet/minecraft/world/entity/Entity;)V",
 			at = @At(value = "INVOKE",
@@ -210,6 +261,55 @@ public abstract class PlayerMixin {
 			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
 			final net.minecraft.world.entity.Entity target, final float damage,
 			final net.minecraft.world.damagesource.DamageSource source, final float sweepRatio) {
+		net.minecraft.world.damagesource.DamageSource previous =
+				com.archetypes.KnockbackSource.push(source);
+
+		try {
+			original.call(victim, strength, x, z);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
+	}
+	*///?}
+
+	// ---- R-20 DECISION: below 1.21.11 the two legs above are ONE site, and it closes the
+	// open item the arm above names. ----
+	//
+	// `causeExtraKnockback` is gone and so is `doSweepAttack`. On 1.21.1 both the melee extra
+	// shove and the sweep's shove are inline in `attack`, as the only two
+	// `LivingEntity.knockback(DDD)V` calls in the method — offsets 542 (the sprint bonus plus
+	// the Knockback enchantment, inside `if (target.hurt(...))`) and 794 (the sweep loop).
+	// One un-ordinal'd wrap therefore covers exactly what the two arms above cover between
+	// them, with `defaultRequire: 1` still pinned by the first.
+	//
+	// `damageSource` is slot 4, live 55..1344 (`javap -l`), so it is in scope at BOTH offsets
+	// and it is the only DamageSource local in the method — `@Local` resolves without an
+	// ordinal, exactly as on 26.1.
+	//
+	// No client early-out, and that is measured rather than trusted: `Player.attack` DOES run
+	// on the client (MultiPlayerGameMode calls it for prediction), but both knockback sites
+	// sit inside the `if (target.hurt(...))` branch that opens at offset 463, and
+	// `LivingEntity.hurt` returns false for a client level at its offset 21. Neither site is
+	// reachable off the server thread, so KnockbackSource's single-writer contract holds
+	// without one. The same structure is why the 26.1 arm above never needed one either.
+	//
+	// Ordering is safe for the arm above's reason, one frame further out: the `hurt` call at
+	// 458 runs to completion — with LivingEntityMixin's own push/pop around the knockback
+	// INSIDE it — before either of these, and push/pop is save-and-restore.
+	//
+	// The predicate is `<1.21.11` and not `>=1.21 && <1.21.11` on purpose: 1.20.1 spells the
+	// sweep the same way, so Stage 5 should inherit this rather than rediscover it, and if the
+	// shape turns out to differ there `injectors.defaultRequire: 1` fails loudly at that
+	// node's first boot instead of dropping the leg in silence.
+	//? if <1.21.11 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "attack(Lnet/minecraft/world/entity/Entity;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"))
+	private void archetypes$stashAttackKnockback(final net.minecraft.world.entity.LivingEntity victim,
+			final double strength, final double x, final double z,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
+			@com.llamalad7.mixinextras.sugar.Local final net.minecraft.world.damagesource.DamageSource source) {
 		net.minecraft.world.damagesource.DamageSource previous =
 				com.archetypes.KnockbackSource.push(source);
 
