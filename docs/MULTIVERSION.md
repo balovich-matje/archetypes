@@ -868,6 +868,11 @@ same run. Skill Proficiencies records the identical line on `1.20.1-forge`.
 
 ### 5.5 Stage 4 — `1.21.1-fabric` — **the biggest single step in the port**
 
+> **STATUS: DONE.** Landed over `4-A`…`4-E3`. The as-built record is §5.5.1 (the common side,
+> with Stage 4-D's correction banner), §5.5.2 (the client side, and the 29-target blocker it
+> found) and §5.5.3 (the blocker closed and the whole gate set green). The plan below is
+> unedited.
+
 Everything at `>=1.21.11` lands at once: `Identifier`→`ResourceLocation` (controller `replacements`, free), `.projectile.arrow` package, the **entire render-state architecture**, `AvatarRenderer`→`PlayerRenderer`, `RenderLayer.submit`→`render`, `FabricRenderState`/`RenderStateDataKey` absent, `HudElementRegistry`→client `GuiMixin`, `KeyMapping.Category`→String, `hurtServer`→`hurt` × **18 + DamageTrace + Flense**, `applyItemBlocking`/`BlocksAttacks` gone, `Consumable`/`FoodProperties.onConsume` gone, `Player.isSweepAttack`/`canGlide` gone, `LocalPlayer.itemUseSpeedMultiplier` gone, `MobEffectInstance.tickServer`→`tick`, `ItemStack.processDurabilityChange` gone (but `EnchantmentHelper.processDurabilityChange` **survives** — re-root, don't rewrite), `UseDuration`→`ItemProperties`, `ARGB`→`FastColor.ARGB32`, jspecify→jetbrains (import-only fork), `Toast` split.
 
 **Split into 4a (common) and 4b (client), landed as separate node-internal milestones with their own gates.** 4b is larger than 4a.
@@ -1082,24 +1087,26 @@ Two of those carry a finding each.
    removed. Worth a grep after any large fork pass: `a.strip() == b.strip()` on adjacent
    `//? if` lines.
 
-**THE BLOCKER, and it is the whole of what Stage 5 must start with.** `arch-gate/mixincheck.py`
-on `1.21.1-fabric`: **106 targets checked, 29 unresolved, all common-tree.** The three prior
-nodes and the shared tree against 26.2 all report ALL RESOLVE, so this is a 1.21.1-only gap and
-not a tooling artefact.
+**THE BLOCKER — CLOSED BY STAGE 4-E (§5.5.3), and the table below is now the as-built record.**
+`arch-gate/mixincheck.py` on `1.21.1-fabric` read **106 targets checked, 29 unresolved, all
+common-tree**; it now reads **107 checked, ALL RESOLVE**. The three prior nodes and the shared
+tree against 26.2 reported ALL RESOLVE throughout, so this was a 1.21.1-only gap and never a
+tooling artefact. The last column was written as a forecast and has been replaced by what
+landed; where the two differ, the difference is called out.
 
-| Count | File | Unresolved target | Boundary / shape it needs |
+| Count | File | Unresolved target | AS BUILT (Stage 4-E) |
 |---|---|---|---|
-| 17 | `LivingEntityMixin` | `hurtServer(ServerLevel,DamageSource,F)Z` | `>=1.21.2`; below → `hurt(DamageSource,F)Z`, drop the `level` parameter, add the `isClientSide()` early-out |
+| 17 | `LivingEntityMixin` | `hurtServer(ServerLevel,DamageSource,F)Z` | `>=1.21.2` → `hurt(DamageSource,F)Z`, `level` dropped, `isClientSide()` early-out. **SIGNATURE-ONLY fork**: annotation + parameter list + opening brace, body shared outside the block |
 | 2 | `DamageTraceMixin` | same | same |
 | 1 | `FlenseMixin` | same | same |
 | 1 | `HardenedMixin` | same | same |
-| 2 | `MobEffectInstanceMixin` | `tickServer(ServerLevel,LivingEntity,Runnable)Z` | → `tick(LivingEntity,Runnable)Z` |
-| 1 | `FoodDataMixin` | `tick(ServerPlayer)V` | → `tick(Player)V` |
-| 1 | `HealOrHarmMobEffectMixin` | `applyInstantenousEffect(ServerLevel,Entity,Entity,LivingEntity,I,D)V` | → the no-`ServerLevel` form |
-| 1 | `CrossbowItemMixin` | `releaseUsing(ItemStack,Level,LivingEntity,I)Z` | returns `V` below |
-| 1 | `ItemStackMixin` | `processDurabilityChange(I,ServerLevel,ServerPlayer)I` | **re-root**, do not rewrite — `EnchantmentHelper.processDurabilityChange` survives (§5.5) |
-| 1 | `PlayerMixin` | `isSweepAttack(ZZZ)Z` | **gone** below 1.21.11 — a decision, not a rename |
-| 1 | `PlayerMixin` | `@At` INVOKE `Player.causeExtraKnockback(Entity,F,Vec3)V` | **gone** — a decision |
+| 2 | `MobEffectInstanceMixin` | `tickServer(ServerLevel,LivingEntity,Runnable)Z` | → `tick(LivingEntity,Runnable)Z` — **plus an early-out the forecast did not ask for**: `tick` runs on BOTH sides (`baseTick` → `tickEffects()`, offset 765, unguarded) and the flag is a plain static |
+| 1 | `FoodDataMixin` | `tick(ServerPlayer)V` | → `tick(Player)V` — **and the `@At` INVOKE owner with it**, `Player.heal(F)V`, offsets 163/221. Owner-only drift is invisible to `mixincheck` (ServerPlayer inherits `heal`) and to `require` |
+| 1 | `HealOrHarmMobEffectMixin` | `applyInstantenousEffect(ServerLevel,Entity,Entity,LivingEntity,I,D)V` | → the no-`ServerLevel` form **and a different spelling**: `applyInstantenousEffect` below, `applyInstantaneousEffect` above. ⚠ the pass's only whole-method fork (`@WrapMethod` descriptor = target's) |
+| 1 | `CrossbowItemMixin` | `releaseUsing(ItemStack,Level,LivingEntity,I)Z` | returns `V` below; CallbackInfoReturnable → CallbackInfo, fully qualified so the arm above keeps its import list |
+| 1 | `ItemStackMixin` | `processDurabilityChange(I,ServerLevel,ServerPlayer)I` | **re-rooted onto `hurtAndBreak(I,ServerLevel,ServerPlayer,Consumer)V`** (`>=1.21.11`). Contract holds: `hurtWithoutBreaking` does not exist on 1.21.1 and the other overload delegates (offset 51), so `hurtAndBreak` IS the single funnel there |
+| 1 | `PlayerMixin` | `isSweepAttack(ZZZ)Z` | **`@ModifyExpressionValue` on the `getItemInHand(MAIN_HAND)` at offset 405 of `attack`** — one occurrence, its result consumed only by `instanceof SwordItem`. An empty hand makes the sweep FLAG false, which is the contract (the flag also gates the ordinary hit sound) |
+| 1 | `PlayerMixin` | `@At` INVOKE `Player.causeExtraKnockback(Entity,F,Vec3)V` | **one un-ordinal'd `@WrapOperation` on `LivingEntity.knockback(DDD)V` inside `attack`** — offsets 542 and 794, i.e. the extra shove AND the sweep's. Covers what the 26.1 `causeExtraKnockback` and `doSweepAttack` arms cover between them, and CLOSES the 1.21.1 sweep leg Stage 3 logged as open |
 
 The first 21 are mechanical, and cheap for a reason worth stating: **Stage 0-D already split
 every handler into an annotated shell and a `@Unique` implementation, and the implementations
@@ -1116,6 +1123,95 @@ or the cross-mod ordering gate on this node until that table is empty.** With
 `injectors.defaultRequire: 1` — which stays on — the node aborts at mixin apply, one failure at
 a time, which is the slowest possible way to discover 29 of them. `mixincheck.py` reports all
 29 in one pass and costs seconds; run it first, every time.
+
+*(That instruction was followed and it held up: the table emptied in three commits and the
+whole blocked gate set then passed on the first attempt. Keep the ordering for Stage 5.)*
+
+#### 5.5.3 Stage 4-E, as landed — **the node is DONE: 107 targets resolve, the gate set is green**
+
+Three commits, `4-E1` … `4-E3`, and then the gate set §5.5.2 blocked. `mixincheck.py` on
+`1.21.1-fabric`: **107 targets checked, ALL RESOLVE**. 26.1 106 ALL RESOLVE, 1.21.11 106 ALL
+RESOLVE, the shared tree against 26.2 101 ALL RESOLVE. The three prior nodes were re-measured
+**before each of the three commits** and did not move: 26.2 244/244, 26.1 244/244, 1.21.11
+250/250 classes instruction-identical, 385/385 resources byte-identical, every time.
+
+**THE SHAPE THE 21 MECHANICAL ONES TOOK, and it is the reusable half.** The fork is the
+SIGNATURE ONLY — annotation, parameter list, opening brace — with the shared body outside the
+block. §5.5.1 finding 3 predicted why it has to be: hoisting either the early-out or the
+delegation into a shared `@Unique` helper adds a method and a call to three prior nodes'
+transformed classes, which is what made 26.1 come back one instruction-diff dirty when the
+knockback stash was first written that way. One implementation, four nodes, no balance
+expression written twice — and `FlenseMixin`, whose handler has no `…Impl` to delegate to at
+all, forks identically because the body never has to move.
+
+The legacy arm's `isClientSide()` early-out is not tidiness. `hurt` runs on both logical sides
+and vanilla's own `return false` for a client level is at offset 10-21 of the 1.21.1
+`LivingEntity.hurt`, i.e. AFTER every HEAD injection; ten of the impls open with
+`(ServerLevel) this.level()`. Two handlers legitimately do without one and both are measured
+rather than argued: `FoodData.tick` is called at offset 197 of `Player.aiStep` inside the
+`!isClientSide` branch opening at 186, and both `attack` knockback sites sit inside the
+`if (target.hurt(...))` branch that a client never enters.
+
+**THREE THINGS THE FORECAST DID NOT CONTAIN**, all of them found by reading the jar rather than
+the diff — see the table above for each: the `Player.heal` OWNER moving with `FoodData.tick`
+(a drift neither `mixincheck` nor `require` can see, because `ServerPlayer` inherits `heal`);
+`applyInstantenousEffect`'s misspelling; and `MobEffectInstance.tick` running on both sides
+where `tickServer` cannot.
+
+**THE GATE SET, run in §5.9's order.**
+
+1. *Prior-node identity* — three nodes, three times, all zero (above).
+2. *Dedicated-server smoke*, new rig `scratchpad/smoke-1.21.1`: fabric server 1.21.1 / loader
+   0.16.14, fabric-api 0.116.14+1.21.1, Skill Proficiencies 1.6.0+1.21.1, PAL `FkO8Scek`
+   (1.1.5), 47 mods, JDK 21. `Done (5.316s)`, clean `stop`, **exit 0**. Zero mixin errors, zero
+   `missing following references`, zero `Couldn't load tag`. Tag probes: five positive
+   (`greatswords`, `daggers`, `wands`, `fruit`, `meat`) silent, bogus control
+   `#archetypes:does_not_exist` → `Unknown item tag`. Item probes: five positive silent, bogus
+   control → `Unknown item`. **17 of the 19 listed common mixins were applied, and that is
+   parity, not a shortfall**: `FoodDataMixin` and `PlayerAdvancementsMixin` are unapplied on
+   the 1.21.11 smoke too (their targets are not loaded by a headless boot with no player), and
+   the eighteenth on that node is `BlocksAttacksMixin`, which R-A5 excises here.
+3. *Funnel-ordering audit* (`funnel.sh`, now parameterised by target name — below 1.21.2 the
+   funnel is `hurt`, intermediary `method_5643`). **The 22-entry HEAD sequence is identical to
+   1.21.11's, name for name**: `traceBegin` (500) first, then the seventeen shapers in source
+   order, then Skill Proficiencies' three, then `archetypes$flense` (1500) last. RETURN
+   clusters: `traceFinish` (500) < `hardened` (900) < `fabric-entity-events-v1$afterDamage`
+   (1000). The only two diffs against 1.21.11 are structural and expected: no
+   `stashBlockKnockback` (no `applyItemBlocking` on this node), and one EXTRA `traceFinish` /
+   `hardened` RETURN pair, because `hurt` has one more return site than `hurtServer` — the
+   client early-out. That extra pair is exactly what the handlers' own early-out no-ops.
+4. *Cross-mod ordering* (§5.9 gate 6). First half PROVEN by the funnel: SP's
+   `applyCombatDamage` / `uncapFallProtection` / `stealthCrit` at 326/334/342, `flense` at 349.
+   Second half **NOT APPLICABLE on this node family, and symmetrically so**: Archetypes'
+   `UseDurationMixin` and Skill Proficiencies' are both `>=1.21.11`, because
+   `client.renderer.item.properties.numeric.UseDuration` does not exist on 1.21.1 — read out of
+   both shipped 1.21.1 jars' client mixin configs, not assumed.
+5. *Mixin export audit*, `javap -c` on the merged classes, and the two re-roots got the
+   R-07-style proof because both are anchored on a call read:
+   * merged `Player`: `getItemInHand` at 405 → `daggersNeverSweep` at 410 → `astore 14` →
+     `getItem` → `instanceof SwordItem` → `istore 11` (the flag), and slot 14 is overwritten by
+     a float at 430, so the substituted stack reaches the sweep test and nothing else.
+   * merged `Player`: `stashAttackKnockback` at 587 and 895 — **exactly two**, the second
+     immediately followed by the sweep loop's `hurt`. The `@Local` is a `LocalRefImpl`
+     initialised from and disposed back to slot 4, which is the `damageSource` local at both.
+   * merged `ItemStack`: the wrap sits in `method_7956` =
+     `hurtAndBreak(I,ServerLevel,ServerPlayer,Consumer)V`, with the `@Local` carrying `aload_3`.
+   * merged `LivingEntity`: the 35 handler calls of the funnel above.
+
+**One benign log line, do NOT "fix" it**: `Compatibility level JAVA_21 specified by
+archetypes.mixins.json is higher than the maximum level supported by this version of mixin
+(JAVA_13)`. Loader 0.16.14's mixin says the same about **every** fabric-api module in the same
+boot; it governs vouched-for features, not whether ASM can read the class. SP's §Environment
+note records the identical line on `1.20.1-forge`. Never write `JAVA_13` into a shared config.
+
+**OPEN FOR STAGE 5, and both are named where they live.** `FoodDataMixin` and
+`PlayerAdvancementsMixin` are never exercised by a headless smoke on any node — the in-game
+pass (§5.9 gate 7) is the only thing that covers them, and `FoodDataMixin`'s owner fork landed
+in this stage, so it is the one to actually watch. And the two new `<1.21.11` arms in
+`PlayerMixin` are written to cover 1.20.1 as well as 1.21.1: if that version spells either
+anchor differently, `injectors.defaultRequire: 1` fails loudly at Stage 5's first boot rather
+than dropping the node in silence. That is deliberate — a predicate scoped to `>=1.21` would
+have been silent instead.
 
 ### 5.6 Stage 5 — `1.20.1-fabric` — Java 17, no sprite atlas, no attachment sync, no PAL
 
