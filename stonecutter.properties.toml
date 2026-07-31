@@ -147,6 +147,35 @@ deps.fabric_api = "0.116.14+1.21.1"
 # 1.2.x — source-compatible, because every call site uses them as statements.
 deps.pal = "FkO8Scek"
 
+[neoforge."1.21.1"]
+# NOT `mod.mc_compat`: that key holds FABRIC range syntax (">=1.21 <=1.21.1") and
+# neoforge.mods.toml wants a MAVEN range. The loader-axis nodes therefore get their own key,
+# read by build.neoforge.gradle.kts as `${minecraft_range}`. Skill Proficiencies' value for
+# the same node, adopted rather than re-derived — the two mods claim the same range.
+mod.mc_range = "[1.21,1.21.2)"
+# The FLOOR is a real finding and it binds HARDER here than it does next door. Data-attachment
+# SYNC arrived in NeoForge 21.1.200. Skill Proficiencies needed it for ONE attachment; this mod
+# has 47 synced keys, 16 of them broadcast to every tracking client, and every renderer flag
+# other players read rides on them. Below the floor the node builds, loads, and silently shows
+# a blank tree screen, a blank cooldown bar and no other player's Bulwark — design R-09's
+# failure mode, at 47x. build.neoforge.gradle.kts asserts it at configuration time.
+deps.neoforge = "21.1.243"
+# PAL, and this is the row design §2.1 wrote the version-ID rule for: `1.1.5` is published on
+# BOTH the Fabric and the NeoForge listing of `player-animation-library`, and only the id tells
+# them apart. `FkO8Scek` is 1.21.1-fabric's, three keys up; `ReDTdA0C` is this one. Swapping
+# them is not a build failure — it is a mis-remapped jar or a jar for the wrong loader.
+#
+# MEASURED on the cached artifact (scratchpad/pal/ReDTdA0C-…jar): a NeoForge jar, mojmap
+# classes, NO `Fabric-Mapping-Namespace` header and no remapper on this node's toolchain
+# anyway — so it goes through a PLAIN `compileOnly` plus the dev run's
+# `additionalRuntimeClasspath`, not `modImplementation` (there is no such configuration here).
+#
+# The SOURCE fork it brings is 1.21.1-fabric's, unchanged: this is the same 1.1.x API
+# (`IAnimatedPlayer`, `AbstractClientPlayer`), so the `//?` arms the five `*Animations` drivers
+# already carry cover this node with no new predicate. Design §5.7's "inherits 1.21.1-fabric's
+# 1.1.x source fork" is that sentence.
+deps.pal = "ReDTdA0C"
+
 ["1.20.1"]
 # One release, not a range. 1.20.2 moved `Screen.render`'s background draw and 1.20.5 moved
 # the whole component/attachment/payload world, so neither neighbour is covered by this node

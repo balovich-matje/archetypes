@@ -108,7 +108,29 @@ stonecutter {
 		//    client `GuiMixin` — Skill Proficiencies' proven file shape, not a new one.
 		//
 		// Java stays at 21 (`requiredJava`), so this node adds no toolchain move.
-		match("1.21.1", "fabric")
+		//
+		// ---- Stage 6, the loader axis: `1.21.1-neoforge` joins its Fabric sibling here,
+		// registered as its own commit for the same single-writer reason (conventions §1).
+		//
+		// It is a SECOND NODE SCRIPT, not a fork of the Fabric one: ModDevGradle instead of
+		// Loom, a plain `client` source set instead of split environments,
+		// `META-INF/neoforge.mods.toml` instead of `fabric.mod.json`, mojmap at runtime
+		// instead of intermediary. Skill Proficiencies' `build.neoforge.gradle.kts` — itself
+		// the maintained multiloader template's — is the base; the deltas are Archetypes'
+		// twelve fabric-api dependencies, PAL and the SP-interop jar.
+		//
+		// What it inherits from its Fabric sibling, so nothing is re-derived: the `>=1.21.11`
+		// boundary WHOLE (`hurt(DamageSource,F)Z` not `hurtServer`, no `BlocksAttacks`, no
+		// `client.rendering.v1.hud`, `FastColor` not `ARGB`), PAL's 1.1.x source fork, and the
+		// item-model relocation (1.21.1 < 1.21.4). The `//?` arms for all of those already
+		// exist — this node adds NO version predicate, only loader ones.
+		//
+		// The shared tree does NOT compile for this node yet — `com.archetypes.platform` still
+		// wires all three `INSTANCE`s to the Fabric implementations and there is no `@Mod`
+		// entrypoint — so `:1.21.1-neoforge:build` and an unqualified `build`/`buildAndCollect`
+		// FAIL by design until the NeoForge half lands. `:1.21.1-neoforge:stonecutterGenerate`
+		// and `stonecutterGenerateClient` are green, and every Fabric node is unaffected.
+		match("1.21.1", "fabric", "neoforge")
 
 		// ---- Stage 5: the oldest node in the port, registered as its own commit for the
 		// same single-writer reason (conventions §1).
