@@ -126,7 +126,7 @@ public class GreatswordSweepParticle extends SingleQuadParticle {
 					partialTicks);
 		}
 	}
-	//?} else {
+	//?} elif >=1.21 {
 	/*@Override
 	protected void renderRotatedQuad(final VertexConsumer buffer, final Camera camera,
 			final Quaternionf rotation, final float partialTicks) {
@@ -143,6 +143,14 @@ public class GreatswordSweepParticle extends SingleQuadParticle {
 					partialTicks);
 		}
 	}
+	*///?} else {
+	/*// R-17's neighbour: below 1.21 `SingleQuadParticle` has no `renderRotatedQuad` to
+	// override at all — the quad emission is private to its own `render`. The three-quad
+	// fan is therefore NOT reimplemented here; the particle falls back to vanilla's single
+	// quad, which is the same texture, the same size and the same fade, just one blade
+	// instead of a spread of three. A cosmetic degradation on one node, recorded rather
+	// than approximated with a hand-rolled vertex loop that would have to track vanilla's
+	// own lighting and colour maths.
 	*///?}
 
 	// The one other 26.1 rename this particle meets: `Particle.getLightColor(float)` became

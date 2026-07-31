@@ -49,7 +49,8 @@ import org.jspecify.annotations.Nullable;
  * ordinary levels ride the quiet toast slide alone.
  */
 public class ArchetypeLevelUpToast implements Toast {
-	private static final Identifier BACKGROUND_SPRITE = Identifier.withDefaultNamespace("toast/advancement");
+	/*? if >=1.21 {*/private static final Identifier BACKGROUND_SPRITE = Identifier.withDefaultNamespace("toast/advancement");
+	/*?} else *///private static final Identifier BACKGROUND_SPRITE = new Identifier("textures/gui/toasts.png");
 	private static final long DISPLAY_TIME_MS = 5000;
 
 	private final Archetype archetype;
@@ -134,8 +135,13 @@ public class ArchetypeLevelUpToast implements Toast {
 	*///?}
 		//? if >=1.21.11 {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BACKGROUND_SPRITE, 0, 0, this.width(), this.height());
-		//?} else {
+		//?} elif >=1.21 {
 		/*graphics.blitSprite(BACKGROUND_SPRITE, 0, 0, this.width(), this.height());
+		*///?} else {
+		/*// R-17: no GUI sprite atlas below 1.21, so the toast backdrop is a REGION of
+		// `textures/gui/toasts.png` — the same 160x32 at (0,0) vanilla's own AdvancementToast
+		// blits there, and the same pixels the `toast/advancement` sprite is cut from above.
+		graphics.blit(BACKGROUND_SPRITE, 0, 0, 0, 0, this.width(), this.height());
 		*///?}
 		//? if >=26.1 {
 		graphics.text(font, this.archetype.tierName(0), 30, 7, this.archetype.color(), false);

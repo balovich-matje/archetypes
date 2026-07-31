@@ -75,17 +75,31 @@ public final class ExtraSensoryPerception {
 	 * colour as the thing that cannot. It was red until Death Mark took red for
 	 * itself — two reds a shade apart, seen through the blurred outline pass,
 	 * are one colour, and the mark is the one that has to be unmistakable. */
-	private static final int PLAYER_COLOR = ARGB.opaque(0xFFB300);
+	/*? if >=1.21 {*/private static final int PLAYER_COLOR = ARGB.opaque(0xFFB300);
+	/*?} else *///private static final int PLAYER_COLOR = archetypes$opaque(0xFFB300);
 	/** Everything else in a cold violet — far enough from red to be told apart
 	 * at a glance and from vanilla's white team outline. */
-	private static final int CREATURE_COLOR = ARGB.opaque(0x9A5CFF);
+	/*? if >=1.21 {*/private static final int CREATURE_COLOR = ARGB.opaque(0x9A5CFF);
+	/*?} else *///private static final int CREATURE_COLOR = archetypes$opaque(0x9A5CFF);
 	/**
 	 * The mark: arterial red, the one colour that has to read as danger rather
 	 * than as information. Nothing else in this class is within a hue of it —
 	 * ESP's two tones are amber and violet, either side of red on the wheel —
 	 * so a red outline means a mark and only ever a mark.
 	 */
-	private static final int MARK_COLOR = ARGB.opaque(0xD10000);
+	/*? if >=1.21 {*/private static final int MARK_COLOR = ARGB.opaque(0xD10000);
+	/*?} else *///private static final int MARK_COLOR = archetypes$opaque(0xD10000);
+
+	// STAGE 5: 1.21's `ARGB` (spelled `FastColor.ARGB32` below 1.21.11 by the controller's
+	// own replacement) gained `opaque`; the 1.20.1 class has only the four-channel `color`.
+	// One line, restored here rather than reached for — Skill Proficiencies did the same for
+	// the same two members.
+	//? if >=1.21 {
+	//?} else {
+	/*private static int archetypes$opaque(final int rgb) {
+		return 0xFF000000 | rgb;
+	}
+	*///?}
 
 	private ExtraSensoryPerception() {
 	}

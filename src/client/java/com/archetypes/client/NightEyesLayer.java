@@ -254,9 +254,19 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 		// the eyes when the head turns instead of on the body's facing.
 		pose.pushPose();
 		this.getParentModel().head.translateAndRotate(pose);
+		//? if >=1.21 {
 		this.eyes.render(pose, buffers.getBuffer(RenderType.eyes(TEXTURE)), light,
 				OverlayTexture.NO_OVERLAY,
 				glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT);
+		//?} else {
+		/^// `ModelPart.render` takes the tint as four floats below 1.21 rather than one packed
+		// ARGB int. Same four channels, same order, unpacked from the same constant.
+		int tint = glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT;
+		this.eyes.render(pose, buffers.getBuffer(RenderType.eyes(TEXTURE)), light,
+				OverlayTexture.NO_OVERLAY,
+				(tint >> 16 & 0xFF) / 255.0F, (tint >> 8 & 0xFF) / 255.0F,
+				(tint & 0xFF) / 255.0F, (tint >>> 24) / 255.0F);
+		^///?}
 		pose.popPose();
 	}
 	*///?}

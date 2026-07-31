@@ -491,13 +491,21 @@ public class ArchetypePickerScreen extends Screen {
 				/*graphics.blit(SPIKE_LEFT, -12, -19, 20, 20, 0.0F, 0.0F, 32, 32, 32, 32);
 				graphics.blit(FLAME_ICON, -7, -16, 20, 20, 0.0F, 0.0F, 32, 32, 32, 32);
 				*///?}
-				//? if >=26.1 {
+					//? if >=26.1 {
 				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
-				//?} else {
-				/*graphics.renderFakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
-				*///?}
 						net.minecraft.world.item.Items.POTION,
 						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -1);
+				//?} elif >=1.21 {
+				/*graphics.renderFakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
+						net.minecraft.world.item.Items.POTION,
+						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -1);
+				*///?} else {
+				/*// No `PotionContents` component below 1.21 — the potion goes into the stack's
+				// NBT, which is what `PotionUtils.setPotion` does (see ModItems' creative tab).
+				graphics.renderFakeItem(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+						new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION),
+						com.archetypes.ManaPotions.MANA_REGENERATION.value()), -8, -1);
+				*///?}
 			}
 
 			//? if >=1.21.11 {
@@ -528,7 +536,8 @@ public class ArchetypePickerScreen extends Screen {
 	private static final Identifier CROSSBOW_LEFT =
 			com.archetypes.Archetypes.id("textures/gui/collage/crossbow_left.png");
 	private static final Identifier VANILLA_BOW_DRAWN =
-			Identifier.fromNamespaceAndPath("minecraft", "textures/item/bow_pulling_2.png");
+			/*? if >=1.21 {*/Identifier.fromNamespaceAndPath("minecraft", "textures/item/bow_pulling_2.png");
+			/*?} else *///new Identifier("minecraft", "textures/item/bow_pulling_2.png");
 	private static final Identifier DAGGER =
 			com.archetypes.Archetypes.id("textures/item/iron_dagger.png");
 	private static final Identifier DAGGER_LEFT =

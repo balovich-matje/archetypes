@@ -8,7 +8,9 @@ import java.util.concurrent.ThreadLocalRandom;
 import com.archetypes.ProtectorNodes;
 import com.archetypes.SlayerNodes;
 
+//? if >=1.21 {
 import net.minecraft.client.DeltaTracker;
+//?}
 import net.minecraft.client.Minecraft;
 //? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -161,10 +163,15 @@ public final class ProcIndicatorHud {
 				ThreadLocalRandom.current().nextBoolean() ? 1 : -1, System.currentTimeMillis()));
 	}
 
+	// STAGE 5: `DeltaTracker` is 1.21's (frozen row); below it every HUD callback is handed
+	// the raw partial tick as a float. None of these six reads it — it is carried because the
+	// element signature carries it — so the third arm is the parameter TYPE and nothing else.
 	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
-	//?} else {
+	//?} elif >=1.21 {
 	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?} else {
+	/*public static void render(final GuiGraphics graphics, final float delta) {
 	*///?}
 		if (ACTIVE.isEmpty()) {
 			return;

@@ -26,7 +26,9 @@ import com.archetypes.platform.ClientNetHooks;
 import com.archetypes.platform.Platform;
 
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+//? if >=1.20.5 {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 
 public final class ClientHandDown {
 	private ClientHandDown() {

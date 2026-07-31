@@ -4,7 +4,9 @@ import com.archetypes.Archetypes;
 
 import com.archetypes.compat.SpecialitiesBridge;
 
+//? if >=1.21 {
 import net.minecraft.client.DeltaTracker;
+//?}
 import net.minecraft.client.Minecraft;
 //? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -68,10 +70,12 @@ import net.minecraft.world.food.FoodConstants;
 public final class BankedHungerHud {
 	/** The ring baked off {@code hud/food_empty}: a closed halo around the whole
 	 * drumstick, bone included. */
-	private static final Identifier RING = Archetypes.id("hud/banked_food_ring");
+	/*? if >=1.21 {*/private static final Identifier RING = Archetypes.id("hud/banked_food_ring");
+	/*?} else *///private static final Identifier RING = Archetypes.id("textures/gui/hud/banked_food_ring.png");
 	/** The same halo around the drumstick's left half only, closed by a stroke
 	 * down the icon's middle, for an odd bank. */
-	private static final Identifier RING_HALF = Archetypes.id("hud/banked_food_ring_half");
+	/*? if >=1.21 {*/private static final Identifier RING_HALF = Archetypes.id("hud/banked_food_ring_half");
+	/*?} else *///private static final Identifier RING_HALF = Archetypes.id("textures/gui/hud/banked_food_ring_half.png");
 
 	private static final int SLOTS = 10;
 	private static final int SPRITE = 9;
@@ -92,10 +96,15 @@ public final class BankedHungerHud {
 	private BankedHungerHud() {
 	}
 
+	// STAGE 5: `DeltaTracker` is 1.21's (frozen row); below it every HUD callback is handed
+	// the raw partial tick as a float. None of these six reads it — it is carried because the
+	// element signature carries it — so the third arm is the parameter TYPE and nothing else.
 	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
-	//?} else {
+	//?} elif >=1.21 {
 	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?} else {
+	/*public static void render(final GuiGraphics graphics, final float delta) {
 	*///?}
 		Minecraft client = Minecraft.getInstance();
 		Player player = client.player;
@@ -145,9 +154,17 @@ public final class BankedHungerHud {
 			//? if >=1.21.11 {
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ring,
 					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE, NO_TINT);
-			//?} else {
+			//?} elif >=1.21 {
 			/*graphics.blitSprite(ring,
 					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE, NO_TINT);
+			*///?} else {
+			/*// R-17: below 1.21 there is no sprite atlas, so the two rings ship as ordinary
+			// textures (`processResources` moves them out of `textures/gui/sprites/` on this
+			// node) and are blitted whole — an 11x11 file drawn at 11x11, u=v=0. The tint
+			// argument goes with the sprite call: `NO_TINT` is white, which is what an
+			// untinted blit already draws.
+			graphics.blit(ring, x - RING_MARGIN, y - RING_MARGIN, 0, 0,
+					RING_SPRITE, RING_SPRITE, RING_SPRITE, RING_SPRITE);
 			*///?}
 		}
 	}

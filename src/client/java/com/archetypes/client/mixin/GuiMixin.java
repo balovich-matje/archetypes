@@ -47,7 +47,31 @@ package com.archetypes.client.mixin;
 // Listed only in versions/1.21.1-fabric/src/client/resources/archetypes.client.mixins.json.
 // HudMixin already targets `Gui` below 26.2 for the night form's grey hearts; two mixins on one
 // target class is ordinary, and they touch different methods.
-//? if <1.21.11 {
+//
+// ─── STAGE 5: THE SAME PATH AGAIN ON 1.20.1, ON A `Gui` THAT IS SHAPED DIFFERENTLY ────────
+// Three of the four anchors above do not exist there (`javap -p -s` on the 1.20.1 mojmap
+// jar): no `renderItemHotbar`, no `renderCameraOverlays`, no `renderFood` — the hotbar is
+// `renderHotbar(F, GuiGraphics)V`, the overlays are inline in `render(GuiGraphics, F)V`, and
+// the food row is drawn inside the private `renderPlayerHealth(GuiGraphics)V` along with
+// hearts, armour and the air bubbles. What that costs, stated per element:
+//
+//   * the three BARS and the two WORLD WASHES all land at TAIL of `render(GuiGraphics,F)V`,
+//     in the order the newer nodes draw them (washes first, then bars), so their order
+//     RELATIVE TO EACH OTHER is preserved. What is lost is their order relative to VANILLA:
+//     the two washes are drawn over the hotbar here instead of under it. `renderVignette` was
+//     the tempting anchor and is refused — it is skipped entirely when the vignette is off,
+//     which would make the two overlays flicker with an unrelated setting.
+//   * BANKED HUNGER draws from the same TAIL rather than after the food row.
+//   * THE UNDEAD FOOD-ROW SUPPRESSION IS EXCISED. There is no food method to wrap, and
+//     wrapping `renderPlayerHealth` would take the hearts and the armour with it.
+//   * THE AIR-BAR SHIFT IS EXCISED for the same reason one level down: the bubbles are drawn
+//     with the same `blit` overload as the hearts, the armour and the food, so there is no
+//     call to wrap that is only theirs. The mana row can overlap the bubbles underwater on
+//     this node.
+//
+// All four are display-only and none of them touches a number. They are named here rather
+// than in a changelog because the next person to read this file will ask.
+//? if <1.21.11 && >=1.21 {
 /*import com.archetypes.client.BankedHungerHud;
 import com.archetypes.client.CooldownBarHud;
 import com.archetypes.client.DeadeyeOverlay;
@@ -121,6 +145,47 @@ public abstract class GuiMixin {
 			final int x, final int y, final int width, final int height,
 			final Operation<Void> original) {
 		original.call(graphics, sprite, x, y - ManaHud.airBarShift(), width, height);
+	}
+}
+*///?} elif <1.21 {
+/*import com.archetypes.client.BankedHungerHud;
+import com.archetypes.client.CooldownBarHud;
+import com.archetypes.client.DeadeyeOverlay;
+import com.archetypes.client.ManaHud;
+import com.archetypes.client.ProcIndicatorHud;
+import com.archetypes.client.SunBlindOverlay;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Gui;
+import net.minecraft.client.gui.GuiGraphics;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+/^*
+ * Archetypes' six HUD elements on 1.20.1, where the only anchor that exists is the whole
+ * frame. See this file's header for what each of the four Stage-4 anchors became and what
+ * the two excised ones cost.
+ ^/
+@Mixin(Gui.class)
+public abstract class GuiMixin {
+	// The partial tick is `render`'s own argument here — no DeltaTracker to unwrap, and no
+	// `Minecraft.getTimer()` to ask for one.
+	@Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;F)V", at = @At("TAIL"))
+	private void archetypes$hud(final GuiGraphics graphics, final float partialTick,
+			final CallbackInfo ci) {
+		if (Minecraft.getInstance().options.hideGui) {
+			return;
+		}
+
+		// Washes first, bars second — the newer nodes' own order, preserved among ours.
+		SunBlindOverlay.render(graphics, partialTick);
+		DeadeyeOverlay.render(graphics, partialTick);
+		CooldownBarHud.render(graphics, partialTick);
+		ProcIndicatorHud.render(graphics, partialTick);
+		ManaHud.render(graphics, partialTick);
+		BankedHungerHud.render(graphics, partialTick);
 	}
 }
 *///?}

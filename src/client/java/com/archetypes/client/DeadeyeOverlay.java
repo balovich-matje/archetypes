@@ -3,7 +3,9 @@ package com.archetypes.client;
 import com.archetypes.Deadeye;
 import com.archetypes.Tuning;
 
+//? if >=1.21 {
 import net.minecraft.client.DeltaTracker;
+//?}
 import net.minecraft.client.Minecraft;
 //? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -47,10 +49,15 @@ public final class DeadeyeOverlay {
 	private DeadeyeOverlay() {
 	}
 
+	// STAGE 5: `DeltaTracker` is 1.21's (frozen row); below it every HUD callback is handed
+	// the raw partial tick as a float. None of these six reads it — it is carried because the
+	// element signature carries it — so the third arm is the parameter TYPE and nothing else.
 	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
-	//?} else {
+	//?} elif >=1.21 {
 	/*public static void render(final GuiGraphics graphics, final DeltaTracker delta) {
+	*///?} else {
+	/*public static void render(final GuiGraphics graphics, final float delta) {
 	*///?}
 		long now = Util.getMillis();
 		float dt = Math.min((now - lastFrameMs) / 1000.0F, 0.1F);
@@ -80,7 +87,8 @@ public final class DeadeyeOverlay {
 			// The bands do not overlap (each is its own ring at its own inset),
 			// so each carries its full share rather than a fraction of one.
 			float t = (BANDS - band) / (float) BANDS;
-			int colour = ARGB.colorFromFloat(alpha * t * t, 0.0F, 0.0F, 0.0F);
+			/*? if >=1.21 {*/int colour = ARGB.colorFromFloat(alpha * t * t, 0.0F, 0.0F, 0.0F);
+			/*?} else *///int colour = archetypes$colorFromFloat(alpha * t * t, 0.0F, 0.0F, 0.0F);
 			int inset = Math.round(depth * band / (float) BANDS);
 			int thickness = Math.max(1, Math.round(depth / (float) BANDS));
 
@@ -90,4 +98,16 @@ public final class DeadeyeOverlay {
 			graphics.fill(width - inset - thickness, 0, width - inset, height, colour);
 		}
 	}
+
+	// STAGE 5: `colorFromFloat` is `>=1.21` — see ExtraSensoryPerception for the same note.
+	// Vanilla's own implementation, one line: each channel rounded onto 0..255 and packed in
+	// ARGB order, which is exactly what the four-channel `color` takes.
+	//? if >=1.21 {
+	//?} else {
+	/*private static int archetypes$colorFromFloat(final float a, final float r, final float g,
+			final float b) {
+		return net.minecraft.util.FastColor.ARGB32.color(Math.round(a * 255.0F), Math.round(r * 255.0F),
+				Math.round(g * 255.0F), Math.round(b * 255.0F));
+	}
+	*///?}
 }

@@ -75,6 +75,20 @@ import org.spongepowered.asm.mixin.injection.At;
 /*@Mixin(Gui.class)
 *///?}
 public abstract class HudMixin {
+	// ─── STAGE 5: THE GREY HEARTS ARE EXCISED BELOW 1.21 ─────────────────────────────────
+	// Two independent walls, either one of which is enough. `Gui.renderHeart` takes an EXTRA
+	// int there — `(GuiGraphics, Gui$HeartType, I, I, I, Z, Z)V`, measured with `javap -s`,
+	// where 1.21.1 has `(…, I, I, Z, Z, Z)V`. And the call this wraps,
+	// `GuiGraphics.blitSprite(Identifier, IIII)`, does not exist at all: there is no GUI
+	// sprite atlas below 1.21 (SP's R-17), so the heart is drawn from a REGION of
+	// `icons.png` chosen by the heart type — there is no sprite id passing through for
+	// `UndeadHud.drain` to swap.
+	//
+	// Substituting a texture REGION would be a different mechanism wearing this one's name,
+	// so the night form simply keeps vanilla's red hearts on this node. The eight grey
+	// sprites still ship (they cost 3 KB and their absence would be the harder thing to
+	// explain); `UndeadHud.drain` is simply never called there.
+	//? if >=1.21 {
 	// Conventions §5a: the ANNOTATION forks, the handler body never does.
 	//? if >=26.2 {
 	@WrapOperation(method = "extractHeart(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Hud$HeartType;IIZZZ)V",
@@ -119,4 +133,5 @@ public abstract class HudMixin {
 		original.call(graphics, UndeadHud.drain(sprite), x, y, width, height);
 	}
 	*///?}
+	//?}
 }

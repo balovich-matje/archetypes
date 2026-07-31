@@ -63,23 +63,44 @@ public abstract class LevelRendererMixin {
 	// annotation is what forks between versions, the decision never does. `0` is
 	// `EntityRenderState.NO_OUTLINE`'s value, spelled as a literal here because the class it
 	// is declared on does not exist on this node (see that file's fork).
+	// STAGE 5: `renderLevel`'s parameter list is 1.21's. On 1.20.1 it is
+	// `(PoseStack, float partialTick, long finishNano, boolean outline, Camera, GameRenderer,
+	// LightTexture, Matrix4f)` — measured with `javap -s`. The two CALLS this wraps are
+	// unchanged and still inside it, so only the descriptor moves.
+	//? if >=1.21 {
 	@WrapOperation(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;Z"
 			+ "Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;"
 			+ "Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/client/Minecraft;shouldEntityAppearGlowing("
 							+ "Lnet/minecraft/world/entity/Entity;)Z"))
+	//?} else {
+	/^@WrapOperation(method = "renderLevel(Lcom/mojang/blaze3d/vertex/PoseStack;FJZ"
+			+ "Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;"
+			+ "Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/client/Minecraft;shouldEntityAppearGlowing("
+							+ "Lnet/minecraft/world/entity/Entity;)Z"))
+	^///?}
 	private boolean archetypes$senseGlowing(final Minecraft client, final Entity entity,
 			final Operation<Boolean> original) {
 		return original.call(client, entity)
 				|| ExtraSensoryPerception.outlineColor(entity) != 0;
 	}
 
+	//? if >=1.21 {
 	@WrapOperation(method = "renderLevel(Lnet/minecraft/client/DeltaTracker;Z"
 			+ "Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;"
 			+ "Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;Lorg/joml/Matrix4f;)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/entity/Entity;getTeamColor()I"))
+	//?} else {
+	/^@WrapOperation(method = "renderLevel(Lcom/mojang/blaze3d/vertex/PoseStack;FJZ"
+			+ "Lnet/minecraft/client/Camera;Lnet/minecraft/client/renderer/GameRenderer;"
+			+ "Lnet/minecraft/client/renderer/LightTexture;Lorg/joml/Matrix4f;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/Entity;getTeamColor()I"))
+	^///?}
 	private int archetypes$senseOutlineColor(final Entity entity, final Operation<Integer> original) {
 		int color = ExtraSensoryPerception.outlineColor(entity);
 

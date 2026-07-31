@@ -241,6 +241,20 @@ val strippedMetadataLines: List<String> =
 	if (sc.current.parsed >= "1.21.1") emptyList()
 	else listOf("player_animation_library")
 
+// STAGE 5, AND IT IS THE HALF SKILL PROFICIENCIES' MECHANISM DID NOT NEED. Its stripped line
+// (the `modmenu` entrypoint) had a sibling after it, so blanking it left valid JSON. THIS one
+// is the LAST entry of `depends`, and blanking it leaves the previous line's trailing comma
+// with nothing to separate — `{"a": "b",}` is not JSON, and the failure is loud in the right
+// way: `remapJar` refuses the jar with `Expected name at line 41` rather than shipping it.
+//
+// So the line before it loses its comma on exactly the nodes where the strip happens. Keyed
+// on the full text of that line, which couples this to the ORDER of the `depends` block —
+// deliberately, and safely: reorder the block and this stops matching, which puts the comma
+// back on a line that no longer needs one, which is the same loud remap failure again.
+val metadataCommaFixups: List<String> =
+	if (strippedMetadataLines.isEmpty()) emptyList()
+	else listOf("\"fabric-api\": \"*\",")
+
 // Same mechanism, same reason, different file: a mixin listed in the config whose class is
 // not in the jar is a HARD BOOT FAILURE, so a mixin that only exists on some nodes has to
 // leave the list on the others. `//?` cannot do it — the config is `.json`.
@@ -285,6 +299,7 @@ tasks.withType<ProcessResources>().configureEach {
 	metadataProps.forEach { (k, v) -> inputs.property(k, v) }
 	inputs.property("mixinJava", mixinJava)
 	inputs.property("strippedMetadataLines", strippedMetadataLines)
+	inputs.property("metadataCommaFixups", metadataCommaFixups)
 	inputs.property("strippedMixinEntries", strippedMixinEntries)
 
 	// Copy-spec ACTIONS are not task inputs — `eachFile`/`filter` blocks are invisible to
@@ -293,11 +308,24 @@ tasks.withType<ProcessResources>().configureEach {
 	// the first build after a transform was added reported processResources UP-TO-DATE
 	// and shipped the untransformed resources. (Conventions §5j.)
 	inputs.property("legacyTagDir", sc.current.parsed < "1.21")
+	// Same reason as the line above, for the two transforms Stage 5 added: a copy-spec
+	// ACTION is invisible to up-to-date checking, so the node that gains or loses one has to
+	// say so through a property or it keeps serving the previous run's output. Measured
+	// again here — the first build after the sprite relocation landed reported
+	// processResources UP-TO-DATE and shipped the sprites at their atlas path.
+	inputs.property("spriteRelocation", sc.current.parsed < "1.21")
+	inputs.property("legacyItemModels", sc.current.parsed < "1.21.4")
 
 	filesMatching("fabric.mod.json") {
 		expand(metadataProps)
 		if (strippedMetadataLines.isNotEmpty()) {
-			filter { line -> if (strippedMetadataLines.any(line::contains)) "" else line }
+			filter { line ->
+				when {
+					strippedMetadataLines.any(line::contains) -> ""
+					metadataCommaFixups.any { line.trim() == it } -> line.trimEnd().dropLast(1)
+					else -> line
+				}
+			}
 		}
 	}
 	// ---- R-A5 / R-A6: the excised nodes SAY SO, on the nodes where they are inert ----
@@ -361,26 +389,82 @@ tasks.withType<ProcessResources>().configureEach {
 		}
 	}
 
-	// ---- NOT YET: the item MODEL DEFINITION relocation (`< 1.21.4`) ----
+	// ---- R-16's neighbour: the item MODEL DEFINITION layer is `>= 1.21.4` ----
 	//
-	// `assets/<ns>/items/<id>.json` (the model-definition layer) arrived in 1.21.4; below
-	// it an item is bound to `assets/<ns>/models/item/<id>.json` by id and the file is a
-	// model, not a definition. Skill Proficiencies converts its thirty definitions with a
-	// path move plus a regex rewrite, and Stage 5 there found that without it a node
-	// silently ships items with no model — invisible to every build, visible only to a
-	// launched client.
+	// `assets/<ns>/items/<id>.json` (a model DEFINITION) arrived in 1.21.4; below it an item
+	// is bound to `assets/<ns>/models/item/<id>.json` by id and that file is the model
+	// itself. Skill Proficiencies' Stage 5 found what happens without this transform, and
+	// it is the reason it is written here rather than later: thirty items shipped with no
+	// model at all, invisible to every build and visible only to a launched client.
 	//
-	// This repo cannot copy that transform as-is and the difference is measured, not
-	// assumed: it ships 28 definitions in `assets/archetypes/items/` AND 27 legacy models
-	// in `assets/archetypes/models/item/`. 24 definitions have a legacy twin and must be
-	// DROPPED rather than relocated (relocating them would overwrite a hand-authored
-	// model with a generated one); 4 — skill_token, skill_token_60, spellcasting_tome_25,
-	// spellcasting_tome_100 — have no twin and need the rewrite. Three models
-	// (magic_bow_pulling_0/1/2) have no definition at all and must survive untouched.
+	// This repo's shape is different from that one's and is MEASURED, not assumed: 28
+	// definitions, 27 legacy models, 24 of them a matching pair.
 	//
-	// Writing the transform now would be writing it blind: it is inert on every node
-	// registered so far, so nothing here could prove it right. It belongs to the node
-	// that first needs it (design §4.4, Stage 4/5), where a launched client can see it.
+	//   * The 24 with a twin are DROPPED. Relocating them would overwrite a hand-authored
+	//     model with a generated one — the exact opposite of the fix.
+	//   * The 4 without one — skill_token, skill_token_60, spellcasting_tome_25,
+	//     spellcasting_tome_100 — are REWRITTEN into legacy models. Each is a plain
+	//     `{"model": {"type": "minecraft:model", "model": "<id>"}}` pointing at a VANILLA
+	//     model (experience_bottle, book, enchanted_book), so the legacy equivalent is
+	//     `{"parent": "<id>"}` and nothing about the item's look moves.
+	//   * The 3 models with no definition (magic_bow_pulling_0/1/2) are untouched on every
+	//     node — they are referenced by the bow's own overrides, not by an item id.
+	//
+	// Anchored on the full path so the tag rename above cannot be caught by it (SP's comment
+	// explains why a loose `/items/` test is dangerous), and ordered after it for the same
+	// reason.
+	// ---- R-17: no GUI SPRITE ATLAS below 1.21, so the sprites become plain textures ----
+	//
+	// From 1.21 up, `assets/<ns>/textures/gui/sprites/**` is an atlas source and a drawable
+	// is named by its sprite id (`archetypes:hud/banked_food_ring`). Below it there is no
+	// atlas at all: a drawable is a FILE, named by its full texture path. Moving the subtree
+	// up one level is what makes `Archetypes.id("textures/gui/hud/banked_food_ring.png")` —
+	// the id the legacy arm of `BankedHungerHud` builds — resolve to the same pixels.
+	//
+	// The eight grey heart sprites ride along and are unused on this node (see
+	// `client/mixin/HudMixin`, which excises the substitution they feed). They are left in
+	// rather than excluded: the exclusion would be a second rule to keep in step with a
+	// feature that may come back, and the whole set is 3 KB.
+	if (sc.current.parsed < "1.21") {
+		eachFile {
+			if (path.contains("/textures/gui/sprites/")) {
+				path = path.replace("/textures/gui/sprites/", "/textures/gui/")
+			}
+		}
+	}
+
+	if (sc.current.parsed < "1.21.4") {
+		val legacyModels: Set<String> =
+			rootProject.file("src/main/resources/assets/archetypes/models/item")
+				.list()?.toSet() ?: emptySet()
+		inputs.property("legacyModels", legacyModels.sorted())
+
+		filesMatching("assets/*/items/*.json") {
+			if (legacyModels.contains(name)) {
+				exclude()
+			} else {
+				path = path.replace("/items/", "/models/item/")
+				// Six lines in, three out. The definition's shape is fixed and checked in:
+				//   {                          -> kept
+				//     "model": {               -> dropped
+				//       "type": "…:model",     -> dropped
+				//       "model": "<id>"        -> rewritten to "parent": "<id>"
+				//     }                        -> dropped (two-space indent; the file's LAST
+				//   }                             brace has none, which is what tells them apart)
+				filter { line ->
+					val model = Regex("\"model\": \"([^\"]+)\"").find(line)
+
+					when {
+						line.contains("\"type\"") -> null
+						line.trim() == "\"model\": {" -> null
+						line == "  }" -> null
+						model != null -> "  \"parent\": \"${model.groupValues[1]}\""
+						else -> line
+					}
+				}
+			}
+		}
+	}
 }
 
 tasks {
