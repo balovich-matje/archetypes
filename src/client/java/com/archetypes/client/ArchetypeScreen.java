@@ -15,18 +15,16 @@ import com.archetypes.state.WireId;
 
 import net.minecraft.ChatFormatting;
 //? if >=26.1 {
-//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
-/*import net.minecraft.client.gui.GuiGraphics;
-*///?}
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
+//? if >=1.21.11 {
 import net.minecraft.client.input.MouseButtonEvent;
+//?}
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
 //?}
@@ -312,6 +310,11 @@ public class ArchetypeScreen extends Screen {
 	}
 
 	@Override
+	// STAGE 4 — `MouseButtonEvent` is `>=1.21.11`; below it the callback is the three-argument
+	// `mouseClicked(double, double, int)` that has been on `GuiEventListener` since forever. The
+	// fork is the header plus the three reads it carries (`x()`, `y()`, `button()`), and it stops
+	// there on purpose: the purchase decision and everything after it is one implementation.
+	//? if >=1.21.11 {
 	public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
 		if (super.mouseClicked(event, doubleClick)) {
 			return true;
@@ -320,6 +323,16 @@ public class ArchetypeScreen extends Screen {
 		Hit hit = this.nodeAt(event.x(), event.y());
 
 		if (event.button() != 0 || hit == null || this.minecraft.player == null) {
+	//?} else {
+	/*public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
+		if (super.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		}
+
+		Hit hit = this.nodeAt(mouseX, mouseY);
+
+		if (button != 0 || hit == null || this.minecraft.player == null) {
+	*///?}
 			return false;
 		}
 
@@ -490,11 +503,24 @@ public class ArchetypeScreen extends Screen {
 		// Click-only (user call — no hover preview): the pinned legend sits
 		// anchored under its button until clicked again. Node tooltips win
 		// if one is up.
+		// `setTooltipForNextFrame` is `>=1.21.11` (the deferred, end-of-frame form); below it the
+		// call is the immediate `renderTooltip(Font, List<? extends FormattedCharSequence>, int,
+		// int)`. Both sites here are already the LAST thing the draw does, so drawing now and
+		// drawing at the end of the frame put the same pixels in the same place.
 		if (tooltip != null) {
+			//? if >=1.21.11 {
 			graphics.setTooltipForNextFrame(this.font, tooltip, mouseX, mouseY);
+			//?} else {
+			/*graphics.renderTooltip(this.font, tooltip, mouseX, mouseY);
+			*///?}
 		} else if (this.legendPinned) {
+			//? if >=1.21.11 {
 			graphics.setTooltipForNextFrame(this.font, this.legendLines(),
 					this.legendButton.getX() - 4, this.legendButton.getY() + 24);
+			//?} else {
+			/*graphics.renderTooltip(this.font, this.legendLines(),
+					this.legendButton.getX() - 4, this.legendButton.getY() + 24);
+			*///?}
 		}
 	}
 
@@ -643,7 +669,11 @@ public class ArchetypeScreen extends Screen {
 					Component.translatable("screen.archetypes.tree.rate.tooltip.count",
 							advancements, String.format(java.util.Locale.ROOT, "%.2f", rate))
 							.withStyle(ChatFormatting.WHITE), VanillaUi.TOOLTIP_WIDTH));
+			//? if >=1.21.11 {
 			graphics.setTooltipForNextFrame(this.font, lines, mouseX, mouseY);
+			//?} else {
+			/*graphics.renderTooltip(this.font, lines, mouseX, mouseY);
+			*///?}
 		}
 
 		// The points-remaining chip: epic points while previewing an epic tree,
@@ -694,14 +724,28 @@ public class ArchetypeScreen extends Screen {
 		float x = this.sectionCenter(section) - this.font.width(label) * SECTION_TITLE_SCALE / 2.0F;
 		float y = this.canvasTop() + 6;
 
+		// `GuiGraphics.pose()` is a 2-D `Matrix3x2fStack` from 1.21.11 up and a 3-D `PoseStack`
+		// below it, so push/translate/scale/pop all gain a z. The MATH is unchanged and stays
+		// outside the fork (conventions §5b): the same `x`, `y` and SECTION_TITLE_SCALE go in,
+		// with a zero z and a unit z-scale, which is what a 2-D stack does implicitly.
+		//? if >=1.21.11 {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE);
+		//?} else {
+		/*graphics.pose().pushPose();
+		graphics.pose().translate(x, y, 0.0F);
+		graphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE, 1.0F);
+		*///?}
 		//? if >=26.1 {
 		graphics.text(this.font, label, 0, 0, VanillaUi.SECTION_TITLE, false);
 		//?} else {
 		/*graphics.drawString(this.font, label, 0, 0, VanillaUi.SECTION_TITLE, false);
 		*///?}
+		//? if >=1.21.11 {
 		graphics.pose().popMatrix();
+		//?} else {
+		/*graphics.pose().popPose();
+		*///?}
 	}
 }

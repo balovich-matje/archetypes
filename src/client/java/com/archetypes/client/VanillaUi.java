@@ -115,12 +115,8 @@ public final class VanillaUi {
 		if (behind) {
 			int tex = com.archetypes.TreeNodes.iconOverlaySize(tree, index);
 			//? if >=1.21.11 {
-			//? if >=1.21.11 {
 			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, overlay,
 					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
-			//?} else {
-			/*graphics.blit(overlay, x, y, 16, 16, 0.0F, 0.0F, tex, tex, tex, tex);
-			*///?}
 			//?} else {
 			/*graphics.blit(overlay, x, y, 16, 16, 0.0F, 0.0F, tex, tex, tex, tex);
 			*///?}
@@ -134,8 +130,16 @@ public final class VanillaUi {
 
 		if (overlay != null && !behind) {
 			int tex = com.archetypes.TreeNodes.iconOverlaySize(tree, index);
+			// The OVER twin of the behind-blit above, and it was the one site in this file the
+			// Stage-4 sweep had not reached. `RenderPipelines` is `>=1.21.11`; below it the
+			// nine-argument `blit(sprite, x, y, w, h, u, v, texW, texH)` overload takes the
+			// width/height BEFORE the uv pair rather than after, which is the whole difference.
+			//? if >=1.21.11 {
 			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, overlay,
 					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+			//?} else {
+			/*graphics.blit(overlay, x, y, 16, 16, 0.0F, 0.0F, tex, tex, tex, tex);
+			*///?}
 		}
 	}
 

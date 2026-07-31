@@ -9,18 +9,16 @@ import com.archetypes.state.WireId;
 
 import net.minecraft.ChatFormatting;
 //? if >=26.1 {
-//? if >=26.1 {
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-//?} else {
-/*import net.minecraft.client.gui.GuiGraphics;
-*///?}
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
+//? if >=1.21.11 {
 import net.minecraft.client.input.MouseButtonEvent;
+//?}
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
 //?}
@@ -184,6 +182,10 @@ public class ArchetypePickerScreen extends Screen {
 	}
 
 	@Override
+	// STAGE 4 — `MouseButtonEvent` is `>=1.21.11`; below it the callback is the three-argument
+	// `mouseClicked(double, double, int)`. Header and its three reads only; the confirm dialog
+	// and everything it schedules stays one implementation. Same fork as ArchetypeScreen's.
+	//? if >=1.21.11 {
 	public boolean mouseClicked(final MouseButtonEvent event, final boolean doubleClick) {
 		if (super.mouseClicked(event, doubleClick)) {
 			return true;
@@ -192,6 +194,16 @@ public class ArchetypePickerScreen extends Screen {
 		Archetype picked = this.frameAt(event.x(), event.y());
 
 		if (event.button() != 0 || picked == null) {
+	//?} else {
+	/*public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
+		if (super.mouseClicked(mouseX, mouseY, button)) {
+			return true;
+		}
+
+		Archetype picked = this.frameAt(mouseX, mouseY);
+
+		if (button != 0 || picked == null) {
+	*///?}
 			return false;
 		}
 
@@ -341,7 +353,14 @@ public class ArchetypePickerScreen extends Screen {
 		Slot slot = this.abilitySlotAt(mouseX, mouseY);
 
 		if (slot != null) {
+			// `setTooltipForNextFrame` is `>=1.21.11`; below it the immediate
+			// `renderTooltip(Font, List<? extends FormattedCharSequence>, int, int)`. This is
+			// already the last thing the draw does, so the two land the same pixels.
+			//? if >=1.21.11 {
 			graphics.setTooltipForNextFrame(this.font, this.abilityTooltip(slot), mouseX, mouseY);
+			//?} else {
+			/*graphics.renderTooltip(this.font, this.abilityTooltip(slot), mouseX, mouseY);
+			*///?}
 		}
 	}
 
@@ -420,10 +439,20 @@ public class ArchetypePickerScreen extends Screen {
 			// Hand-composed crests (user layout), blooming with the same
 			// ease as the painted art.
 			float scale = Mth.lerp(eased, 2.0F, 2.5F);
+			// `GuiGraphics.pose()` is a 2-D `Matrix3x2fStack` from 1.21.11 up and a 3-D
+			// `PoseStack` below it (`var` absorbs the type change; push/translate/scale/pop
+			// gain a z). The bloom easing and `scale` itself are computed above, outside the
+			// fork — conventions §5b — and go in unchanged with a zero z and a unit z-scale.
 			var pose = graphics.pose();
+			//? if >=1.21.11 {
 			pose.pushMatrix();
 			pose.translate(centerX, centerY);
 			pose.scale(scale, scale);
+			//?} else {
+			/*pose.pushPose();
+			pose.translate((float) centerX, (float) centerY, 0.0F);
+			pose.scale(scale, scale, 1.0F);
+			*///?}
 
 			if (archetype == Archetype.AGILITY) {
 				// The heraldic ⚔ arrangement — judged in a bake-off against
@@ -471,7 +500,11 @@ public class ArchetypePickerScreen extends Screen {
 						com.archetypes.ManaPotions.MANA_REGENERATION), -8, -1);
 			}
 
+			//? if >=1.21.11 {
 			pose.popMatrix();
+			//?} else {
+			/*pose.popPose();
+			*///?}
 			return;
 		}
 
