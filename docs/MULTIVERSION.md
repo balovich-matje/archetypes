@@ -500,6 +500,62 @@ client init (`platform/ClientNetHooks`, `SpecialitiesBridge#installClientHudShif
 for every later stage: a new `src/main` reference to any `…api.client…` package compiles green
 on 26.x and fails only on a remapped node.**
 
+**STAGE 4 ADDITIONS to the `>=1.21.11` row — measured on the node.** Same rule as Stages 2
+and 3: a boundary a `//?` block relies on is written down in the same commit that first uses
+it. **No new predicate was invented for this node either**, and one existing conjunction
+(`>=1.21.2 && <26.2`) gains a sibling (`>=1.21.11 && <26.2`) — both are conjunctions of
+frozen predicates, not synonyms.
+
+⚠ **A caveat that applies to this whole table and did not apply to Stages 2 and 3.** Between
+1.21.1 and 1.21.11 there are eight Minecraft releases and this machine has an artifact for
+neither end of most of them, so every row below is BRACKETED (present on 1.21.11, absent on
+1.21.1) rather than pinpointed. That is enough to classify all seven registered nodes
+correctly, and it is why these sit in the `>=1.21.11` row rather than getting one of their
+own. Where Skill Proficiencies' frozen table already names the API — `hurtServer`,
+`InteractionResult` returns — the existing `>=1.21.2` row is used instead and NOT duplicated
+here.
+
+*Vanilla:*
+
+| API | 1.21.11 and up | 1.21.1 and below | Used by |
+|---|---|---|---|
+| `world.item.ToolMaterial` (record) + `Item.Properties.setId`/`repairable`/`enchantable` | that | **`Tier` interface + `Tiers` enum + the `TieredItem`/`SwordItem` class hierarchy**; no id on Properties, no repair or enchantability component | `ModItems`. Copper has NO `Tiers` constant — copper tools ship with `ToolMaterial` — so the copper greatsword and dagger carry a hand-written `Tier` whose six values are read off 26.x's own `ToolMaterial.COPPER` |
+| `Player.attack`'s sweep gate | the item's own sword profile | **`getItemInHand(MAIN_HAND).getItem() instanceof SwordItem`** (1.21.1 bytecode, offset 415) | why the legacy greatsword/dagger/`MagicSwordItem` are `SwordItem`s and not plain `Item`s. A plain Item would silently lose a sweep the same weapon performs on 26.x |
+| `world.item.component.{BlocksAttacks,Consumable,TooltipDisplay}`, `DataComponents.{GLIDER,EQUIPPABLE}`, `world.item.equipment` | present | **absent** | R-A5 and R-A6, §5.5.1 |
+| `LivingEntity.applyItemBlocking` | present | **absent** — blocking is a branch inside `hurt` (`isDamageSourceBlocked` + `hurtCurrentlyUsedShield`) | R-A5 |
+| `LivingEntity.blockedByItem(LivingEntity)` | that | **`blockedByShield(LivingEntity)`** — same contract, `this` is the ATTACKER and the parameter the BLOCKER (verified in both jars) | Iron Spikes, Braced. NOT part of the excised cluster |
+| `LivingEntity.getItemBlockingWith()` | that | **absent**; `isBlocking()` is the same question and exists on every version | Free Hand, ProtectorClash |
+| `MobEffect.applyEffectTick`/`applyInstantaneousEffect` | leading `ServerLevel` | **no ServerLevel** | ManaEffects, RadianceEffect, AmnesiaPotions |
+| `SoundEvents.SHIELD_BLOCK` | `Holder<SoundEvent>` | **bare `SoundEvent`** | five sites. Checked field by field — `GENERIC_EXPLODE`, `NOTE_BLOCK_PLING` and `RESPAWN_ANCHOR_DEPLETE` were ALREADY holders on 1.21.1, so this is not a blanket rule |
+| `DustParticleOptions(int, float)` | that | **`(org.joml.Vector3f, float)`**; vanilla builds it with `Vec3.fromRGB24(rgb)` | 7 sites |
+| `Entity.teleportTo(…, float, float, boolean)` | that | **no trailing flag**; `Relative` is `RelativeMovement` (never written — the set is empty at both call sites) | AgilityActives, MagicArmaments |
+| `Entity.needsSync` / `Entity.snapTo(DDD)` | those | **`hasImpulse` / `moveTo(DDD)`** | ProjectileMixin, OracleStrikes |
+| `Inventory.getSelectedSlot()` | that | **the public `selected` field** | NightForm ×2, MagicArmaments |
+| `EntitySpawnReason` + `EntityType.create(Level, reason)` | that | **`MobSpawnType`; `create(Level)`** | OracleStrikes |
+| `EntityType.Builder.build(ResourceKey)` | that | **`build(String)`** | ModEntities |
+| `Commands.LEVEL_GAMEMASTERS` | a `PermissionCheck` + `Commands.hasPermission(check)` | **a plain `int`**; the predicate is written by hand | ArchetypeCommands |
+| `ThrowableItemProjectile(EntityType, LivingEntity, Level, ItemStack)` | that | **no ItemStack**; `setItem` is a separate call, exactly as vanilla's own legacy throwables do it | SpellProjectile |
+| `Projectile.deflect`'s 3rd parameter | `EntityReference<Entity>` | **`Entity`** | ProjectileMixin |
+| `ItemTags.SPEARS`, `Items.IRON_CHAIN` | present | **absent** / **`Items.CHAIN`** | ModItems, OracleElementalistNodes |
+| `Item.inventoryTick(…ServerLevel…, EquipmentSlot)` | that | **`(…Level…, int slot, boolean selected)`** — and it runs on BOTH logical sides, so the side test the modern signature gives away has to be written | MagicSwordItem, MagicBowItem |
+| `Item.releaseUsing` returning `boolean` | that | **`void`** | MagicBowItem |
+| `Item.appendHoverText(…, TooltipDisplay, Consumer<Component>, …)` | that | **`(…, List<Component>, …)`** — and `List::add` IS a `Consumer<Component>`, so the body stays shared | WandItem |
+| `client.renderer.item.properties.numeric.UseDuration` + `world.entity.ItemOwner` | present | **absent** (the item-model property system post-dates 1.21.1) | UseDurationMixin, gated off |
+| `GuiGraphics.blit(RenderPipeline, …, x, y, u, v, w, h, regionW, regionH, texW, texH)` | that | **no pipeline, and `(x, y, w, h, u, v, regionW, regionH, texW, texH)`** — both delegate to the same private twelve-argument blit; the TINT parameter is `setColor` STATE below | 17 sites |
+| `net.minecraft.util.ARGB` | that | **`net.minecraft.util.FastColor.ARGB32`**, members declared identically | controller `replacements` |
+| `client.input.MouseButtonEvent` | `onClick(MouseButtonEvent, boolean)` | **`onClick(double, double)`** | BookmarkTab |
+| `GuiGraphics.pose()` | `org.joml.Matrix3x2fStack` (`pushMatrix`/`scale(f,f)`) | **`PoseStack`** (`pushPose`/`scale(f,f,f)`) | ProcIndicatorHud |
+| `world.attribute.EnvironmentAttributes` + `Level.environmentAttributes()` | present — **and present on 26.1 too** | **absent**; `Level.isDay()` is what `Mob.isSunBurnTick` reads there | NightForm. ⚠ Written `>=26.2` first and the 26.1 build caught it — the §5k example this port now owns |
+
+**STAGE 4 ADDITIONS to the `>=1.21.2` row — reused, not extended.** `hurtServer` (26 outgoing
+call sites plus every handler in LivingEntityMixin, DamageTraceMixin, HardenedMixin and
+FlenseMixin) and `Item.use`'s `InteractionResult` vs `InteractionResultHolder<ItemStack>`
+(three items plus fabric-api's `UseItemCallback`, whose return type mirrors it) are both
+already in Skill Proficiencies' frozen row and are written with that predicate. **The five
+`MobEffects` renames ride the same release** and are recorded here rather than given a row:
+`SPEED`/`SLOWNESS`/`STRENGTH`/`RESISTANCE` through a controller replacement, `JUMP_BOOST`
+through a `//?` because its legacy spelling `JUMP` is a PREFIX of it.
+
 **Also record (not new predicates, but new *three-way* splits):**
 - **Brewing is three-way**: `FabricPotionBrewingBuilder` (`>=26.1`) / `FabricBrewingRecipeRegistryBuilder` (1.21.11, 1.21.1) / `FabricBrewingRecipeRegistry` (0.92.11 only). Two arms plus an else.
 - **The heart draw is four-way** (§4.3).
@@ -818,6 +874,107 @@ Everything at `>=1.21.11` lands at once: `Identifier`→`ResourceLocation` (cont
 
 **Lanes, 4a:** the 18-handler `hurtServer` fork (one lane, sequential, it is one file); the shield-cluster excision decision; the `Consumable`/`FoodProperties` three-way; arrow/projectile package + `deflect` three-way.
 **Lanes, 4b:** client `GuiMixin` (SP's, extended); the three `RenderLayer`s + `AvatarRendererMixin` + `SpellProjectileRenderer` (render-state rewrite); ESP two-channel rebuild; `Toast` + `BookmarkTab` + screens; particles.
+
+#### 5.5.1 Stage 4, as landed so far — **the common half is done, the client half is not**
+
+Three commits: `4-A` (registration), `4-A2` (the whole common side), `4-B1` (the client
+side's mechanical boundary). **`:1.21.1-fabric:compileJava` is green;
+`compileClientJava` is not, and one coherent thing is what is left — see "Still open" below.**
+The three nodes above are byte-identical to the Stage-3 tip after every commit
+(385/385 resources, 244/244/250 classes, zero instruction diffs), re-measured before each
+commit rather than after.
+
+**The scale, measured rather than forecast.** The common side needed the `hurtServer`
+boundary at 26 outgoing call sites and every handler, plus 24 further API deltas, and it
+closed at zero errors. The client side started at 227 compile errors and is at 166; the 61
+that are gone were spellings, and the 166 that remain are one architecture.
+
+**R-A5 IS APPLIED, AND THE DESIGN'S ROW NAMED THREE OF ITS FOUR MEMBERS.** Instinctive Guard,
+Bulwark (Omni Block), Immovable Object **and Unstoppable Force (Siegebreaker)** all resolve
+the question "how much would this shield have stopped", and below 1.21.11 vanilla does not
+ask it anywhere: `applyItemBlocking` does not exist, blocking is a branch inside `hurt`, and
+the disable path is `Player.disableShield()` plus a raw `ItemCooldowns` write — two
+chokepoints rather than the one Immovable Object's promise depends on. Siegebreaker is a
+Colossus CRUSHER node and could have been re-rooted onto `isDamageSourceBlocked`; it was not,
+because its whole authored point is MEETING Immovable Object, and one of that pair working
+while the other silently does not is worse than neither.
+
+The nodes stay **purchasable** — each sits mid-tree with children beyond it — and their
+descriptions gain "(Inactive on this Minecraft version.)" through a `processResources`
+filter keyed on the full `.desc` key. `//?` cannot do it: Stonecutter never processes
+`.json`.
+
+**Not excised, each verified rather than assumed:** Iron Spikes and Braced (`blockedByItem`
+is `blockedByShield` here, same contract), Free Hand (`isBlocking()` is the same question),
+Ironclad, Hearty Meal, Well Fed.
+
+**R-A6's BOUNDARY IS WRONG IN THE DESIGN AND IS CORRECTED HERE.** §6 says the GLIDER
+component is missing "on 1.20.1". Measured: `DataComponents.GLIDER`, `DataComponents.EQUIPPABLE`
+and the whole `world.item.equipment` package are absent from the 1.21.1 jar too. Magic
+Armaments' glide is excised on **both** legacy Fabric nodes — and not reimplemented, because
+the obvious substitute (overriding `Player.canGlide`) is the server crash that method's own
+javadoc documents.
+
+**Two re-rootings rather than excisions, both reproducing the CONTRACT (R-20).** Hearty Meal
+moves from `Consumable.onConsume` to a `@WrapOperation` on `ItemStack.finishUsingItem` —
+after the item's own effects, so milk cannot wipe what milk just granted, and against a copy
+taken BEFORE the call, because `ItemStack.getItem()` returns `Items.AIR` at count zero on
+this version. Well Fed moves from `FoodProperties.onConsume` to
+`Player.eat(Level,ItemStack,FoodProperties)`; the WRAPPED call is the same
+`FoodData.eat(FoodProperties)` on every node, so the invariant is untouched and only the
+host moves.
+
+**THE GATE CAUGHT A REAL REGRESSION, and it is why it runs before the commit.** The knockback
+stash was first refactored so both legacy arms delegated to one `@Unique` implementation —
+correct by conventions §5a, and it added a method and a delegation to **26.1's** transformed
+`LivingEntityMixin`, which came back one instruction-diff dirty. The two arms now carry their
+own bodies. That is also the honest shape: only the `hurt` arm needs the `isClientSide`
+early-out, because only `hurt` runs on both logical sides — and `KnockbackSource` is a static
+whose contract is "server thread only", so a client-thread push in singleplayer would race it.
+
+**FOUR MECHANISM FINDINGS the stages below inherit:**
+
+1. **A line comment inside a DISABLED arm but outside its `/* */` is EATEN when the arm is
+   enabled** — Stonecutter strips a leading `//` as part of un-commenting, so the note ends
+   up as bare text in the generated Java. Notes go above the whole chain. (New; Stage 2's
+   `*/` trap is the other half of the same family and bites javadoc in any disabled arm, not
+   only whole-file gates.)
+2. **A textual `replacements` rule is SAFER than N hand-written else arms for a pure
+   rename** — its failure mode is a mangled identifier, i.e. a compile error, where N arms
+   can silently drift. That is why the `MobEffects` renames and the projectile sub-package
+   moves are rules. **But the rule must use whole class names, never a package prefix**
+   (a prefix rule is directional and would rewrite `projectile.Projectile` into a package
+   that does not contain it), **and it cannot be used at all when one spelling is a PREFIX
+   of the other** — `MobEffects.JUMP` vs `JUMP_BOOST` is the worked example.
+3. **The byte-identity gate forbids ordinary refactoring of shared code.** Hoisting a
+   repeated accessor into a local, extracting a helper, or reordering a resource file all
+   move a prior node's bytes. Where a fork would otherwise duplicate a balance expression,
+   the shape that works is to fork the SIGNATURE and the ACCESSOR line and leave the formula
+   outside the block (`ModItems.baseDamageFor`). Exactly one expression in this stage is
+   written twice (`ModItems.daggerSwingDamage`) and it carries a ⚠ saying so.
+4. **The client mixin config's LAST array element cannot be stripped by line-blanking** —
+   it leaves a trailing comma — and the shared array cannot be reordered either, because
+   that moves three prior nodes' resource bytes. This node therefore takes a per-node
+   override at `versions/1.21.1-fabric/src/client/resources/`, with a README beside it.
+   Stage 5 will need its own.
+
+**STILL OPEN, and it is one thing rather than a list: the render-state data path.**
+`AvatarRenderState`, `SubmitNodeCollector`, `ItemStackRenderState`, `FabricRenderState` /
+`RenderStateDataKey` and the extract-based particle pipeline all stop at 1.21.11. Below it a
+`RenderLayer` is `render(PoseStack, MultiBufferSource, int light, T entity, float×6)` against
+the ENTITY, so the layers read their data directly instead of out of a render state — which
+collapses the indirection rather than reimplementing it, exactly as §4.3 predicted. The files:
+`BulwarkShieldLayer`, `BladestormLayer`, `NightEyesLayer`, `BulwarkRenderData`,
+`AvatarRendererMixin` (→ `PlayerRenderer`), `SpellProjectileRenderer`,
+`GreatswordSweepParticle` (→ `render(VertexConsumer, Camera, float)`), plus what hangs off
+them: `ArchetypesClient`'s HUD/layer/particle registrations (`HudElementRegistry` → a client
+`GuiMixin`; `KeyMapping.Category` → a String), `ArchetypeLevelUpToast`, the two screens'
+remaining calls, and ESP's two-channel outline rebuild. **The pieces for ESP are already
+scouted:** membership is `Minecraft.shouldEntityAppearGlowing` (put it in the existing
+`MinecraftMixin`'s legacy arm) and colour is `Entity.getTeamColor()` (retarget the existing
+client `EntityRendererMixin`, the same trick `ConsumableMixin` uses) — doing it that way adds
+**zero** new mixin-config entries, which matters because of finding 4 above.
+`EntityRenderState.NO_OUTLINE` is a compile-time `0`.
 
 ### 5.6 Stage 5 — `1.20.1-fabric` — Java 17, no sprite atlas, no attachment sync, no PAL
 
