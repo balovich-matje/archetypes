@@ -47,6 +47,7 @@ public final class AgilityTicker {
 		}
 
 		boolean should = active && value > 0.0;
+		//? if >=1.21 {
 		boolean has = attribute.hasModifier(id);
 
 		if (should && !has) {
@@ -55,5 +56,15 @@ public final class AgilityTicker {
 		} else if (!should && has) {
 			attribute.removeModifier(id);
 		}
+		//?} else {
+		/*boolean has = LegacyAttributes.has(attribute, id);
+
+		if (should && !has) {
+			attribute.addTransientModifier(LegacyAttributes.modifier(
+					id, value, net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+		} else if (!should && has) {
+			LegacyAttributes.remove(attribute, id);
+		}
+		*///?}
 	}
 }

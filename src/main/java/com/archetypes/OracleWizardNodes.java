@@ -32,7 +32,8 @@ public final class OracleWizardNodes {
 		/** Immunity to negative status effects during the channel. */
 		WARD(() -> Items.MILK_BUCKET),
 		/** One node: the conjured weapon deals double damage and ignores armor. */
-		MIND_OVER_MATTER(() -> Items.BREEZE_ROD),
+		/*? if >=1.21 {*/MIND_OVER_MATTER(() -> Items.BREEZE_ROD),
+		/*?} else *///MIND_OVER_MATTER(() -> Items.BLAZE_ROD),
 		/** Swings teleport you forward when not targeting a hostile. */
 		BLINK(() -> Items.ENDER_PEARL),
 		/** Capstone-worthy: the armament is a bow instead of a sword. */

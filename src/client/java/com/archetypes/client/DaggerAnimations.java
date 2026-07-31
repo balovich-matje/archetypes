@@ -1,5 +1,21 @@
 package com.archetypes.client;
 
+// ─── STAGE 5: NO PLAYER ANIMATION LIBRARY ON 1.20.1, SO THIS WHOLE DRIVER IS GATED OFF ───
+// design §2.2 Option B, the decision in force. PAL's project declares its lowest
+// `game_version` as 1.21.1 — there is no artifact for 1.20.1 on any loader at any version —
+// so the dependency is absent from that node's script (no `deps.pal` key), the hard
+// `depends` line is stripped out of its fabric.mod.json, and the five `*Animations` drivers
+// become whole compilation units that produce no class. The pose is lost; nothing else is.
+// Every one of these drivers reads either vanilla's own broadcast swing state or a synced
+// key the server already owns, so no damage, cooldown or resource cost moves.
+//
+// THE PREDICATE IS THE FROZEN `>=1.21` ROW AND THE REAL BOUNDARY IS 1.21.1 — a dependency's
+// floor rather than an API's, so §3 has no row for it and inventing one (`>=1.21.1`) would
+// break the frozen vocabulary for a line that no registered node can tell apart. The two
+// nodes it separates are 1.21.1 (PAL 1.1.5, `FkO8Scek`) and 1.20.1 (nothing), and no node
+// exists between them. If one ever lands at 1.21.0, this is where to look: it would need
+// the same gating, and `>=1.21` would silently hand it a dependency it cannot resolve.
+//? if >=1.21 {
 import com.archetypes.Archetypes;
 import com.archetypes.ModItems;
 //? if >=1.21.11 {
@@ -149,3 +165,4 @@ public final class DaggerAnimations {
 		}
 	}
 }
+//?}

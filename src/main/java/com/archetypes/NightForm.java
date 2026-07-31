@@ -492,10 +492,13 @@ public final class NightForm {
 		ItemStack helmet = player.getItemBySlot(EquipmentSlot.HEAD);
 
 		if (helmet.isEmpty()) {
-			player.igniteForSeconds(Tuning.NIGHT_FORM_SUN_BURN_SECONDS);
+			/*? if >=1.21 {*/player.igniteForSeconds(Tuning.NIGHT_FORM_SUN_BURN_SECONDS);
+			/*?} else *///player.setSecondsOnFire((int) Tuning.NIGHT_FORM_SUN_BURN_SECONDS);
 		} else if (helmet.isDamageableItem()) {
-			helmet.hurtAndBreak(player.getRandom().nextInt(2), level, player,
-					broken -> player.onEquippedItemBroken(broken, EquipmentSlot.HEAD));
+			/*? if >=1.21 {*/helmet.hurtAndBreak(player.getRandom().nextInt(2), level, player,
+			/*?} else *///helmet.hurtAndBreak(player.getRandom().nextInt(2), player,
+					/*? if >=1.21 {*/broken -> player.onEquippedItemBroken(broken, EquipmentSlot.HEAD));
+					/*?} else *///broken -> broken.broadcastBreakEvent(EquipmentSlot.HEAD));
 		}
 	}
 

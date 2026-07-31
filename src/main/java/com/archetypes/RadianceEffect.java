@@ -44,14 +44,17 @@ public final class RadianceEffect {
 	 * — vanilla's own refresh keeps the longer of the two durations.
 	 */
 	public static void show(final ServerPlayer player, final int ticks) {
-		player.removeEffect(AURA_OF_RADIANCE);
+		/*? if >=1.21 {*/player.removeEffect(AURA_OF_RADIANCE);
+		/*?} else *///player.removeEffect(AURA_OF_RADIANCE.value());
 		// Particles off: the aura already draws its own halo, and vanilla's
 		// beneficial swirl on top of it is noise. Icon on — that is the point.
-		player.addEffect(new MobEffectInstance(AURA_OF_RADIANCE, ticks, 0, false, false, true));
+		/*? if >=1.21 {*/player.addEffect(new MobEffectInstance(AURA_OF_RADIANCE, ticks, 0, false, false, true));
+		/*?} else *///player.addEffect(new MobEffectInstance(AURA_OF_RADIANCE.value(), ticks, 0, false, false, true));
 	}
 
 	public static void hide(final ServerPlayer player) {
-		player.removeEffect(AURA_OF_RADIANCE);
+		/*? if >=1.21 {*/player.removeEffect(AURA_OF_RADIANCE);
+		/*?} else *///player.removeEffect(AURA_OF_RADIANCE.value());
 	}
 
 	private static Holder<MobEffect> register(final String path, final MobEffect effect) {
@@ -65,21 +68,35 @@ public final class RadianceEffect {
 			super(category, color);
 		}
 
+		// The 1.21 rename of the gate and the boolean return — see ManaEffects.
+		//? if >=1.21 {
 		@Override
 		public boolean shouldApplyEffectTickThisTick(final int duration, final int amplifier) {
 			return false;
 		}
+		//?} else {
+		/*@Override
+		public boolean isDurationEffectTick(final int duration, final int amplifier) {
+			return false;
+		}
+		*///?}
 
 		// The ServerLevel parameter — see ManaEffects for the measurement note.
 		//? if >=1.21.11 {
 		@Override
 		public boolean applyEffectTick(final ServerLevel level, final LivingEntity target,
 				final int amplifier) {
-		//?} else {
-		/*@Override
-		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
-		*///?}
 			return true;
 		}
+		//?} elif >=1.21 {
+		/*@Override
+		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
+			return true;
+		}
+		*///?} else {
+		/*@Override
+		public void applyEffectTick(final LivingEntity target, final int amplifier) {
+		}
+		*///?}
 	}
 }

@@ -31,7 +31,8 @@ public final class WizardNodes {
 		/** Half the damage you take drains mana instead of health. */
 		MANA_SHIELD(() -> Items.SHULKER_SHELL),
 		/** +1 missile damage per rank. */
-		FORCE(() -> Items.BREEZE_ROD),
+		/*? if >=1.21 {*/FORCE(() -> Items.BREEZE_ROD),
+		/*?} else *///FORCE(() -> Items.BLAZE_ROD),
 		/** Missiles cost 5 less mana. */
 		CLARITY(() -> Items.SUGAR),
 		/** Missile kills refund mana. */

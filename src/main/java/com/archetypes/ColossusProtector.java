@@ -5,7 +5,9 @@ import com.archetypes.ColossusProtectorNodes.Family;
 import com.archetypes.platform.ArchetypeStore;
 
 import net.minecraft.world.entity.Entity;
+//? if >=1.21.11 {
 import net.minecraft.core.component.DataComponents;
+//?}
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -123,21 +125,36 @@ public final class ColossusProtector {
 		multiplier(player, Attributes.ARMOR_TOUGHNESS, IRONCLAD_TOUGHNESS_ID, should);
 	}
 
+	//? if >=1.21 {
 	private static void multiplier(final ServerPlayer player,
 			final net.minecraft.core.Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute,
 			final Identifier id, final boolean should) {
+	//?} else {
+	/*private static void multiplier(final ServerPlayer player,
+			final net.minecraft.world.entity.ai.attributes.Attribute attribute,
+			final Identifier id, final boolean should) {
+	*///?}
 		AttributeInstance instance = player.getAttribute(attribute);
 
 		if (instance == null) {
 			return;
 		}
 
+		//? if >=1.21 {
 		if (should && !instance.hasModifier(id)) {
 			instance.addTransientModifier(new AttributeModifier(id, Tuning.IRONCLAD_ARMOUR_BONUS,
 					AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
 		} else if (!should && instance.hasModifier(id)) {
 			instance.removeModifier(id);
 		}
+		//?} else {
+		/*if (should && !LegacyAttributes.has(instance, id)) {
+			instance.addTransientModifier(LegacyAttributes.modifier(id, Tuning.IRONCLAD_ARMOUR_BONUS,
+					AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+		} else if (!should && LegacyAttributes.has(instance, id)) {
+			LegacyAttributes.remove(instance, id);
+		}
+		*///?}
 	}
 
 	/**

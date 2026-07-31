@@ -29,7 +29,9 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.hurtingprojectile.AbstractHurtingProjectile;
+//? if >=1.21 {
 import net.minecraft.world.entity.projectile.hurtingprojectile.windcharge.AbstractWindCharge;
+//?}
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 
@@ -282,7 +284,8 @@ public final class ColossusSlayer {
 		// clamps EPF to [0, 20] before dividing by 25, so the clamp comes first
 		// and the bite is taken out of the value that will actually be spent.
 		float protection = Mth.clamp(
-				EnchantmentHelper.getDamageProtection(level, victim, source), 0.0F, 20.0F);
+				/*? if >=1.21 {*/EnchantmentHelper.getDamageProtection(level, victim, source), 0.0F, 20.0F);
+				/*?} else *///EnchantmentHelper.getDamageProtection(victim.getArmorSlots(), source), 0.0F, 20.0F);
 		float bitten = Math.max(0.0F,
 				protection - Tuning.BLADE_MASTER_PROTECTION_BITE_PER_RANK * rank);
 		// Both denominators are >= 1 - 20/25 = 0.2, so neither can be zero.
@@ -295,7 +298,8 @@ public final class ColossusSlayer {
 	 * bite is being taken out of instead of a constant. */
 	public static float protectionPoints(final ServerLevel level, final LivingEntity victim,
 			final DamageSource source) {
-		return Mth.clamp(EnchantmentHelper.getDamageProtection(level, victim, source), 0.0F, 20.0F);
+		/*? if >=1.21 {*/return Mth.clamp(EnchantmentHelper.getDamageProtection(level, victim, source), 0.0F, 20.0F);
+		/*?} else *///return Mth.clamp(EnchantmentHelper.getDamageProtection(victim.getArmorSlots(), source), 0.0F, 20.0F);
 	}
 
 	private static void stance(final AttributeInstance attribute, final Identifier id,
@@ -304,6 +308,7 @@ public final class ColossusSlayer {
 			return;
 		}
 
+		//? if >=1.21 {
 		if (should) {
 			// AttributeModifier is immutable and the value moves with the rank,
 			// so a standing modifier is replaced rather than left alone.
@@ -317,6 +322,19 @@ public final class ColossusSlayer {
 		} else if (attribute.hasModifier(id)) {
 			attribute.removeModifier(id);
 		}
+		//?} else {
+		/*if (should) {
+			AttributeModifier existing = LegacyAttributes.get(attribute, id);
+
+			if (existing == null || existing.getAmount() != value) {
+				LegacyAttributes.remove(attribute, id);
+				attribute.addTransientModifier(LegacyAttributes.modifier(id, value,
+						AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL));
+			}
+		} else if (LegacyAttributes.has(attribute, id)) {
+			LegacyAttributes.remove(attribute, id);
+		}
+		*///?}
 	}
 
 	// ------------------------------------------------------------------
@@ -646,8 +664,12 @@ public final class ColossusSlayer {
 
 		return projectile instanceof SpellProjectile
 				|| projectile instanceof net.minecraft.world.entity.projectile.ShulkerBullet
+				//? if >=1.21 {
 				|| (projectile instanceof AbstractHurtingProjectile
 						&& !(projectile instanceof AbstractWindCharge));
+				//?} else {
+				/*|| projectile instanceof AbstractHurtingProjectile;
+				*///?}
 	}
 
 	/** The spell turned: pay the parry and close the window. Called from

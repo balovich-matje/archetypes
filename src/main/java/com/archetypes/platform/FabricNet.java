@@ -6,6 +6,7 @@ import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
+//? if >=1.20.5 {
 import com.archetypes.ActiveAbilityPayload;
 import com.archetypes.BuyNodePayload;
 import com.archetypes.DisengagePayload;
@@ -17,15 +18,20 @@ import com.archetypes.PickArchetypePayload;
 import com.archetypes.ResetArchetypePayload;
 import com.archetypes.RushPayload;
 import com.archetypes.SpellChannelPayload;
+//?}
 import com.archetypes.state.WireId;
 
 import io.netty.buffer.Unpooled;
+//? if >=1.20.5 {
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+//?}
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.network.FriendlyByteBuf;
+//? if >=1.20.5 {
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?}
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -46,6 +52,20 @@ import net.minecraft.server.level.ServerPlayer;
  * {@code PacketType.create}, with the wire bytes untouched.
  */
 final class FabricNet implements Net {
+	// STAGE 5 — THE PAYLOAD TABLE IS `>=1.20.5` AND SO IS EVERY TYPE IN IT.
+	// `CustomPacketPayload`, `StreamCodec`, `ByteBufCodecs`, `RegistryFriendlyByteBuf` and
+	// `PayloadTypeRegistry` all arrived together, and below them fabric-api 0.92.11 speaks the
+	// RAW channel API: an id and a `FriendlyByteBuf`, in both directions. That is exactly what
+	// this seam already speaks (design §3.2 — every one of the eleven carries only ints and
+	// strings, so nothing at the boundary ever needed a codec), so the legacy arm needs no
+	// table, no records and no registration: `Archetypes.id(id.path())` IS the channel.
+	//
+	// The design sketched `FabricPacket` + `PacketType.create` here instead. Raw channels are
+	// taken over it deliberately: `FabricPacket` would need the eleven records to implement a
+	// SECOND interface (a fork in eleven files rather than none), buys nothing this seam uses,
+	// and produces the same bytes on the wire — the channel id and the writer's own output,
+	// which is what the frozen contract in `WireId` is about.
+	//? if >=1.20.5 {
 	/** Registration, encode and decode for one channel, in one place. */
 	private record Wire<P extends CustomPacketPayload>(
 			CustomPacketPayload.Type<P> type,
@@ -101,18 +121,28 @@ final class FabricNet implements Net {
 				buf -> new NightDashPayload(), (p, buf) -> { });
 	}
 
+	//?}
+
 	FabricNet() {
 	}
 
+	//? if >=1.20.5 {
 	@SuppressWarnings("unchecked")
 	private static <P extends CustomPacketPayload> Wire<P> wire(final WireId id) {
 		return (Wire<P>) WIRES.get(id);
 	}
 
+	//?} else {
+	/*private static net.minecraft.resources.Identifier channel(final WireId id) {
+		return com.archetypes.Archetypes.id(id.path());
+	}
+
+	*///?}
 	private static FriendlyByteBuf buffer() {
 		return new FriendlyByteBuf(Unpooled.buffer());
 	}
 
+	//? if >=1.20.5 {
 	private static <P extends CustomPacketPayload> P encode(final WireId id,
 			final Consumer<FriendlyByteBuf> writer) {
 		Wire<P> w = wire(id);
@@ -129,6 +159,23 @@ final class FabricNet implements Net {
 		return buf;
 	}
 
+	//?} else {
+	/*private static FriendlyByteBuf encode(final Consumer<FriendlyByteBuf> writer) {
+		FriendlyByteBuf buf = buffer();
+		writer.accept(buf);
+		return buf;
+	}
+
+	// The buffer a raw receiver is handed belongs to netty and is released the moment the
+	// handler returns, while both directions defer the read onto the game thread. So the
+	// readable bytes are copied into a heap buffer of our own first — the same guarantee
+	// the payload records give above by being decoded before the hop.
+	private static FriendlyByteBuf detach(final FriendlyByteBuf buf) {
+		return new FriendlyByteBuf(Unpooled.copiedBuffer(buf));
+	}
+
+	*///?}
+	//? if >=1.20.5 {
 	@Override
 	public void registerAll() {
 		for (final WireId id : WireId.values()) {
@@ -136,6 +183,16 @@ final class FabricNet implements Net {
 		}
 	}
 
+	//?} else {
+	/*@Override
+	public void registerAll() {
+		// Nothing to register: a raw channel exists as soon as something listens on it,
+		// and the listeners are installed by onServerbound/clientReceivers. Keeping the
+		// method (rather than moving the call site) is what keeps common init shared.
+	}
+
+	*///?}
+	//? if >=1.20.5 {
 	private static <P extends CustomPacketPayload> void register(final WireId id, final Wire<P> w) {
 		// 26.1 renamed both accessors: `playS2C()`/`playC2S()` -> `clientboundPlay()`/
 		// `serverboundPlay()`. Same registry, same `register(type, codec)` (measured on
@@ -156,17 +213,37 @@ final class FabricNet implements Net {
 		}
 	}
 
+	//?}
+
+	//? if >=1.20.5 {
 	@Override
 	public void sendToServer(final WireId id, final Consumer<FriendlyByteBuf> writer) {
 		ClientSide.send(encode(id, writer));
 	}
 
+	//?} else {
+	/*@Override
+	public void sendToServer(final WireId id, final Consumer<FriendlyByteBuf> writer) {
+		ClientSide.send(channel(id), encode(writer));
+	}
+
+	*///?}
+	//? if >=1.20.5 {
 	@Override
 	public void sendToClient(final ServerPlayer to, final WireId id,
 			final Consumer<FriendlyByteBuf> writer) {
 		ServerPlayNetworking.send(to, encode(id, writer));
 	}
 
+	//?} else {
+	/*@Override
+	public void sendToClient(final ServerPlayer to, final WireId id,
+			final Consumer<FriendlyByteBuf> writer) {
+		ServerPlayNetworking.send(to, channel(id), encode(writer));
+	}
+
+	*///?}
+	//? if >=1.20.5 {
 	@Override
 	public void onServerbound(final WireId id,
 			final BiConsumer<ServerPlayer, FriendlyByteBuf> handler) {
@@ -180,6 +257,19 @@ final class FabricNet implements Net {
 						handler.accept(context.player(), decode(id, payload))));
 	}
 
+	//?} else {
+	/*@Override
+	public void onServerbound(final WireId id,
+			final BiConsumer<ServerPlayer, FriendlyByteBuf> handler) {
+		ServerPlayNetworking.registerGlobalReceiver(channel(id),
+				(server, player, listener, buf, responseSender) -> {
+					FriendlyByteBuf detached = detach(buf);
+					server.execute(() -> handler.accept(player, detached));
+				});
+	}
+
+	*///?}
+	//? if >=1.20.5 {
 	@Override
 	public void clientReceivers(final Map<WireId, Consumer<FriendlyByteBuf>> sinks) {
 		for (final Map.Entry<WireId, Consumer<FriendlyByteBuf>> e : sinks.entrySet()) {
@@ -187,6 +277,15 @@ final class FabricNet implements Net {
 		}
 	}
 
+	//?} else {
+	/*@Override
+	public void clientReceivers(final Map<WireId, Consumer<FriendlyByteBuf>> sinks) {
+		for (final Map.Entry<WireId, Consumer<FriendlyByteBuf>> e : sinks.entrySet()) {
+			ClientSide.receive(channel(e.getKey()), e.getValue());
+		}
+	}
+
+	*///?}
 	/**
 	 * The two calls that only exist on a client.
 	 *
@@ -208,6 +307,11 @@ final class FabricNet implements Net {
 		private ClientSide() {
 		}
 
+		// STAGE 5: below 1.20.5 the hook speaks the raw channel pair — an id and a buffer —
+		// which is the same widening the rest of this file takes. Both arms still hand the
+		// client only types `src/main` can name, and both still leave the thread hop to
+		// the sink.
+		//? if >=1.20.5 {
 		static void send(final CustomPacketPayload payload) {
 			//? if >=26.1 {
 			net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking.send(payload);
@@ -231,5 +335,15 @@ final class FabricNet implements Net {
 			/*ClientNetHooks.calls().receive(w.type(), payload -> sink.accept(decode(id, payload)));
 			*///?}
 		}
+		//?} else {
+		/*static void send(final net.minecraft.resources.Identifier channel, final FriendlyByteBuf buf) {
+			ClientNetHooks.calls().send(channel, buf);
+		}
+
+		static void receive(final net.minecraft.resources.Identifier channel,
+				final Consumer<FriendlyByteBuf> sink) {
+			ClientNetHooks.calls().receive(channel, sink);
+		}
+		*///?}
 	}
 }

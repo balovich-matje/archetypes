@@ -243,7 +243,8 @@ public final class SlayerActives {
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.6F);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.0F, 0.8F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.0F, 0.8F);
+				/*?} else *///SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.8F);
 
 		// Entities: everything in the front half-disc, as it stands NOW.
 		List<LivingEntity> victims = level.getEntitiesOfClass(LivingEntity.class,

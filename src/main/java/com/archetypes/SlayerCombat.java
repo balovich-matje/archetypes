@@ -30,7 +30,15 @@ public final class SlayerCombat {
 	}
 
 	public static void initialize() {
+		// STAGE 5: the REGISTRATION line forks and the lambda below does not (design §3.4).
+		// fabric-api 0.92.11 has no AFTER_DAMAGE; platform/LegacyDamageEvents is the same
+		// five-parameter shape, fired from LivingEntityMixin at the site and with the
+		// guards fabric-api's own implementation uses.
+		//? if >=1.20.5 {
 		ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, taken, blocked) -> {
+		//?} else {
+		/*com.archetypes.platform.LegacyDamageEvents.register((entity, source, baseDamage, taken, blocked) -> {
+		*///?}
 			if (blocked || taken <= 0 || !(source.getDirectEntity() instanceof ServerPlayer player)) {
 				return;
 			}

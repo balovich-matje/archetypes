@@ -38,11 +38,21 @@ public class WandItem extends Item {
 	public void appendHoverText(final ItemStack stack, final Item.TooltipContext context,
 			final TooltipDisplay display, final Consumer<Component> lines, final TooltipFlag flag) {
 		super.appendHoverText(stack, context, display, lines, flag);
-	//?} else {
+	//?} elif >=1.20.5 {
 	/*@Override
 	public void appendHoverText(final ItemStack stack, final Item.TooltipContext context,
 			final java.util.List<Component> list, final TooltipFlag flag) {
 		super.appendHoverText(stack, context, list, flag);
+		Consumer<Component> lines = list::add;
+	*///?} else {
+	/*// STAGE 5: `Item.TooltipContext` arrived with the component rework; below it the
+	// second parameter is the nullable LEVEL the tooltip is being drawn in. Neither arm
+	// reads it, so this is a parameter-list move and nothing else.
+	@Override
+	public void appendHoverText(final ItemStack stack,
+			final net.minecraft.world.level.@org.jetbrains.annotations.Nullable Level level,
+			final java.util.List<Component> list, final TooltipFlag flag) {
+		super.appendHoverText(stack, level, list, flag);
 		Consumer<Component> lines = list::add;
 	*///?}
 		lines.accept(Component.translatable("item.archetypes.wand.casts")

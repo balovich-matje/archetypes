@@ -201,10 +201,19 @@ public final class DeathMark {
 
 		if (id != null && player.level() instanceof ServerLevel here) {
 			for (ServerLevel level : here.getServer().getAllLevels()) {
+				//? if >=1.20.5 {
 				if (level.getEntity(id) instanceof Entity body && isMarkedBy(body, player)) {
 					ArchetypeStore.INSTANCE.remove(body, ModState.MARKED_BY);
 					break;
 				}
+				//?} else {
+				/*Entity body = level.getEntity(id);
+
+				if (body != null && isMarkedBy(body, player)) {
+					ArchetypeStore.INSTANCE.remove(body, ModState.MARKED_BY);
+					break;
+				}
+				*///?}
 			}
 		}
 
@@ -283,7 +292,8 @@ public final class DeathMark {
 
 	/** The three effects Carrier moves. Poison and Wither are the base tree's
 	 * Venom and Blight; Slowness is Crippling Poison. */
-	private static final List<Holder<MobEffect>> CARRIED =
+	/*? if >=1.21 {*/private static final List<Holder<MobEffect>> CARRIED =
+	/*?} else *///private static final List<MobEffect> CARRIED =
 			List.of(MobEffects.POISON, MobEffects.WITHER, MobEffects.SLOWNESS);
 
 	/**
@@ -298,7 +308,8 @@ public final class DeathMark {
 			final LivingEntity mark) {
 		List<MobEffectInstance> carried = new ArrayList<>();
 
-		for (Holder<MobEffect> effect : CARRIED) {
+		/*? if >=1.21 {*/for (Holder<MobEffect> effect : CARRIED) {
+		/*?} else *///for (MobEffect effect : CARRIED) {
 			MobEffectInstance instance = mark.getEffect(effect);
 
 			if (instance != null) {

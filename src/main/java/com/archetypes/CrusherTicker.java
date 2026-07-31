@@ -116,10 +116,19 @@ public final class CrusherTicker {
 		// clamped to the MAX_ABSORPTION attribute — which defaults to zero.
 		// The rank's cap must live in the attribute or every grant clamps
 		// straight back to nothing.
+		//
+		// STAGE 5: `Attributes.MAX_ABSORPTION` is `>=1.21` and so is the clamp it feeds.
+		// On 1.20.1 `setAbsorptionAmount` stores whatever it is handed, so there is
+		// nothing to raise and nothing that would claw the bank back — the ceiling is
+		// enforced where the bank is filled instead, by `CrusherCombat`'s `Math.min(cap,
+		// …)`, which already reads `tranceCap` and is the ONLY site that grants Battle
+		// Trance absorption. Same number, same rank scaling, one site instead of two.
 		int trance = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.BATTLE_TRANCE);
+		//? if >=1.21 {
 		apply(player.getAttribute(Attributes.MAX_ABSORPTION), TRANCE_CAP_ID,
 				trance > 0, tranceCap(player, owned),
 				AttributeModifier.Operation.ADD_VALUE);
+		//?}
 
 		// Battle Trance decay: the banked hearts fade once the fight is over —
 		// unless the epic Bulwark is owned and the hands are bare, which holds
@@ -174,6 +183,7 @@ public final class CrusherTicker {
 			return;
 		}
 
+		//? if >=1.21 {
 		if (should && !attribute.hasModifier(id)) {
 			attribute.addTransientModifier(new AttributeModifier(id, value, operation));
 		} else if (!should && attribute.hasModifier(id)) {
@@ -188,5 +198,19 @@ public final class CrusherTicker {
 				attribute.addTransientModifier(new AttributeModifier(id, value, operation));
 			}
 		}
+		//?} else {
+		/*if (should && !LegacyAttributes.has(attribute, id)) {
+			attribute.addTransientModifier(LegacyAttributes.modifier(id, value, operation));
+		} else if (!should && LegacyAttributes.has(attribute, id)) {
+			LegacyAttributes.remove(attribute, id);
+		} else if (should) {
+			AttributeModifier current = LegacyAttributes.get(attribute, id);
+
+			if (current == null || current.getAmount() != value) {
+				LegacyAttributes.remove(attribute, id);
+				attribute.addTransientModifier(LegacyAttributes.modifier(id, value, operation));
+			}
+		}
+		*///?}
 	}
 }

@@ -308,7 +308,8 @@ public final class SeekerSpells {
 		// A loud whoosh, not a ghast's scream (user call) — scaled with the
 		// spend like everything else about the rock.
 		level.playSound(null, targetPos.getX(), targetPos.getY(), targetPos.getZ(),
-				SoundEvents.TRIDENT_RIPTIDE_3.value(), SoundSource.PLAYERS,
+				/*? if >=1.21 {*/SoundEvents.TRIDENT_RIPTIDE_3.value(), SoundSource.PLAYERS,
+				/*?} else *///SoundEvents.TRIDENT_RIPTIDE_3, SoundSource.PLAYERS,
 				1.2F * Math.min(power / Tuning.METEOR_MIN_MANA, Tuning.METEOR_FX_SCALE_CAP), 0.75F);
 
 		// The whole pool went into the rock; the cost modifiers (Kindling,
@@ -546,7 +547,8 @@ public final class SeekerSpells {
 						targetPos.getZ() + 0.5),
 				wandPower(player, false, true) * arcane(owned, Tuning.BLIZZARD_TOTAL_DAMAGE));
 		level.playSound(null, targetPos.getX(), targetPos.getY(), targetPos.getZ(),
-				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 1.2F, 0.7F);
+				/*? if >=1.21 {*/SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 1.2F, 0.7F);
+				/*?} else *///SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 1.2F, 0.7F);
 	}
 
 	/** Magic Missile: straight line, wand in hand — sharpened by the whole
@@ -608,7 +610,8 @@ public final class SeekerSpells {
 		// the deep resonate bloom under empowered casts as the
 		// eyes-closed tell.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS,
+				/*? if >=1.21 {*/SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS,
+				/*?} else *///SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS,
 				empowered ? 0.45F : 0.3F,
 				1.3F + (player.getRandom().nextFloat() - 0.5F) * 0.2F);
 
@@ -731,7 +734,8 @@ public final class SeekerSpells {
 		level.addFreshEntity(light);
 		// A whoosh on release, not a bowstring (user call).
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 0.6F,
+				/*? if >=1.21 {*/SoundEvents.BREEZE_SHOOT, SoundSource.PLAYERS, 0.6F,
+				/*?} else *///SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 0.6F,
 				1.1F + (player.getRandom().nextFloat() - 0.5F) * 0.15F);
 
 		// The epic tree's aura rides every cast, and only a paid one: the

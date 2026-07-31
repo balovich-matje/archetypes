@@ -24,7 +24,8 @@ import org.jspecify.annotations.Nullable;
 public final class ColossusCrusherNodes {
 	public enum Family {
 		/** The epic active: a mace-or-fists leap, slot 6 for Strength. */
-		TITAN_LEAP(() -> Items.MACE),
+		/*? if >=1.21 {*/TITAN_LEAP(() -> Items.MACE),
+		/*?} else *///TITAN_LEAP(() -> Items.ANVIL),
 		/** Three ranks: the landing slams, scaling with the fall. */
 		AFTERSHOCK(() -> Items.MAGMA_BLOCK),
 		/** Two ranks: every blow taken plates the body a little more. */

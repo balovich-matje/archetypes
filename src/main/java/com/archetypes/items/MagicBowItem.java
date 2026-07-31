@@ -154,7 +154,8 @@ public class MagicBowItem extends BowItem {
 	public void releaseUsing(final ItemStack stack, final Level level,
 			final LivingEntity entity, final int timeLeft) {
 	*///?}
-		int used = this.getUseDuration(stack, entity) - timeLeft;
+		/*? if >=1.20.5 {*/int used = this.getUseDuration(stack, entity) - timeLeft;
+		/*?} else *///int used = this.getUseDuration(stack) - timeLeft;
 
 		// Vanilla's power curve is the only thing that knows about draw time, so
 		// the draw is shortened by stretching the time fed into it rather than
@@ -190,7 +191,8 @@ public class MagicBowItem extends BowItem {
 			double baseDamage = Tuning.MAGIC_BOW_ARROW_BASE_DAMAGE
 					+ MagicArmaments.sharpnessBonus() * Tuning.MAGIC_BOW_ARROW_SHARPNESS_SHARE;
 
-			Arrow arrow = new Arrow(serverLevel, player, new ItemStack(Items.ARROW), stack);
+			/*? if >=1.21 {*/Arrow arrow = new Arrow(serverLevel, player, new ItemStack(Items.ARROW), stack);
+			/*?} else *///Arrow arrow = new Arrow(serverLevel, player);
 			arrow.pickup = AbstractArrow.Pickup.DISALLOWED;
 			arrow.setBaseDamage(baseDamage);
 			arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F, power * 3.0F, 1.0F);

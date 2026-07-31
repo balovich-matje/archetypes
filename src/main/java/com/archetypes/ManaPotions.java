@@ -8,8 +8,10 @@ package com.archetypes;
 // at Stage 5.
 //? if >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
-//?} else {
+//?} elif >=1.20.5 {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
+*///?} else {
+/*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry;
 *///?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -31,17 +33,21 @@ import net.minecraft.world.item.crafting.Ingredient;
  */
 public final class ManaPotions {
 	public static final Holder<Potion> MANA_RESTORE = register("mana_restore",
-			new Potion("mana_restore", new MobEffectInstance(ManaEffects.MANA_RESTORE, 1)));
+			/*? if >=1.21 {*/new Potion("mana_restore", new MobEffectInstance(ManaEffects.MANA_RESTORE, 1)));
+			/*?} else *///new Potion("mana_restore", new MobEffectInstance(ManaEffects.MANA_RESTORE.value(), 1)));
 
 	public static final Holder<Potion> STRONG_MANA_RESTORE = register("strong_mana_restore",
-			new Potion("mana_restore", new MobEffectInstance(ManaEffects.MANA_RESTORE, 1, 1)));
+			/*? if >=1.21 {*/new Potion("mana_restore", new MobEffectInstance(ManaEffects.MANA_RESTORE, 1, 1)));
+			/*?} else *///new Potion("mana_restore", new MobEffectInstance(ManaEffects.MANA_RESTORE.value(), 1, 1)));
 
 	/** Durations mirror vanilla Regeneration: 45s, halved at level II. */
 	public static final Holder<Potion> MANA_REGENERATION = register("mana_regeneration",
-			new Potion("mana_regeneration", new MobEffectInstance(ManaEffects.MANA_REGENERATION, 900)));
+			/*? if >=1.21 {*/new Potion("mana_regeneration", new MobEffectInstance(ManaEffects.MANA_REGENERATION, 900)));
+			/*?} else *///new Potion("mana_regeneration", new MobEffectInstance(ManaEffects.MANA_REGENERATION.value(), 900)));
 
 	public static final Holder<Potion> STRONG_MANA_REGENERATION = register("strong_mana_regeneration",
-			new Potion("mana_regeneration", new MobEffectInstance(ManaEffects.MANA_REGENERATION, 450, 1)));
+			/*? if >=1.21 {*/new Potion("mana_regeneration", new MobEffectInstance(ManaEffects.MANA_REGENERATION, 450, 1)));
+			/*?} else *///new Potion("mana_regeneration", new MobEffectInstance(ManaEffects.MANA_REGENERATION.value(), 450, 1)));
 
 	private ManaPotions() {
 	}
@@ -52,16 +58,35 @@ public final class ManaPotions {
 	}
 
 	public static void initialize() {
+		// BREWING IS THREE-WAY, and this is the third arm (design §4.1): fabric-api 0.92.11
+		// has no builder and no BUILD event at all — `FabricBrewingRecipeRegistry` is a pair
+		// of static methods, called at init, taking bare `Potion`s. Same four recipes, same
+		// ingredients, same order; only the vocabulary moves.
 		//? if >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
-		//?} else {
-		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
-		*///?}
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE);
 			builder.registerPotionRecipe(MANA_RESTORE, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE);
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.AMETHYST_SHARD), MANA_REGENERATION);
 			builder.registerPotionRecipe(MANA_REGENERATION, Ingredient.of(Items.GLOWSTONE_DUST),
 					STRONG_MANA_REGENERATION);
 		});
+		//?} elif >=1.20.5 {
+		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
+			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE);
+			builder.registerPotionRecipe(MANA_RESTORE, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE);
+			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.AMETHYST_SHARD), MANA_REGENERATION);
+			builder.registerPotionRecipe(MANA_REGENERATION, Ingredient.of(Items.GLOWSTONE_DUST),
+					STRONG_MANA_REGENERATION);
+		});
+		*///?} else {
+		/*FabricBrewingRecipeRegistry.registerPotionRecipe(
+				Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE.value());
+		FabricBrewingRecipeRegistry.registerPotionRecipe(
+				MANA_RESTORE.value(), Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE.value());
+		FabricBrewingRecipeRegistry.registerPotionRecipe(
+				Potions.AWKWARD, Ingredient.of(Items.AMETHYST_SHARD), MANA_REGENERATION.value());
+		FabricBrewingRecipeRegistry.registerPotionRecipe(MANA_REGENERATION.value(),
+				Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_REGENERATION.value());
+		*///?}
 	}
 }

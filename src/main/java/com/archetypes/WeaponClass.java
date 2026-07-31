@@ -33,9 +33,11 @@ public enum WeaponClass {
 			return SWORD;
 		}
 
+		//? if >=1.21 {
 		if (mainhand.is(Items.MACE)) {
 			return MACE;
 		}
+		//?}
 
 		if (ModItems.isWand(mainhand)) {
 			return WAND;

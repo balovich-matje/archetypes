@@ -9,7 +9,9 @@ import com.archetypes.platform.ArchetypeStore;
 
 import net.minecraft.world.entity.Entity;
 import net.minecraft.core.Holder;
+//? if >=1.21 {
 import net.minecraft.core.component.DataComponents;
+//?}
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -32,7 +34,9 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.EnchantmentHelper;
 import net.minecraft.world.item.enchantment.Enchantments;
+//? if >=1.21 {
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+//?}
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -226,9 +230,11 @@ public final class MagicArmaments {
 
 		ServerLevel level = (ServerLevel) player.level();
 
+		//? if >=1.21 {
 		if (EnchantmentHelper.getItemEnchantmentLevel(breach(level), held) != breachLevel(owned)) {
 			enchant(level, held, owned);
 		}
+		//?}
 	}
 
 	/**
@@ -324,11 +330,13 @@ public final class MagicArmaments {
 			return;
 		}
 
-		List<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> harmful =
+		/*? if >=1.21 {*/List<net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect>> harmful =
+		/*?} else *///List<net.minecraft.world.effect.MobEffect> harmful =
 				new java.util.ArrayList<>();
 
 		for (MobEffectInstance instance : player.getActiveEffects()) {
-			if (instance.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
+			/*? if >=1.21 {*/if (instance.getEffect().value().getCategory() == MobEffectCategory.HARMFUL) {
+			/*?} else *///if (instance.getEffect().getCategory() == MobEffectCategory.HARMFUL) {
 				harmful.add(instance.getEffect());
 			}
 		}
@@ -414,7 +422,19 @@ public final class MagicArmaments {
 
 		// setAbsorptionAmount clamps to MAX_ABSORPTION, so the cap holds.
 		float grant = manaSpent * rank * Tuning.MAGIC_ARMOR_HP_PER_MANA_PER_RANK;
+		// STAGE 5: below 1.21 there is no MAX_ABSORPTION attribute and
+		// `setAbsorptionAmount` clamps nothing, so the cap `applyArmorCap` carries above
+		// has to be applied here instead — the same `rank * MAGIC_ARMOR_CAP_PER_RANK`,
+		// read at the one site that grants this absorption. It is the whole ceiling on
+		// this node because the only other absorption cap in the mod, Battle Trance's,
+		// belongs to a STRENGTH sub-tree and this one to an INTELLECT sub-tree: one
+		// player can never hold both, so no summing is being lost.
+		//? if >=1.21 {
 		player.setAbsorptionAmount(player.getAbsorptionAmount() + grant);
+		//?} else {
+		/*player.setAbsorptionAmount(Math.min(rank * Tuning.MAGIC_ARMOR_CAP_PER_RANK,
+				player.getAbsorptionAmount() + grant));
+		*///?}
 	}
 
 	/**
@@ -457,6 +477,14 @@ public final class MagicArmaments {
 	 * would reach the arrow's base through {@code EnchantmentHelper.modifyDamage}
 	 * and be paid out three times over.
 	 */
+	// STAGE 5: no component map below 1.21 — the enchantments are a plain map written into
+	// the stack's NBT, and `setEnchantments` takes its two arguments the other way round.
+	// BREACH IS EXCISED HERE AND NOWHERE ELSE (design R-A5's treatment, applied to a second
+	// case): the enchantment does not exist below 1.21 and there is nothing else on that
+	// version that reduces armour effectiveness the way it does. Mind over Matter keeps its
+	// other, larger half — the damage multiplier in shapeHit — so the node stays worth
+	// buying and its lang entry says the armour-piercing is inactive.
+	//? if >=1.21 {
 	private static void enchant(final ServerLevel level, final ItemStack stack, final Set<Integer> owned) {
 		ItemEnchantments.Mutable enchantments = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
 
@@ -472,6 +500,17 @@ public final class MagicArmaments {
 
 		EnchantmentHelper.setEnchantments(stack, enchantments.toImmutable());
 	}
+	//?} else {
+	/*private static void enchant(final ServerLevel level, final ItemStack stack, final Set<Integer> owned) {
+		java.util.Map<Enchantment, Integer> enchantments = new java.util.LinkedHashMap<>();
+
+		if (ModItems.isMagicSword(stack)) {
+			enchantments.put(sharpness(level), Tuning.MAGIC_ARMAMENTS_SHARPNESS);
+		}
+
+		EnchantmentHelper.setEnchantments(enchantments, stack);
+	}
+	*///?}
 
 	private static int breachLevel(final Set<Integer> owned) {
 		return OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
@@ -482,6 +521,7 @@ public final class MagicArmaments {
 
 	/** The Holder must come from the level's registries — enchantments are
 	 * datapack content and {@code Enchantments.SHARPNESS} is only a key. */
+	//? if >=1.21 {
 	private static Holder<Enchantment> sharpness(final ServerLevel level) {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
 				.getOrThrow(Enchantments.SHARPNESS);
@@ -491,6 +531,14 @@ public final class MagicArmaments {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
 				.getOrThrow(Enchantments.BREACH);
 	}
+	//?} else {
+	/*// Below 1.21 enchantments are objects rather than datapack content, so the registry
+	// lookup goes and the level parameter goes unread. `breach` has no legacy twin at all:
+	// the enchantment does not exist there (see `enchant`).
+	private static Enchantment sharpness(final ServerLevel level) {
+		return Enchantments.SHARPNESS;
+	}
+	*///?}
 
 	/**
 	 * The conjured weapons' on-hit half, off the {@code hurtServer} funnel:
@@ -530,8 +578,10 @@ public final class MagicArmaments {
 	private static void applyArmorCap(final ServerPlayer player, final Set<Integer> owned,
 			final boolean active) {
 		int rank = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned, OracleWizardNodes.Family.MAGIC_ARMOR);
+		//? if >=1.21 {
 		apply(player.getAttribute(Attributes.MAX_ABSORPTION), ARMOR_CAP_ID,
 				active && rank > 0, rank * Tuning.MAGIC_ARMOR_CAP_PER_RANK);
+		//?}
 	}
 
 
@@ -569,6 +619,7 @@ public final class MagicArmaments {
 			return;
 		}
 
+		//? if >=1.21 {
 		if (should && !attribute.hasModifier(id)) {
 			attribute.addTransientModifier(new AttributeModifier(id, value, AttributeModifier.Operation.ADD_VALUE));
 		} else if (!should && attribute.hasModifier(id)) {
@@ -582,5 +633,21 @@ public final class MagicArmaments {
 						new AttributeModifier(id, value, AttributeModifier.Operation.ADD_VALUE));
 			}
 		}
+		//?} else {
+		/*if (should && !LegacyAttributes.has(attribute, id)) {
+			attribute.addTransientModifier(
+					LegacyAttributes.modifier(id, value, AttributeModifier.Operation.ADD_VALUE));
+		} else if (!should && LegacyAttributes.has(attribute, id)) {
+			LegacyAttributes.remove(attribute, id);
+		} else if (should) {
+			AttributeModifier current = LegacyAttributes.get(attribute, id);
+
+			if (current == null || current.getAmount() != value) {
+				LegacyAttributes.remove(attribute, id);
+				attribute.addTransientModifier(
+						LegacyAttributes.modifier(id, value, AttributeModifier.Operation.ADD_VALUE));
+			}
+		}
+		*///?}
 	}
 }

@@ -1,14 +1,18 @@
 package com.archetypes;
 
 import net.minecraft.core.Holder;
+//? if >=1.21 {
 import net.minecraft.core.component.DataComponents;
+//?}
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.item.enchantment.Enchantments;
+//? if >=1.21 {
 import net.minecraft.world.item.enchantment.ItemEnchantments;
+//?}
 
 /**
  * Reinforced Straps: a shield in this player's hands wears as though it carried
@@ -74,6 +78,10 @@ public final class ReinforcedStraps {
 		// (runIterationOnItem) reads that component unconditionally, and the
 		// only stack the two disagree about is an enchanted book, which is not
 		// a shield anybody blocks with.
+		// STAGE 5: below 1.21 there is no component map — enchantments live in the stack's
+		// NBT and `EnchantmentHelper` is the whole accessor. Same three steps (read the
+		// level, raise it, write it onto a COPY), same cap, same early-out.
+		//? if >=1.21 {
 		ItemEnchantments current =
 				stack.getOrDefault(DataComponents.ENCHANTMENTS, ItemEnchantments.EMPTY);
 		Holder<Enchantment> unbreaking = unbreaking(level);
@@ -92,6 +100,26 @@ public final class ReinforcedStraps {
 		copy.set(DataComponents.ENCHANTMENTS, raised.toImmutable());
 
 		return copy;
+		//?} else {
+		/*Enchantment unbreaking = unbreaking(level);
+		int owned = net.minecraft.world.item.enchantment.EnchantmentHelper
+				.getItemEnchantmentLevel(unbreaking, stack);
+		int boosted = Math.max(owned,
+				Math.min(owned + Tuning.REINFORCED_STRAPS_LEVELS, Tuning.REINFORCED_STRAPS_LEVEL_CAP));
+
+		if (boosted == owned) {
+			return stack;
+		}
+
+		java.util.Map<Enchantment, Integer> raised = new java.util.LinkedHashMap<>(
+				net.minecraft.world.item.enchantment.EnchantmentHelper.getEnchantments(stack));
+		raised.put(unbreaking, boosted);
+
+		ItemStack copy = stack.copy();
+		net.minecraft.world.item.enchantment.EnchantmentHelper.setEnchantments(raised, copy);
+
+		return copy;
+		*///?}
 	}
 
 	/**
@@ -121,8 +149,17 @@ public final class ReinforcedStraps {
 
 	/** The Holder must come from the level's registries — enchantments are
 	 * datapack content and {@code Enchantments.UNBREAKING} is only a key. */
+	// Below 1.21 enchantments are NOT datapack content: `Enchantments.UNBREAKING` is the
+	// enchantment itself and no registry is involved, so the level parameter goes unread
+	// rather than the method going away — every caller still has one to hand.
+	//? if >=1.21 {
 	private static Holder<Enchantment> unbreaking(final ServerLevel level) {
 		return level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
 				.getOrThrow(Enchantments.UNBREAKING);
 	}
+	//?} else {
+	/*private static Enchantment unbreaking(final ServerLevel level) {
+		return Enchantments.UNBREAKING;
+	}
+	*///?}
 }

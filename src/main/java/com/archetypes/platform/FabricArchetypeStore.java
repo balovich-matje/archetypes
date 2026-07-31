@@ -7,11 +7,15 @@ import com.archetypes.state.StateKey;
 import com.archetypes.state.WireCodec;
 
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+//? if >=1.20.5 {
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
+//?}
 import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+//? if >=1.20.5 {
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
+//?}
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 //? if >=1.21.11 {
@@ -47,8 +51,22 @@ final class FabricArchetypeStore implements ArchetypeStore {
 		}
 
 		this.types = built;
+		// STAGE 5: below 1.20.5 the attachment API cannot sync, so the same key table is
+		// handed to the hand-rolled channel and the start-tracking replay is armed here —
+		// in the seam that owns the state, rather than in common init, so nothing outside
+		// `platform/` learns that this node is different.
+		//? if <1.20.5 {
+		/*LegacyStateSync.register(keys);
+		net.fabricmc.fabric.api.networking.v1.EntityTrackingEvents.START_TRACKING.register(
+				(tracked, viewer) -> this.syncOnStartTracking(tracked, viewer));
+		*///?}
 	}
 
+	// The builder itself forks: 0.92.11 has `AttachmentRegistry.builder()` +
+	// `buildAndRegister(id)` and no `create(Identifier, Consumer)` at all, and neither
+	// `syncWith` nor `AttachmentSyncPredicate` exists there — the sync half moves to
+	// `LegacyStateSync`. `persistent` and `copyOnDeath` are the same two calls on both.
+	//? if >=1.20.5 {
 	private static <T> AttachmentType<T> build(final StateKey<T> key) {
 		return AttachmentRegistry.create(Archetypes.id(key.id()), builder -> {
 			var persist = key.persist();
@@ -70,6 +88,22 @@ final class FabricArchetypeStore implements ArchetypeStore {
 			}
 		});
 	}
+	//?} else {
+	/*private static <T> AttachmentType<T> build(final StateKey<T> key) {
+		AttachmentRegistry.Builder<T> builder = AttachmentRegistry.builder();
+		var persist = key.persist();
+
+		if (persist != null) {
+			builder.persistent(persist);
+		}
+
+		if (key.copyOnDeath()) {
+			builder.copyOnDeath();
+		}
+
+		return builder.buildAndRegister(Archetypes.id(key.id()));
+	}
+	*///?}
 
 	/**
 	 * Adapts one portable {@link WireCodec} to the payload stack's {@code StreamCodec}.
@@ -80,9 +114,11 @@ final class FabricArchetypeStore implements ArchetypeStore {
 	 * registry-bound data, so the wider buffer type is both sufficient and honest
 	 * about that.
 	 */
+	//? if >=1.20.5 {
 	private static <T> StreamCodec<FriendlyByteBuf, T> stream(final WireCodec<T> wire) {
 		return StreamCodec.of(wire::write, wire::read);
 	}
+	//?}
 
 	@SuppressWarnings("unchecked")
 	private <T> AttachmentType<T> type(final StateKey<T> key) {
@@ -97,11 +133,20 @@ final class FabricArchetypeStore implements ArchetypeStore {
 	@Override
 	public <T> void set(final Entity target, final StateKey<T> key, final T value) {
 		((AttachmentTarget) target).setAttached(type(key), value);
+		//? if <1.20.5 {
+		/*LegacyStateSync.push(target, key, value);
+		*///?}
 	}
 
 	@Override
 	public <T> @Nullable T remove(final Entity target, final StateKey<T> key) {
+		//? if >=1.20.5 {
 		return ((AttachmentTarget) target).removeAttached(type(key));
+		//?} else {
+		/*T previous = ((AttachmentTarget) target).removeAttached(type(key));
+		LegacyStateSync.push(target, key, null);
+		return previous;
+		*///?}
 	}
 
 	@Override
@@ -114,11 +159,19 @@ final class FabricArchetypeStore implements ArchetypeStore {
 		// No-op: fabric-api syncs a `syncWith` attachment to its target itself, on
 		// join and on every change. The method exists for the nodes that cannot —
 		// see the interface.
+		//? if <1.20.5 {
+		/*// Both scopes, because a player's own `all()` values are also their own: the
+		// join hook is the only thing that runs before anyone can be tracking them.
+		LegacyStateSync.replay(this, player, player, false);
+		*///?}
 	}
 
 	@Override
 	public void syncOnStartTracking(final Entity tracked, final ServerPlayer viewer) {
 		// No-op for the same reason: `AttachmentSyncPredicate.all()` already replays
 		// on start-tracking here.
+		//? if <1.20.5 {
+		/*LegacyStateSync.replay(this, tracked, viewer, true);
+		*///?}
 	}
 }

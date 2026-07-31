@@ -127,11 +127,15 @@ public class Archetypes implements ModInitializer {
 							}
 						}
 						case CRUSHER -> {
+							//? if >=1.21 {
 							if (player.getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
 								CrusherActives.quake(player);
 							} else {
 								CrusherActives.haymaker(player);
 							}
+							//?} else {
+							/*CrusherActives.haymaker(player);
+							*///?}
 						}
 						case MARKSMAN -> AgilityActives.trueShot(player);
 						case ASSASSIN -> AgilityActives.shadowStep(player);
@@ -268,6 +272,7 @@ public class Archetypes implements ModInitializer {
 	}
 
 	public static Identifier id(final String path) {
-		return Identifier.fromNamespaceAndPath(MOD_ID, path);
+		/*? if >=1.21 {*/return Identifier.fromNamespaceAndPath(MOD_ID, path);
+		/*?} else *///return new Identifier(MOD_ID, path);
 	}
 }

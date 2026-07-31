@@ -68,15 +68,20 @@ public final class ManaEffects {
 		//? if >=1.21.11 {
 		@Override
 		public boolean applyEffectTick(final ServerLevel level, final LivingEntity target, final int amplifier) {
-		//?} else {
+		//?} elif >=1.21 {
 		/*@Override
 		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
+		*///?} else {
+		/*@Override
+		public void applyEffectTick(final LivingEntity target, final int amplifier) {
 		*///?}
 			if (target instanceof ServerPlayer player) {
 				Mana.add(player, Tuning.MANA_RESTORE_PER_LEVEL * (amplifier + 1));
 			}
 
+			//? if >=1.21 {
 			return true;
+			//?}
 		}
 	}
 
@@ -85,24 +90,42 @@ public final class ManaEffects {
 			super(category, color);
 		}
 
+		// STAGE 5: 1.21 renamed the tick GATE and gave the tick itself a return value —
+		// `isDurationEffectTick(duration, amplifier)` became
+		// `shouldApplyEffectTickThisTick`, and `void applyEffectTick` became `boolean`
+		// (measured on the 1.20.1 and 1.21.1 mojmap jars). The boolean is vanilla's
+		// "keep the effect", which every one of these already answers with `true`, so the
+		// legacy arm loses a `return` and nothing else.
+		//? if >=1.21 {
 		@Override
 		public boolean shouldApplyEffectTickThisTick(final int duration, final int amplifier) {
 			return true;
 		}
+		//?} else {
+		/*@Override
+		public boolean isDurationEffectTick(final int duration, final int amplifier) {
+			return true;
+		}
+		*///?}
 
 		//? if >=1.21.11 {
 		@Override
 		public boolean applyEffectTick(final ServerLevel level, final LivingEntity target, final int amplifier) {
-		//?} else {
+		//?} elif >=1.21 {
 		/*@Override
 		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
+		*///?} else {
+		/*@Override
+		public void applyEffectTick(final LivingEntity target, final int amplifier) {
 		*///?}
 			if (target instanceof ServerPlayer player) {
 				Mana.add(player,
 						Tuning.MANA_REGEN_POTION_PER_LEVEL_PER_SECOND * (amplifier + 1) / 20.0F);
 			}
 
+			//? if >=1.21 {
 			return true;
+			//?}
 		}
 	}
 }

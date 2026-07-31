@@ -21,7 +21,9 @@ import net.minecraft.world.entity.EntityReference;
 //?}
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
+//? if >=1.21 {
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
+//?}
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
@@ -85,6 +87,19 @@ public abstract class ProjectileMixin {
 		}
 	}
 
+	// ─── STAGE 5: REFLECTION AND SPELL REFLECT ARE EXCISED BELOW 1.21 ───────────────────
+	// `Projectile.deflect`, `ProjectileDeflection` and `hitTargetOrDeflectSelf` all arrive
+	// together at 1.20.5/1.21; on 1.20.1 a projectile that hits a raised shield is simply
+	// STOPPED — there is no deflection step, no owner hand-over and no re-aim, so there is
+	// no call this hook could wrap and nothing that could be "turned" for the player.
+	//
+	// The decision is R-A5's, applied to a second cluster: the two nodes no-op and say so in
+	// their descriptions, rather than being approximated somewhere vanilla resolves a blocked
+	// projectile differently. Reflection (Protector) and Spell Reflect (Colossus Slayer) are
+	// the two; `mixin/EntityMixin` carries the other half of the same excision.
+	//
+	// Incorporeal above is UNAFFECTED — `canHitEntity` is on every version.
+	//? if >=1.21 {
 	//? if >=1.21.11 {
 	@Inject(method = "deflect(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EntityReference;Z)Z", at = @At("RETURN"))
 	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
@@ -176,4 +191,5 @@ public abstract class ProjectileMixin {
 			com.archetypes.ColossusSlayer.onSpellParried(player, level);
 		}
 	}
+	//?}
 }

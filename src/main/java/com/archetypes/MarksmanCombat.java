@@ -36,8 +36,13 @@ public final class MarksmanCombat {
 
 	/** Whether this arrow left a weapon the Marksman tree cares about. */
 	public static boolean fromMarksmanWeapon(final AbstractArrow arrow) {
+		//? if >=1.21 {
 		ItemStack weapon = arrow.getWeaponItem();
 		return weapon != null && (weapon.is(Items.BOW) || weapon.is(Items.CROSSBOW));
+		//?} else {
+		/*return arrow.getType() == net.minecraft.world.entity.EntityType.ARROW
+				|| arrow.getType() == net.minecraft.world.entity.EntityType.SPECTRAL_ARROW;
+		*///?}
 	}
 
 	/** Spawn-time passives: Swift Flight and Conservation. */
@@ -150,7 +155,8 @@ public final class MarksmanCombat {
 			level.sendParticles(ParticleTypes.EXPLOSION,
 					victim.getX(), victim.getY(0.5), victim.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
 			level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
-					SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.8F, 1.2F);
+					/*? if >=1.21 {*/SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.8F, 1.2F);
+					/*?} else *///SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.8F, 1.2F);
 		}
 
 		return result;
@@ -158,12 +164,18 @@ public final class MarksmanCombat {
 
 	/** Rapid Reload's prime: a crossbow kill charges the next reload. */
 	public static void onArrowKill(final ServerPlayer player, final AbstractArrow arrow) {
+		//? if >=1.21 {
 		ItemStack weapon = arrow.getWeaponItem();
 
 		if (weapon == null || !weapon.is(Items.CROSSBOW)) {
 			return;
 		}
 
+		//?} else {
+		/*if (!arrow.shotFromCrossbow()) {
+			return;
+		}
+		*///?}
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
 				MarksmanNodes.Family.RAPID_RELOAD) > 0) {
 			ArchetypeStore.INSTANCE.set(player, ModState.CROSSBOW_PRIMED, true);

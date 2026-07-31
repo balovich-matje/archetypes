@@ -19,10 +19,23 @@ public abstract class ExperienceOrbMixin {
 	 * fraction of what they earned. Banking the repaired portion here means
 	 * the ledger always sees the full orb, Mending or not.
 	 */
+	// STAGE 5: the private helper took a plain `Player` below 1.21 (it was narrowed to
+	// `ServerPlayer` when Mending moved to the enchantment-effect components). Same call, same
+	// place in `playerTouch`, same two numbers; `SkillPoints.bank` already takes a `Player`
+	// and does its own server-side test, so only the descriptor and the parameter move.
+	//? if >=1.21 {
 	@WrapOperation(method = "playerTouch(Lnet/minecraft/world/entity/player/Player;)V", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/entity/ExperienceOrb;repairPlayerItems(Lnet/minecraft/server/level/ServerPlayer;I)I"))
 	private int archetypes$bankMendedExperience(final ExperienceOrb orb, final ServerPlayer player,
 			final int value, final Operation<Integer> original) {
+	//?} else {
+	/*@WrapOperation(method = "playerTouch(Lnet/minecraft/world/entity/player/Player;)V", at = @At(value = "INVOKE",
+			target = "Lnet/minecraft/world/entity/ExperienceOrb;repairPlayerItems("
+					+ "Lnet/minecraft/world/entity/player/Player;I)I"))
+	private int archetypes$bankMendedExperience(final ExperienceOrb orb,
+			final net.minecraft.world.entity.player.Player player,
+			final int value, final Operation<Integer> original) {
+	*///?}
 		int leftover = original.call(orb, player, value);
 		int consumed = value - leftover;
 

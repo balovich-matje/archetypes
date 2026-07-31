@@ -1701,4 +1701,78 @@ public abstract class LivingEntityMixin {
 				? com.archetypes.ColossusSlayer.barbarianHealing(player, amount)
 				: amount;
 	}
+
+	// ---------------------------------------------------------------------------
+	// STAGE 5, and the only handler in this file that exists on one node alone:
+	// `ServerLivingEntityEvents.AFTER_DAMAGE` is a `>=1.20.5` fabric-api row and 0.92.11
+	// has nothing that reports the damage a hit actually did. This reproduces the event at
+	// the site fabric-api's own implementation uses, with fabric-api's own three semantics
+	// — the recipe Skill Proficiencies arrived at AFTER a first attempt on `actuallyHurt`
+	// got each of them wrong (its R-20 regression), copied rather than re-derived:
+	//
+	//  1. IT HAS TO FIRE FOR PLAYERS. `Player` overrides `actuallyHurt` on 1.20.1 and never
+	//     calls super, so a hook there is dead for every player. `hurt` is the one site
+	//     every entity shares — `Player.hurt` ends in `invokespecial LivingEntity.hurt`.
+	//  2. THE AMOUNT IS THE PRE-ARMOUR ONE. The event reports damage after shields and
+	//     freezing and explicitly NOT after armour, enchantments or absorption hearts —
+	//     i.e. `hurt`'s own float argument as mutated in place, which is what a Mixin
+	//     callback's parameter loads at the injection point.
+	//  3. IT MUST NOT FIRE ON A KILLING BLOW. fabric-api enforces that with an
+	//     `isDeadOrDying()` guard inside its handler; vanilla's own second `isDeadOrDying`
+	//     has already run by TAIL.
+	//
+	// The consumer's own two filters (positive damage, not blocked) are applied by the
+	// consumer on every node and are passed through here rather than re-decided.
+	//
+	// `baseDamage` and `damageTaken` are handed the SAME value, and that is honest rather
+	// than lazy: fabric-api's `baseDamage` is the argument before the shield/freezing
+	// mutations, this mixin's only consumer never reads it, and inventing a second local
+	// to carry a number nothing consumes would be a claim this node cannot support.
+	//
+	// PRIORITY IS THE DEFAULT 1000 ON PURPOSE — the same slot fabric-api's handler occupies
+	// on every other node, so HardenedMixin's pinned 900 still runs first here (design
+	// §5.9 gate 5, and the funnel audit is what checks it).
+	//? if >=1.20.5 {
+	//?} else {
+	/*@Inject(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("TAIL"))
+	private void archetypes$afterDamage(final DamageSource source, final float amount,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir,
+			@com.llamalad7.mixinextras.sugar.Local(ordinal = 0) final boolean blocked) {
+		LivingEntity self = (LivingEntity) (Object) this;
+
+		if (self.level().isClientSide() || self.isDeadOrDying()) {
+			return;
+		}
+
+		com.archetypes.platform.LegacyDamageEvents.fireAfterDamage(self, source, amount, amount, blocked);
+	}
+
+	// STAGE 5 — Well Fed's faster eating, re-rooted off `ItemStack` because below 1.20.5
+	// `ItemStack.getUseDuration()` takes no user and Well Fed is per-player (see
+	// mixin/ItemStackMixin, which owns the modern arm and explains why the shell is written
+	// twice). `this` is the user at all FOUR sites that read a use duration in 1.20.1's
+	// `LivingEntity` — `startUsingItem`, `getTicksUsingItem`, `shouldTriggerItemUseEffects`
+	// and `onSyncedDataUpdated` (`javap -c`: the only `ItemStack.getUseDuration()I` calls in
+	// the class) — so covering all four is what reproduces the modern contract, where the
+	// countdown AND everything measured against it move together.
+	//
+	// `getUseItem()` is the stack in every one of them, and it is already assigned when the
+	// earliest of them reads it: `startUsingItem` does `putfield useItem` at offset 23 and
+	// calls `getUseDuration` at 28.
+	@ModifyExpressionValue(method = { "startUsingItem(Lnet/minecraft/world/InteractionHand;)V",
+			"getTicksUsingItem()I", "shouldTriggerItemUseEffects()Z",
+			"onSyncedDataUpdated(Lnet/minecraft/network/syncher/EntityDataAccessor;)V" },
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getUseDuration()I"))
+	private int archetypes$wellFedDuration(final int original) {
+		LivingEntity self = (LivingEntity) (Object) this;
+
+		if (original <= 0 || !((Object) self instanceof net.minecraft.world.entity.player.Player player)
+				|| self.getUseItem().getItem().getFoodProperties() == null) {
+			return original;
+		}
+
+		float factor = com.archetypes.ColossusProtector.eatSpeedFactor(player);
+		return factor >= 1.0F ? original : Math.max(1, Math.round(original * factor));
+	}
+	*///?}
 }

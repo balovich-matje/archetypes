@@ -143,6 +143,36 @@ stonecutter parameters {
 			replace("MobEffects.DAMAGE_RESISTANCE", "MobEffects.RESISTANCE")
 		}
 
+		// STAGE 5. 1.21 renamed all three `AttributeModifier.Operation` constants when it
+		// re-keyed modifiers from UUID to id. Same three operations, same order, same
+		// arithmetic in `AttributeInstance.calculateValue` — measured on the 1.20.1 and
+		// 1.21.1 mojmap jars, which agree on everything but the names:
+		//   ADDITION <- ADD_VALUE   MULTIPLY_BASE <- ADD_MULTIPLIED_BASE
+		//   MULTIPLY_TOTAL <- ADD_MULTIPLIED_TOTAL
+		//
+		// A replacement rather than `//?`, for the reason the MobEffects rules record: the
+		// constants appear at ~25 call sites, several of them as an ARGUMENT to a shared
+		// helper, and the failure mode of a bad replacement is a compile error on the node
+		// that has it while the failure mode of 25 hand-written else arms is one of them
+		// drifting into the wrong operation — which is a silent balance change (a x1.5
+		// armour multiplier written as +1.5 armour, say).
+		//
+		// The JUMP_BOOST trap does not apply: no legacy spelling here is a prefix of a
+		// modern one. `ADDITION` is not a substring of `ADD_MULTIPLIED_*`, and each rule is
+		// qualified with `AttributeModifier.Operation.` so nothing else in either
+		// vocabulary can match.
+		string(current.parsed >= "1.21") {
+			replace("AttributeModifier.Operation.ADDITION", "AttributeModifier.Operation.ADD_VALUE")
+			replace(
+				"AttributeModifier.Operation.MULTIPLY_BASE",
+				"AttributeModifier.Operation.ADD_MULTIPLIED_BASE",
+			)
+			replace(
+				"AttributeModifier.Operation.MULTIPLY_TOTAL",
+				"AttributeModifier.Operation.ADD_MULTIPLIED_TOTAL",
+			)
+		}
+
 		// STAGE 4, client side. `net.minecraft.util.ARGB` is 1.21.11's promotion of the
 		// nested `net.minecraft.util.FastColor.ARGB32` to a class of its own. Every member
 		// this tree calls — `opaque(int)`, `colorFromFloat(float,float,float,float)` — is

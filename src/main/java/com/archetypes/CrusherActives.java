@@ -46,7 +46,8 @@ public final class CrusherActives {
 		ArchetypeStore.INSTANCE.set(target, ModState.QUAKE_READY_AT, now + Tuning.QUAKE_COOLDOWN_TICKS);
 		ArchetypeStore.INSTANCE.set(target, ModState.QUAKE_CHARGE_END, now + Tuning.QUAKE_CHARGE_TICKS);
 		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 0.8F, 0.5F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 0.8F, 0.5F);
+				/*?} else *///SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.8F, 0.5F);
 	}
 
 	/** The slam itself, fired by the ticker as the charge ends: multiplied
@@ -58,11 +59,15 @@ public final class CrusherActives {
 
 		// Density feeds the slam, Meteor doubles down — at Density V with
 		// full Meteor the slam one-shots a fresh zombie.
+		//? if >=1.21 {
 		int density = net.minecraft.world.item.enchantment.EnchantmentHelper.getItemEnchantmentLevel(
 				level.registryAccess()
 						.lookupOrThrow(net.minecraft.core.registries.Registries.ENCHANTMENT)
 						.getOrThrow(net.minecraft.world.item.enchantment.Enchantments.DENSITY),
 				player.getMainHandItem());
+		//?} else {
+		/*int density = 0;
+		*///?}
 		int meteor = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.METEOR);
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.QUAKE_DAMAGE_MULTIPLIER)
@@ -109,8 +114,13 @@ public final class CrusherActives {
 						}
 
 						level.destroyBlock(pos, true, player);
+						//? if >=1.21 {
 						mace.hurtAndBreak(1, player,
 								net.minecraft.world.entity.EquipmentSlot.MAINHAND);
+						//?} else {
+						/*mace.hurtAndBreak(1, player, broken -> broken.broadcastBreakEvent(
+								net.minecraft.world.entity.EquipmentSlot.MAINHAND));
+						*///?}
 
 						if (mace.isEmpty()) {
 							break outer;
@@ -194,9 +204,11 @@ public final class CrusherActives {
 		level.sendParticles(ParticleTypes.EXPLOSION,
 				player.getX(), player.getY() + 0.3, player.getZ(), 3, 0.8, 0.2, 0.8, 0.0);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.5F, 0.7F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.5F, 0.7F);
+				/*?} else *///SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.5F, 0.7F);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 0.6F);
+				/*? if >=1.21 {*/SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 0.6F);
+				/*?} else *///SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6F, 0.6F);
 	}
 
 	/** Haymaker: one enormous punch — multiplied damage and a stun, no
@@ -267,7 +279,8 @@ public final class CrusherActives {
 		level.sendParticles(ParticleTypes.CRIT,
 				victim.getX(), victim.getY(0.7), victim.getZ(), 12, 0.3, 0.3, 0.3, 0.2);
 		level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
-				SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.0F, 0.7F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.0F, 0.7F);
+				/*?} else *///SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.0F, 0.7F);
 		level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),
 				SoundEvents.PLAYER_ATTACK_CRIT, SoundSource.PLAYERS, 1.0F, 0.6F);
 	}

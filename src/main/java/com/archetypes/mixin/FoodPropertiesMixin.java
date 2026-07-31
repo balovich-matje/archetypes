@@ -47,6 +47,7 @@ import org.spongepowered.asm.mixin.injection.At;
 /*@Mixin(net.minecraft.world.entity.player.Player.class)
 *///?}
 public abstract class FoodPropertiesMixin {
+	//? if >=1.20.5 {
 	//? if >=1.21.11 {
 	@WrapOperation(method = "onConsume(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/component/Consumable;)V",
 			at = @At(value = "INVOKE",
@@ -87,4 +88,54 @@ public abstract class FoodPropertiesMixin {
 				Math.min(saturationBefore + properties.saturation(),
 						Math.min(wanted, FoodConstants.MAX_SATURATION))));
 	}
+	//?}
+
+	// ---------------------------------------------------------------------------
+	// STAGE 5 — THE ONE HANDLER IN THIS PORT WHOSE BODY IS WRITTEN TWICE, and the reason is
+	// the byte-identity gate rather than the API: below 1.20.5 `FoodProperties` is a plain
+	// class whose accessors are `getNutrition()` / `getSaturationModifier()` — a MODIFIER,
+	// not an absolute saturation — and `FoodData.eat(FoodProperties)` does not exist at all;
+	// `Player.eat(Level, ItemStack)` calls `FoodData.eat(Item, ItemStack)` instead. Hoisting
+	// the two accessor reads into locals so the tail could stay shared would rewrite the
+	// modern arms' bytecode, which the per-stage gate forbids (§5.9 gate 1). So the shell
+	// AND the four lines below it are duplicated here, and the two must be edited together.
+	//
+	// The arithmetic is the same statement in a different vocabulary, and the conversion is
+	// vanilla's own: `FoodData.eat(int, float)` adds `nutrition * modifier * 2` to
+	// saturation, which is exactly what the record's `saturation()` carries from 1.20.5 up.
+	// The ceiling, the "did vanilla already reach it" early-out and the saturation clamp are
+	// character for character the same.
+	//? if >=1.20.5 {
+	//?} else {
+	/*@WrapOperation(method = "eat(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/item/Item;"
+							+ "Lnet/minecraft/world/item/ItemStack;)V"))
+	private void archetypes$bankHunger(final FoodData data, final net.minecraft.world.item.Item item,
+			final ItemStack food, final Operation<Void> original) {
+		final LivingEntity user = (LivingEntity) (Object) this;
+		final FoodProperties properties = item.getFoodProperties();
+		int before = data.getFoodLevel();
+		float saturationBefore = data.getSaturationLevel();
+
+		original.call(data, item, food);
+
+		if (properties == null || !(user instanceof Player player)) {
+			return;
+		}
+
+		int ceiling = ColossusProtector.hungerCeiling(player);
+		int wanted = Math.min(before + properties.getNutrition(), ceiling);
+
+		if (wanted <= data.getFoodLevel()) {
+			return;
+		}
+
+		data.setFoodLevel(wanted);
+		data.setSaturation(Math.max(data.getSaturationLevel(),
+				Math.min(saturationBefore
+								+ properties.getNutrition() * properties.getSaturationModifier() * 2.0F,
+						Math.min(wanted, FoodConstants.MAX_SATURATION))));
+	}
+	*///?}
 }

@@ -99,11 +99,19 @@ public final class SlayerTicker {
 			return;
 		}
 
+		//? if >=1.21 {
 		if (should && !attribute.hasModifier(id)) {
 			attribute.addTransientModifier(new AttributeModifier(id, value, operation));
 		} else if (!should && attribute.hasModifier(id)) {
 			attribute.removeModifier(id);
 		}
+		//?} else {
+		/*if (should && !LegacyAttributes.has(attribute, id)) {
+			attribute.addTransientModifier(LegacyAttributes.modifier(id, value, operation));
+		} else if (!should && LegacyAttributes.has(attribute, id)) {
+			LegacyAttributes.remove(attribute, id);
+		}
+		*///?}
 	}
 
 	private static void tickBladestorm(final ServerPlayer player) {
@@ -135,7 +143,8 @@ public final class SlayerTicker {
 					SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.9F,
 					0.8F + level.getRandom().nextFloat() * 0.5F);
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
-					SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS, 0.7F,
+					/*? if >=1.21 {*/SoundEvents.TRIDENT_RIPTIDE_1.value(), SoundSource.PLAYERS, 0.7F,
+					/*?} else *///SoundEvents.TRIDENT_RIPTIDE_1, SoundSource.PLAYERS, 0.7F,
 					1.2F + level.getRandom().nextFloat() * 0.3F);
 
 			for (int i = 0; i < 6; i++) {

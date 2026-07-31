@@ -297,9 +297,11 @@ public final class ProtectorClash {
 				Tuning.CLASH_RADIUS * 0.5, 0.8, Tuning.CLASH_RADIUS * 0.5, 0.0);
 
 		level.playSound(null, epicentre.x, epicentre.y, epicentre.z,
-				SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 4.0F, 0.6F);
+				/*? if >=1.21 {*/SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 4.0F, 0.6F);
+				/*?} else *///SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 4.0F, 0.6F);
 		level.playSound(null, epicentre.x, epicentre.y, epicentre.z,
-				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 2.0F, 0.5F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 2.0F, 0.5F);
+				/*?} else *///SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 2.0F, 0.5F);
 		level.playSound(null, epicentre.x, epicentre.y, epicentre.z,
 				SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.2F, 0.6F);
 	}

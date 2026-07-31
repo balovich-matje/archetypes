@@ -38,10 +38,32 @@ public class MagicSwordItem extends Item {
 		MagicArmaments.purgeStray(stack, entity);
 	}
 }
-//?} else {
+//?} elif >=1.21 {
 /*public class MagicSwordItem extends net.minecraft.world.item.SwordItem {
 	public MagicSwordItem(final Properties properties) {
 		super(net.minecraft.world.item.Tiers.DIAMOND, properties);
+	}
+
+	// The modern hook is server-only BY SIGNATURE (`ServerLevel`); the legacy one runs on
+	// both logical sides, so the side test it gives away for free is made explicit here.
+	@Override
+	public void inventoryTick(final ItemStack stack, final net.minecraft.world.level.Level level,
+			final Entity entity, final int slotId, final boolean selected) {
+		if (level.isClientSide()) {
+			return;
+		}
+
+		MagicArmaments.purgeStray(stack, entity);
+	}
+}
+*///?} else {
+/*// STAGE 5: below 1.21 the attribute block cannot ride the properties, so the conjured
+// sword takes the same base class the greatsword and dagger take on this node
+// (items/LegacySword) with the numbers ModItems' modern arm passes to
+// `applySwordProperties` — diamond tier, 3.0 base damage, -2.4 attack speed.
+public class MagicSwordItem extends LegacySword {
+	public MagicSwordItem(final Properties properties) {
+		super(net.minecraft.world.item.Tiers.DIAMOND, 3.0F, -2.4F, properties);
 	}
 
 	// The modern hook is server-only BY SIGNATURE (`ServerLevel`); the legacy one runs on

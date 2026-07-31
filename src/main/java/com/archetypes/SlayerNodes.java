@@ -27,7 +27,8 @@ import org.jspecify.annotations.Nullable;
  */
 public final class SlayerNodes {
 	public enum Family {
-		SLOWNESS(Identifier.withDefaultNamespace("textures/mob_effect/slowness.png"), 18),
+		/*? if >=1.21 {*/SLOWNESS(Identifier.withDefaultNamespace("textures/mob_effect/slowness.png"), 18),
+		/*?} else *///SLOWNESS(new Identifier("textures/mob_effect/slowness.png"), 18),
 		TASTE_OF_BLOOD(Archetypes.id("textures/node/taste_of_blood.png"), 16),
 		LUNGE(() -> Items.RABBIT_FOOT),
 		KBRES(() -> Items.OBSIDIAN),

@@ -6,7 +6,9 @@ import com.archetypes.platform.ArchetypeStore;
 import com.archetypes.state.StateKey;
 
 import net.minecraft.world.entity.Entity;
+//? if >=1.20.5 {
 import net.minecraft.advancements.AdvancementHolder;
+//?}
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.server.PlayerAdvancements;
 import net.minecraft.server.ServerAdvancementManager;
@@ -259,6 +261,12 @@ public final class SkillPoints {
 		int goals = 0;
 		int challenges = 0;
 
+		// 1.20.5 wrapped every advancement in an `AdvancementHolder` (id + value) and moved
+		// the display behind an `Optional`; below it the advancement IS the object, its
+		// display is a nullable field, and the frame enum is `FrameType` rather than
+		// `AdvancementType`. The tally itself — display present, progress done, split by
+		// frame — is the same three questions asked of the same three things.
+		//? if >=1.20.5 {
 		for (AdvancementHolder holder : manager.getAllAdvancements()) {
 			Optional<DisplayInfo> display = holder.value().display();
 
@@ -276,6 +284,25 @@ public final class SkillPoints {
 				}
 			}
 		}
+		//?} else {
+		/*for (net.minecraft.advancements.Advancement advancement : manager.getAllAdvancements()) {
+			DisplayInfo display = advancement.getDisplay();
+
+			if (display == null || !progress.getOrStartProgress(advancement).isDone()) {
+				continue;
+			}
+
+			count++;
+
+			switch (display.getFrame()) {
+				case GOAL -> goals++;
+				case CHALLENGE -> challenges++;
+				default -> {
+					// A task; it is the remainder, so nothing to tally.
+				}
+			}
+		}
+		*///?}
 
 		final Entity target = player;
 		ArchetypeStore.INSTANCE.set(target, ModState.ADVANCEMENT_GOALS, goals);

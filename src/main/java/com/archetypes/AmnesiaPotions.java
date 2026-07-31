@@ -3,8 +3,10 @@ package com.archetypes;
 // The same rename as ManaPotions' — see the note there.
 //? if >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
-//?} else {
+//?} elif >=1.20.5 {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
+*///?} else {
+/*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry;
 *///?}
 import net.minecraft.core.Holder;
 import net.minecraft.core.Registry;
@@ -44,10 +46,12 @@ public final class AmnesiaPotions {
 			new AmnesiaEffect(MobEffectCategory.NEUTRAL, 0xC7A0E8));
 
 	public static final Holder<Potion> AMNESIA = register("amnesia",
-			new Potion("amnesia", new MobEffectInstance(AMNESIA_EFFECT, 1)));
+			/*? if >=1.21 {*/new Potion("amnesia", new MobEffectInstance(AMNESIA_EFFECT, 1)));
+			/*?} else *///new Potion("amnesia", new MobEffectInstance(AMNESIA_EFFECT.value(), 1)));
 
 	public static final Holder<Potion> STRONG_AMNESIA = register("strong_amnesia",
-			new Potion("amnesia", new MobEffectInstance(AMNESIA_EFFECT, 1, 1)));
+			/*? if >=1.21 {*/new Potion("amnesia", new MobEffectInstance(AMNESIA_EFFECT, 1, 1)));
+			/*?} else *///new Potion("amnesia", new MobEffectInstance(AMNESIA_EFFECT.value(), 1, 1)));
 
 	private AmnesiaPotions() {
 	}
@@ -58,14 +62,23 @@ public final class AmnesiaPotions {
 	}
 
 	public static void initialize() {
+		// The third arm — see ManaPotions for the measurement.
 		//? if >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
-		//?} else {
-		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
-		*///?}
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA);
 			builder.registerPotionRecipe(AMNESIA, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA);
 		});
+		//?} elif >=1.20.5 {
+		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
+			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA);
+			builder.registerPotionRecipe(AMNESIA, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA);
+		});
+		*///?} else {
+		/*FabricBrewingRecipeRegistry.registerPotionRecipe(
+				Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA.value());
+		FabricBrewingRecipeRegistry.registerPotionRecipe(
+				AMNESIA.value(), Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA.value());
+		*///?}
 	}
 
 	private static final class AmnesiaEffect extends InstantaneousMobEffect {

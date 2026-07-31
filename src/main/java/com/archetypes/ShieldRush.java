@@ -45,7 +45,8 @@ public final class ShieldRush {
 
 		ServerLevel level = (ServerLevel) player.level();
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.WIND_CHARGE_THROW, SoundSource.PLAYERS, 1.0F, 0.9F);
+				/*? if >=1.21 {*/SoundEvents.WIND_CHARGE_THROW, SoundSource.PLAYERS, 1.0F, 0.9F);
+				/*?} else *///SoundEvents.FIRECHARGE_USE, SoundSource.PLAYERS, 1.0F, 0.9F);
 		level.sendParticles(net.minecraft.core.particles.ParticleTypes.CLOUD,
 				player.getX(), player.getY() + 0.1, player.getZ(),
 				8, 0.3, 0.05, 0.3, 0.02);

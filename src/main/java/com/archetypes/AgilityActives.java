@@ -68,13 +68,15 @@ public final class AgilityActives {
 
 			ArrowItem arrowItem = projectile.getItem() instanceof ArrowItem item
 					? item : (ArrowItem) Items.ARROW;
-			AbstractArrow arrow = arrowItem.createArrow(level, projectile, player, player.getMainHandItem());
+			/*? if >=1.21 {*/AbstractArrow arrow = arrowItem.createArrow(level, projectile, player, player.getMainHandItem());
+			/*?} else *///AbstractArrow arrow = arrowItem.createArrow(level, projectile, player);
 			arrow.shootFromRotation(player, player.getXRot(), player.getYRot(), 0.0F,
 					Tuning.TRUE_SHOT_SNAP_SPEED, 1.0F);
 			empower(arrow, Tuning.TRUE_SHOT_SNAP_MULTIPLIER, false);
 			markTrueShot(arrow);
 
-			if (!player.hasInfiniteMaterials()) {
+			/*? if >=1.20.5 {*/if (!player.hasInfiniteMaterials()) {
+			/*?} else *///if (!player.getAbilities().instabuild) {
 				projectile.shrink(1);
 			}
 
@@ -84,7 +86,8 @@ public final class AgilityActives {
 		} else {
 			ArchetypeStore.INSTANCE.set(target, ModState.TRUE_SHOT_ARMED, true);
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
-					SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.PLAYERS, 0.8F, 1.3F);
+					/*? if >=1.21 {*/SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.PLAYERS, 0.8F, 1.3F);
+					/*?} else *///SoundEvents.CROSSBOW_LOADING_END, SoundSource.PLAYERS, 0.8F, 1.3F);
 		}
 
 		boolean seeker = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SEEKER_ARROW) > 0;

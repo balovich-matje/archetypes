@@ -7,7 +7,9 @@ import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
 import com.llamalad7.mixinextras.sugar.Local;
 
+//? if >=1.20.5 {
 import net.minecraft.core.component.DataComponents;
+//?}
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -38,6 +40,16 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {
+	// STAGE 5 — THIS HANDLER HAS NO HOST BELOW 1.20.5 AND MOVES TO ANOTHER CLASS.
+	// `ItemStack.getUseDuration()` takes no user there (bracketed: the LivingEntity
+	// parameter is present on 1.21.1, absent on 1.20.1), and the user is the whole gate —
+	// Well Fed is per-player. Every read of a food stack's duration that matters happens in
+	// `LivingEntity`, where `this` IS the user, so the legacy arm lives in
+	// `LivingEntityMixin.archetypes$wellFedDuration` and covers all four call sites there.
+	// The three-line shell is written twice because the two arms are mixins on DIFFERENT
+	// classes and cannot share a `@Unique`; the BALANCE number is
+	// `ColossusProtector.eatSpeedFactor` on both, called from one place each.
+	//? if >=1.20.5 {
 	@ModifyReturnValue(method = "getUseDuration(Lnet/minecraft/world/entity/LivingEntity;)I", at = @At("RETURN"))
 	private int archetypes$wellFed(final int original, final LivingEntity user) {
 		if (original <= 0 || !(user instanceof Player player)
@@ -48,6 +60,7 @@ public abstract class ItemStackMixin {
 		float factor = ColossusProtector.eatSpeedFactor(player);
 		return factor >= 1.0F ? original : Math.max(1, Math.round(original * factor));
 	}
+	//?}
 
 	/**
 	 * Reinforced Straps: a held shield rolls its durability at one more level of
@@ -92,20 +105,25 @@ public abstract class ItemStackMixin {
 	// arm is the safer bet of the two — and if the extraction had already happened there,
 	// `injectors.defaultRequire: 1` says so at that node's first boot instead of silently
 	// dropping the node.
+	// STAGE 5 RE-ROOTS IT A SECOND TIME, and the shape is the same argument as above:
+	// `EnchantmentHelper.processDurabilityChange` does not exist on 1.20.1 either. There the
+	// whole durability roll is `ItemStack.hurt(I,RandomSource,ServerPlayer)Z`, whose one
+	// enchantment read is `EnchantmentHelper.getItemEnchantmentLevel(Enchantments.UNBREAKING,
+	// this)` at offset 8 — the ONLY `getItemEnchantmentLevel` call in the whole 1.20.1
+	// `ItemStack` (`javap -c`), so the target is unambiguous.
+	//
+	// R-20's test again, and it passes for the same reason: `hurt` is the single funnel on
+	// that version. `hurtAndBreak(I,T,Consumer)V` delegates to it and there is no
+	// `hurtWithoutBreaking`, so wrapping the read reaches every path that wears an item down,
+	// which is exactly the claim the javadoc above makes. What is handed to the original
+	// operation is still the BOOSTED COPY and never the real stack, so vanilla's own
+	// binomial runs at the raised level and nothing else on the stack moves.
 	//? if >=1.21.11 {
 	@WrapOperation(method = "processDurabilityChange(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;)I",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
 							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"
 							+ "Lnet/minecraft/world/item/ItemStack;I)I"))
-	//?} else {
-	/*@WrapOperation(method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;"
-			+ "Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V",
-			at = @At(value = "INVOKE",
-					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
-							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"
-							+ "Lnet/minecraft/world/item/ItemStack;I)I"))
-	*///?}
 	private int archetypes$reinforcedStraps(final ServerLevel level, final ItemStack stack,
 			final int amount, final Operation<Integer> original,
 			@Local(argsOnly = true) final @Nullable ServerPlayer player) {
@@ -113,4 +131,33 @@ public abstract class ItemStackMixin {
 				player == null ? stack : ReinforcedStraps.forDurabilityRoll(level, player, stack),
 				amount);
 	}
+	//?} elif >=1.20.5 {
+	/*@WrapOperation(method = "hurtAndBreak(ILnet/minecraft/server/level/ServerLevel;"
+			+ "Lnet/minecraft/server/level/ServerPlayer;Ljava/util/function/Consumer;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
+							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"
+							+ "Lnet/minecraft/world/item/ItemStack;I)I"))
+	private int archetypes$reinforcedStraps(final ServerLevel level, final ItemStack stack,
+			final int amount, final Operation<Integer> original,
+			@Local(argsOnly = true) final @Nullable ServerPlayer player) {
+		return original.call(level,
+				player == null ? stack : ReinforcedStraps.forDurabilityRoll(level, player, stack),
+				amount);
+	}
+	*///?} else {
+	/*@WrapOperation(method = "hurt(ILnet/minecraft/util/RandomSource;Lnet/minecraft/server/level/ServerPlayer;)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
+							+ "getItemEnchantmentLevel(Lnet/minecraft/world/item/enchantment/Enchantment;"
+							+ "Lnet/minecraft/world/item/ItemStack;)I"))
+	private int archetypes$reinforcedStraps(
+			final net.minecraft.world.item.enchantment.Enchantment enchantment,
+			final ItemStack stack, final Operation<Integer> original,
+			@Local(argsOnly = true) final @Nullable ServerPlayer player) {
+		return original.call(enchantment,
+				player == null ? stack
+						: ReinforcedStraps.forDurabilityRoll(player.serverLevel(), player, stack));
+	}
+	*///?}
 }

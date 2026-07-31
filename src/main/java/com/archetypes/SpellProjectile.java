@@ -148,12 +148,23 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		this.mode = mode;
 	}
 
+	// STAGE 5: 1.20.5 gave `defineSynchedData` a BUILDER; below it the method takes no
+	// arguments and each accessor is defined straight onto the entity's own data map. Same
+	// two accessors, same defaults, same order.
+	//? if >=1.20.5 {
 	@Override
 	protected void defineSynchedData(final net.minecraft.network.syncher.SynchedEntityData.Builder builder) {
 		super.defineSynchedData(builder);
 		builder.define(DATA_EMPOWERED, false);
 		builder.define(DATA_VISUAL_SCALE, 1.0F);
 	}
+	//?} else {
+	/*@Override
+	protected void defineSynchedData() {
+		this.getEntityData().define(DATA_EMPOWERED, false);
+		this.getEntityData().define(DATA_VISUAL_SCALE, 1.0F);
+	}
+	*///?}
 
 	public SpellProjectile withVisualScale(final float scale) {
 		this.getEntityData().set(DATA_VISUAL_SCALE, scale);
@@ -299,10 +310,21 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return Items.FIRE_CHARGE;
 	}
 
+	// STAGE 5: `getDefaultGravity()D` is 1.20.5's; below it the hook is
+	// `ThrowableProjectile.getGravity()F`, called from the same place in `tick()` and
+	// subtracted from the delta the same way — a float rather than a double, and a rename.
+	// The three numbers are the shared ones and are not written twice.
+	//? if >=1.20.5 {
 	@Override
 	protected double getDefaultGravity() {
 		return this.mode == Mode.HOLY_LIGHT ? (this.flatArc ? 0.02 : 0.05) : 0.0;
 	}
+	//?} else {
+	/*@Override
+	protected float getGravity() {
+		return (float) (this.mode == Mode.HOLY_LIGHT ? (this.flatArc ? 0.02 : 0.05) : 0.0);
+	}
+	*///?}
 
 	/**
 	 * Air drag, and the ONE place the numbers live on every node.
@@ -553,7 +575,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		switch (this.mode) {
 			case FLAME_BOLT -> {
-				victim.igniteForSeconds(this.igniteSeconds >= 0
+				/*? if >=1.21 {*/victim.igniteForSeconds(this.igniteSeconds >= 0
+				/*?} else *///victim.setSecondsOnFire(this.igniteSeconds >= 0
 						? this.igniteSeconds : Tuning.FLAME_BOLT_FIRE_SECONDS);
 				//? if >=1.21.2 {
 				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
@@ -613,7 +636,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					level.sendParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
 							1, 0.0, 0.0, 0.0, 0.0);
 					level.playSound(null, this.getX(), this.getY(), this.getZ(),
-							SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 1.4F);
+							/*? if >=1.21 {*/SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 1.4F);
+							/*?} else *///SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 0.6F, 1.4F);
 				}
 				case METEOR -> this.impact(level);
 				case HOLY_LIGHT -> this.burst(level);
@@ -648,7 +672,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				living -> living.isAlive() && living != this.getOwner()
 						&& living.distanceToSqr(this) <= radius * radius)) {
 			if (fire) {
-				victim.igniteForSeconds(this.igniteSeconds >= 0
+				/*? if >=1.21 {*/victim.igniteForSeconds(this.igniteSeconds >= 0
+				/*?} else *///victim.setSecondsOnFire(this.igniteSeconds >= 0
 						? this.igniteSeconds : Tuning.FIREBALL_FIRE_SECONDS);
 				//? if >=1.21.2 {
 				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
@@ -704,7 +729,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				this.getBoundingBox().inflate(radius),
 				living -> living.isAlive() && living != this.getOwner()
 						&& living.distanceToSqr(this) <= radius * radius)) {
-			victim.igniteForSeconds(3);
+			/*? if >=1.21 {*/victim.igniteForSeconds(3);
+			/*?} else *///victim.setSecondsOnFire(3);
 			//? if >=1.21.2 {
 			victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
 			//?} else {
@@ -737,9 +763,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		level.sendParticles(ParticleTypes.EXPLOSION_EMITTER, this.getX(), this.getY(), this.getZ(),
 				Math.max(1, Math.round(fx)), radius * 0.3, 0.3, radius * 0.3, 0.0);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.2F * fx, 0.7F);
+				/*? if >=1.21 {*/SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 1.2F * fx, 0.7F);
+				/*?} else *///SoundEvents.GENERIC_EXPLODE, SoundSource.PLAYERS, 1.2F * fx, 0.7F);
 		level.playSound(null, this.getX(), this.getY(), this.getZ(),
-				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.5F * fx, 0.6F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.5F * fx, 0.6F);
+				/*?} else *///SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.5F * fx, 0.6F);
 	}
 
 	/**
@@ -758,7 +786,8 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			if (creature.isInvertedHealAndHarm()) {
 				// Immolation: lit before the hit, so even a killing blow burns.
 				if (this.immolationRank > 0) {
-					creature.igniteForSeconds(Tuning.IMMOLATION_FIRE_SECONDS_PER_RANK * this.immolationRank);
+					/*? if >=1.21 {*/creature.igniteForSeconds(Tuning.IMMOLATION_FIRE_SECONDS_PER_RANK * this.immolationRank);
+					/*?} else *///creature.setSecondsOnFire(Tuning.IMMOLATION_FIRE_SECONDS_PER_RANK * this.immolationRank);
 				}
 
 				//? if >=1.21.2 {
@@ -859,8 +888,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return damage;
 	}
 
+	//? if >=1.21 {
 	private static net.minecraft.core.Holder<net.minecraft.world.effect.MobEffect> randomBlessing(
 			final RandomSource random) {
+	//?} else {
+	/*private static net.minecraft.world.effect.MobEffect randomBlessing(final RandomSource random) {
+	*///?}
 		return switch (random.nextInt(4)) {
 			case 0 -> MobEffects.SPEED;
 			case 1 -> MobEffects.STRENGTH;

@@ -107,11 +107,13 @@ public class ArchetypesClient implements ClientModInitializer {
 
 	@Override
 	public void onInitializeClient() {
+		//? if >=1.21 {
 		SlayerAnimations.initialize();
 		NightAnimations.initialize();
 		ElementalistAnimations.initialize();
 		DaggerAnimations.initialize();
 		ProtectorAnimations.initialize();
+		//?}
 		NightFormFx.initialize();
 		RadianceLight.initialize();
 

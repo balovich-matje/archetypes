@@ -20,7 +20,8 @@ import org.jspecify.annotations.Nullable;
 public enum SubTree {
 	PROTECTOR(Archetype.STRENGTH, "protector", () -> Items.SHIELD, Constellations.PROTECTOR_SHIELD, false),
 	SLAYER(Archetype.STRENGTH, "slayer", () -> Items.IRON_SWORD, Constellations.SLAYER_SWORD, false),
-	CRUSHER(Archetype.STRENGTH, "crusher", () -> Items.MACE, Constellations.CRUSHER_MACE, false),
+	/*? if >=1.21 {*/CRUSHER(Archetype.STRENGTH, "crusher", () -> Items.MACE, Constellations.CRUSHER_MACE, false),
+	/*?} else *///CRUSHER(Archetype.STRENGTH, "crusher", () -> Items.ANVIL, Constellations.CRUSHER_MACE, false),
 
 	MARKSMAN(Archetype.AGILITY, "marksman", () -> Items.BOW, Constellations.MARKSMAN_BOW, false),
 	ASSASSIN(Archetype.AGILITY, "assassin", () -> ModItems.IRON_DAGGER, Constellations.ASSASSIN_DAGGER, false),

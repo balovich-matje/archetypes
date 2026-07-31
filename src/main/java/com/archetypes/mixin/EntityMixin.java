@@ -4,8 +4,10 @@ import com.archetypes.ColossusSlayer;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+//? if >=1.21 {
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
+//?}
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -13,6 +15,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(Entity.class)
 public abstract class EntityMixin {
+	// STAGE 5: excised below 1.21 with the rest of the deflection cluster — there is no
+	// `Entity.deflection(Projectile)` to answer there, because nothing asks the question.
+	// See mixin/ProjectileMixin for the full note. The class stays in the config and simply
+	// contributes nothing on that node.
+	//? if >=1.21 {
 	/**
 	 * Spell Reflect, first half. {@code deflection} is vanilla's own "does this
 	 * body turn projectiles away", asked by {@code hitTargetOrDeflectSelf}
@@ -35,4 +42,5 @@ public abstract class EntityMixin {
 			cir.setReturnValue(ProjectileDeflection.REVERSE);
 		}
 	}
+	//?}
 }

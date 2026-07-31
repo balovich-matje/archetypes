@@ -60,10 +60,29 @@ public abstract class AbstractArrowMixin {
 	 * is the overridable half, and vanilla still short-circuits it to 0 for a
 	 * no-gravity arrow (a True Shot), so the two marks compose correctly.
 	 */
+	// STAGE 5 — A RE-ROOT ONTO THE CONSTANT ITSELF. `getDefaultGravity()` arrived at 1.20.5;
+	// below it an arrow's gravity is the literal `0.05` subtracted from the delta inside
+	// `AbstractArrow.tick()`, and that subtraction sits inside vanilla's own
+	// `if (!this.isNoGravity())` — the same short-circuit the modern hook composes with, so a
+	// True Shot's no-gravity arrow still ignores both marks in the same order.
+	//
+	// MEASURED, not assumed (`javap -c` on the 1.20.1 mojmap jar): `tick()` contains exactly
+	// ONE `double 0.05` (offset 859, the `Vec3.y` subtraction) and one unrelated `float
+	// 0.05f` (offset 739, the water/air inertia pair) which a doubleValue constant cannot
+	// match. So the injection point is unambiguous, and the product it produces —
+	// `0.05 * SPELLBOW_ARROW_GRAVITY_FACTOR` — is the same number the modern arm returns.
+	//? if >=1.20.5 {
 	@ModifyReturnValue(method = "getDefaultGravity()D", at = @At("RETURN"))
 	private double archetypes$spellbowGravity(final double original) {
 		return archetypes$spellbowGravityImpl(original);
 	}
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyConstant(method = "tick()V",
+			constant = @org.spongepowered.asm.mixin.injection.Constant(doubleValue = 0.05))
+	private double archetypes$spellbowGravity(final double original) {
+		return archetypes$spellbowGravityImpl(original);
+	}
+	*///?}
 
 	/** Shared implementation of {@link #archetypes$spellbowGravity}. */
 	@Unique

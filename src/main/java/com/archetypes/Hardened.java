@@ -187,7 +187,11 @@ public final class Hardened {
 		AttributeInstance armour = player.getAttribute(Attributes.ARMOR);
 
 		if (armour != null) {
+			//? if >=1.21 {
 			armour.removeModifier(ARMOR_ID);
+			//?} else {
+			/*LegacyAttributes.remove(armour, ARMOR_ID);
+			*///?}
 		}
 	}
 }

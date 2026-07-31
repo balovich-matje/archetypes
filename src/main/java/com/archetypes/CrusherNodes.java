@@ -32,12 +32,20 @@ public final class CrusherNodes {
 		BARE_KNUCKLE(() -> Items.LEATHER),
 		IRON_SKIN(() -> Items.IRON_CHESTPLATE),
 		HAYMAKER(() -> Items.BLAZE_POWDER),
-		METEOR(() -> Items.MACE, Archetypes.id("textures/node/meteor_overlay.png"), 32, false),
-		SHOCKWAVE(() -> Items.MACE, Archetypes.id("textures/node/shockwave_overlay.png"), 32, false),
-		EARTH_SHATTER(() -> Items.MACE, Archetypes.id("textures/node/earth_shatter_overlay.png"), 32, true),
-		QUAKE(() -> Items.MACE, Archetypes.id("textures/node/quake_overlay.png"), 32, true),
+		/*? if >=1.21 {*/METEOR(() -> Items.MACE, Archetypes.id("textures/node/meteor_overlay.png"), 32, false),
+		/*?} else *///METEOR(() -> Items.ANVIL, Archetypes.id("textures/node/meteor_overlay.png"), 32, false),
+		/*? if >=1.21 {*/SHOCKWAVE(() -> Items.MACE, Archetypes.id("textures/node/shockwave_overlay.png"), 32, false),
+		/*?} else *///SHOCKWAVE(() -> Items.ANVIL, Archetypes.id("textures/node/shockwave_overlay.png"), 32, false),
+		/*? if >=1.21 {*/EARTH_SHATTER(() -> Items.MACE, Archetypes.id("textures/node/earth_shatter_overlay.png"), 32, true),
+		/*?} else *///EARTH_SHATTER(() -> Items.ANVIL, Archetypes.id("textures/node/earth_shatter_overlay.png"), 32, true),
+		/*? if >=1.21 {*/QUAKE(() -> Items.MACE, Archetypes.id("textures/node/quake_overlay.png"), 32, true),
+		/*?} else *///QUAKE(() -> Items.ANVIL, Archetypes.id("textures/node/quake_overlay.png"), 32, true),
+		//? if >=1.21 {
 		BATTLE_TRANCE(net.minecraft.resources.Identifier.withDefaultNamespace(
 				"textures/gui/sprites/hud/heart/absorbing_full.png"), 9),
+		//?} else {
+		/*BATTLE_TRANCE(() -> Items.GOLDEN_APPLE),
+		*///?}
 		MINOR(null);
 
 		private final @Nullable Supplier<Item> icon;

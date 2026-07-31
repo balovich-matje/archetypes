@@ -82,10 +82,22 @@ public final class ShadowTicker {
 		// Swift Shadow: the sneak penalty refunded — half, then all of it. A
 		// flat ADD_VALUE onto SNEAKING_SPEED's 0.3 base, so rank 2 (+0.7) lands
 		// at 1.0 — sneaking at full walking speed, active whenever owned.
+		//
+		// STAGE 5, AND THIS IS AN R-20 RE-ROOT RATHER THAN A RENAME. `Attributes
+		// .SNEAKING_SPEED` is `>=1.21`; below it the sneak factor is not an attribute at
+		// all. It is computed CLIENT-side, in `LocalPlayer.aiStep`, as
+		// `Mth.clamp(0.3F + EnchantmentHelper.getSneakingSpeedBonus(this), 0, 1)` fed
+		// straight into `Input.tick(boolean, float)` — measured in the 1.20.1 mojmap jar,
+		// offsets 117-139. That expression IS the modern attribute's whole contract,
+		// clamp included, so the node moves onto it: `client/mixin/LocalPlayerMixin`
+		// carries the legacy arm, reading the same rank off the same synced purchases.
+		// Nothing server-side can host it — the server never computes a sneak factor.
+		//? if >=1.21 {
 		apply(player.getAttribute(Attributes.SNEAKING_SPEED), SWIFT_ID,
 				ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.SWIFT_SHADOW) > 0,
 				Tuning.SWIFT_SHADOW_SNEAK_REFUND_PER_RANK
 						* ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.SWIFT_SHADOW));
+		//?}
 
 		// Dark Mending: a heart every 8/6/4/2 seconds of invisibility.
 		int mending = ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.DARK_MENDING);
@@ -183,6 +195,7 @@ public final class ShadowTicker {
 			return;
 		}
 
+		//? if >=1.21 {
 		boolean has = attribute.hasModifier(id);
 
 		if (should && !has) {
@@ -200,6 +213,24 @@ public final class ShadowTicker {
 						AttributeModifier.Operation.ADD_VALUE));
 			}
 		}
+		//?} else {
+		/*boolean has = LegacyAttributes.has(attribute, id);
+
+		if (should && !has) {
+			attribute.addTransientModifier(LegacyAttributes.modifier(id, value,
+					AttributeModifier.Operation.ADD_VALUE));
+		} else if (!should && has) {
+			LegacyAttributes.remove(attribute, id);
+		} else if (should) {
+			AttributeModifier current = LegacyAttributes.get(attribute, id);
+
+			if (current == null || current.getAmount() != value) {
+				LegacyAttributes.remove(attribute, id);
+				attribute.addTransientModifier(LegacyAttributes.modifier(id, value,
+						AttributeModifier.Operation.ADD_VALUE));
+			}
+		}
+		*///?}
 	}
 
 	/** Shared by Invisibility, Predator's renewals and Last Shadow: how long
@@ -212,10 +243,12 @@ public final class ShadowTicker {
 
 	/** Cleansing Veil and Last Shadow both scrub the harmful effects off. */
 	public static void cleanse(final ServerPlayer player) {
-		java.util.List<Holder<net.minecraft.world.effect.MobEffect>> harmful = new java.util.ArrayList<>();
+		/*? if >=1.21 {*/java.util.List<Holder<net.minecraft.world.effect.MobEffect>> harmful = new java.util.ArrayList<>();
+		/*?} else *///java.util.List<net.minecraft.world.effect.MobEffect> harmful = new java.util.ArrayList<>();
 
 		for (var active : player.getActiveEffectsMap().keySet()) {
-			if (active.value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
+			/*? if >=1.21 {*/if (active.value().getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
+			/*?} else *///if (active.getCategory() == net.minecraft.world.effect.MobEffectCategory.HARMFUL) {
 				harmful.add(active);
 			}
 		}

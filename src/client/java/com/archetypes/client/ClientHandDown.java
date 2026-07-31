@@ -34,6 +34,7 @@ public final class ClientHandDown {
 
 	public static void install() {
 		ClientNetHooks.install(new ClientNetHooks.Calls() {
+			//? if >=1.20.5 {
 			@Override
 			public void send(final CustomPacketPayload payload) {
 				ClientPlayNetworking.send(payload);
@@ -48,6 +49,28 @@ public final class ClientHandDown {
 				ClientPlayNetworking.registerGlobalReceiver(type,
 						(payload, context) -> sink.accept(payload));
 			}
+			//?} else {
+			/^@Override
+			public void send(final net.minecraft.resources.Identifier channel,
+					final net.minecraft.network.FriendlyByteBuf buf) {
+				ClientPlayNetworking.send(channel, buf);
+			}
+
+			// The raw receiver runs on the netty thread and its buffer dies when this
+			// method returns, so the bytes are copied before the sink is handed them —
+			// the sink is what schedules the hop onto the client thread, and it must
+			// still be reading OUR buffer when it gets there. `client` is in scope here
+			// and deliberately unused: naming Minecraft is this class's privilege, not
+			// the seam's.
+			@Override
+			public void receive(final net.minecraft.resources.Identifier channel,
+					final Consumer<net.minecraft.network.FriendlyByteBuf> sink) {
+				ClientPlayNetworking.registerGlobalReceiver(channel,
+						(client, handler, buf, responseSender) -> sink.accept(
+								new net.minecraft.network.FriendlyByteBuf(
+										io.netty.buffer.Unpooled.copiedBuffer(buf))));
+			}
+			^///?}
 		});
 
 		// Guarded, and the holder below is why: naming a Skill Proficiencies class at all

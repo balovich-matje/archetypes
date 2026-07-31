@@ -39,15 +39,31 @@ package com.archetypes.platform;
 //? if <26.1 {
 /*import java.util.function.Consumer;
 
+//? if >=1.20.5 {
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+//?} else {
+/^import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.Identifier;
+^///?}
 
 public final class ClientNetHooks {
 	// The two fabric-api calls that only exist on a client, named in common types.
+	//
+	// STAGE 5 widened the pair rather than adding a second hook: below 1.20.5 the whole
+	// payload stack is absent and fabric-api 0.92.11 speaks the RAW channel API, so what
+	// crosses this line is an id and a buffer. Both shapes are still spelled in types
+	// `src/main` can name, which is the only thing this interface exists to guarantee.
 	public interface Calls {
+		//? if >=1.20.5 {
 		void send(CustomPacketPayload payload);
 
 		<P extends CustomPacketPayload> void receive(CustomPacketPayload.Type<P> type,
 				Consumer<P> sink);
+		//?} else {
+		/^void send(Identifier channel, FriendlyByteBuf buf);
+
+		void receive(Identifier channel, Consumer<FriendlyByteBuf> sink);
+		^///?}
 	}
 
 	// A dedicated server never installs anything and never calls either method — the two
@@ -55,6 +71,7 @@ public final class ClientNetHooks {
 	// reachable from a server. This stand-in is declared BEFORE the field that reads it:
 	// javac rejects the other order with "illegal forward reference".
 	private static final Calls ABSENT = new Calls() {
+		//? if >=1.20.5 {
 		@Override
 		public void send(final CustomPacketPayload payload) {
 			throw new IllegalStateException("archetypes: client net hooks not installed");
@@ -65,6 +82,17 @@ public final class ClientNetHooks {
 				final Consumer<P> sink) {
 			throw new IllegalStateException("archetypes: client net hooks not installed");
 		}
+		//?} else {
+		/^@Override
+		public void send(final Identifier channel, final FriendlyByteBuf buf) {
+			throw new IllegalStateException("archetypes: client net hooks not installed");
+		}
+
+		@Override
+		public void receive(final Identifier channel, final Consumer<FriendlyByteBuf> sink) {
+			throw new IllegalStateException("archetypes: client net hooks not installed");
+		}
+		^///?}
 	};
 
 	private static volatile Calls calls = ABSENT;

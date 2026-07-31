@@ -128,7 +128,8 @@ public final class TitansLeap {
 		}
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.2F, 0.5F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 1.2F, 0.5F);
+				/*?} else *///SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.5F);
 	}
 
 	/** Drop an in-flight leap without landing it. Reached by the JOIN handler
@@ -274,7 +275,8 @@ public final class TitansLeap {
 		level.sendParticles(ParticleTypes.CLOUD,
 				player.getX(), player.getY() + 0.2, player.getZ(), 20, 1.2, 0.1, 1.2, 0.05);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
-				SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.2F, 1.2F);
+				/*? if >=1.21 {*/SoundEvents.MACE_SMASH_GROUND_HEAVY, SoundSource.PLAYERS, 1.2F, 1.2F);
+				/*?} else *///SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 1.2F, 1.2F);
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.IRON_GOLEM_DAMAGE, SoundSource.PLAYERS, 0.8F, 0.7F);
 	}

@@ -112,7 +112,9 @@ public final class ModItems {
 				//? if >=1.21.11 {
 				|| stack.is(ItemTags.SPEARS)
 				//?}
+				//? if >=1.21 {
 				|| stack.is(net.minecraft.world.item.Items.MACE)
+				//?}
 				|| stack.is(net.minecraft.world.item.Items.BOW)
 				|| stack.is(net.minecraft.world.item.Items.CROSSBOW)
 				|| stack.is(net.minecraft.world.item.Items.SHIELD)
@@ -160,7 +162,12 @@ public final class ModItems {
 	// feed `Tier.createToolProperties`, and neither 1.21.1's `SwordItem.createToolProperties`
 	// nor 26.x's `ToolMaterial.applySwordProperties` calls it — both build the sword's TOOL
 	// component from COBWEB and `#minecraft:sword_efficient` alone (measured in both jars).
-	//? if <1.21.11 {
+	//
+	// STAGE 5 SPLITS THE ARM AGAIN: 1.21 replaced `Tier.getLevel()` — a mining LEVEL, an int
+	// — with `getIncorrectBlocksForDrops()`, a block tag. Copper's level is stone's, 1, and
+	// that is vanilla's own answer for it: 1.21's `INCORRECT_FOR_STONE_TOOL` is the tag
+	// that replaced level 1.
+	//? if <1.21.11 && >=1.21 {
 	/*private static final Tier COPPER_TIER = new Tier() {
 		@Override
 		public int getUses() {
@@ -180,6 +187,38 @@ public final class ModItems {
 		@Override
 		public net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> getIncorrectBlocksForDrops() {
 			return net.minecraft.tags.BlockTags.INCORRECT_FOR_STONE_TOOL;
+		}
+
+		@Override
+		public int getEnchantmentValue() {
+			return 13;
+		}
+
+		@Override
+		public net.minecraft.world.item.crafting.Ingredient getRepairIngredient() {
+			return net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.COPPER_INGOT);
+		}
+	};
+	*///?} elif <1.21 {
+	/*private static final Tier COPPER_TIER = new Tier() {
+		@Override
+		public int getUses() {
+			return 190;
+		}
+
+		@Override
+		public float getSpeed() {
+			return 5.0F;
+		}
+
+		@Override
+		public float getAttackDamageBonus() {
+			return 1.0F;
+		}
+
+		@Override
+		public int getLevel() {
+			return 1;
 		}
 
 		@Override
@@ -316,7 +355,7 @@ public final class ModItems {
 				.durability(material.durability() * 3);
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
-	//?} else {
+	//?} elif >=1.21 {
 	/*private static Item greatsword(final String prefix, final Tier material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_greatsword"));
 		// Three times the ingots, three times the life in it — carried on the TIER rather
@@ -385,6 +424,55 @@ public final class ModItems {
 						net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
 				.build();
 	}
+	*///?} else {
+	/*// STAGE 5. Below 1.21 there is no attribute COMPONENT and no `Item.Properties
+	// .attributes(...)` to hang one on, so the pair goes onto the item itself — see
+	// `items/LegacySword`, which is this arm's only addition and exists for exactly the
+	// reason the note above gives: vanilla's own `SwordItem` takes an INT damage and these
+	// numbers are derived floats.
+	private static Item greatsword(final String prefix, final Tier material) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_greatsword"));
+		// Three times the ingots, three times the life in it — carried on the TIER for the
+		// same reason as the arm above: `TieredItem` applies `tier.getUses()` last.
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.LegacySword(scaledDurability(material, 3),
+						baseDamageFor(material), GREATSWORD_ATTACK_SPEED, new Item.Properties()));
+	}
+
+	// The 1.20.1 `Tier`: `getLevel()` where 1.21 has `getIncorrectBlocksForDrops()`.
+	private static Tier scaledDurability(final Tier base, final int factor) {
+		return new Tier() {
+			@Override
+			public int getUses() {
+				return base.getUses() * factor;
+			}
+
+			@Override
+			public float getSpeed() {
+				return base.getSpeed();
+			}
+
+			@Override
+			public float getAttackDamageBonus() {
+				return base.getAttackDamageBonus();
+			}
+
+			@Override
+			public int getLevel() {
+				return base.getLevel();
+			}
+
+			@Override
+			public int getEnchantmentValue() {
+				return base.getEnchantmentValue();
+			}
+
+			@Override
+			public net.minecraft.world.item.crafting.Ingredient getRepairIngredient() {
+				return base.getRepairIngredient();
+			}
+		};
+	}
 	*///?}
 
 	/** A dagger's full swing damage (fist plus item), for Twin Fangs'
@@ -436,13 +524,20 @@ public final class ModItems {
 				new Item.Properties().setId(key), daggerDamageFor(material), DAGGER_ATTACK_SPEED);
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
-	//?} else {
+	//?} elif >=1.21 {
 	/*private static Item dagger(final String prefix, final Tier material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_dagger"));
 		Item.Properties properties = new Item.Properties()
 				.attributes(swordAttributes(material, daggerDamageFor(material), DAGGER_ATTACK_SPEED));
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new net.minecraft.world.item.SwordItem(material, properties));
+	}
+	*///?} else {
+	/*private static Item dagger(final String prefix, final Tier material) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_dagger"));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.LegacySword(material, daggerDamageFor(material),
+						DAGGER_ATTACK_SPEED, new Item.Properties()));
 	}
 	*///?}
 
@@ -499,7 +594,7 @@ public final class ModItems {
 						net.minecraft.util.Unit.INSTANCE)
 				.component(net.minecraft.core.component.DataComponents.TOOLTIP_DISPLAY, silentTooltip())
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
-		//?} else {
+		//?} elif >=1.21 {
 		/*Item.Properties properties = new Item.Properties()
 				.attributes(swordAttributes(Tiers.DIAMOND, SWORD_BASE_DAMAGE, -2.4F).withTooltip(false))
 				.stacksTo(1)
@@ -507,6 +602,19 @@ public final class ModItems {
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						new net.minecraft.world.item.component.Unbreakable(false))
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
+		*///?} else {
+		/*// No components at all below 1.21, so the three the arms above set move to where
+		// each of them lived then: the attribute block onto the item (items/LegacySword),
+		// unbreakability onto the ABSENCE of a durability (an item with max damage 0 is
+		// what `isDamageableItem` calls unbreakable — and the conjured weapon has no
+		// durability bar on any node), and the glint override has no legacy equivalent at
+		// all. The stack is enchanted with Sharpness on conjure, so it glints regardless;
+		// what is lost is the ability to turn that glint OFF, which the modern arm does
+		// not do either (it passes `false` for the sword only, matching vanilla's default
+		// for an unenchanted item).
+		Item.Properties properties = new Item.Properties()
+				.stacksTo(1)
+				.rarity(net.minecraft.world.item.Rarity.EPIC);
 		*///?}
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicSwordItem(properties));
@@ -522,13 +630,20 @@ public final class ModItems {
 						net.minecraft.util.Unit.INSTANCE)
 				.component(net.minecraft.core.component.DataComponents.TOOLTIP_DISPLAY, silentTooltip())
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
-		//?} else {
+		//?} elif >=1.21 {
 		/*Item.Properties properties = new Item.Properties()
 				.stacksTo(1)
 				.rarity(net.minecraft.world.item.Rarity.EPIC)
 				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
 						new net.minecraft.world.item.component.Unbreakable(false))
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		*///?} else {
+		/*// See the sword above: no components below 1.21. The bow's forced glint is the one
+		// thing that genuinely goes — a conjured bow carries no enchantment of its own, so
+		// it simply does not shimmer on this node.
+		Item.Properties properties = new Item.Properties()
+				.stacksTo(1)
+				.rarity(net.minecraft.world.item.Rarity.EPIC);
 		*///?}
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicBowItem(properties));
@@ -619,6 +734,7 @@ public final class ModItems {
 							output.accept(BREEZE_WAND);
 							output.accept(HOLY_WAND);
 							output.accept(ORACLE_WAND);
+							//? if >=1.21 {
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 									net.minecraft.world.item.Items.POTION, ManaPotions.MANA_RESTORE));
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
@@ -639,6 +755,32 @@ public final class ModItems {
 									net.minecraft.world.item.Items.POTION, AmnesiaPotions.AMNESIA));
 							output.accept(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 									net.minecraft.world.item.Items.POTION, AmnesiaPotions.STRONG_AMNESIA));
+							//?} else {
+							/*// STAGE 5: `PotionContents` is the 1.21 component and its `createItemStack`
+							// with it. Below that a potion stack is a plain stack with the potion
+							// written into its NBT, which is exactly what `PotionUtils.setPotion`
+							// does — vanilla's own creative tab builds its potions that way there.
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), ManaPotions.MANA_RESTORE.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), ManaPotions.STRONG_MANA_RESTORE.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), ManaPotions.MANA_REGENERATION.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), ManaPotions.STRONG_MANA_REGENERATION.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SPLASH_POTION), ManaPotions.MANA_RESTORE.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SPLASH_POTION), ManaPotions.STRONG_MANA_RESTORE.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SPLASH_POTION), ManaPotions.MANA_REGENERATION.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.SPLASH_POTION), ManaPotions.STRONG_MANA_REGENERATION.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), AmnesiaPotions.AMNESIA.value()));
+							output.accept(net.minecraft.world.item.alchemy.PotionUtils.setPotion(
+									new net.minecraft.world.item.ItemStack(net.minecraft.world.item.Items.POTION), AmnesiaPotions.STRONG_AMNESIA.value()));
+							*///?}
 							output.accept(SKILL_TOKEN);
 							output.accept(SKILL_TOKEN_60);
 							output.accept(SPELLCASTING_TOME_25);

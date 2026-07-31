@@ -310,11 +310,20 @@ public final class RadianceAura {
 			return;
 		}
 
+		//? if >=1.21 {
 		if (should && !attribute.hasModifier(STEADFAST_ID)) {
 			attribute.addTransientModifier(new AttributeModifier(STEADFAST_ID, 1.0,
 					AttributeModifier.Operation.ADD_VALUE));
 		} else if (!should && attribute.hasModifier(STEADFAST_ID)) {
 			attribute.removeModifier(STEADFAST_ID);
 		}
+		//?} else {
+		/*if (should && !LegacyAttributes.has(attribute, STEADFAST_ID)) {
+			attribute.addTransientModifier(LegacyAttributes.modifier(STEADFAST_ID, 1.0,
+					AttributeModifier.Operation.ADD_VALUE));
+		} else if (!should && LegacyAttributes.has(attribute, STEADFAST_ID)) {
+			LegacyAttributes.remove(attribute, STEADFAST_ID);
+		}
+		*///?}
 	}
 }
