@@ -11,8 +11,12 @@ completely.
 * `LevelRendererMixin` — `EntityRendererMixin`'s replacement, not its companion. Above
   1.21.11 one field is both the outline's ticket and its colour; below, those are two
   calls in `LevelRenderer.renderLevel` and both get wrapped there.
+* `GuiMixin` — the whole HUD registration path. fabric-rendering-v1 has no `hud` package
+  here, so `ArchetypesClient`'s eight `HudElementRegistry` calls have nowhere to go; this
+  anchors each of them on a vanilla `Gui` method instead. Distinct from `HudMixin`, which
+  also targets `Gui` on this node but only for the night form's grey hearts.
 
-Both classes sit inside a `//? if <1.21.11` block, so they are in no other node's jar; a
+All three classes sit inside a `//? if <1.21.11` block, so they are in no other node's jar; a
 mixin named in a config whose class is absent is a hard boot failure, which is exactly why
 they must NOT go in the shared config.
 

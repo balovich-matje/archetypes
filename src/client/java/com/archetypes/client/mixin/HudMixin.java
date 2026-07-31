@@ -3,7 +3,22 @@ package com.archetypes.client.mixin;
 import com.archetypes.client.UndeadHud;
 import com.llamalad7.mixinextras.injector.wrapoperation.Operation;
 import com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation;
+// STAGE 4 CORRECTION, and it is the kind of bug this whole gate exists to catch. Stage 4-B1
+// wrote the below-26.1 arm with the SIX-argument blitSprite — pipeline first — because that is
+// what 1.21.11 has. 1.21.1 does not: `GuiGraphics` there declares
+// `blitSprite(ResourceLocation, IIII)V` and no pipeline-taking overload at all, and its
+// `Gui.renderHeart` calls exactly that (`javap -c`, offset 21). A mixin `target =` is a STRING,
+// so javac saw nothing and the node compiled clean; it would have failed at apply time, at
+// boot, on the client only. So the chain gains a FOURTH arm at 1.21.11 and the handler's
+// parameter list forks with it.
+//
+// `com.mojang.blaze3d.pipeline.RenderPipeline` is a trap of its own on this node: the name
+// EXISTS on 1.21.1 but is a different class entirely (the old render-call recorder, with
+// `renderCalls`/`isRecording` fields). Importing it below the boundary would compile and mean
+// nothing, so the import is gated too.
+//? if >=1.21.11 {
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+//?}
 
 // THE HEART DRAW IS THE MOD'S MOST FORKED SINGLE HOOK, and after Stage 3 it is a THREE-arm
 // chain on two independent boundaries that happen to meet in one descriptor:
@@ -73,20 +88,35 @@ public abstract class HudMixin {
 					target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite("
 							+ "Lcom/mojang/blaze3d/pipeline/RenderPipeline;"
 							+ "Lnet/minecraft/resources/Identifier;IIII)V"))
-	*///?} else {
+	*///?} elif >=1.21.11 {
 	/*@WrapOperation(method = "renderHeart(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/gui/Gui$HeartType;IIZZZ)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite("
 							+ "Lcom/mojang/blaze3d/pipeline/RenderPipeline;"
 							+ "Lnet/minecraft/resources/Identifier;IIII)V"))
+	*///?} else {
+	/*@WrapOperation(method = "renderHeart(Lnet/minecraft/client/gui/GuiGraphics;Lnet/minecraft/client/gui/Gui$HeartType;IIZZZ)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite("
+							+ "Lnet/minecraft/resources/Identifier;IIII)V"))
 	*///?}
 	//? if >=26.1 {
 	private void archetypes$undeadHearts(final GuiGraphicsExtractor graphics,
-	//?} else {
-	/*private void archetypes$undeadHearts(final GuiGraphics graphics,
-	*///?}
 			final RenderPipeline pipeline, final Identifier sprite, final int x, final int y,
 			final int width, final int height, final Operation<Void> original) {
 		original.call(graphics, pipeline, UndeadHud.drain(sprite), x, y, width, height);
 	}
+	//?} elif >=1.21.11 {
+	/*private void archetypes$undeadHearts(final GuiGraphics graphics,
+			final RenderPipeline pipeline, final Identifier sprite, final int x, final int y,
+			final int width, final int height, final Operation<Void> original) {
+		original.call(graphics, pipeline, UndeadHud.drain(sprite), x, y, width, height);
+	}
+	*///?} else {
+	/*private void archetypes$undeadHearts(final GuiGraphics graphics,
+			final Identifier sprite, final int x, final int y,
+			final int width, final int height, final Operation<Void> original) {
+		original.call(graphics, UndeadHud.drain(sprite), x, y, width, height);
+	}
+	*///?}
 }

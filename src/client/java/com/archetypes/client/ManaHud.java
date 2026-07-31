@@ -46,6 +46,22 @@ public final class ManaHud {
 				&& ModState.get(client.player) == Archetype.INTELLECT;
 	}
 
+	// STAGE 4 — the mana row displaces vanilla's air bubbles, and from 1.21.11 up
+	// ArchetypesClient says so by wrapping the AIR_BAR element and translating it. Below the
+	// boundary there is no such element and the shift is applied by client/mixin/GuiMixin, in
+	// another package, which cannot see the package-private gate above. This is the seam, and
+	// it is declared inside the fork so no other node grows a member: prior-node instruction
+	// identity is the hard gate on this port.
+	//
+	// It returns the DISPLACEMENT rather than the flag so the caller needs no second branch,
+	// and so the "10" lives in exactly one place per node — the 26.x arm's own `-10.0F` is the
+	// other one, in ArchetypesClient, inside the matching half of the same fork.
+	//? if <1.21.11 {
+	/*public static int airBarShift() {
+		return visible() ? 10 : 0;
+	}
+	*///?}
+
 	//? if >=26.1 {
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
 	//?} else {

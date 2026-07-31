@@ -33,8 +33,16 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 //?} else {
 /*import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 *///?}
+// STAGE 4 — the `hud` package of fabric-rendering-v1 does not exist below 1.21.11
+// (0.116.14+1.21.1 ships fabric-rendering-v1 3.x), so there is nothing to register a HUD
+// element with and nothing to wrap a vanilla one with. All eight calls at the bottom of this
+// method move into `client/mixin/GuiMixin.java`, which maps each one onto a vanilla `Gui`
+// method by full descriptor. Read that file's header for the mapping; the DRAW code is the
+// same six shared render methods either way (conventions §5l).
+//? if >=1.21.11 {
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
+//?}
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.ChatFormatting;
@@ -66,8 +74,18 @@ public class ArchetypesClient implements ClientModInitializer {
 	static final KeyMapping[] ABILITY_KEYS = new KeyMapping[7];
 
 	/** Our own section in the controls screen, not vanilla's Gameplay. */
+	// STAGE 4, and this is the boundary §5k's warning above was written for: `KeyMapping.Category`
+	// is `>=1.21.11`, one step BELOW the `>=26.1` module rename on the adjacent lines. Below it
+	// the constructor's fourth argument is a raw translation KEY string. The key is the same
+	// either way — 1.21.11's `Category.label()` builds `key.category.<namespace>.<path>` from the
+	// Identifier, which is `key.category.archetypes.archetypes`, exactly the entry the lang file
+	// already carries — so nothing outside this declaration moves and no resource forks.
+	//? if >=1.21.11 {
 	private static final KeyMapping.Category KEY_CATEGORY =
 			KeyMapping.Category.register(com.archetypes.Archetypes.id("archetypes"));
+	//?} else {
+	/*private static final String KEY_CATEGORY = "key.category.archetypes.archetypes";
+	*///?}
 
 	/** Last archetype level seen, for the level-up toast; -1 = not yet
 	 * observed this session, so the join-time sync never toasts. */
@@ -155,11 +173,24 @@ public class ArchetypesClient implements ClientModInitializer {
 
 				if (lastLevel >= 0 && level > lastLevel) {
 					// 26.2 moved the toast manager onto the Gui object with it;
-					// 26.1 still answers Minecraft.getToastManager(). (Below
-					// 1.21.11 it is getToasts()/ToastComponent — Stage 4's fork.)
-					/*? if >=26.2 {*/client.gui.toastManager().addToast(new ArchetypeLevelUpToast(
-					/*?} else *///client.getToastManager().addToast(new ArchetypeLevelUpToast(
+					// 26.1 still answers Minecraft.getToastManager(). Below
+					// 1.21.11 it is getToasts(), returning a ToastComponent —
+					// same addToast(Toast), different accessor and different
+					// return type, which is why this is a three-arm chain and
+					// not two — and why it is written in BLOCK form: the
+					// one-line inline `elif` cannot chain (it closes the scope,
+					// so it can only ever be the last arm), which is the
+					// `Unmatched scope closer` the other repo measured.
+					//? if >=26.2 {
+					client.gui.toastManager().addToast(new ArchetypeLevelUpToast(
 							ModState.get(client.player), lastLevel, level));
+					//?} elif >=1.21.11 {
+					/*client.getToastManager().addToast(new ArchetypeLevelUpToast(
+							ModState.get(client.player), lastLevel, level));
+					*///?} else {
+					/*client.getToasts().addToast(new ArchetypeLevelUpToast(
+							ModState.get(client.player), lastLevel, level));
+					*///?}
 				}
 
 				lastLevel = level;
@@ -236,6 +267,13 @@ public class ArchetypesClient implements ClientModInitializer {
 		net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
 				ModEntities.SPELL_PROJECTILE, SpellProjectileRenderer::new);
 
+		// EVERYTHING FROM HERE TO THE END OF THE HUD BLOCK IS `>=1.21.11` ONLY. Below the
+		// boundary fabric-rendering-v1 has no `hud` package at all, so these eight calls have
+		// no counterpart to fork INTO — they move wholesale into client/mixin/GuiMixin.java,
+		// which anchors each of them on a vanilla `Gui` method by full descriptor. The six
+		// render methods they name are unchanged and are what that mixin calls, so this is a
+		// registration fork and nothing more (conventions §5l).
+		//? if >=1.21.11 {
 		// The centred bar of owned-active cooldowns, the proc flashes that
 		// fall from the crosshair, and the Seeker's mana bottles. All after
 		// HOTBAR so they draw on top.
@@ -309,6 +347,7 @@ public class ArchetypesClient implements ClientModInitializer {
 						*///?}
 					}
 				});
+		//?}
 
 		// Below 26.1 the remapping loom splits every split-environment mod jar and
 		// `src/main` sees the common half only, so two things it reaches — fabric-api's
