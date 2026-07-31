@@ -1743,6 +1743,87 @@ kind of 18), and the in-game pass that found it was run at ONE scale. **An in-ga
 to be run at more than one GUI scale to count** — scale 1, the authored scale, and the largest
 the window allows.
 
+#### 5.8.3 Stage 7, third in-game finding — **`blitSprite`'s six-argument form is two different calls**
+
+**Reported:** on `1.21.1-fabric`, Well Fed's banked-hunger halo — the bevelled silver ring
+`BankedHungerHud` draws around the drumsticks the bank is holding — does not render. 26.2 is in
+daily use and draws it.
+
+**Nothing about the anchor, the state or the sprite was wrong.** All four suspects cleared
+before the real one was found, and they are worth recording because the next report of "a HUD
+element is missing on a legacy node" will start at the same four:
+
+* **The anchor fires.** Stage 4-D5 replaced the eight `HudElementRegistry` calls with a client
+  `GuiMixin` on four vanilla anchors, and the halo's is the `@WrapMethod` on
+  `Gui.renderFood(GuiGraphics,Player,II)V`. That method exists on 1.21.1 (`javap -p -s`) and is
+  called unconditionally from `renderPlayerHealth` (offset 426), and `injectors.defaultRequire`
+  is 1, so a target that did not resolve would be a boot crash rather than a silent skip.
+* **The state is there.** The bank is server-side `FoodPropertiesMixin` raising `foodLevel` past
+  20 on the `>=1.20.5` arm, and `ClientboundSetHealthPacket` carries the raised number to the
+  owning client on every node.
+* **The sprite is there.** `processResources`' sprite relocation is gated `< 1.21`, so on this
+  node both rings ship at `textures/gui/sprites/hud/` — confirmed in the built jar — and a
+  sprite that failed to resolve would draw the missing-texture chequer, not nothing.
+* **Blend does not matter.** Vanilla's `renderFood` ends with `RenderSystem.disableBlend()`
+  (offset 198, unconditional), so our draw does run with blending off — but both rings are
+  hard-edged (alpha is 0 or 255 and nothing between, measured on the PNGs) and 1.21.1's
+  `position_tex.fsh` discards `a == 0.0`. The margin cannot show through.
+
+**The defect is one argument, and it is the shape `HudMixin`'s header already warned about.**
+Stage 4 wrote the 1.21.1 arm of the halo blit by taking the 1.21.11 call and dropping only the
+`RenderPipeline`, and left a comment asserting that "the sprite/x/y/w/h/colour tail is declared
+identically on both, tint included". It is not. Measured with `javap -c` on both mojmap jars:
+
+```
+1.21.11  blitSprite(RenderPipeline, Identifier, I,I,I,I,I)
+         four-int form appends iconst_m1        -> ints are (x, y, width, height, COLOUR)
+1.21.1   blitSprite(Identifier,               I,I,I,I,I)
+         four-int form inserts iconst_0 THIRD  -> ints are (x, y, Z, width, height)
+         private tail: if (width==0||height==0) return;
+                       innerBlit(atlas, x, x+width, y, y+height, z, u0,u1,v0,v1)
+```
+
+The colour parameter does not exist below 1.21.11; a **z offset** sits in the middle instead. So
+the copied-down call passed `RING_SPRITE` (11) as z and `NO_TINT` (`0xFFFFFFFF`, i.e. **-1**) as
+the height. A negative height clears the zero guard and reaches `innerBlit` with `y1 = y`,
+`y2 = y - 1` — an inverted quad one pixel tall with the whole 11x11 ring squeezed into it.
+Nothing readable is drawn, which is exactly how it was reported.
+
+**The fix is the four-int overload**, which is what vanilla's own `renderFood`, `renderArmor` and
+`renderHeart` call on this node and the same overload `HudMixin`'s legacy arm wraps. It passes
+z = 0 — the z the drumsticks under it are drawn at, and vanilla overdraws `food_full` on
+`food_empty` at that same z in the same loop — and the tint is dropped rather than moved:
+`NO_TINT` is white, and an untinted blit already draws white.
+
+**Also latently broken: `1.21.1-neoforge`.** `NeoForgeGuiMixin`'s food anchor is its own file but
+it calls the same shared `BankedHungerHud.render`, so the halo was dead on that node too and for
+the same instruction. No other node is affected — `>=1.21.11` uses the pipeline form (verified
+correct) and `<1.21` uses `blit(id, x, y, u, v, w, h, tw, th)`, whose 1.20.1 overload set has
+exactly one eight-int candidate, so it cannot silently resolve to a different one.
+
+**Gate, measured.** `26.2` / `26.1` / `1.21.11`: entries, resources and **all 244 / 244 / 250
+classes instruction-identical**. `1.20.1-fabric` (240) and `1.20.1-forge` (251) likewise
+unchanged. The two changed jars differ in exactly one class, `BankedHungerHud`, by exactly one
+instruction: `iconst_m1` removed and the call retargeted from the five-int overload to the
+four-int one (`method_52707` → `method_52706` after remap on Fabric — proof they are genuinely
+different methods, not one method read two ways).
+
+One footnote on that gate, because the jar SIZES did move by a byte on nodes with zero
+instruction changes and the next reader will notice: the fix carries a long comment, and adding
+comment lines shifts the **`LineNumberTable`** of everything below them. On 26.2 the whole
+`BankedHungerHud.class` delta is `line 155 → 182` and `line 170 → 197`, with the instruction
+stream identical — the same class of artefact as R-20's javac-17 caveat, and the reason §5.9's
+gate 1 compares instructions rather than bytes on *every* node, not only 1.20.1.
+
+**The lesson.** §5.8.1 was a phase and §5.8.2 was a unit; this one is an **arity**. An overload
+chain that keeps its name and its argument *count* across a boundary while changing what the
+arguments MEAN is invisible to javac, to the remapper and to every bytecode gate — the call
+compiles, resolves, remaps and executes. The rule this leaves behind: **when porting a call down
+a version boundary, decompile the overload that is actually being bound, not the one with the
+matching shape.** The repo has now been bitten by this exact family twice on `blitSprite` alone
+(the first is recorded in `HudMixin`'s header, where a six-argument target string was caught by
+the boot instead), and both times the tell was an argument list that still fit.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:

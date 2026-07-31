@@ -148,15 +148,42 @@ public final class BankedHungerHud {
 			int x = right - i * STEP - SPRITE;
 			Identifier ring = halfEdge && i == edge ? RING_HALF : RING;
 
-			// `blitSprite` loses only the pipeline argument — the sprite/x/y/w/h/colour tail
-			// is declared identically on both (`javap -p`), tint included, so this one needs
-			// no `setColor` dance.
+			// STAGE 7 CORRECTION — THE SIX-ARGUMENT `blitSprite` IS NOT THE SAME CALL ON BOTH
+			// SIDES OF 1.21.11, and this is the second time the port has been bitten by that
+			// exact shape (HudMixin's header records the first). Stage 4 wrote the 1.21.1 arm
+			// by dropping only the pipeline argument and claimed in this comment that "the
+			// sprite/x/y/w/h/colour tail is declared identically on both, tint included".
+			// It is not. Measured with `javap -c` on both mojmap jars:
+			//
+			//   1.21.11  blitSprite(RenderPipeline, Identifier, I, I, I, I, I)
+			//            -> the four-int form appends `iconst_m1`, so the ints are
+			//               (x, y, width, height, COLOUR).
+			//   1.21.1   blitSprite(Identifier, I, I, I, I, I)
+			//            -> the four-int form inserts `iconst_0` in THIRD place and the
+			//               private tail is `if (width == 0 || height == 0) return;
+			//               innerBlit(atlas, x, x + width, y, y + height, z, …)`, so the ints
+			//               are (x, y, Z, width, height) and there is NO colour parameter.
+			//
+			// So the copied-down call passed `RING_SPRITE` (11) as the z offset and
+			// `NO_TINT` (0xFFFFFFFF, i.e. -1) as the HEIGHT. A negative height clears the
+			// zero guard and reaches `innerBlit` with y1 = y, y2 = y - 1: an inverted quad one
+			// pixel tall with the whole 11x11 ring squeezed into it. Nothing readable is drawn
+			// — which is exactly how it was reported, "the halo does not render".
+			//
+			// The fix is the FOUR-int overload, which is what vanilla's own `renderFood`,
+			// `renderArmor` and `renderHeart` call on this node (`javap -c`, and it is the same
+			// overload `HudMixin`'s legacy arm wraps). It passes z = 0, the same z the
+			// drumsticks under it are drawn at, and the tint is dropped rather than moved:
+			// `NO_TINT` is white, and an untinted blit already draws white. The rings are
+			// hard-edged (alpha is 0 or 255 and nothing between — measured on both PNGs), and
+			// `position_tex.fsh` discards `a == 0.0`, so the blend state vanilla leaves behind
+			// at the end of `renderFood` cannot show through the margin either.
 			//? if >=1.21.11 {
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ring,
 					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE, NO_TINT);
 			//?} elif >=1.21 {
 			/*graphics.blitSprite(ring,
-					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE, NO_TINT);
+					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE);
 			*///?} else {
 			/*// R-17: below 1.21 there is no sprite atlas, so the two rings ship as ordinary
 			// textures (`processResources` moves them out of `textures/gui/sprites/` on this
