@@ -8,7 +8,16 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+// STAGE 6 — the loader-event helpers live in `com.archetypes.platform`, the one package
+// allowed to name loader API (conventions §5g). Only this import and the registration line
+// below fork; the tick body is one implementation on all seven nodes.
+//? if fabric {
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+//?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
+*///?}
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -79,10 +88,30 @@ public final class OracleStrikes {
 	public static void initialize() {
 		// The list is static but a schedule is per-server: entries must not
 		// survive into the next singleplayer world and fire on a stale level.
+		// STOPPING, not STOPPED, and the distinction is the contract: the schedule has to be
+		// dropped while the server is still the one that owns it. A loader helper that fired
+		// after the fact would leave one tick in which a pending strike could resolve against a
+		// level that is already going away.
+		//? if fabric {
 		net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents.SERVER_STOPPING
 				.register(server -> PENDING.clear());
+		//?} elif neoforge {
+		/*NeoForgeEvents.serverStopping(server -> PENDING.clear());
+		*///?} elif forge {
+		/*ForgeEvents.serverStopping(server -> PENDING.clear());
+		*///?}
 
+		// Registration only; the body below is shared. A loader helper fires its consumer ONCE
+		// per server tick, at the END of it, with the `MinecraftServer` — the END_SERVER_TICK
+		// contract, which is what R-20 says a re-rooted event has to reproduce rather than
+		// merely fire somewhere plausible.
+		//? if fabric {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+		//?} elif neoforge {
+		/*NeoForgeEvents.endServerTick(server -> {
+		*///?} elif forge {
+		/*ForgeEvents.endServerTick(server -> {
+		*///?}
 			if (PENDING.isEmpty()) {
 				return;
 			}

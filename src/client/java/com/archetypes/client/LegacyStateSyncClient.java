@@ -31,7 +31,10 @@ package com.archetypes.client;
 //
 // Class doc kept as LINE comments on purpose: a `*/` inside a disabled `//?` branch would
 // close Stonecutter's own comment early (Stage-2 finding).
-//? if <1.20.5 {
+// STAGE 6 SCOPED IT TO FABRIC. Its whole body is `ClientPlayNetworking`, and the server half it
+// listens to is scoped the same way — see `platform/LegacyStateSync`, which records what
+// 1.20.1-forge owes here and why it is Stage 6b's work rather than this commit's.
+//? if fabric && <1.20.5 {
 /*import com.archetypes.platform.LegacyStateSync;
 
 import io.netty.buffer.Unpooled;

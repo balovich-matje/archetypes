@@ -18,7 +18,20 @@ package com.archetypes.platform;
  */
 public interface Platform {
 	// Same three-arm BLOCK chain as the other two seams; see ArchetypeStore.
+	//
+	// The form is BLOCK and not the maintained template's one-line inline `elif`, and that is
+	// measured rather than stylistic: a single-line `elif` CLOSES the block, so it can only ever
+	// be the last arm and a second one fails preprocessing with "Unmatched scope closer".
+	// Chains of three arms are block-form only. No directive token is written out in the javadoc
+	// above for the related reason that Stonecutter scans javadoc like any other text — a sample
+	// directive in a comment is a live directive.
+	//? if fabric {
 	Platform INSTANCE = new FabricPlatform();
+	//?} elif neoforge {
+	/*Platform INSTANCE = new NeoForgePlatform();
+	*///?} elif forge {
+	/*Platform INSTANCE = new ForgePlatform();
+	*///?}
 
 	/**
 	 * True if a mod with this id is loaded.

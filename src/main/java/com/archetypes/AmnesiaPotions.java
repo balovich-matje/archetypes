@@ -1,10 +1,20 @@
 package com.archetypes;
 
 // The same rename as ManaPotions' — see the note there.
-//? if >=26.1 {
+// STAGE 6: `fabric &&` on the two upper arms, and THE LOADER ARMS COME BEFORE THE `else`. Both
+// halves were a real bug for one build: without the scoping, 1.21.1-neoforge satisfied
+// `>=1.20.5` and generated a LIVE `import …FabricBrewingRecipeRegistryBuilder` it has no
+// classpath for; and an `elif` written after an `else` is dead by construction. Neither is
+// visible on any Fabric node — the generated sources of the two loader nodes are the only
+// place that can say so, which is why they are read line by line at every stage.
+//? if fabric && >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
-//?} elif >=1.20.5 {
+//?} elif fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
+*///?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
 *///?} else {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry;
 *///?}
@@ -63,16 +73,22 @@ public final class AmnesiaPotions {
 
 	public static void initialize() {
 		// The third arm — see ManaPotions for the measurement.
-		//? if >=26.1 {
+		// STAGE 6 — the fourth arm; see ManaPotions for why the loader axis shares one copy of
+		// the table through `platform/BrewingSink`.
+		//? if fabric && >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA);
 			builder.registerPotionRecipe(AMNESIA, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA);
 		});
-		//?} elif >=1.20.5 {
+		//?} elif fabric && >=1.20.5 {
 		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA);
 			builder.registerPotionRecipe(AMNESIA, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA);
 		});
+		*///?} elif neoforge {
+		/*NeoForgeEvents.brewingRecipes(AmnesiaPotions::brew);
+		*///?} elif forge {
+		/*ForgeEvents.brewingRecipes(AmnesiaPotions::brew);
 		*///?} else {
 		/*FabricBrewingRecipeRegistry.registerPotionRecipe(
 				Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA.value());
@@ -80,6 +96,15 @@ public final class AmnesiaPotions {
 				AMNESIA.value(), Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA.value());
 		*///?}
 	}
+
+	// The two mixes, once, for the whole loader axis. Keep in step with the Fabric arms above.
+	//? if fabric {
+	//?} else {
+	/*public static void brew(final com.archetypes.platform.BrewingSink out) {
+		out.mix(Potions.AWKWARD, Items.RED_MUSHROOM, AMNESIA);
+		out.mix(AMNESIA, Items.GLOWSTONE_DUST, STRONG_AMNESIA);
+	}
+	*///?}
 
 	private static final class AmnesiaEffect extends InstantaneousMobEffect {
 		private AmnesiaEffect(final MobEffectCategory category, final int color) {

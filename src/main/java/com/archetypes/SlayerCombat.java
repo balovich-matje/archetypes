@@ -4,7 +4,14 @@ import java.util.List;
 
 import com.archetypes.platform.ArchetypeStore;
 
+// STAGE 6 — see AgilityCombat for the rule: only the imports and the registration lines fork.
+//? if fabric {
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+//?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
+*///?}
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,9 +41,31 @@ public final class SlayerCombat {
 		// fabric-api 0.92.11 has no AFTER_DAMAGE; platform/LegacyDamageEvents is the same
 		// five-parameter shape, fired from LivingEntityMixin at the site and with the
 		// guards fabric-api's own implementation uses.
-		//? if >=1.20.5 {
+		// STAGE 6 widened this from `>=1.20.5` to `fabric && >=1.20.5`, which is the SAME
+		// fabric-api boundary scoped to the loader that has the API (conventions §5k), not a new
+		// one. Three arms, and which node lands where is the whole point:
+		//
+		//   fabric && >=1.20.5   the real event.
+		//   neoforge             1.21.1-neoforge is >=1.20.5 and has no such event, so it needs
+		//                        a helper of its own. Its natural host is `LivingDamageEvent.Post`
+		//                        and the three semantics below are what it owes.
+		//   else                 fabric <1.20.5 AND 1.20.1-forge. Both land on
+		//                        `platform/LegacyDamageEvents`, which is a whole-file `<1.20.5`
+		//                        unit and is therefore present on both — and both get it FIRED by
+		//                        the same shared `LivingEntityMixin.archetypes$afterDamage`, on
+		//                        the same `hurt(DamageSource,F)Z`. The Forge node inherits the
+		//                        substitute for free; it needs no code at all here.
+		//
+		// THE THREE SEMANTICS A SUBSTITUTE OWES (R-20, and Skill Proficiencies got each of them
+		// wrong once): the amount is POST-shield/freezing and PRE-armour; it must not fire on a
+		// killing blow; and it must fire for PLAYERS, which a hook on `actuallyHurt` does not.
+		// The consumer's own two filters — positive damage, not blocked — are the first line of
+		// the shared body below and are passed through, not re-decided.
+		//? if fabric && >=1.20.5 {
 		ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, baseDamage, taken, blocked) -> {
-		//?} else {
+		//?} elif neoforge {
+		/*NeoForgeEvents.afterDamage((entity, source, baseDamage, taken, blocked) -> {
+		*///?} else {
 		/*com.archetypes.platform.LegacyDamageEvents.register((entity, source, baseDamage, taken, blocked) -> {
 		*///?}
 			if (blocked || taken <= 0 || !(source.getDirectEntity() instanceof ServerPlayer player)) {
@@ -95,7 +124,19 @@ public final class SlayerCombat {
 			}
 		});
 
+		// Registration only; the body is shared. Skill Proficiencies has no AFTER_DEATH at all,
+		// so this contract is written down rather than inherited: fire ONCE per entity death,
+		// server-side, AFTER the death is final, with the entity and the `DamageSource`. Both
+		// loaders' natural host is `LivingDeathEvent` — the same event their `allowDeath` uses —
+		// so the helper has to distinguish "post" from "veto" and must not fire the post arm when
+		// the death was cancelled.
+		//? if fabric {
 		ServerLivingEntityEvents.AFTER_DEATH.register((entity, source) -> {
+		//?} elif neoforge {
+		/*NeoForgeEvents.afterDeath((entity, source) -> {
+		*///?} elif forge {
+		/*ForgeEvents.afterDeath((entity, source) -> {
+		*///?}
 			if (!(source.getEntity() instanceof ServerPlayer player)
 					|| !MeleeSwing.isSwinging(player)) {
 				return;

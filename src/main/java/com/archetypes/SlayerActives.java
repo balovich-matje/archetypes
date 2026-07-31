@@ -6,7 +6,16 @@ import java.util.List;
 
 import com.archetypes.platform.ArchetypeStore;
 
+// STAGE 6 — the loader-event helpers live in `com.archetypes.platform`, the one package
+// allowed to name loader API (conventions §5g). Only this import and the registration line
+// below fork; the tick body is one implementation on all seven nodes.
+//? if fabric {
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+//?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
+*///?}
 import net.minecraft.world.entity.Entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -51,7 +60,17 @@ public final class SlayerActives {
 	/** Registered from {@code Archetypes.onInitialize}: drains {@link #PENDING},
 	 * paints the wind-up, and lands the blow. */
 	public static void initialize() {
+		// Registration only; the body below is shared. A loader helper fires its consumer ONCE
+		// per server tick, at the END of it, with the `MinecraftServer` — the END_SERVER_TICK
+		// contract, which is what R-20 says a re-rooted event has to reproduce rather than
+		// merely fire somewhere plausible.
+		//? if fabric {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
+		//?} elif neoforge {
+		/*NeoForgeEvents.endServerTick(server -> {
+		*///?} elif forge {
+		/*ForgeEvents.endServerTick(server -> {
+		*///?}
 			if (PENDING.isEmpty()) {
 				return;
 			}

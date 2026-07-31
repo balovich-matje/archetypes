@@ -6,10 +6,20 @@ package com.archetypes;
 // fabric-content-registries-v0 11.3.0 and 1.21.11's 10.2.14), so the lambda below is shared.
 // The third arm — `FabricBrewingRecipeRegistry`, no builder at all — is 0.92.11's and lands
 // at Stage 5.
-//? if >=26.1 {
+// STAGE 6: `fabric &&` on the two upper arms, and THE LOADER ARMS COME BEFORE THE `else`. Both
+// halves were a real bug for one build: without the scoping, 1.21.1-neoforge satisfied
+// `>=1.20.5` and generated a LIVE `import …FabricBrewingRecipeRegistryBuilder` it has no
+// classpath for; and an `elif` written after an `else` is dead by construction. Neither is
+// visible on any Fabric node — the generated sources of the two loader nodes are the only
+// place that can say so, which is why they are read line by line at every stage.
+//? if fabric && >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
-//?} elif >=1.20.5 {
+//?} elif fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
+*///?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
 *///?} else {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistry;
 *///?}
@@ -62,7 +72,16 @@ public final class ManaPotions {
 		// has no builder and no BUILD event at all — `FabricBrewingRecipeRegistry` is a pair
 		// of static methods, called at init, taking bare `Potion`s. Same four recipes, same
 		// ingredients, same order; only the vocabulary moves.
-		//? if >=26.1 {
+		// STAGE 6 — the loader axis takes a FOURTH arm and it carries no recipe data of its
+		// own: `brew` below is the one copy of the table for both loaders, handed to a helper
+		// through `platform/BrewingSink`. Read that file for why it exists rather than a fifth
+		// and sixth transcription of the same mixes.
+		//
+		// What a loader helper owes: register these mixes ONCE, during the loader's brewing
+		// registration window (`RegisterBrewingRecipesEvent` on NeoForge,
+		// `BrewingRecipeRegistry.addRecipe` from a common-setup enqueue on LexForge), and treat
+		// the ingredient `Item` as a single-item ingredient.
+		//? if fabric && >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE);
 			builder.registerPotionRecipe(MANA_RESTORE, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE);
@@ -70,7 +89,7 @@ public final class ManaPotions {
 			builder.registerPotionRecipe(MANA_REGENERATION, Ingredient.of(Items.GLOWSTONE_DUST),
 					STRONG_MANA_REGENERATION);
 		});
-		//?} elif >=1.20.5 {
+		//?} elif fabric && >=1.20.5 {
 		/*FabricBrewingRecipeRegistryBuilder.BUILD.register(builder -> {
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE);
 			builder.registerPotionRecipe(MANA_RESTORE, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE);
@@ -78,6 +97,10 @@ public final class ManaPotions {
 			builder.registerPotionRecipe(MANA_REGENERATION, Ingredient.of(Items.GLOWSTONE_DUST),
 					STRONG_MANA_REGENERATION);
 		});
+		*///?} elif neoforge {
+		/*NeoForgeEvents.brewingRecipes(ManaPotions::brew);
+		*///?} elif forge {
+		/*ForgeEvents.brewingRecipes(ManaPotions::brew);
 		*///?} else {
 		/*FabricBrewingRecipeRegistry.registerPotionRecipe(
 				Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE.value());
@@ -89,4 +112,17 @@ public final class ManaPotions {
 				Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_REGENERATION.value());
 		*///?}
 	}
+
+	// The four mixes, once, for the whole loader axis. Same bases, same ingredients, same
+	// order as every Fabric arm above — keep them in step, and if a fifth mix is ever added it
+	// belongs in all of them.
+	//? if fabric {
+	//?} else {
+	/*public static void brew(final com.archetypes.platform.BrewingSink out) {
+		out.mix(Potions.AWKWARD, Items.LAPIS_LAZULI, MANA_RESTORE);
+		out.mix(MANA_RESTORE, Items.GLOWSTONE_DUST, STRONG_MANA_RESTORE);
+		out.mix(Potions.AWKWARD, Items.AMETHYST_SHARD, MANA_REGENERATION);
+		out.mix(MANA_REGENERATION, Items.GLOWSTONE_DUST, STRONG_MANA_REGENERATION);
+	}
+	*///?}
 }

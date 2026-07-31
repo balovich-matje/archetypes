@@ -15,8 +15,26 @@ import com.archetypes.platform.Platform;
 
 import com.mojang.blaze3d.platform.InputConstants;
 
+// THE CLIENT SEAM IS THIS FILE, and on the loader axis it stays this file. A client-side helper
+// is unavoidable rather than a `platform` seam member: `com.archetypes.platform` lives in
+// `src/main`, which cannot see `net.minecraft.client` at all (measured — read
+// `platform/ClientNetHooks`' header for the three dependency reports that proved it). So the
+// loader helpers are `client/NeoForgeClientEvents` and `client/ForgeClientEvents`, in this same
+// package, and every node script excludes the other loader's by anchored glob.
+//
+// Only the WIRING forks. Every line of UI logic, every anchor formula, the toast gate and the
+// eight ability-key rules stay outside every conditional — §5a applied to events instead of to
+// mixins, which is what keeps one implementation on all seven nodes.
+//
+// SKILL PROFICIENCIES' THREE CLIENT HELPERS ARE REUSED UNCHANGED (afterScreenInit, addWidget,
+// afterScreenTick — the bookmark surface is the same one). FIVE MORE ARE NEW HERE AND HAVE NO
+// PRECEDENT NEXT DOOR AT ALL: a client tick, key-mapping registration, an entity-renderer
+// registration, a particle-provider registration, and — on the two nodes below 1.21.11 — the
+// HUD, which is not a helper but `client/mixin/GuiMixin` (R-11).
+//? if fabric {
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+//?}
 // 26.1 renamed the MODULE and the class with it: `fabric-key-binding-api-v1` /
 // `client.keybinding.v1.KeyBindingHelper.registerKeyBinding` became
 // `fabric-key-mapping-api-v1` / `client.keymapping.v1.KeyMappingHelper.registerKeyMapping`.
@@ -28,9 +46,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 // `Category` record with `register(Identifier)`), so the `new KeyMapping(...)` below is
 // SHARED on this node and only breaks at Stage 4. Collapsing the two into one predicate is
 // exactly the bug §5k describes.
-//? if >=26.1 {
+//? if fabric && >=26.1 {
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-//?} else {
+//?} elif fabric {
 /*import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 *///?}
 // STAGE 4 — the `hud` package of fabric-rendering-v1 does not exist below 1.21.11
@@ -43,8 +61,10 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 //?}
+//? if fabric {
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
+//?}
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -57,7 +77,19 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import org.lwjgl.glfw.GLFW;
 
+// Only the declaration forks — the same shape `Archetypes` uses, for the same reason. On the
+// loader axis `onInitializeClient()` is a plain public method the node's client-setup hook
+// calls, and THE FORGE LESSON IS THAT THIS IS EASY TO FORGET: Skill Proficiencies shipped its
+// 1.20.1-forge jar with every client helper present and NOTHING invoking them, because no
+// bootstrap existed. The fix there was `@Mod.EventBusSubscriber(Dist.CLIENT, bus = MOD)` plus
+// an `FMLClientSetupEvent` subscriber — and the `@SubscribeEvent` method MUST be public, or it
+// silently never fires. That is a runtime-only bug on the node with the most client surface in
+// this repo.
+//? if fabric {
 public class ArchetypesClient implements ClientModInitializer {
+//?} else {
+/*public class ArchetypesClient {
+*///?}
 	private static final int BUTTON_SIZE = 20;
 	/**
 	 * When Specialities is installed its "S" button owns the top slot beside the
@@ -105,7 +137,9 @@ public class ArchetypesClient implements ClientModInitializer {
 	 * Clicks made while the key was already down are dropped here. */
 	private static final boolean[] ABILITY_KEY_HELD = new boolean[ABILITY_KEYS.length];
 
+	//? if fabric {
 	@Override
+	//?}
 	public void onInitializeClient() {
 		//? if >=1.21 {
 		SlayerAnimations.initialize();
@@ -121,12 +155,22 @@ public class ArchetypesClient implements ClientModInitializer {
 		// `ParticleProviderRegistry` (and `PendingParticleFactory` -> `PendingParticleProvider`).
 		// `getInstance()` and both `register` overloads are shape-identical (`javap` on
 		// fabric-particles-v1 5.0.18 and 4.2.12), so the constructor reference is shared.
-		//? if >=26.1 {
+		// Registration only; the provider reference is shared. A loader helper registers the
+		// same `(ParticleType, provider factory)` pair from `RegisterParticleProvidersEvent` on
+		// the MOD event bus, client side only.
+		//? if fabric && >=26.1 {
 		net.fabricmc.fabric.api.client.particle.v1.ParticleProviderRegistry.getInstance()
-		//?} else {
-		/*net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry.getInstance()
-		*///?}
 				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
+		//?} elif fabric {
+		/*net.fabricmc.fabric.api.client.particle.v1.ParticleFactoryRegistry.getInstance()
+				.register(com.archetypes.ModParticles.GREATSWORD_SWEEP, GreatswordSweepParticle.Provider::new);
+		*///?} elif neoforge {
+		/*NeoForgeClientEvents.particleProvider(com.archetypes.ModParticles.GREATSWORD_SWEEP,
+				GreatswordSweepParticle.Provider::new);
+		*///?} elif forge {
+		/*ForgeClientEvents.particleProvider(com.archetypes.ModParticles.GREATSWORD_SWEEP,
+				GreatswordSweepParticle.Provider::new);
+		*///?}
 
 		// Rebindable slot keys — what a slot casts depends on the archetype,
 		// and the server resolves that; the cooldown bar shows each slot's
@@ -135,16 +179,43 @@ public class ArchetypesClient implements ClientModInitializer {
 				GLFW.GLFW_KEY_N, GLFW.GLFW_KEY_M, GLFW.GLFW_KEY_J };
 
 		for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
-			//? if >=26.1 {
+			// Registration only — the `new KeyMapping(...)` below it, its `>=1.21.11` category
+			// fork and the seven defaults are all shared. A loader helper registers the mapping
+			// with `RegisterKeyMappingsEvent` on the MOD event bus and RETURNS THE SAME
+			// INSTANCE, which is what the array assignment depends on: everything downstream
+			// polls `ABILITY_KEYS[slot].isDown()`/`consumeClick()`, so a helper that registered
+			// a copy would leave seven keys that are bound in the controls screen and dead in
+			// game.
+			//? if fabric && >=26.1 {
 			ABILITY_KEYS[slot] = KeyMappingHelper.registerKeyMapping(new KeyMapping(
-			//?} else {
+			//?} elif fabric {
 			/*ABILITY_KEYS[slot] = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+			*///?} elif neoforge {
+			/*ABILITY_KEYS[slot] = NeoForgeClientEvents.registerKeyMapping(new KeyMapping(
+			*///?} elif forge {
+			/*ABILITY_KEYS[slot] = ForgeClientEvents.registerKeyMapping(new KeyMapping(
 			*///?}
 					"key.archetypes.ability_" + (slot + 1), InputConstants.Type.KEYSYM, defaults[slot],
 					KEY_CATEGORY));
 		}
 
+		// THE BIGGEST NEW CLIENT SEAM, and Skill Proficiencies has no client tick event at all —
+		// there is nothing to copy. Registration only; the whole body below (the ability-key
+		// poll with its GLFW auto-repeat guard, the level-up toast, the flamethrower channel and
+		// the three sprint-key edges) is shared.
+		//
+		// What a loader helper owes: fire ONCE per client tick, at the END of it, with the
+		// `Minecraft`. On NeoForge that is `ClientTickEvent.Post`; on LexForge it is
+		// `TickEvent.ClientTickEvent` AND THE PHASE MUST BE CHECKED — that event fires twice per
+		// tick, START and END, and firing on both would double every `consumeClick` drain and
+		// send two payloads per press.
+		//? if fabric {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.endClientTick(client -> {
+		*///?} elif forge {
+		/*ForgeClientEvents.endClientTick(client -> {
+		*///?}
 			for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
 				boolean held = ABILITY_KEYS[slot].isDown();
 				boolean clicked = false;
@@ -266,8 +337,16 @@ public class ArchetypesClient implements ClientModInitializer {
 
 		// Seeker spells render as thrown items — the projectile carries which,
 		// and empowered missiles come out half again bigger.
+		// Registration only. A loader helper registers the same pair from
+		// `EntityRenderersEvent.RegisterRenderers` on the MOD event bus.
+		//? if fabric {
 		net.fabricmc.fabric.api.client.rendering.v1.EntityRendererRegistry.register(
 				ModEntities.SPELL_PROJECTILE, SpellProjectileRenderer::new);
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.entityRenderer(ModEntities.SPELL_PROJECTILE, SpellProjectileRenderer::new);
+		*///?} elif forge {
+		/*ForgeClientEvents.entityRenderer(ModEntities.SPELL_PROJECTILE, SpellProjectileRenderer::new);
+		*///?}
 
 		// EVERYTHING FROM HERE TO THE END OF THE HUD BLOCK IS `>=1.21.11` ONLY. Below the
 		// boundary fabric-rendering-v1 has no `hud` package at all, so these eight calls have
@@ -393,7 +472,17 @@ public class ArchetypesClient implements ClientModInitializer {
 					});
 				}));
 
+		// Registration only — every line of the tab and button construction below is shared,
+		// including its `>=26.2` screen-management fork. Skill Proficiencies' three client
+		// helpers are reused here unchanged: a listener taking the same four parameters in the
+		// same order (Minecraft, Screen, int, int), firing AFTER the screen's widgets exist.
+		//? if fabric {
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.afterScreenInit((client, screen, scaledWidth, scaledHeight) -> {
+		*///?} elif forge {
+		/*ForgeClientEvents.afterScreenInit((client, screen, scaledWidth, scaledHeight) -> {
+		*///?}
 			if (screen instanceof InventoryScreen) {
 				// Survival inventory: a bookmark on the top edge, clear of
 				// the effect list vanilla draws to the panel's right. The
@@ -404,13 +493,29 @@ public class ArchetypesClient implements ClientModInitializer {
 				anchorTab((AbstractContainerScreen<?>) screen, tab);
 				// `Screens.getButtons` was renamed `getWidgets` at 26.1 — same list, same
 				// element type (measured on fabric-screen-api-v1 3.1.7 and 5.1.0).
-				//? if >=26.1 {
+				// The loader helper adds the widget to the screen's own renderable+event lists;
+				// it is the one call here with no vanilla equivalent, since
+				// `Screen.addRenderableWidget` is protected.
+				//? if fabric && >=26.1 {
 				Screens.getWidgets(screen).add(tab);
-				//?} else {
+				//?} elif fabric {
 				/*Screens.getButtons(screen).add(tab);
+				*///?} elif neoforge {
+				/*NeoForgeClientEvents.addWidget(screen, tab);
+				*///?} elif forge {
+				/*ForgeClientEvents.addWidget(screen, tab);
 				*///?}
 
+				// The re-anchor is not cosmetic: the recipe book shifts `leftPos` without
+				// re-running init, so a helper that fired only once would leave the bookmark
+				// behind the panel the first time the book is opened.
+				//? if fabric {
 				ScreenEvents.afterTick(screen).register(s -> {
+				//?} elif neoforge {
+				/*NeoForgeClientEvents.afterScreenTick(screen, s -> {
+				*///?} elif forge {
+				/*ForgeClientEvents.afterScreenTick(screen, s -> {
+				*///?}
 					anchorTab((AbstractContainerScreen<?>) s, tab);
 					tab.setMessage(tabLabel(client));
 				});
@@ -423,13 +528,23 @@ public class ArchetypesClient implements ClientModInitializer {
 						.tooltip(Tooltip.create(Component.translatable("screen.archetypes.button")))
 						.build();
 				anchorButton((AbstractContainerScreen<?>) screen, button);
-				//? if >=26.1 {
+				//? if fabric && >=26.1 {
 				Screens.getWidgets(screen).add(button);
-				//?} else {
+				//?} elif fabric {
 				/*Screens.getButtons(screen).add(button);
+				*///?} elif neoforge {
+				/*NeoForgeClientEvents.addWidget(screen, button);
+				*///?} elif forge {
+				/*ForgeClientEvents.addWidget(screen, button);
 				*///?}
 
+				//? if fabric {
 				ScreenEvents.afterTick(screen).register(s -> {
+				//?} elif neoforge {
+				/*NeoForgeClientEvents.afterScreenTick(screen, s -> {
+				*///?} elif forge {
+				/*ForgeClientEvents.afterScreenTick(screen, s -> {
+				*///?}
 					anchorButton((AbstractContainerScreen<?>) s, button);
 					button.setMessage(label(client));
 				});

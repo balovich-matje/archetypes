@@ -9,10 +9,17 @@ import com.archetypes.items.SkillTokenItem;
 // the MODULE at the same boundary. Only the two head lines and the builder call fork; every
 // `output.accept(...)` below is shared, because both callback types implement vanilla's
 // `CreativeModeTab.Output` and inherit the same `accept(ItemLike)` (measured on both jars).
-//? if >=26.1 {
+// STAGE 6: both loaders hand their creative-tab callback a `BuildCreativeModeTabContentsEvent`,
+// which `implements CreativeModeTab.Output` on each — so the accepts stay outside the
+// conditional there too and only the two registration lines fork.
+//? if fabric && >=26.1 {
 import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
-//?} else {
+//?} elif fabric {
 /*import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
+*///?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
 *///?}
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -662,22 +669,34 @@ public final class ModItems {
 	}
 
 	public static void initialize() {
-		//? if >=26.1 {
+		// Registration only — the three accepts are shared. A loader helper takes
+		// (ResourceKey<CreativeModeTab>, Consumer<CreativeModeTab.Output>) and must fire once for
+		// that tab, on the MOD event bus.
+		//? if fabric && >=26.1 {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
 				.register(output -> {
-		//?} else {
+		//?} elif fabric {
 		/*ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.TOOLS_AND_UTILITIES)
 				.register(output -> {
+		*///?} elif neoforge {
+		/*NeoForgeEvents.creativeTabOutput(CreativeModeTabs.TOOLS_AND_UTILITIES, output -> {
+		*///?} elif forge {
+		/*ForgeEvents.creativeTabOutput(CreativeModeTabs.TOOLS_AND_UTILITIES, output -> {
 		*///?}
 					output.accept(SKILL_TOKEN);
 					output.accept(SPELLCASTING_TOME_25);
 					output.accept(SPELLCASTING_TOME_100);
 				});
 
-		//? if >=26.1 {
+		// Registration only; the twenty-two accepts below are shared.
+		//? if fabric && >=26.1 {
 		CreativeModeTabEvents.modifyOutputEvent(CreativeModeTabs.COMBAT).register(output -> {
-		//?} else {
+		//?} elif fabric {
 		/*ItemGroupEvents.modifyEntriesEvent(CreativeModeTabs.COMBAT).register(output -> {
+		*///?} elif neoforge {
+		/*NeoForgeEvents.creativeTabOutput(CreativeModeTabs.COMBAT, output -> {
+		*///?} elif forge {
+		/*ForgeEvents.creativeTabOutput(CreativeModeTabs.COMBAT, output -> {
 		*///?}
 			output.accept(WOODEN_GREATSWORD);
 			output.accept(STONE_GREATSWORD);
@@ -706,10 +725,25 @@ public final class ModItems {
 				net.minecraft.resources.ResourceKey.create(Registries.CREATIVE_MODE_TAB,
 						Archetypes.id("archetypes"));
 		Registry.register(BuiltInRegistries.CREATIVE_MODE_TAB, tabKey,
-				//? if >=26.1 {
+				// The BUILDER call only; every line of the chain below it — title, icon and the
+				// whole `displayItems` body — is shared, which is what matters: that body is the
+				// tab's CONTENTS.
+				//
+				// Both fabric-api helpers exist to hand back a `CreativeModeTab.Builder` without
+				// vanilla's `(Row, int column)` arguments, which are meaningless for a tab that
+				// is not one of vanilla's own. Both loaders are believed to patch a no-arg
+				// `CreativeModeTab.builder()` in for the same reason — BELIEVED, not measured,
+				// so it goes through a helper rather than being written here as fact. If the
+				// no-arg overload is there, each helper is a one-line `return
+				// CreativeModeTab.builder();`.
+				//? if fabric && >=26.1 {
 				net.fabricmc.fabric.api.creativetab.v1.FabricCreativeModeTab.builder()
-				//?} else {
+				//?} elif fabric {
 				/*net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroup.builder()
+				*///?} elif neoforge {
+				/*NeoForgeEvents.creativeTabBuilder()
+				*///?} elif forge {
+				/*ForgeEvents.creativeTabBuilder()
 				*///?}
 						.title(net.minecraft.network.chat.Component.translatable("itemGroup.archetypes.archetypes"))
 						.icon(() -> new net.minecraft.world.item.ItemStack(MAGIC_WAND))

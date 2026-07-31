@@ -36,7 +36,14 @@ package com.archetypes.platform;
 //
 // Class doc kept as LINE comments on purpose: a `*/` inside a disabled `//?` branch would
 // close Stonecutter's own comment early (Stage-2 finding).
-//? if <26.1 {
+// STAGE 6 SCOPED IT TO FABRIC. `<26.1` is true on BOTH loader nodes, and this file is not a
+// version workaround — it is a workaround for a FABRIC BUILD FACT (fabric-loom-remap honouring
+// `Fabric-Loom-Split-Environment`, measured above). Neither loader splits its dev jar, and the
+// only consumer of these hooks is `FabricNet`, which those nodes exclude from the source set
+// by glob. Leaving the predicate at `<26.1` would put a dead class in both loader jars for a
+// build fact neither of them has. `fabric &&` is the same boundary scoped to the loader that
+// owns it (conventions §5k), not a new one.
+//? if fabric && <26.1 {
 /*import java.util.function.Consumer;
 
 //? if >=1.20.5 {

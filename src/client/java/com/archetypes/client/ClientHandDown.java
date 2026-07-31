@@ -18,7 +18,9 @@ package com.archetypes.client;
 //
 // Class doc kept as LINE comments on purpose: a `*/` inside a disabled `//?` branch would
 // close Stonecutter's own comment early (Stage-2 finding).
-//? if <26.1 {
+// STAGE 6 SCOPED IT TO FABRIC, for the reason written out in `platform/ClientNetHooks`: this
+// is a fabric-loom split-jar workaround, not a version one, and neither loader splits.
+//? if fabric && <26.1 {
 /*import java.util.function.Consumer;
 
 import com.archetypes.compat.SpecialitiesBridge;

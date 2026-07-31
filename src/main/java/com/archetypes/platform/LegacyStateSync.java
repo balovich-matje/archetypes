@@ -30,7 +30,26 @@ package com.archetypes.platform;
 // handle array is indexed by it.
 //
 // The whole compilation unit is below-1.20.5 only (conventions §4's whole-file form).
-//? if <1.20.5 {
+// STAGE 6 SCOPED IT TO FABRIC, AND THAT LEAVES A HOLE THE FORGE NODE HAS TO FILL. `<1.20.5` is
+// true on 1.20.1-forge too, but every line of the body below is fabric-api — `PlayerLookup`,
+// `ServerPlayNetworking`, and a channel registered through `FabricNet`. So the predicate is
+// scoped rather than widened.
+//
+// WHAT 1.20.1-FORGE INHERITS FROM THIS FILE: nothing yet, and it needs all of it. Forge
+// capabilities have no sync of any kind, so that node is in exactly the position this file was
+// written for — 16 `ALL_TRACKING` keys and 31 `TARGET_ONLY` ones that no client will ever see
+// without a broadcast of its own. Design R-B1's prescription is ONE fallback with three
+// consumers, built on the `Net` seam; this implementation predates the loader axis and calls
+// fabric-api directly instead, so generalising it (moving the four paths onto
+// `Net.INSTANCE.sendToClient` and keeping the frozen wire format) is the honest way for that
+// node to reuse it. That is Stage 6b's call and its largest single piece of work — NOT
+// something to bolt on here, where no node can exercise it.
+//
+// THE FAILURE MODE IF IT IS SKIPPED, measured on this very node family in Stage 5: there is no
+// error anywhere. The server sends on a channel the client never registered, vanilla drops it
+// silently, every server-authoritative behaviour keeps working, and the whole visible half is
+// blank. A dedicated-server smoke cannot see it by construction.
+//? if fabric && <1.20.5 {
 /*import java.util.List;
 
 import com.archetypes.Archetypes;

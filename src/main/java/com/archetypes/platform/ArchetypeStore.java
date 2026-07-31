@@ -40,7 +40,23 @@ public interface ArchetypeStore {
 	// field declaration. Each node's build script excludes the two implementations it
 	// does not use from the source set; the naming rule the globs depend on is that a
 	// one-loader file is named after its loader.
+	//
+	// STAGE 6 — the two loader arms are live. What each implementation owes the six
+	// operations below is the interface's own javadoc and does not change per loader;
+	// what DOES change is how much of it the platform gives for free. NeoForge has
+	// attachments with real sync from 21.1.200 (the node script asserts the floor), so
+	// `resyncAll`/`syncOnStartTracking` may be genuine no-ops there exactly as they are on
+	// Fabric >=1.20.5. Forge 1.20.1 has capabilities: no codec, no copy-on-death and no
+	// sync of ANY kind, so both replay methods are load-bearing there and
+	// `platform/LegacyStateSync` — already written for the one Fabric node in the same
+	// position — is the shape to reuse rather than re-derive.
+	//? if fabric {
 	ArchetypeStore INSTANCE = new FabricArchetypeStore();
+	//?} elif neoforge {
+	/*ArchetypeStore INSTANCE = new NeoForgeArchetypeStore();
+	*///?} elif forge {
+	/*ArchetypeStore INSTANCE = new ForgeArchetypeStore();
+	*///?}
 
 	/**
 	 * Hands the platform the whole key table, once, from common init — from the exact

@@ -29,7 +29,13 @@ import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
 import com.zigythebird.playeranimcore.enums.PlayState;
 
+// STAGE 6 — only this import and the registration line fork. The loader helpers need no
+// import: `NeoForgeClientEvents`/`ForgeClientEvents` live in this same package, which they
+// have to — a client helper cannot live behind the `platform` seam (`src/main` cannot see
+// `net.minecraft.client` at all).
+//? if fabric {
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+//?}
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
 //? if >=1.21.11 {
@@ -83,7 +89,17 @@ public final class ElementalistAnimations {
 			return controller;
 		});
 
+		// Registration only; the driver body is shared. This whole file is already a `>=1.21`
+		// compilation unit (no PAL below 1.21.1 on any loader), so the `forge` arm below is
+		// unreachable on every node that exists — it is written for symmetry and because a
+		// 1.21.1-forge would be the node that needs it. The live loader arm here is NeoForge's.
+		//? if fabric {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.endClientTick(client -> {
+		*///?} elif forge {
+		/*ForgeClientEvents.endClientTick(client -> {
+		*///?}
 			if (client.level == null) {
 				return;
 			}

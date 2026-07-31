@@ -9,7 +9,15 @@ import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
+// STAGE 6 — only this import and the registration line fork; the whole command tree below is
+// one implementation on all seven nodes.
+//? if fabric {
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+//?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
+*///?}
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
@@ -109,7 +117,16 @@ public final class ArchetypeCommands {
 	}
 
 	public static void initialize() {
+		// A loader helper hands the same three things in the same order — dispatcher, registry
+		// access, registration environment — because both loaders' `RegisterCommandsEvent`
+		// carries all three. It must fire once per server, before the first command is parsed.
+		//? if fabric {
 		CommandRegistrationCallback.EVENT.register((dispatcher, registries, environment) ->
+		//?} elif neoforge {
+		/*NeoForgeEvents.registerCommands((dispatcher, registries, environment) ->
+		*///?} elif forge {
+		/*ForgeEvents.registerCommands((dispatcher, registries, environment) ->
+		*///?}
 				dispatcher.register(Commands.literal("archetypes")
 						.requires(GAMEMASTER.and(ArchetypeCommands::creativePlayer))
 						.then(setCommand())

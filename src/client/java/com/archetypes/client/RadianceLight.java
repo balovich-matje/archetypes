@@ -7,7 +7,15 @@ import java.util.UUID;
 import com.archetypes.RadianceAura;
 import com.archetypes.Tuning;
 
+// STAGE 6 — the IMPORT is gated even though the class body below it already is, and the two
+// gates are deliberately different. The body is `>=1.21.11` (design R-C1: a mis-driven client
+// light engine strobes or corrupts the section cache, so this cosmetic feature is off below
+// the boundary rather than approximated). The import is not inside that block, so on
+// 1.21.1-neoforge it stayed LIVE while the class it serves was gone — a fabric-api import on
+// a node with no fabric-api, which is a compile error that no Fabric node can see.
+//? if fabric {
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+//?}
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.BlockPos;

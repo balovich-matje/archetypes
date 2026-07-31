@@ -39,7 +39,19 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public interface Net {
 	// Same three-arm BLOCK chain as the other two seams; see ArchetypeStore.
+	//
+	// STAGE 6, and the good news is above rather than here: `clientReceivers` already takes a
+	// `Map<WireId, Consumer<FriendlyByteBuf>>` and nothing in this interface names a payload
+	// type, a codec or a registry. Skill Proficiencies' `Net` had to GROW a member for the
+	// loader axis and then fork its arity by node; this one does not move at all. The eleven
+	// payloads carrying nothing but `int` and `String` is what bought that.
+	//? if fabric {
 	Net INSTANCE = new FabricNet();
+	//?} elif neoforge {
+	/*Net INSTANCE = new NeoForgeNet();
+	*///?} elif forge {
+	/*Net INSTANCE = new ForgeNet();
+	*///?}
 
 	/**
 	 * Registers all eleven channel types. Called once from common init, before any

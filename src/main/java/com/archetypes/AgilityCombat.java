@@ -2,8 +2,17 @@ package com.archetypes;
 
 import com.archetypes.platform.ArchetypeStore;
 
+// STAGE 6 — the loader-event helpers live in `com.archetypes.platform`, the one package
+// allowed to name loader API (conventions §5g). Only these imports and the four registration
+// lines below fork; every lambda body is one implementation on all seven nodes.
+//? if fabric {
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+//?} elif neoforge {
+/*import com.archetypes.platform.NeoForgeEvents;
+*///?} elif forge {
+/*import com.archetypes.platform.ForgeEvents;
+*///?}
 import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -28,7 +37,17 @@ public final class AgilityCombat {
 		// A newly-spawned arrow from an armed player picks up its True Shot.
 		// ENTITY_LOAD also fires for chunk-loaded and dimension-hopped
 		// entities, so only a genuinely fresh arrow (age 0) qualifies.
+		// A loader helper fires once per entity added to a SERVER level. The `tickCount > 0`
+		// filter below is what makes a chunk-loaded or dimension-hopped arrow not qualify, and
+		// it stays in the shared body — a helper that fired only for genuinely new entities
+		// would be a DIFFERENT event and the filter would silently stop meaning anything.
+		//? if fabric {
 		ServerEntityEvents.ENTITY_LOAD.register((entity, level) -> {
+		//?} elif neoforge {
+		/*NeoForgeEvents.entityLoad((entity, level) -> {
+		*///?} elif forge {
+		/*ForgeEvents.entityLoad((entity, level) -> {
+		*///?}
 			if (!(entity instanceof AbstractArrow arrow) || arrow.tickCount > 0
 					|| !(arrow.getOwner() instanceof ServerPlayer player)) {
 				return;
@@ -83,12 +102,35 @@ public final class AgilityCombat {
 		// cooldown clears whoever landed the blow, and Death's Head and
 		// Contagion fire either way. Registered separately from the capstone
 		// hook below because that one refuses every non-player kill.
+		// Registration only; the body is shared. Skill Proficiencies has no AFTER_DEATH at all,
+		// so this contract is written down rather than inherited: fire ONCE per entity death,
+		// server-side, AFTER the death is final, with the entity and the `DamageSource`. Both
+		// loaders' natural host is `LivingDeathEvent` — the same event their `allowDeath` uses —
+		// so the helper has to distinguish "post" from "veto" and must not fire the post arm when
+		// the death was cancelled.
+		//? if fabric {
 		ServerLivingEntityEvents.AFTER_DEATH.register((victim, source) ->
 				DeathMark.onDeath(victim, source.getEntity()));
+		//?} elif neoforge {
+		/*NeoForgeEvents.afterDeath((victim, source) ->
+				DeathMark.onDeath(victim, source.getEntity()));
+		*///?} elif forge {
+		/*ForgeEvents.afterDeath((victim, source) ->
+				DeathMark.onDeath(victim, source.getEntity()));
+		*///?}
 
 		// Kills feed two capstones: Predator refreshes a running invisibility,
 		// Momentum hands Shadow Step straight back.
+		// Second AFTER_DEATH listener, registered separately from the one above on purpose —
+		// see its comment. A loader helper must therefore support MORE THAN ONE listener and
+		// keep them in registration order.
+		//? if fabric {
 		ServerLivingEntityEvents.AFTER_DEATH.register((victim, source) -> {
+		//?} elif neoforge {
+		/*NeoForgeEvents.afterDeath((victim, source) -> {
+		*///?} elif forge {
+		/*ForgeEvents.afterDeath((victim, source) -> {
+		*///?}
 			if (!(source.getEntity() instanceof ServerPlayer player)) {
 				return;
 			}
@@ -120,7 +162,18 @@ public final class AgilityCombat {
 		// Last Shadow: the death that wasn't. Cleanse, two seconds of grace
 		// (see the hurtServer mixin), vanish — then both this and the invis
 		// active share one long cooldown.
+		// THE R-20 TRAP DESIGN §3.4 NAMES: returning false means THE ENTITY SURVIVES AT ITS
+		// CURRENT HEALTH, not that the damage was voided. This is Last Shadow — the cheat-death
+		// — so the body below heals and cleanses before it returns false, and it depends on
+		// that meaning exactly. A helper that mapped false onto "cancel the damage" would
+		// hand out an immortality bug rather than a lost proc.
+		//? if fabric {
 		ServerLivingEntityEvents.ALLOW_DEATH.register((entity, source, amount) -> {
+		//?} elif neoforge {
+		/*NeoForgeEvents.allowDeath((entity, source, amount) -> {
+		*///?} elif forge {
+		/*ForgeEvents.allowDeath((entity, source, amount) -> {
+		*///?}
 			if (!(entity instanceof ServerPlayer player)) {
 				return true;
 			}

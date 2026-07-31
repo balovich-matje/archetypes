@@ -3,7 +3,12 @@ package com.archetypes.client;
 import com.archetypes.NightForm;
 import com.archetypes.Tuning;
 
+// STAGE 6 — see ArchetypesClient for the rule and for what a loader helper owes an
+// END_CLIENT_TICK (once per tick, at the END; LexForge's `TickEvent.ClientTickEvent` fires
+// twice and the phase must be checked).
+//? if fabric {
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+//?}
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.particles.ParticleTypes;
@@ -51,7 +56,14 @@ public final class NightFormFx {
 	}
 
 	public static void initialize() {
+		// Registration only; the body is shared.
+		//? if fabric {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.endClientTick(client -> {
+		*///?} elif forge {
+		/*ForgeClientEvents.endClientTick(client -> {
+		*///?}
 			if (client.level == null || client.isPaused()) {
 				return;
 			}
