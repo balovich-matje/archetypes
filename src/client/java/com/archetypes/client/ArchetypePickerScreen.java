@@ -267,6 +267,18 @@ public class ArchetypePickerScreen extends Screen {
 	*///?}
 		this.advanceHover(mouseX, mouseY);
 
+		// THE BACKGROUND HAS TO BE DOWN BEFORE ANY PANEL PIXEL. Same three bands as
+		// ArchetypeScreen's — the full account is on the neutered `renderBackground` below.
+		// >=1.21.11: `renderWithTooltipAndSubtitles` already drew it before entering here.
+		// 1.21.1:    `Screen.render` would draw it AFTER us, blurring the panel.
+		// 1.20.1:    `Screen.render` never draws one; without this there is no backdrop.
+		//? if >=1.21.11 {
+		//?} elif >=1.20.5 {
+		/*super.renderBackground(graphics, mouseX, mouseY, a);
+		*///?} else {
+		/*super.renderBackground(graphics);
+		*///?}
+
 		int panelLeft = this.panelLeft();
 		int panelTop = this.panelTop();
 
@@ -363,6 +375,35 @@ public class ArchetypePickerScreen extends Screen {
 			*///?}
 		}
 	}
+
+	// 1.21.1 ONLY — the menu-blur phase trap, measured in the 1.21.1 client jar.
+	//
+	// There `Screen.render` is `renderBackground(g, mouseX, mouseY, a)` and THEN the
+	// renderable walk, and `Screen.renderBackground` calls `renderBlurredBackground`, which
+	// is `GameRenderer.processBlurEffect` — a post-process pass over the whole main render
+	// target. `GuiGraphics.fill`, `drawString`, `fillGradient` and `renderItem` all flush
+	// eagerly on that version, so every panel, label and item icon this screen drew is
+	// already IN the framebuffer when the blur runs, and comes back blurred.
+	//
+	// The draw method above is `render` below 26.1, so it draws before that call. The fix is
+	// vanilla's own shape (`AbstractContainerScreen`): background first, content on top of
+	// it, widgets last. The background is therefore drawn explicitly at the top of the draw,
+	// and `Screen.render`'s own later call has to become a no-op — otherwise the blur runs a
+	// second time, over the content, and the menu gradient darkens it twice.
+	//
+	// Only 1.21.1 needs it. At and above 1.21.11 the background moved out of `Screen.render`
+	// into the final `renderWithTooltipAndSubtitles`, which runs it BEFORE `render`; on
+	// 1.20.1 `Screen.render` walks the renderables only and there is no blur to trip over.
+	// Nothing else on this screen calls `renderBackground` — on 1.21.1 `Screen.render` is its
+	// only caller — so the neutered override costs exactly the duplicate pass.
+	//? if >=1.21.11 {
+	//?} elif >=1.20.5 {
+	/*@Override
+	public void renderBackground(final GuiGraphics graphics, final int mouseX, final int mouseY,
+			final float a) {
+		// Deliberately empty. Drawn at the top of render() instead — see above.
+	}
+	*///?}
 
 	/** One card's row of active-ability previews. */
 	//? if >=26.1 {
