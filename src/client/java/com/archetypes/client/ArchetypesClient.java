@@ -434,7 +434,13 @@ public class ArchetypesClient implements ClientModInitializer {
 		// `src/main` sees the common half only, so two things it reaches — fabric-api's
 		// `ClientPlayNetworking` and Skill Proficiencies' `SpecialitiesClient.hudShift()` —
 		// have to be handed down from here. Must run BEFORE `clientReceivers` below.
-		//? if <26.1 {
+		//
+		// STAGE 6a: `fabric &&`, matching the scope `ClientHandDown` itself already carried.
+		// The split-environment jar split is a fabric-LOOM fact, not a version one — under
+		// ModDevGradle there is no split at all and `src/main` sees the whole of both jars —
+		// so on the loader axis this line has nothing to install and the class it names is an
+		// empty compilation unit. It was the neoforge client build that found the mismatch.
+		//? if fabric && <26.1 {
 		/*ClientHandDown.install();
 		*///?}
 

@@ -148,8 +148,18 @@ dependencies {
 	//
 	// `compileOnly` and not `implementation` because the runtime half is the run configuration
 	// above; the shipped jar declares PAL as a `mods.toml` dependency and never bundles it.
+	//
+	// BOTH SOURCE SETS, and the second line is not optional — it is what the first Stage-6a
+	// client build failed on. Under MDG the `client` source set inherits `main`'s OUTPUT (the
+	// two lines at the top of this script) but NOT its configurations, and PAL is named
+	// exclusively from `src/client`: the five `*Animations` drivers are the only files in the
+	// mod that import `com.zigythebird.playeranim`. So a `main`-only `compileOnly` puts the
+	// library on the one source set that never mentions it and leaves it off the one that
+	// does. Loom's split environment hides this next door by giving `client` main's compile
+	// classpath.
 	if (palCoordinate != null) {
 		compileOnly(palCoordinate)
+		"clientCompileOnly"(palCoordinate)
 	}
 
 	// ---- Skill Proficiencies, compile-only ----
@@ -171,15 +181,20 @@ dependencies {
 	// The cost, stated so nobody is surprised: `build/` is gitignored next door, so a fresh
 	// clone or a `clean` there breaks THIS repo's CONFIGURATION phase. `./gradlew
 	// buildAndCollect` in that repo fixes it.
+	//
+	// On BOTH source sets for the same reason PAL is: `client/ManaHud` and
+	// `client/BankedHungerHud` reach Skill Proficiencies through `compat/SpecialitiesBridge`,
+	// which is in `main`, but the bridge's own return types are that mod's, so the client
+	// compile resolves them too.
 	val specialitiesVersion: String = sc.properties["deps.specialities"]
-	compileOnly(
-		files(
-			rootProject.file(
-				"../specialities/build/libs/$specialitiesVersion/" +
-					"specialities-neoforge-$specialitiesVersion+${sc.current.version}.jar",
-			),
+	val specialitiesJar = files(
+		rootProject.file(
+			"../specialities/build/libs/$specialitiesVersion/" +
+				"specialities-neoforge-$specialitiesVersion+${sc.current.version}.jar",
 		),
 	)
+	compileOnly(specialitiesJar)
+	"clientCompileOnly"(specialitiesJar)
 }
 
 // LOADER-AXIS EXCLUSIONS (conventions §5e-ter), the mirror of build.fabric.gradle.kts's block:

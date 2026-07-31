@@ -81,7 +81,14 @@ public final class SpecialitiesBridge {
 	// keeps the one spelling `SpecialitiesBridge.hudShift()` on all seven nodes, which is
 	// the point: `ManaHud` and `BankedHungerHud` get re-forked at three more boundaries
 	// before this port is done, and none of those forks should have to know about this one.
-	//? if <26.1 {
+	//
+	// STAGE 6a scoped this to `fabric &&`, matching `client/ClientHandDown`, which had already
+	// been scoped that way and is the only thing that calls the installer. The reason is in the
+	// paragraph above and is worth stating as the rule it is: THE SPLIT IS A FABRIC-LOOM FACT,
+	// NOT A VERSION ONE. Under ModDevGradle there is no split-environment jar and no remapper,
+	// so `src/main` on the loader axis sees the whole Skill Proficiencies jar including its
+	// client half — which is why `Linked.hudShift` below takes the direct call there.
+	//? if fabric && <26.1 {
 	/*private static volatile java.util.function.IntSupplier clientHudShift = () -> 0;
 
 	// Called once from client init, and only when Skill Proficiencies is actually loaded —
@@ -114,11 +121,15 @@ public final class SpecialitiesBridge {
 		}
 
 		private static int hudShift() {
-			//? if >=26.1 {
-			return com.specialities.client.SpecialitiesClient.hudShift();
-			//?} else {
+			// The arms are ordered hand-down-first so the ELSE is the direct call, which is
+			// what both 26.x nodes and both loader nodes take. Same two arms as before Stage
+			// 6a, same statements on every Fabric node — only the predicate moved from
+			// `>=26.1` to its `fabric && <26.1` complement.
+			//? if fabric && <26.1 {
 			/*return clientHudShift.getAsInt();
-			*///?}
+			*///?} else {
+			return com.specialities.client.SpecialitiesClient.hudShift();
+			//?}
 		}
 
 		private static int grantLevels(final ServerPlayer player, final int levels) {

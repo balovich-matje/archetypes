@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "G": {
+      "item": "minecraft:glowstone_dust"
+    },
+    "#": {
+      "item": "minecraft:stick"
+    }
+  },
+  "pattern": [
+    "G",
+    "#",
+    "#"
+  ],
+  "result": {
+    "count": 1,
+    "id": "archetypes:holy_wand"
+  }
+}

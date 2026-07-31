@@ -1,0 +1,21 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "A": {
+      "item": "minecraft:amethyst_shard"
+    },
+    "#": {
+      "item": "minecraft:stick"
+    }
+  },
+  "pattern": [
+    "A",
+    "#",
+    "#"
+  ],
+  "result": {
+    "count": 1,
+    "id": "archetypes:apprentice_wand"
+  }
+}
