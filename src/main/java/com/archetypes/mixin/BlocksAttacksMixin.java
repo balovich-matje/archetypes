@@ -31,7 +31,7 @@ public abstract class BlocksAttacksMixin {
 	 * bytecode, the same trap {@code LivingEntityMixin.archetypes$onShieldBlocked}
 	 * documents.
 	 */
-	@Inject(method = "disable", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "disable(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;FLnet/minecraft/world/item/ItemStack;)V", at = @At("HEAD"), cancellable = true)
 	private void archetypes$immovableObject(final ServerLevel level, final LivingEntity entity,
 			final float seconds, final ItemStack stack, final CallbackInfo ci) {
 		if (entity instanceof ServerPlayer player

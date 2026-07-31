@@ -35,7 +35,7 @@ public abstract class AbstractArrowMixin {
 	 * it flies straight through — no accidental pet or villager casualties
 	 * from a shot that aims itself.
 	 */
-	@Inject(method = "canHitEntity", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "canHitEntity(Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$seekerPassesThrough(final net.minecraft.world.entity.Entity entity,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		archetypes$seekerPassesThroughImpl(entity, cir);
@@ -60,7 +60,7 @@ public abstract class AbstractArrowMixin {
 	 * is the overridable half, and vanilla still short-circuits it to 0 for a
 	 * no-gravity arrow (a True Shot), so the two marks compose correctly.
 	 */
-	@ModifyReturnValue(method = "getDefaultGravity", at = @At("RETURN"))
+	@ModifyReturnValue(method = "getDefaultGravity()D", at = @At("RETURN"))
 	private double archetypes$spellbowGravity(final double original) {
 		return archetypes$spellbowGravityImpl(original);
 	}
@@ -76,7 +76,7 @@ public abstract class AbstractArrowMixin {
 	}
 
 	/** The Spellbow's arrow carries the Wizard's missile signature down range. */
-	@Inject(method = "tick", at = @At("HEAD"))
+	@Inject(method = "tick()V", at = @At("HEAD"))
 	private void archetypes$spellbowFlightFx(final CallbackInfo ci) {
 		archetypes$spellbowFlightFxImpl();
 	}
@@ -100,7 +100,7 @@ public abstract class AbstractArrowMixin {
 		com.archetypes.items.MagicBowItem.flightFx(level, arrow, arrow.tickCount);
 	}
 
-	@Inject(method = "onHitEntity", at = @At("TAIL"))
+	@Inject(method = "onHitEntity(Lnet/minecraft/world/phys/EntityHitResult;)V", at = @At("TAIL"))
 	private void archetypes$spellbowImpactFx(final net.minecraft.world.phys.EntityHitResult hit,
 			final CallbackInfo ci) {
 		archetypes$spellbowImpactFxImpl();
@@ -124,7 +124,7 @@ public abstract class AbstractArrowMixin {
 	 * from the mark on the ARROW, not from the shooter's stance: 64 blocks is
 	 * over three seconds of flight and the stance can lapse mid-air.
 	 */
-	@Inject(method = "tick", at = @At("HEAD"))
+	@Inject(method = "tick()V", at = @At("HEAD"))
 	private void archetypes$deadeyeFlightFx(final CallbackInfo ci) {
 		archetypes$deadeyeFlightFxImpl();
 	}
@@ -150,7 +150,7 @@ public abstract class AbstractArrowMixin {
 				arrow.getX(), arrow.getY(), arrow.getZ(), 1, 0.0, 0.0, 0.0, 0.0);
 	}
 
-	@Inject(method = "tick", at = @At("HEAD"))
+	@Inject(method = "tick()V", at = @At("HEAD"))
 	private void archetypes$trueShotFlight(final CallbackInfo ci) {
 		archetypes$trueShotFlightImpl();
 	}
@@ -201,7 +201,7 @@ public abstract class AbstractArrowMixin {
 	 * deflect call, so the return-to-sender velocity stashed there is applied
 	 * only once the whole hit handler has had its say.
 	 */
-	@Inject(method = "onHitEntity", at = @At("TAIL"))
+	@Inject(method = "onHitEntity(Lnet/minecraft/world/phys/EntityHitResult;)V", at = @At("TAIL"))
 	private void archetypes$applyReflectAim(final net.minecraft.world.phys.EntityHitResult hit,
 			final CallbackInfo ci) {
 		archetypes$applyReflectAimImpl();

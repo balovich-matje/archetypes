@@ -34,7 +34,7 @@ import net.minecraft.world.item.ItemStack;
  */
 @Mixin(UseDuration.class)
 public abstract class UseDurationMixin {
-	@ModifyReturnValue(method = "get", at = @At("RETURN"))
+	@ModifyReturnValue(method = "get(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/client/multiplayer/ClientLevel;Lnet/minecraft/world/entity/ItemOwner;I)F", at = @At("RETURN"))
 	private float archetypes$spellbowPull(final float original, final ItemStack itemStack,
 			final ClientLevel level, final ItemOwner owner, final int seed) {
 		if (original <= 0.0F || !ModItems.isMagicBow(itemStack)) {

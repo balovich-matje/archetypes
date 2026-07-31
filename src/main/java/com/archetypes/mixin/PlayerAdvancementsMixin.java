@@ -23,13 +23,13 @@ public abstract class PlayerAdvancementsMixin {
 	@Shadow
 	private ServerPlayer player;
 
-	@Inject(method = "award", at = @At("RETURN"))
+	@Inject(method = "award(Lnet/minecraft/advancements/AdvancementHolder;Ljava/lang/String;)Z", at = @At("RETURN"))
 	private void archetypes$countOnAward(final AdvancementHolder holder, final String criterion,
 			final CallbackInfoReturnable<Boolean> cir) {
 		this.archetypes$maybeRecount(holder, cir);
 	}
 
-	@Inject(method = "revoke", at = @At("RETURN"))
+	@Inject(method = "revoke(Lnet/minecraft/advancements/AdvancementHolder;Ljava/lang/String;)Z", at = @At("RETURN"))
 	private void archetypes$countOnRevoke(final AdvancementHolder holder, final String criterion,
 			final CallbackInfoReturnable<Boolean> cir) {
 		this.archetypes$maybeRecount(holder, cir);

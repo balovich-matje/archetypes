@@ -23,13 +23,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(MobEffectInstance.class)
 public abstract class MobEffectInstanceMixin {
-	@Inject(method = "tickServer", at = @At("HEAD"))
+	@Inject(method = "tickServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;Ljava/lang/Runnable;)Z", at = @At("HEAD"))
 	private void archetypes$magicalHealBegin(final ServerLevel level, final LivingEntity target,
 			final Runnable onEffectUpdate, final CallbackInfoReturnable<Boolean> cir) {
 		ColossusSlayer.beginMagicalHealing();
 	}
 
-	@Inject(method = "tickServer", at = @At("RETURN"))
+	@Inject(method = "tickServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/LivingEntity;Ljava/lang/Runnable;)Z", at = @At("RETURN"))
 	private void archetypes$magicalHealEnd(final ServerLevel level, final LivingEntity target,
 			final Runnable onEffectUpdate, final CallbackInfoReturnable<Boolean> cir) {
 		ColossusSlayer.endMagicalHealing();

@@ -27,7 +27,7 @@ public abstract class EntityMixin {
 	 * <p>Declared on {@code Entity} because that is where the method is; the
 	 * gate inside is ServerPlayer, and the window it reads is server-side only.
 	 */
-	@Inject(method = "deflection", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "deflection(Lnet/minecraft/world/entity/projectile/Projectile;)Lnet/minecraft/world/entity/projectile/ProjectileDeflection;", at = @At("HEAD"), cancellable = true)
 	private void archetypes$spellParry(final Projectile projectile,
 			final CallbackInfoReturnable<ProjectileDeflection> cir) {
 		if ((Object) this instanceof ServerPlayer player

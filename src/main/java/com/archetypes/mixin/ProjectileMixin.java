@@ -48,7 +48,7 @@ public abstract class ProjectileMixin {
 	 * answer into their own — so refusing here refuses everywhere that matters,
 	 * without touching a single projectile type by name.
 	 */
-	@Inject(method = "canHitEntity", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "canHitEntity(Lnet/minecraft/world/entity/Entity;)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$incorporeal(final Entity entity,
 			final CallbackInfoReturnable<Boolean> cir) {
 		if (!(entity instanceof ServerPlayer player)) {
@@ -80,7 +80,7 @@ public abstract class ProjectileMixin {
 		}
 	}
 
-	@Inject(method = "deflect", at = @At("RETURN"))
+	@Inject(method = "deflect(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EntityReference;Z)Z", at = @At("RETURN"))
 	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
 			final EntityReference<Entity> newOwner, final boolean fromAttack,
 			final CallbackInfoReturnable<Boolean> cir) {

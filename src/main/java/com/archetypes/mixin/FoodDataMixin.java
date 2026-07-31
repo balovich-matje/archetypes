@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(FoodData.class)
 public abstract class FoodDataMixin {
-	@Inject(method = "tick",
+	@Inject(method = "tick(Lnet/minecraft/server/level/ServerPlayer;)V",
 			at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerPlayer;heal(F)V"),
 			cancellable = true)
 	private void archetypes$nightFormHaltsRegen(final ServerPlayer player, final CallbackInfo ci) {

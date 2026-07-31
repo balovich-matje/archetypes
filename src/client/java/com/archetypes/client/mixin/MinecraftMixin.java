@@ -32,7 +32,7 @@ public abstract class MinecraftMixin {
 	@Shadow
 	public @Nullable LocalPlayer player;
 
-	@Inject(method = "startAttack", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "startAttack()Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$combatSwing(final CallbackInfoReturnable<Boolean> cir) {
 		if (this.player == null
 				|| (this.hitResult != null && this.hitResult.getType() == HitResult.Type.BLOCK)) {
@@ -80,7 +80,7 @@ public abstract class MinecraftMixin {
 	 * use key comes up, and a player who could never lower their guard would be
 	 * worse off than one who could not swing.
 	 */
-	@Inject(method = "handleKeybinds", at = @At("HEAD"))
+	@Inject(method = "handleKeybinds()V", at = @At("HEAD"))
 	private void archetypes$freeHand(final CallbackInfo ci) {
 		if (this.player != null
 				&& com.archetypes.ColossusProtector.canAttackWhileBlocking(this.player)) {

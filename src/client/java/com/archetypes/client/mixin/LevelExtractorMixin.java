@@ -31,7 +31,7 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(LevelExtractor.class)
 public abstract class LevelExtractorMixin {
-	@ModifyExpressionValue(method = "isEntityVisible",
+	@ModifyExpressionValue(method = "isEntityVisible(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/client/renderer/culling/Frustum;DDD)Z",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/client/renderer/LevelRenderer;"
 							+ "isSectionCompiledAndVisible(Lnet/minecraft/core/BlockPos;)Z"))

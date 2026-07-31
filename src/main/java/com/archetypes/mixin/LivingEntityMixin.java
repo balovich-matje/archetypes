@@ -41,7 +41,7 @@ public abstract class LivingEntityMixin {
 	 * <p>Melee-only comes free — a projectile's direct entity is the projectile,
 	 * so vanilla never routes arrows here.
 	 */
-	@Inject(method = "blockedByItem", at = @At("TAIL"))
+	@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;F)V", at = @At("TAIL"))
 	private void archetypes$onShieldBlocked(final LivingEntity blocker, final DamageSource source,
 			final float blocked, final CallbackInfo ci) {
 		archetypes$onShieldBlockedImpl(blocker, blocked);
@@ -176,7 +176,7 @@ public abstract class LivingEntityMixin {
 	 * <p>A Decimate reaches this hook too — {@code SlayerActives.resolve} opens
 	 * a {@code MeleeSwing} around its damage precisely so it does.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$greatswordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -260,7 +260,7 @@ public abstract class LivingEntityMixin {
 	 * combat multiplier — the same open question the greatsword path already has,
 	 * and deliberately not answered differently here.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$swordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -292,7 +292,7 @@ public abstract class LivingEntityMixin {
 	 * death resolution — Combustion on a kill-shot must still detonate, and
 	 * AFTER_DAMAGE never fires for lethal hits.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$marksmanArrowHit(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -338,7 +338,7 @@ public abstract class LivingEntityMixin {
 	 * arrow is a projectile and can never be confused for a swing, so it keeps
 	 * answering on its own marked-arrow evidence.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$magicArmamentHit(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -397,7 +397,7 @@ public abstract class LivingEntityMixin {
 	 * {@code Player.attack} ({@code AgilityActives.strike}) and so is a swing by
 	 * the only definition that counts.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$daggerDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -669,7 +669,7 @@ public abstract class LivingEntityMixin {
 	 * Sidestep: sometimes the blow simply meets air. Melee only — the
 	 * attacker must BE the damage, not have thrown it.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$sidestep(final ServerLevel level, final DamageSource source,
 			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		archetypes$sidestepImpl(source, cir);
@@ -705,7 +705,7 @@ public abstract class LivingEntityMixin {
 	 * but only while a wand is actually in hand; a Seeker gone sword-mode
 	 * gave up the ward with the regen.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$manaShield(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -756,7 +756,7 @@ public abstract class LivingEntityMixin {
 	 * multiplicatively with both (and with Specialities' Sneaking, which
 	 * modifies the same return).
 	 */
-	@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent",
+	@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent(Lnet/minecraft/world/entity/Entity;)D",
 			at = @At("RETURN"))
 	private double archetypes$dimPresence(final double original) {
 		return archetypes$dimPresenceImpl(original);
@@ -798,7 +798,7 @@ public abstract class LivingEntityMixin {
 	 * hook's benefit — they are the mace doing its job, and Meteor and the batch
 	 * are supposed to ride them.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$sunderDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -866,7 +866,7 @@ public abstract class LivingEntityMixin {
 	 * player takes nothing at all — the capstone's promise is "you got away",
 	 * and a skeleton double-tapping the escape would break it.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$cheatDeathGrace(final ServerLevel level, final DamageSource source,
 			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		archetypes$cheatDeathGraceImpl(cir);
@@ -901,7 +901,7 @@ public abstract class LivingEntityMixin {
 	 * rather than ServerPlayer: the attachment behind it syncs to every client,
 	 * and client code asks this question too.
 	 */
-	@Inject(method = "isInvertedHealAndHarm", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "isInvertedHealAndHarm()Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$nightFormIsUndead(
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		archetypes$nightFormIsUndeadImpl(cir);
@@ -926,7 +926,7 @@ public abstract class LivingEntityMixin {
 	 * and {@code /kill}. Nothing this mod grants may make a hard kill fail —
 	 * at rank 3 a /kill would miss three times in four.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$ghostForm(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -982,7 +982,7 @@ public abstract class LivingEntityMixin {
 	 * ({@code AgilityActives.strike}) and so is a swing by the only definition
 	 * that counts here.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"))
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
 	private void archetypes$feast(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -1044,7 +1044,7 @@ public abstract class LivingEntityMixin {
 	 * Form is a dice roll on every source and this is a certainty about one.
 	 * Slow Falling, the node's other half, is re-asserted by the ticker.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$onTheWing(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -1068,7 +1068,7 @@ public abstract class LivingEntityMixin {
 	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
 	 * "in front" for a capstone holder. {@code this} is the blocker here.
 	 */
-	@ModifyExpressionValue(method = "applyItemBlocking",
+	@ModifyExpressionValue(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F",
 			at = @At(value = "INVOKE", target = "Ljava/lang/Math;acos(D)D"))
 	private double archetypes$bulwark(final double angle) {
 		return archetypes$bulwarkImpl(angle);
@@ -1115,7 +1115,7 @@ public abstract class LivingEntityMixin {
 	 * costs. The Crusher's own actives mark themselves, so a Quake or a Haymaker
 	 * still breaks the shield it lands on.
 	 */
-	@ModifyExpressionValue(method = "applyItemBlocking",
+	@ModifyExpressionValue(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/component/BlocksAttacks;resolveBlockedDamage("
 							+ "Lnet/minecraft/world/damagesource/DamageSource;FD)F"))
@@ -1171,7 +1171,7 @@ public abstract class LivingEntityMixin {
 	 * the rank, the weapon, and the "an entity must have thrown it" clause that
 	 * keeps fire, fall and drowning out.
 	 */
-	@Inject(method = "hurtServer", at = @At("RETURN"))
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
 	private void archetypes$hardened(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -1215,7 +1215,7 @@ public abstract class LivingEntityMixin {
 	 * still crater the ground between them. Both hooks are Siegebreaker, and
 	 * Siegebreaker is about a blow.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$clash(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -1244,7 +1244,7 @@ public abstract class LivingEntityMixin {
 	 * smash, and every one of them reads the fall it would have zeroed. Same
 	 * shape as On the Wing's.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$titansLeapFall(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -1280,7 +1280,7 @@ public abstract class LivingEntityMixin {
 	 * lands too. The whole of the rule is in
 	 * {@link com.archetypes.ColossusProtector#instinctiveGuard}.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$instinctiveGuard(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -1310,7 +1310,7 @@ public abstract class LivingEntityMixin {
 	 * argument at HEAD either way, and every shaper on this funnel that could
 	 * touch it belongs to a different archetype.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$parry(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
@@ -1333,7 +1333,7 @@ public abstract class LivingEntityMixin {
 	 * Shield's shape — a victim-side shaper on the shared {@code amount}, so it
 	 * composes multiplicatively with whatever else shaped the blow.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$barbarian(final float amount, final ServerLevel level,
 			final DamageSource source) {
@@ -1357,7 +1357,7 @@ public abstract class LivingEntityMixin {
 	 * {@code ColossusSlayer}'s magical-heal flag), which is what leaves food,
 	 * natural regeneration and Taste of Blood whole.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "heal",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "heal(F)V",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$barbarianHealing(final float amount) {
 		return archetypes$barbarianHealingImpl(amount);

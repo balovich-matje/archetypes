@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(ItemStack.class)
 public abstract class ItemStackMixin {
-	@ModifyReturnValue(method = "getUseDuration", at = @At("RETURN"))
+	@ModifyReturnValue(method = "getUseDuration(Lnet/minecraft/world/entity/LivingEntity;)I", at = @At("RETURN"))
 	private int archetypes$wellFed(final int original, final LivingEntity user) {
 		if (original <= 0 || !(user instanceof Player player)
 				|| !((ItemStack) (Object) this).has(DataComponents.FOOD)) {
@@ -66,7 +66,7 @@ public abstract class ItemStackMixin {
 	 * arguments; it is the only {@code ServerPlayer} parameter, and it is null
 	 * whenever a non-player wears an item down.
 	 */
-	@WrapOperation(method = "processDurabilityChange",
+	@WrapOperation(method = "processDurabilityChange(ILnet/minecraft/server/level/ServerLevel;Lnet/minecraft/server/level/ServerPlayer;)I",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/enchantment/EnchantmentHelper;"
 							+ "processDurabilityChange(Lnet/minecraft/server/level/ServerLevel;"

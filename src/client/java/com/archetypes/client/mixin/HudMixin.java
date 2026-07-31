@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(Hud.class)
 public abstract class HudMixin {
-	@WrapOperation(method = "extractHeart",
+	@WrapOperation(method = "extractHeart(Lnet/minecraft/client/gui/GuiGraphicsExtractor;Lnet/minecraft/client/gui/Hud$HeartType;IIZZZ)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;blitSprite("
 							+ "Lcom/mojang/blaze3d/pipeline/RenderPipeline;"

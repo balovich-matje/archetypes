@@ -24,7 +24,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(Consumable.class)
 public abstract class ConsumableMixin {
-	@Inject(method = "onConsume",
+	@Inject(method = "onConsume(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/ItemStack;consume(ILnet/minecraft/world/entity/LivingEntity;)V"))
 	private void archetypes$heartyMeal(final Level level, final LivingEntity user,

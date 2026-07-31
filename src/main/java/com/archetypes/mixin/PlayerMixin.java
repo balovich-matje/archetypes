@@ -22,7 +22,7 @@ public abstract class PlayerMixin {
 	 * player keeps all of their experience and the archetype banks a copy, so
 	 * levelling the tree never costs an enchant.
 	 */
-	@Inject(method = "giveExperiencePoints", at = @At("TAIL"))
+	@Inject(method = "giveExperiencePoints(I)V", at = @At("TAIL"))
 	private void archetypes$bankExperience(final int amount, final CallbackInfo ci) {
 		archetypes$bankExperienceImpl(amount);
 	}
@@ -46,7 +46,7 @@ public abstract class PlayerMixin {
 	 * meal on the client too, so a client that still thought 20 was full would
 	 * never send the use at all.
 	 */
-	@Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "canEat(Z)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$bankedHungerIsEdible(final boolean canAlwaysEat,
 			final CallbackInfoReturnable<Boolean> cir) {
 		archetypes$bankedHungerIsEdibleImpl(cir);
@@ -92,7 +92,7 @@ public abstract class PlayerMixin {
 	 * victim through {@code Player.attack} with a forced full-strength ticker
 	 * (see {@code AgilityActives.strike}) and would otherwise sweep on landing.
 	 */
-	@Inject(method = "isSweepAttack", at = @At("HEAD"), cancellable = true)
+	@Inject(method = "isSweepAttack(ZZZ)Z", at = @At("HEAD"), cancellable = true)
 	private void archetypes$daggersNeverSweep(final boolean fullStrengthAttack,
 			final boolean criticalAttack, final boolean knockbackAttack,
 			final CallbackInfoReturnable<Boolean> cir) {
@@ -120,7 +120,7 @@ public abstract class PlayerMixin {
 	 * read as a swing until something else overwrote it. The {@code finally}
 	 * makes that impossible.
 	 */
-	@com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod(method = "attack")
+	@com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod(method = "attack(Lnet/minecraft/world/entity/Entity;)V")
 	private void archetypes$markSwing(final net.minecraft.world.entity.Entity target,
 			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
 		archetypes$markSwingImpl(target, original);

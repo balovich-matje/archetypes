@@ -55,7 +55,7 @@ public abstract class DamageTraceMixin {
 	 * Form, the parry), so a hit one of them voids opens a frame that never
 	 * closes — {@link DamageTrace} expects that and drains it.
 	 */
-	@Inject(method = "hurtServer", at = @At("HEAD"))
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("HEAD"))
 	private void archetypes$traceBegin(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
 		archetypes$traceBeginImpl(source, amount);
@@ -87,7 +87,7 @@ public abstract class DamageTraceMixin {
 	 * absorption, and it must sample them before anything downstream of the hit
 	 * gets to move either.
 	 */
-	@Inject(method = "hurtServer", at = @At("RETURN"))
+	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
 	private void archetypes$traceFinish(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
 		archetypes$traceFinishImpl(cir);
@@ -108,7 +108,7 @@ public abstract class DamageTraceMixin {
 	 * <p>The method returns the amount it took off rather than what is left, so
 	 * the stage's {@code after} is the subtraction, not the return value.
 	 */
-	@Inject(method = "applyItemBlocking", at = @At("RETURN"))
+	@Inject(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F", at = @At("RETURN"))
 	private void archetypes$traceBlocking(final ServerLevel level, final DamageSource source,
 			final float damage, final CallbackInfoReturnable<Float> cir) {
 		archetypes$traceBlockingImpl(damage, cir);
@@ -128,7 +128,7 @@ public abstract class DamageTraceMixin {
 	 * recomputed number would agree with the design doc and disagree with the
 	 * game, which is the exact failure this whole kit exists to catch.
 	 */
-	@Inject(method = "getDamageAfterArmorAbsorb", at = @At("RETURN"))
+	@Inject(method = "getDamageAfterArmorAbsorb(Lnet/minecraft/world/damagesource/DamageSource;F)F", at = @At("RETURN"))
 	private void archetypes$traceArmor(final DamageSource source, final float damage,
 			final CallbackInfoReturnable<Float> cir) {
 		archetypes$traceArmorImpl(damage, cir);
@@ -142,7 +142,7 @@ public abstract class DamageTraceMixin {
 	}
 
 	/** Vanilla's enchantment/resistance step: Protection IV lives here. */
-	@Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"))
+	@Inject(method = "getDamageAfterMagicAbsorb(Lnet/minecraft/world/damagesource/DamageSource;F)F", at = @At("RETURN"))
 	private void archetypes$traceMagic(final DamageSource source, final float damage,
 			final CallbackInfoReturnable<Float> cir) {
 		archetypes$traceMagicImpl(damage, cir);

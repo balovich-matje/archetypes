@@ -27,7 +27,9 @@ public abstract class HealOrHarmMobEffectMixin {
 	 * anywhere under here would leave every later heal in the server marked
 	 * magical until the next potion. try/finally cannot leak.
 	 */
-	@WrapMethod(method = "applyInstantaneousEffect")
+	@WrapMethod(method = "applyInstantaneousEffect(Lnet/minecraft/server/level/ServerLevel;"
+			+ "Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/Entity;"
+			+ "Lnet/minecraft/world/entity/LivingEntity;ID)V")
 	private void archetypes$magicalHeal(final ServerLevel level, final Entity source,
 			final Entity owner, final LivingEntity mob, final int amplification,
 			final double scale, final Operation<Void> original) {

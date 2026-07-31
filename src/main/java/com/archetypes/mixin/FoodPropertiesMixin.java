@@ -32,7 +32,7 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(FoodProperties.class)
 public abstract class FoodPropertiesMixin {
-	@WrapOperation(method = "onConsume",
+	@WrapOperation(method = "onConsume(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/component/Consumable;)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/food/FoodProperties;)V"))
 	private void archetypes$bankHunger(final FoodData data, final FoodProperties properties,

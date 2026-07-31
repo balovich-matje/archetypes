@@ -29,7 +29,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(CrossbowItem.class)
 public abstract class CrossbowItemMixin {
-	@ModifyReturnValue(method = "getChargeDuration", at = @At("RETURN"))
+	@ModifyReturnValue(method = "getChargeDuration(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)I", at = @At("RETURN"))
 	private static int archetypes$rapidReload(final int original, final ItemStack stack,
 			final LivingEntity entity) {
 		if (!(entity instanceof Player player)) {
@@ -58,7 +58,7 @@ public abstract class CrossbowItemMixin {
 		return Math.max(1, Math.round(original * (1.0F - Tuning.RAPID_RELOAD_PER_RANK * rank)));
 	}
 
-	@Inject(method = "releaseUsing", at = @At("TAIL"))
+	@Inject(method = "releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)Z", at = @At("TAIL"))
 	private void archetypes$consumePrime(final ItemStack stack, final Level level,
 			final LivingEntity entity, final int timeLeft, final CallbackInfoReturnable<Boolean> cir) {
 		if (entity instanceof ServerPlayer player && CrossbowItem.isCharged(stack)) {

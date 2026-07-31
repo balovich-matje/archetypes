@@ -19,7 +19,7 @@ import org.spongepowered.asm.mixin.injection.At;
  */
 @Mixin(LocalPlayer.class)
 public abstract class LocalPlayerMixin {
-	@ModifyReturnValue(method = "itemUseSpeedMultiplier", at = @At("RETURN"))
+	@ModifyReturnValue(method = "itemUseSpeedMultiplier()F", at = @At("RETURN"))
 	private float archetypes$nimbleDraw(final float original) {
 		LocalPlayer self = (LocalPlayer) (Object) this;
 
@@ -45,7 +45,7 @@ public abstract class LocalPlayerMixin {
 	 * are movement-authoritative, so this IS the slowdown. The node's own gate
 	 * ({@code isBlocking}) lives in {@link com.archetypes.SureFooting}.
 	 */
-	@ModifyReturnValue(method = "itemUseSpeedMultiplier", at = @At("RETURN"))
+	@ModifyReturnValue(method = "itemUseSpeedMultiplier()F", at = @At("RETURN"))
 	private float archetypes$blockingMovement(final float original) {
 		return com.archetypes.SureFooting.relieve((LocalPlayer) (Object) this, original);
 	}

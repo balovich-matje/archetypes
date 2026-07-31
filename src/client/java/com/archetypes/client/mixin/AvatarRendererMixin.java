@@ -22,7 +22,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(AvatarRenderer.class)
 public abstract class AvatarRendererMixin {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
-	@Inject(method = "<init>", at = @At("TAIL"))
+	@Inject(method = "<init>(Lnet/minecraft/client/renderer/entity/EntityRendererProvider$Context;Z)V",
+			at = @At("TAIL"))
 	private void archetypes$addBulwarkLayer(final EntityRendererProvider.Context context,
 			final boolean slim, final CallbackInfo ci) {
 		((LivingEntityRendererAccessor) this)

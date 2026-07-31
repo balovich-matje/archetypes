@@ -78,7 +78,7 @@ public abstract class FlenseMixin {
 	 * trace's stage pair stops describing one chain, and a shared helper would
 	 * hide that they have to agree.
 	 */
-	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer",
+	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$flense(final float amount, final ServerLevel level,
 			final DamageSource source) {

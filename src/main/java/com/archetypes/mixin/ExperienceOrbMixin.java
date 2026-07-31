@@ -19,7 +19,7 @@ public abstract class ExperienceOrbMixin {
 	 * fraction of what they earned. Banking the repaired portion here means
 	 * the ledger always sees the full orb, Mending or not.
 	 */
-	@WrapOperation(method = "playerTouch", at = @At(value = "INVOKE",
+	@WrapOperation(method = "playerTouch(Lnet/minecraft/world/entity/player/Player;)V", at = @At(value = "INVOKE",
 			target = "Lnet/minecraft/world/entity/ExperienceOrb;repairPlayerItems(Lnet/minecraft/server/level/ServerPlayer;I)I"))
 	private int archetypes$bankMendedExperience(final ExperienceOrb orb, final ServerPlayer player,
 			final int value, final Operation<Integer> original) {
