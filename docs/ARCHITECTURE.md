@@ -7,25 +7,56 @@ skill trees), levels off a mirror of vanilla XP, and casts/swings active
 abilities bound to four keys. This document is for someone extending the mod;
 every claim below is grounded in the source under `src/`.
 
-Package layout: gameplay/server logic in `src/main/java/com/archetypes`, mixins
-in `.../mixin`, the Specialities soft-dependency shim in `.../compat`, and all
-client/render/HUD/screen code in `src/client/java/com/archetypes/client`. The
-`main` entrypoint is `Archetypes` (`ModInitializer`); the `client` entrypoint is
-`ArchetypesClient` (`ClientModInitializer`).
+Package layout: gameplay/server logic in `src/main/java/com/archetypes`, the
+portable state/wire key tables in `.../state`, the three loader seams in
+`.../platform`, mixins in `.../mixin`, the Specialities soft-dependency shim in
+`.../compat`, and all client/render/HUD/screen code in
+`src/client/java/com/archetypes/client`. The `main` entrypoint is `Archetypes`
+(`ModInitializer`); the `client` entrypoint is `ArchetypesClient`
+(`ClientModInitializer`).
+
+## Binding rules for anyone touching this tree
+
+Two documents outrank this one and have to be read before the first edit:
+
+1. **`../specialities/docs/MULTIVERSION-CONVENTIONS.md` — BINDING HERE TOO.** It is Skill
+   Proficiencies' multi-version playbook and it is the ruleset for this repo as well, not a
+   neighbouring project's housekeeping. In particular: §3's **frozen predicate vocabulary**
+   (inventing a synonym for an existing boundary is the likeliest silent-divergence bug there
+   is), §4's `//?` syntax and its **crash-level prohibition on directives in any `.json`**,
+   §5a **mixin annotations fork, balance logic never**, §5b arithmetic stays outside a
+   conditional, §5e **Java 17 is the shared-code ceiling**, §5g the seam-hygiene rule, §5h
+   full descriptors on every mixin target, and §6's closed findings R-10/R-11/R-16/R-17/
+   R-18/R-20/R-22. Never fetch `stonecutter.kikugie.dev` (R-13).
+2. **`docs/MULTIVERSION.md` — this repo's port design**, including the stage plan, the seam
+   shapes, the per-node deltas and the risk register. Its "Stage 0 outcomes" table records
+   where measurement has already overtaken the plan.
+
+The three **seams** exist so that the workspace conversion is mechanical, and a grep is the
+review gate for each: nothing outside `com/archetypes/platform/` may name `AttachmentTarget`,
+`AttachmentType`, `AttachmentRegistry`, `AttachmentSyncPredicate`, `PayloadTypeRegistry`,
+`ServerPlayNetworking`, `ClientPlayNetworking`, `FabricLoader` or any NeoForge/Forge API. A
+new call site elsewhere is drift to catch in review.
 
 ## 1. Big picture
 
 ### Server-authoritative attachments
 
-All persistent and transient per-player state lives in **Fabric attachments**,
-declared in `ModAttachments`. The server is the only writer; clients read a
-synced copy. Two sync scopes are used:
+All persistent and transient per-player state is declared as a table of
+`state.StateKey` records in **`ModState`** (74 of them) and stored by
+**`platform.ArchetypeStore`**, whose Fabric implementation turns each key into a
+Fabric attachment. The server is the only writer; clients read a synced copy.
+Read and write it as `ArchetypeStore.INSTANCE.get(entity, ModState.FOO)` —
+`ModState` names the state, the seam stores it, and the key table itself carries
+no loader import and no Minecraft API newer than 1.20.1 so that it ports
+unchanged. Two sync scopes are used (`StateKey.Sync`, which the Fabric store maps
+onto `AttachmentSyncPredicate`):
 
-- `AttachmentSyncPredicate.targetOnly()` — synced to the owning client only.
+- `TARGET_ONLY` / `AttachmentSyncPredicate.targetOnly()` — synced to the owning client only.
   Used for private state: `ARCHETYPE`, `ARCHETYPE_XP`, `SPENT_POINTS`,
   `PURCHASED`, `MANA`, and the per-ability `*_READY_AT` cooldown timestamps
   (all but `DISENGAGE_READY_AT`, which stays server-side and unsynced).
-- `AttachmentSyncPredicate.all()` — synced to everyone. Used for state other
+- `ALL_TRACKING` / `AttachmentSyncPredicate.all()` — synced to everyone. Used for state other
   players' renderers need: `BULWARK_ACTIVE`, `ARMOR_HIDDEN`, `DECIMATE_SWING_AT`,
   `BLADESTORM_END`, `QUAKE_CHARGE_END`, `RADIANCE_END`, `DEADEYE_END` (which the
   owner's client also needs, because it predicts a crossbow's charge time), the
@@ -36,7 +67,7 @@ synced copy. Two sync scopes are used:
 
 Some attachments are `.persistent(codec)` and `.copyOnDeath()` (the archetype,
 its XP, owned nodes, mana); others are transient (cooldown timestamps, proc
-bookkeeping like `MISSILE_CAST_COUNT`, `SMASH_AT`). `ModAttachments.get(player)`
+bookkeeping like `MISSILE_CAST_COUNT`, `SMASH_AT`). `ModState.get(player)`
 resolves the stored `ARCHETYPE` string to an `Archetype`; `set`/`clear` write it.
 
 The key design consequence: because the owning client holds a synced mirror,
@@ -325,9 +356,9 @@ competes with enchanting.
   ever left more points spent than XP justifies; it only ever raises.
 - **Amnesia / respec.** `AmnesiaPotions` registers two drinkable potions.
   Amnesia I (`shaveLevels`, keeping `Tuning.AMNESIA_LEVEL_KEEP` = 2/3 of levels)
-  refunds every node via `ModAttachments.forgetNodes` but keeps the archetype;
+  refunds every node via `ModState.forgetNodes` but keeps the archetype;
   Amnesia II (`forgetArchetype`) wipes nodes, the choice, and all banked XP. The
-  creative `ResetArchetypePayload` path (`ModAttachments.clear`) refunds nodes but
+  creative `ResetArchetypePayload` path (`ModState.clear`) refunds nodes but
   *keeps* banked levels. `forgetNodes` clears both spent-point pools, ends a
   live Magic Armaments channel (the ticker's own guards die with the archetype
   on the Amnesia II and reset paths), and clears proc bookkeeping
@@ -677,7 +708,7 @@ Worked for a hypothetical new Slayer skill "Cleave":
    `exclusiveTaken` by hand: it is an if-chain that falls through to the
    Protector branch, so the compiler will not flag a missing tree there.
 5. **Actives**: add the ability dispatch to the `ActiveAbilityPayload` switch in
-   `Archetypes.onInitialize`, and any cooldown attachments to `ModAttachments`.
+   `Archetypes.onInitialize`, and any cooldown keys to `ModState`.
 6. **Balance**: add constants to `Tuning`.
 7. **Icons**: add the `textures/node/<tree>/` sprite set (or use the fallback
    chain during development).
