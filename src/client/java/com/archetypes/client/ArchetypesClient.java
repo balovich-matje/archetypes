@@ -127,7 +127,11 @@ public class ArchetypesClient implements ClientModInitializer {
 				int level = com.archetypes.SkillPoints.level(client.player);
 
 				if (lastLevel >= 0 && level > lastLevel) {
-					client.gui.toastManager().addToast(new ArchetypeLevelUpToast(
+					// 26.2 moved the toast manager onto the Gui object with it;
+					// 26.1 still answers Minecraft.getToastManager(). (Below
+					// 1.21.11 it is getToasts()/ToastComponent — Stage 4's fork.)
+					/*? if >=26.2 {*/client.gui.toastManager().addToast(new ArchetypeLevelUpToast(
+					/*?} else *///client.getToastManager().addToast(new ArchetypeLevelUpToast(
 							ModState.get(client.player), lastLevel, level));
 				}
 
@@ -356,7 +360,9 @@ public class ArchetypesClient implements ClientModInitializer {
 		}
 
 		Archetype current = ModState.get(client.player);
-		client.gui.setScreen(current == null
+		// 26.2 moved screen management off Minecraft onto the Gui object.
+		/*? if >=26.2 {*/client.gui.setScreen(current == null
+		/*?} else *///client.setScreen(current == null
 				? new ArchetypePickerScreen(parent)
 				: new ArchetypeScreen(parent, current));
 	}

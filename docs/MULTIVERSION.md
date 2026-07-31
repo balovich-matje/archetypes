@@ -428,6 +428,23 @@ SP's table already covers, and Archetypes reuses **verbatim, inventing no synony
 | **`>=26.1`** (existing row — fabric-api additions) | 26.2, 26.1 | `client.keymapping.v1.KeyMappingHelper` (below: `client.keybinding.v1.KeyBindingHelper` — the module renamed `fabric-key-binding-api-v1` → `fabric-key-mapping-api-v1`); `registry.FabricPotionBrewingBuilder`. |
 | **`>=1.21.11`** (fabric-api additions) | 26.x, 1.21.11 | `client.rendering.v1.FabricRenderState` + `RenderStateDataKey` — **absent on 0.116.14+1.21.1 and 0.92.11+1.20.1**, and the absence is architectural, not a rename. |
 
+**STAGE 2 ADDITIONS to the `>=26.2` row — measured on the node, not predicted.** The rule
+is conventions §3's: a boundary a `//?` block relies on is written down in the same commit
+that first uses it. Every one of these is the SAME `>=26.2` boundary — no synonym was
+invented, and no new predicate was needed for the whole beachhead.
+
+| API | 26.2 | 26.1.2 and below | Used by |
+|---|---|---|---|
+| `net.minecraft.world.effect.InstantaneousMobEffect` | that spelling | **`InstantenousMobEffect`** — vanilla's typo, still present on 1.21.11 / 1.21.1 / 1.20.1 (checked in all four mojmap jars) | handled by a controller `replacements` rule, not `//?`: the rename also reaches `MobEffect.applyInstantaneousEffect`, `MobEffect.isInstantaneous` and a mixin `method =` STRING |
+| `net.minecraft.world.entity.EntityTypes` | new holder class for the vanilla `EntityType` constants (with `EntityTypeIds`) — the same registry split 26.2 did to blocks and items | constants live on **`EntityType`**; `EntityTypes.class` is absent from the jar | `OracleStrikes` (`LIGHTNING_BOLT`) |
+| `ThrowableProjectile.getAirDrag()` / `Entity.getAirDrag()` | overridable hook, default `0.99F` | **absent** — `ThrowableProjectile.applyInertia()` does `ldc 0.99f` inline in the non-water arm (`isInWater()` picks 0.8 on both) | `SpellProjectile`: below 26.2 the `@Override` goes and `tick()` pre-scales the delta by `ours / 0.99` before `super.tick()`, which lands applyInertia on exactly the 26.2 product |
+| `Entity.getEffectiveGravity()` | present | absent | not used today; recorded so it is not reached for |
+
+**STAGE 2 ADDITIONS — the `>=1.21.11` row is confirmed, not extended.** `applyItemBlocking`,
+`BlocksAttacks.resolveBlockedDamage` and `Player.isSweepAttack` all resolve on 26.1.2, so
+the shield cluster survives this node intact and its excision question (R-A5) stays where
+the design put it, at Stage 4.
+
 **Also record (not new predicates, but new *three-way* splits):**
 - **Brewing is three-way**: `FabricPotionBrewingBuilder` (`>=26.1`) / `FabricBrewingRecipeRegistryBuilder` (1.21.11, 1.21.1) / `FabricBrewingRecipeRegistry` (0.92.11 only). Two arms plus an else.
 - **The heart draw is four-way** (§4.3).
@@ -627,6 +644,41 @@ Copy the six scaffold files (§1.1–1.3), register **`26.2-fabric` only**. Sole
 26.1 is also the **only** node that pairs `GuiGraphicsExtractor` with `Gui` (not `Hud`), so proving the heart-swap fork there de-risks it before the render pipeline itself changes. And it forces the SP-interop per-node-artifact blocker (§3.5) to surface at Stage 2 instead of Stage 4.
 
 **Lanes:** 2-A damage funnel (`knockback` re-rooting + `blockedByItem` arity + R-20 caller census); 2-B client (`Hud`→`Gui` heart swap, `LevelExtractor` excision + ESP degradation decision); 2-C build/metadata + SP-interop artifact; 2-D fabric-api swaps (`CreativeModeTabEvents` is already on the right side at 26.1 — verify, don't assume).
+
+#### 5.3.1 Stage 2, as landed — the measured outcome
+
+The node needed **23 `//?` blocks across 10 files**, one `replacements` rule and one
+`processResources` transform. Only two predicates appear in the whole set — `>=26.2` and its
+negation `<26.2` for the three blocks that are pure additions below the boundary. Nothing about the beachhead argued for revising the design; two of its open
+questions are now answered and one new API delta was found (`getAirDrag`, §4.1).
+
+**E-KB-1 IS RUN, and its answer is in `com/archetypes/KnockbackSource.java`** — a
+constant-pool scan of every class in the mojmap common jar of BOTH versions (R-20's method).
+Every path that reaches `LivingEntity.knockback` is enumerated there with the source 26.2
+passes and where that same source lives on 26.1. Three sites are wrapped (two inside
+`hurtServer`, one inside `Player.attack`) and that is the whole of what the mod's five
+knockback behaviours can reach carrying a PLAYER source. Two residues are stated rather than
+hidden — `Player.doSweepAttack` (unreachable for a dagger, a bare fist or a spell, because
+vanilla only sweeps with a sweeping-ratio weapon) and the mob-AI legs
+(`Mob.doHurtTarget`, `LivingEntity`/`Player.stabAttack`, `ChargeAttack`, `RamTarget`, whose
+source is a mob's). In both, only one of the three global `isPulsing()` flags could differ.
+**They are a Stage-3 item, not a Stage-2 one**: 1.21.11 / 1.21.1 / 1.20.1 all land on the
+same `knockback(DDD)` shape, so the residue should be settled once for all four legacy nodes
+rather than four times.
+
+**R-A5 does NOT bite here.** `applyItemBlocking`, `BlocksAttacks.resolveBlockedDamage` and
+`Player.isSweepAttack` all resolve on 26.1.2. The shield cluster is whole on this node.
+
+**A mixin whose class vanishes on a node needs its config entry dropped, and `//?` cannot
+do it.** Skill Proficiencies' answer is a per-node override of the whole client mixin config;
+this repo takes the other sanctioned mechanism (`processResources` line-blank,
+`strippedMixinEntries` in the node script) because six of seven nodes drop the SAME entry
+(`LevelExtractorMixin`) and six full copies of one JSON is the shape that goes stale. Blanking
+leaves valid JSON; the constraint it rests on — the entry must not be the array's last
+element — is written at the transform.
+
+**A `*/` inside a disabled `//?` branch closes Stonecutter's own comment early.** Any javadoc
+on a whole-file-gated class has to become line comments first (`LevelExtractorMixin`).
 
 ### 5.4 Stage 3 — `1.21.11-fabric` — the extract-vs-immediate render split
 

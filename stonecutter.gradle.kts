@@ -63,5 +63,29 @@ stonecutter parameters {
 		string(current.parsed >= "1.21.11") {
 			replace("net.minecraft.Util", "net.minecraft.util.Util")
 		}
+
+		// STAGE 2, and the first replacement this repo owns rather than inherits.
+		//
+		// 26.2 fixed a nine-year-old vanilla TYPO. Three names change and all three are
+		// the same substring, so one rule covers them:
+		//
+		//     InstantaneousMobEffect       <- InstantenousMobEffect
+		//     MobEffect.applyInstantaneousEffect  <- applyInstantenousEffect
+		//     MobEffect.isInstantaneous    <- isInstantenous
+		//
+		// MEASURED, not assumed: `unzip -l` on the mojmap common jar of every version
+		// this port targets says `InstantenousMobEffect` on 1.20.1, 1.21.1, 1.21.11 and
+		// 26.1.2, and `InstantaneousMobEffect` on 26.2 alone — one boundary, at exactly
+		// 26.2, good for every node still to come.
+		//
+		// A replacement rather than `//?` deliberately: the rename reaches a mixin
+		// `method =` STRING (client-facing descriptors in HealOrHarmMobEffectMixin) as
+		// well as an import, a class header and two `@Override`s. A textual rule catches
+		// the string literal for free; five `//?` blocks would each have to remember it.
+		// Nothing in this repo's own vocabulary contains the substring, so the rule
+		// cannot hit anything but vanilla's spelling.
+		string(current.parsed >= "26.2") {
+			replace("Instantenous", "Instantaneous")
+		}
 	}
 }

@@ -82,7 +82,12 @@ public class ArchetypePickerScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		// 26.2 moved screen management off Minecraft onto the Gui object.
+		//? if >=26.2 {
 		this.minecraft.gui.setScreen(this.parent);
+		//?} else {
+		/*this.minecraft.setScreen(this.parent);
+		*///?}
 	}
 
 	private int panelLeft() {
@@ -178,7 +183,8 @@ public class ArchetypePickerScreen extends Screen {
 
 		// Confirm: the choice can't be undone until Amnesia II is brewable,
 		// so make them say yes.
-		this.minecraft.gui.setScreen(new ConfirmScreen(
+		/*? if >=26.2 {*/this.minecraft.gui.setScreen(new ConfirmScreen(
+		/*?} else *///this.minecraft.setScreen(new ConfirmScreen(
 				confirmed -> {
 					if (confirmed) {
 						Net.INSTANCE.sendToServer(WireId.PICK_ARCHETYPE, buf -> buf.writeUtf(picked.id()));
@@ -186,9 +192,17 @@ public class ArchetypePickerScreen extends Screen {
 						// inventory. Passing `picked` rather than reading the
 						// attachment: the server owns it and the sync has not
 						// landed yet, but we already know what was chosen.
+						//? if >=26.2 {
 						this.minecraft.gui.setScreen(new ArchetypeScreen(this.parent, picked));
+						//?} else {
+						/*this.minecraft.setScreen(new ArchetypeScreen(this.parent, picked));
+						*///?}
 					} else {
+						//? if >=26.2 {
 						this.minecraft.gui.setScreen(this);
+						//?} else {
+						/*this.minecraft.setScreen(this);
+						*///?}
 					}
 				},
 				Component.translatable("screen.archetypes.confirm.title", picked.tierName(0)),

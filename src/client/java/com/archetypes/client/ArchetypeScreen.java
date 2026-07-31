@@ -155,7 +155,12 @@ public class ArchetypeScreen extends Screen {
 
 		this.addRenderableWidget(Button.builder(Component.translatable("screen.archetypes.tree.reset"), button -> {
 					Net.INSTANCE.sendToServer(WireId.RESET_ARCHETYPE, buf -> { });
+					// 26.2 moved screen management off Minecraft onto the Gui object.
+					//? if >=26.2 {
 					this.minecraft.gui.setScreen(new ArchetypePickerScreen(this.parent));
+					//?} else {
+					/*this.minecraft.setScreen(new ArchetypePickerScreen(this.parent));
+					*///?}
 				})
 				.bounds(this.panelLeft() + this.panelWidth() - PAD - BUTTON_WIDTH, buttonY,
 						BUTTON_WIDTH, BUTTON_HEIGHT)
@@ -165,7 +170,11 @@ public class ArchetypeScreen extends Screen {
 
 	@Override
 	public void onClose() {
+		//? if >=26.2 {
 		this.minecraft.gui.setScreen(this.parent);
+		//?} else {
+		/*this.minecraft.setScreen(this.parent);
+		*///?}
 	}
 
 	private int panelWidth() {

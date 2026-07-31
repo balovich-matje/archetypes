@@ -17,7 +17,16 @@ import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.entity.EntitySpawnReason;
+// 26.2 split the entity registry the same way it split blocks and items: the vanilla
+// EntityType CONSTANTS moved out of `EntityType` into a new `EntityTypes` holder (and the
+// ids into `EntityTypeIds`). Measured: `net/minecraft/world/entity/EntityTypes.class` is
+// present on 26.2 and absent on 26.1.2. The constant's TYPE and the `create(Level,
+// EntitySpawnReason)` call are identical on both, so only the owner name forks.
+//? if >=26.2 {
 import net.minecraft.world.entity.EntityTypes;
+//?} else {
+/*import net.minecraft.world.entity.EntityType;
+*///?}
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.monster.Enemy;
@@ -186,7 +195,11 @@ public final class OracleStrikes {
 			final LivingEntity victim, final float damage) {
 		victim.hurtServer(level, level.damageSources().indirectMagic(caster, caster), damage);
 
+		//? if >=26.2 {
 		LightningBolt bolt = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
+		//?} else {
+		/*LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
+		*///?}
 
 		if (bolt != null) {
 			// Visual-only: no vanilla damage, no fires — the 40 stays exactly ours.

@@ -266,13 +266,37 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		return this.mode == Mode.HOLY_LIGHT ? (this.flatArc ? 0.02 : 0.05) : 0.0;
 	}
 
+	/**
+	 * Air drag, and the ONE place the numbers live on every node.
+	 *
+	 * <p>26.2 introduced {@code ThrowableProjectile.getAirDrag()} as the overridable
+	 * hook; 26.1 and below hard-code the float 0.99 inline in
+	 * {@code ThrowableProjectile.applyInertia()} (measured: the 26.1.2 bytecode does
+	 * {@code ldc 0.99f} where 26.2 does {@code invokevirtual getAirDrag()F}, and the
+	 * water arm is the constant 0.8 on both). So below 26.2 the annotation goes — this
+	 * stays a plain method nobody calls from vanilla — and {@link #tick()} pre-scales
+	 * instead. The VALUES never fork.
+	 */
+	//? if >=26.2 {
 	@Override
+	//?}
 	protected float getAirDrag() {
 		return this.mode == Mode.HOLY_LIGHT ? 0.99F : 1.0F;
 	}
 
 	@Override
 	public void tick() {
+		// Below 26.2 there is no getAirDrag hook, so reproduce its CONTRACT rather than
+		// approximate it (R-20). vanilla's applyInertia runs first thing in super.tick()
+		// and does `delta *= 0.99` in the non-water arm, then moves by that delta in the
+		// same tick — so pre-scaling by ours/0.99 here leaves applyInertia landing on
+		// exactly `delta * getAirDrag()`, which is what 26.2 computes. The water arm
+		// (0.8) is untouched on both, hence the same isInWater() test vanilla branches on.
+		//? if <26.2 {
+		/*if (!this.isInWater()) {
+			this.setDeltaMovement(this.getDeltaMovement().scale(this.getAirDrag() / 0.99F));
+		}
+		*///?}
 		super.tick();
 
 		if (this.level().isClientSide() || this.isRemoved()) {

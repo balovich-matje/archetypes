@@ -41,11 +41,23 @@ public abstract class LivingEntityMixin {
 	 * <p>Melee-only comes free — a projectile's direct entity is the projectile,
 	 * so vanilla never routes arrows here.
 	 */
+	// ARITY FORK, conventions §5a: the annotation and the parameter list move, the shared
+	// impl never does. 26.2 hands `blockedByItem` the source and the blocked amount; 26.1
+	// declares `blockedByItem(LivingEntity)` and has neither. Nothing is lost — the impl
+	// takes `blocked` and never reads it (Braced keys on the block happening at all, Iron
+	// Spikes rolls vanilla's own thorns numbers), so the legacy arm passes 0.
+	//? if >=26.2 {
 	@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;F)V", at = @At("TAIL"))
 	private void archetypes$onShieldBlocked(final LivingEntity blocker, final DamageSource source,
 			final float blocked, final CallbackInfo ci) {
 		archetypes$onShieldBlockedImpl(blocker, blocked);
 	}
+	//?} else {
+	/*@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;)V", at = @At("TAIL"))
+	private void archetypes$onShieldBlocked(final LivingEntity blocker, final CallbackInfo ci) {
+		archetypes$onShieldBlockedImpl(blocker, 0.0F);
+	}
+	*///?}
 
 	/** Shared implementation of {@link #archetypes$onShieldBlocked}. */
 	@Unique
@@ -596,6 +608,11 @@ public abstract class LivingEntityMixin {
 	 * and the flurry was pushing its own victim away. All knockback funnels
 	 * through this one overload (the five-arg delegates here).
 	 */
+	// RE-ROOTED below 26.2, and the source arrives out of band — see KnockbackSource for
+	// the caller census that picked the wrap sites and for what is deliberately NOT
+	// covered. The injection POINT is unchanged (HEAD of knockback, first double), so the
+	// factor is still applied in exactly one place; only how the source gets there moves.
+	//? if >=26.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(
 			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
 			at = @At("HEAD"), argsOnly = true, ordinal = 0)
@@ -604,6 +621,14 @@ public abstract class LivingEntityMixin {
 			final boolean spinAttack) {
 		return archetypes$daggerKnockbackImpl(strength, source);
 	}
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDD)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	private double archetypes$daggerKnockback(final double strength) {
+		return archetypes$daggerKnockbackImpl(strength, com.archetypes.KnockbackSource.current());
+	}
+	*///?}
 
 	/** Shared implementation of {@link #archetypes$daggerKnockback}. */
 	@Unique
@@ -1005,9 +1030,16 @@ public abstract class LivingEntityMixin {
 	 * than a branch of the dagger funnel below, because knockback immunity has
 	 * to hold for a sourceless shove too.
 	 */
+	// Arity-only fork: this one reads nothing but `this`, so only the descriptor moves.
+	//? if >=26.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(
 			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
 			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDD)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	*///?}
 	private double archetypes$incorporealKnockback(final double strength) {
 		return archetypes$incorporealKnockbackImpl(strength);
 	}
@@ -1024,12 +1056,62 @@ public abstract class LivingEntityMixin {
 	 * overload, next to Steadfast's and Incorporeal's — the same reason as
 	 * theirs, that knockback immunity has to hold for a sourceless shove too.
 	 */
+	// Arity-only fork, same as Incorporeal's directly above.
+	//? if >=26.2 {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(
 			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
 			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	//?} else {
+	/*@org.spongepowered.asm.mixin.injection.ModifyVariable(
+			method = "knockback(DDD)V",
+			at = @At("HEAD"), argsOnly = true, ordinal = 0)
+	*///?}
 	private double archetypes$siegeKnockback(final double strength) {
 		return archetypes$siegeKnockbackImpl(strength);
 	}
+
+	// ---- The two legacy-only stash sites inside hurtServer (see KnockbackSource). ----
+	//
+	// Neither touches balance: each sets the source, calls the original unchanged, and
+	// restores in a finally. They exist so `archetypes$daggerKnockback` above sees on 26.1
+	// exactly the source 26.2 would have handed it as a parameter.
+	//? if <26.2 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"))
+	private void archetypes$stashHurtKnockback(final LivingEntity self, final double strength,
+			final double x, final double z,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
+			@com.llamalad7.mixinextras.sugar.Local(argsOnly = true) final DamageSource source) {
+		DamageSource previous = com.archetypes.KnockbackSource.push(source);
+
+		try {
+			original.call(self, strength, x, z);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
+	}
+
+	// The shield-block leg: applyItemBlocking -> blockUsingItem -> blockedByItem ->
+	// knockback, three frames down, none of which carries the source on 26.1.
+	@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F"))
+	private float archetypes$stashBlockKnockback(final LivingEntity self,
+			final net.minecraft.server.level.ServerLevel level, final DamageSource source,
+			final float amount,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Float> original) {
+		DamageSource previous = com.archetypes.KnockbackSource.push(source);
+
+		try {
+			return original.call(self, level, source, amount);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
+	}
+	*///?}
 
 	/** Shared implementation of {@link #archetypes$siegeKnockback}. */
 	@Unique

@@ -230,11 +230,33 @@ val strippedMetadataLines: List<String> =
 	if (sc.current.parsed >= "1.21.1") emptyList()
 	else listOf("player_animation_library")
 
+// Same mechanism, same reason, different file: a mixin listed in the config whose class is
+// not in the jar is a HARD BOOT FAILURE, so a mixin that only exists on some nodes has to
+// leave the list on the others. `//?` cannot do it — the config is `.json`.
+//
+// Skill Proficiencies solves this with a per-node override of the whole client mixin
+// config. That is the right shape when a node has to ADD an entry; it is the wrong shape
+// here, where six of the seven nodes will DROP the same one and each override would be a
+// full copy that silently goes stale the next time a client mixin is added. Blanking the
+// line leaves valid JSON (whitespace inside an array is insignificant) and keeps ONE list.
+//
+// CONSTRAINT this depends on, stated so it is not discovered the hard way: the entry must
+// not be the LAST element of its array, or blanking it leaves a trailing comma. It is not
+// — the client list is alphabetical and UseDurationMixin is last.
+//
+// 26.2 gets no transform at all, which is what keeps its resource bytes where they were.
+val strippedMixinEntries: List<String> =
+	if (sc.current.parsed >= "26.2") emptyList()
+	// `client.renderer.extract` does not exist below 26.2, so LevelExtractorMixin's whole
+	// compilation unit is `//?`-ed out and produces no class. See that file's header.
+	else listOf("\"LevelExtractorMixin\"")
+
 tasks.withType<ProcessResources>().configureEach {
 	val mixinJava = "JAVA_${requiredJava.majorVersion}"
 	metadataProps.forEach { (k, v) -> inputs.property(k, v) }
 	inputs.property("mixinJava", mixinJava)
 	inputs.property("strippedMetadataLines", strippedMetadataLines)
+	inputs.property("strippedMixinEntries", strippedMixinEntries)
 
 	// Copy-spec ACTIONS are not task inputs — `eachFile`/`filter` blocks are invisible to
 	// up-to-date checking, so without this property a node that gained or lost the
@@ -249,7 +271,12 @@ tasks.withType<ProcessResources>().configureEach {
 			filter { line -> if (strippedMetadataLines.any(line::contains)) "" else line }
 		}
 	}
-	filesMatching("*.mixins.json") { expand("java" to mixinJava) }
+	filesMatching("*.mixins.json") {
+		expand("java" to mixinJava)
+		if (strippedMixinEntries.isNotEmpty()) {
+			filter { line -> if (strippedMixinEntries.any(line::contains)) "" else line }
+		}
+	}
 
 	// ---- R-16: the datapack tag directory is PLURAL below 1.21 ----
 	//

@@ -138,4 +138,36 @@ public abstract class PlayerMixin {
 			com.archetypes.MeleeSwing.end(previous);
 		}
 	}
+
+	// ---- Legacy-only knockback-source stash (see com.archetypes.KnockbackSource). ----
+	//
+	// The melee EXTRA knockback — the sprint bonus and the Knockback enchant — reaches
+	// LivingEntity.knockback through Player.causeExtraKnockback, which carries the source
+	// on 26.2 and does not on 26.1. Without this, a dagger's and a Clinch fist's extra
+	// shove would keep their full strength below 26.2 while the base shove was reduced:
+	// a silent balance divergence, which is exactly what the census exists to prevent.
+	//
+	// `damageSource` is the ONLY DamageSource local in Player.attack on 26.1 (slot 4, live
+	// from bytecode offset 44 to 351, and the call sits at 276), so @Local resolves it
+	// without an ordinal. Touches no balance itself: set, call unchanged, restore.
+	//? if <26.2 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "attack(Lnet/minecraft/world/entity/Entity;)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/player/Player;causeExtraKnockback(Lnet/minecraft/world/entity/Entity;FLnet/minecraft/world/phys/Vec3;)V"))
+	private void archetypes$stashExtraKnockback(final Player self,
+			final net.minecraft.world.entity.Entity target, final float strength,
+			final net.minecraft.world.phys.Vec3 direction,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
+			@com.llamalad7.mixinextras.sugar.Local final net.minecraft.world.damagesource.DamageSource source) {
+		net.minecraft.world.damagesource.DamageSource previous =
+				com.archetypes.KnockbackSource.push(source);
+
+		try {
+			original.call(self, target, strength, direction);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
+	}
+	*///?}
 }
