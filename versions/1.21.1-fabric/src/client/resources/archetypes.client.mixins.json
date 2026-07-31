@@ -6,6 +6,7 @@
 		"AbstractContainerScreenAccessor",
 		"AvatarRendererMixin",
 		"EntityRendererMixin",
+		"GhostArmorMixin",
 		"HudMixin",
 		"LivingEntityRendererAccessor",
 		"LocalPlayerMixin",

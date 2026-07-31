@@ -8,20 +8,55 @@ import com.archetypes.DeathMark;
 import com.archetypes.NightForm;
 import com.mojang.blaze3d.vertex.PoseStack;
 
+// STAGE 4 — the render-state collapse (design §4.3), third of the three avatar layers. The
+// three-state decision was ALREADY written against the entity (`glowFor(Entity)`), so below
+// 1.21.11 the layer simply calls it itself instead of reading the answer the extraction hook
+// stashed. Nothing about the state machine moves; only who asks it, and when.
+//
+// The draw forks with the pipeline, and both shapes were read off the mapped jars:
+//   >=1.21.11  SubmitNodeCollector.order(int).submitModelPart(ModelPart, PoseStack, RenderType,
+//                  int, int, ..., int tint, ...)   — package `client.renderer.rendertype`
+//   1.21.1     ModelPart.render(PoseStack, VertexConsumer, int light, int overlay, int color)
+//                  with the buffer taken from `MultiBufferSource.getBuffer(RenderType.eyes(..))`
+//                  — `RenderType` sits at `net.minecraft.client.renderer` there, and `eyes` is
+//                  a static on it rather than on a `RenderTypes` factory.
+// The tint is the same ARGB int on both, so the two alpha dials below are untouched.
+//
+// ONE MEASURED DIFFERENCE, recorded rather than papered over: 1.21.1's `RenderType.eyes` blends
+// ADDITIVE where 26.x's blends TRANSLUCENT. Alpha still scales the glow (it multiplies the
+// texture through the vertex colour, and the blend is SRC_ALPHA/ONE), so FAINT still reads as
+// faint and BRIGHT as bright; what it cannot do is darken what is behind it, which this effect
+// never wanted. Both are colour-write-only and depth-tested, so the occlusion and the
+// back-face rules the doc below describes hold on both.
+//? if >=1.21.11 {
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
+//?}
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.geom.PartPose;
 import net.minecraft.client.model.geom.builders.CubeListBuilder;
 import net.minecraft.client.model.geom.builders.LayerDefinition;
 import net.minecraft.client.model.geom.builders.MeshDefinition;
+//? if >=1.21.11 {
 import net.minecraft.client.model.player.PlayerModel;
+//?} else {
+/*import net.minecraft.client.model.PlayerModel;
+import net.minecraft.client.player.AbstractClientPlayer;
+*///?}
 import net.minecraft.client.multiplayer.ClientLevel;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.SubmitNodeCollector;
+//?} else {
+/*import net.minecraft.client.renderer.MultiBufferSource;
+*///?}
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
+//?} else {
+/*import net.minecraft.client.renderer.RenderType;
+*///?}
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
@@ -81,7 +116,12 @@ import net.minecraft.world.level.Level;
  * vanilla model, and the author has accepted that a custom skin that puts eyes
  * elsewhere will wear this glow where Steve's eyes are.
  */
+//? if >=1.21.11 {
 public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> {
+//?} else {
+/*public class NightEyesLayer
+		extends RenderLayer<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> {
+*///?}
 	/** Which of the three states a player is in this frame. Written by
 	 * {@code AvatarRendererMixin} at extraction, read here at submit. */
 	public enum Glow {
@@ -90,7 +130,9 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 		BRIGHT
 	}
 
+	//? if >=1.21.11 {
 	public static final RenderStateDataKey<Glow> GLOW = RenderStateDataKey.create();
+	//?}
 
 	private static final Identifier TEXTURE = Archetypes.id("textures/entity/night_form_eyes.png");
 
@@ -140,7 +182,12 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 
 	private final ModelPart eyes;
 
+	//? if >=1.21.11 {
 	public NightEyesLayer(final RenderLayerParent<AvatarRenderState, PlayerModel> parent) {
+	//?} else {
+	/*public NightEyesLayer(
+			final RenderLayerParent<AbstractClientPlayer, PlayerModel<AbstractClientPlayer>> parent) {
+	*///?}
 		super(parent);
 		this.eyes = bakeEyes();
 	}
@@ -166,6 +213,7 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 		return entity.isInvisible() ? Glow.NONE : Glow.FAINT;
 	}
 
+	//? if >=1.21.11 {
 	@Override
 	public void submit(final PoseStack pose, final SubmitNodeCollector collector, final int light,
 			final AvatarRenderState state, final float yRot, final float xRot) {
@@ -186,6 +234,32 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 				glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT, null);
 		pose.popPose();
 	}
+	//?} else {
+	/*@Override
+	public void render(final PoseStack pose, final MultiBufferSource buffers, final int light,
+			final AbstractClientPlayer entity, final float limbSwing, final float limbSwingAmount,
+			final float partialTicks, final float ageInTicks, final float netHeadYaw,
+			final float headPitch) {
+		// The extraction hook's one line, made here instead. glowFor already
+		// took an Entity, so the state machine is untouched by the collapse.
+		Glow glow = glowFor(entity);
+
+		if (glow == Glow.NONE) {
+			return;
+		}
+
+		// The parent model was posed by LivingEntityRenderer immediately before
+		// the layer pass, so its head carries this frame's look angles (and the
+		// crouch offset). Riding its transform is what makes the glow stay on
+		// the eyes when the head turns instead of on the body's facing.
+		pose.pushPose();
+		this.getParentModel().head.translateAndRotate(pose);
+		this.eyes.render(pose, buffers.getBuffer(RenderType.eyes(TEXTURE)), light,
+				OverlayTexture.NO_OVERLAY,
+				glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT);
+		pose.popPose();
+	}
+	*///?}
 
 	/**
 	 * One quad, NORTH face only. Zero depth, so the box degenerates to that one
