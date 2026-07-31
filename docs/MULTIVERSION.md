@@ -1518,6 +1518,19 @@ player was found" before the id argument is read, so the bogus control does not 
 measured on both loader nodes and on both Fabric siblings. What those families rest on instead
 is the load-count comparison in the table and the absence of any parse-error line.
 
+**All FIVE Fabric servers re-run on the final 1.2.0 jars too**, so "seven nodes boot" rests on
+seven fresh logs rather than four old ones: 26.2 `Done (0.45s)`, 26.1 `(0.40s)`, 1.21.11
+`(0.36s)`, 1.21.1 `(1.15s)`, 1.20.1 `(2.73s)`; every one exit 0, zero mixin failures,
+Spellcasting registered. The 26.x/1.21.11 nodes apply **18** of the 19 declared common mixins
+and the two legacy nodes **17** — the same class-load story as the loader nodes, not a drift.
+
+⚠ **One benign log line named here because nothing else names it**: `[main/ERROR]: No data
+fixer registered for spell_projectile`, on `1.21.1-fabric` and `1.20.1-fabric` ONLY. It is
+vanilla's own `Util.fetchChoiceType` complaint at `EntityType.Builder.build` time for any
+modded entity id — measured absent on 26.2/26.1/1.21.11 (Mojang gated the check higher up) and
+absent on both loader nodes. **Do not "fix" it**; the only way to silence it is to register a
+DFU schema for a modded entity.
+
 **Pre-remap class parity** (SP's method: compare `versions/<node>/build/classes/java`, because
 the shipped jars differ by construction — mojmap vs intermediary vs SRG):
 
