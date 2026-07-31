@@ -212,3 +212,20 @@ stonecutter parameters {
 		}
 	}
 }
+
+// Cross-node upload ordering (Stage 6 integration). Without it `./gradlew publishMods` fires
+// every node's upload concurrently (`org.gradle.parallel=true`) and the seven race Modrinth's
+// rate limiter.
+//
+// `publishMods` is NOT an endpoint task — mod-publish-plugin registers it as an empty
+// aggregate that only `dependsOn` the per-platform `PublishModTask`s — so the CHILD is what
+// gets ordered. `StonecutterControllerTasksImpl.orderImpl` sorts the nodes with
+// `versionComparator` (`StonecutterProject.parsed`, ASCENDING), chains `mustRunAfter` over
+// them and puts them all behind one shared mutex service. Ascending is what we want: the
+// newest node uploads LAST and so lands on top of the Modrinth version list. `order` must be
+// called at most once per task name, hence the single line.
+//
+// There is no `publishCurseforge`: this project ships on Modrinth only.
+stonecutter tasks {
+	order("publishModrinth")
+}

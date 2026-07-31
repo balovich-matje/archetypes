@@ -1461,6 +1461,131 @@ versions/1.20.1-forge/src/**                                         every per-n
 - **The Forge client bootstrap.** Skill Proficiencies shipped its 1.20.1-forge jar with every client helper present and nothing invoking them. `@Mod.EventBusSubscriber(Dist.CLIENT, bus = MOD)` + `FMLClientSetupEvent`, and **the `@SubscribeEvent` method must be public** or it silently never fires.
 - **`[modproperties.archetypes] specialities_skills`** goes in each node's metadata file and is blocked on the R-A4 sign-off. Without it, neither loader node registers Spellcasting.
 
+#### 5.7.2 Stage 6 AS BUILT — seven nodes, and what the integration merge had to decide
+
+Three lane commits plus two merges. `a6-neoforge` (the NeoForge half), `b6-forge` (a shared-tree
+integration commit, the Forge seam, and the mod-order fix), merged in that order because the
+ownership split above made them disjoint — except in one place, recorded below.
+
+**The merge conflict, and the cross-note under it.** Both lanes independently found
+`client/RadianceLight.initialize()` registering `ClientTickEvents` unconditionally under a
+`fabric`-gated import, and both wrote the SAME three-arm chain; the conflict was two comments,
+not two fixes. The real collision was one file further out: Stage 6a rescoped
+`ClientHandDown.install()`'s call site AND `SpecialitiesBridge.installClientHudShift` to
+`fabric && <26.1` (the split-environment jar is a fabric-loom fact, not a version one), while
+Stage 6b had solved the same mismatch for its own node with a per-node
+`versions/1.20.1-forge/src/client/java/com/archetypes/client/ClientHandDown.java`. After the
+merge that override no longer compiled — `installClientHudShift` does not exist on the loader
+axis — and it was deleted rather than re-gated, because Stage 6a's fix is the wider one and
+`:1.20.1-forge:compileJava` resolves the direct `SpecialitiesClient.hudShift()` call it relies
+on. `LegacyStateSyncClient` stays a per-node override: that node genuinely needs a client
+receiver, it just cannot be the fabric-api one.
+
+**Prior-node identity across the whole integration.** Five Fabric jars, pre-merge vs
+post-merge: **0 resource differences, +0/−0 class shape, 0 instruction differences** on all
+five (244 / 244 / 250 / 250 / 240 classes; 385 / 385 / 385 / 361 / 359 resources). Jar bytes
+moved by 3–9 bytes and the cause was measured rather than assumed: rebuilding the 26.2 jar
+from the pre-merge `src/` and diffing byte for byte gives exactly five differing classes —
+`ArchetypesClient`, `RadianceLight`, `RadianceLight$Placement`, `SpecialitiesBridge$Linked`,
+`ItemStackMixin` — and `javap -l` shows the difference is **LineNumberTable entries only**,
+i.e. the comment lines Stage 6a/6b added. That is R-20's javac caveat in its second form, and
+it is why this gate compares instructions.
+
+**The build.** One unqualified `./gradlew buildAndCollect` → **seven jars**, no file-name
+collision (`archetypes-neoforge-…` / `archetypes-forge-…`).
+
+**Both loader servers, on the merged tree.** Headless dedicated servers, `-Dmixin.checks`
+`-Dmixin.debug.countInjections` `-Dmixin.debug.export`, each with Skill Proficiencies' matching
+loader jar in `mods/`:
+
+| | `1.21.1-neoforge` | `1.20.1-forge` |
+|---|---|---|
+| Boot / stop / exit | `Done (1.4s)`, clean stop, exit 0 | `Done (2.4s)`, clean stop, exit 0 |
+| Common mixins applied | **18** of 19 declared | **17** of 19 declared |
+| … vs its same-MC Fabric sibling | sibling applies 17 — this node applies one MORE (`PlayerAdvancementsMixin`; the class loads here and not there) | **exactly the sibling's 17** |
+| Never applied | `FoodDataMixin` (target never loads on a playerless server) | `FoodDataMixin`, `PlayerAdvancementsMixin` (same reason) |
+| Mixin failures | 0 | 0 |
+| Hard ERROR lines | 0 | 0 (4 benign: the two documented LexForge `minVersion` lines, ×2 mods) |
+| Probes that resolved | 5/5 item tags, all items | 5/5 item tags, all 28 items, entity type, 4 mob effects, particle |
+| Bogus controls that fired | item tag, item | item tag, item, mob effect, particle, entity type |
+| Recipes / advancements | `Loaded 1310 recipes` | `Loaded 7 recipes / 1290 advancements` — **byte-for-byte its Fabric sibling's numbers**, which log the same pair |
+| MixinExtras | 0.5.3 platform library | **0.5.4 via jar-in-jar** — `Initializing MixinExtras … (version=0.5.4)` in the log (R-10) |
+| Interop | `Registered skill 'spellcasting' from archetypes` | same, and `Archetypes initialized` PRECEDES it (the mod-order fix holds) |
+
+⚠ **The `recipe give` / `advancement grant` / potion probes are INCONCLUSIVE on a playerless
+server and must not be reported as passes.** `@a` resolves to nobody and brigadier throws "No
+player was found" before the id argument is read, so the bogus control does not fire either —
+measured on both loader nodes and on both Fabric siblings. What those families rest on instead
+is the load-count comparison in the table and the absence of any parse-error line.
+
+**Pre-remap class parity** (SP's method: compare `versions/<node>/build/classes/java`, because
+the shipped jars differ by construction — mojmap vs intermediary vs SRG):
+
+| | `neoforge` vs `1.21.1-fabric` | `forge` vs `1.20.1-fabric` |
+|---|---|---|
+| `main` byte-identical | 165 / 194 common | 159 / 188 common |
+| `main` mixin classes | **18 / 19** | **18 / 19** |
+| the one that differs | `ItemStackMixin` — NeoForge split `hurtAndBreak`, so the handler's last parameter is `LivingEntity` where Fabric has `ServerPlayer` | `FoodPropertiesMixin` — LexForge patches `getFoodData().eat(…)` to a three-argument call |
+| `client` byte-identical | 37 / 45 | 37 / 41 |
+| `client` mixin classes | **9 / 9** | **9 / 9** |
+| loader-only classes | 11 main + 3 client | 19 main + 3 client |
+
+The 29 differing common classes are the same list on both loaders (bar the one mixin), and
+"loader-forked wiring" is a **measurement**, not a claim. Splitting each differing class into
+methods (`javap -c -p -constants`, constant-pool indices AND javap's comment column
+normalised — it pads by the width of the index it just printed) gives, on `main`: **336
+members identical / 30 differing** on NeoForge and **333 / 31** on Forge. Of those:
+
+* 21 × `initialize()`, 5 × `static {}`, 1 × `onInitialize()` — registration, i.e. the seam.
+* `SpecialitiesBridge$Linked.hudShift()` — the hand-down-vs-direct arm, by design.
+* `SlayerActives.bladestorm`, `SlayerActives.resolve`, and on Forge `ShadowTicker.invisDuration`
+  — **`ldc` vs `ldc_w` and nothing else.** Same constant, same operands, same branch targets;
+  the two-byte form is reachable on one node because its constant pool index is under 256.
+  Zero balance-relevant instructions differ anywhere.
+
+On `client` the whole delta is registration too: 9 differing members on NeoForge (7 ×
+`initialize()`, `onInitializeClient()`, and the screen-init lambda where
+`Screens.getButtons`/`ScreenEvents.afterTick` become `NeoForgeClientEvents.addWidget`/
+`afterScreenTick` — every line that anchors or draws is untouched), 6 on Forge (the same two
+plus `LegacyStateSyncClient`, which is a per-node file by design).
+
+**The damage funnel.** Both loader nodes' transformed `LivingEntity.hurt` matches its same-MC
+Fabric sibling **handler for handler** for the first 32 entries — 18 Archetypes shapers, then
+Skill Proficiencies' `applyCombatDamage` / `uncapFallProtection` / `stealthCrit`, then
+`archetypes$flense`. The only structural difference is ONE extra `traceFinish`(500) →
+`hardened`(900) RETURN cluster on each, which is the loader's own early return patched into
+`hurt`; both handlers fire at it and in the right order. `1.20.1-forge` additionally carries
+`archetypes$afterDamage` → `specialities$afterDamageXp` in the final cluster, in its sibling's
+order.
+
+⚠ **One measured, accepted residue on `1.21.1-neoforge` only.** Its AFTER_DAMAGE substitute is
+`LivingDamageEvent.Post`, which NeoForge posts from inside `actuallyHurt` — i.e. BEFORE `hurt`
+returns, and therefore before `archetypes$hardened`, where fabric-api's TAIL handler runs
+after it. `HardenedMixin`'s own javadoc already states why that is not a balance channel
+("nothing here reads or writes state either neighbour touches … no AFTER_DAMAGE listener in
+this mod reads the plates"), and `NeoForgeEvents.afterDamage` reproduces the event's other
+three semantics — the pre-armour figure, the death gate and firing for players — with the
+artifact lines that prove each. Recorded because the ORDER is genuinely different, not because
+anything measured moved.
+
+**Tuning propagation across SEVEN jars.** One character in `Tuning.slamMultiplier`
+(`rank / 3.0F` → `rank / 4.0F`), rebuild, whole-jar compare: **exactly one class changed in
+every one of the seven jars — `com.archetypes.Tuning` — and zero resources.** The single
+instruction is `ldc float 3.0f` → `ldc float 4.0f` at the same offset on all seven. Reverting
+and rebuilding restores all seven to the byte-for-byte snapshots. Run in the main worktree
+rather than a scratch one (a cold worktree cannot reuse the loom caches); the revert side of
+the proof is what makes that safe, and `git status` was clean before and after.
+
+**Publishing, wired and dry-run only.** `me.modmuss50.mod-publish-plugin` 2.1.1 in all three
+node scripts, `order("publishModrinth")` in the controller. Project id **`47EMhuFl`**, read
+back off `GET /v2/project/archetypes`. Version numbers: bare on the newest Fabric node,
+`+<node key>` below it, whole node directory name on both loader nodes. The **dependency set
+is per node and is the one delta from SP**, whose live versions declare none: both live
+Archetypes versions declare `P7dR8mSH` (Fabric API, required), `ha1mEyJS` (PAL, required) and
+`d4TtjlpN` (Skill Proficiencies, optional) — so Fabric API is declared on the five Fabric nodes
+only, PAL only where `deps.pal` exists (i.e. not on either 1.20.1 node, Option B), and Skill
+Proficiencies optional everywhere.
+
 ### 5.8 Stage 7 — parity review, in-game passes, release
 
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**

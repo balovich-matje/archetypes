@@ -5,7 +5,7 @@
 mod.id = "archetypes"
 mod.name = "Archetypes"
 mod.group = "com.archetypes"
-mod.version = "1.1.0"
+mod.version = "1.2.0"
 
 deps.fabric_loader = "0.19.3"
 

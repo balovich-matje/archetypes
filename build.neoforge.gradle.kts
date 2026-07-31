@@ -9,16 +9,17 @@
 // NOTE, same as build.fabric.gradle.kts: Stonecutter `//?` comments do NOT work in build
 // scripts (conventions §5f) — use `sc.current.parsed >= "…"`.
 //
-// NOT here, on purpose, and it is the largest delta from the file next door: no
-// `me.modmuss50.mod-publish-plugin` and no `publishMods`/`printPublishMetadata` block.
-// build.fabric.gradle.kts has none either — Archetypes' Modrinth wiring is design §5.11, a
-// stage of its own that needs the project id read back off the API and a
-// `changelogs/<version>.md`. Adding it on ONE node would put publishing on the loader axis
-// before it exists on the Fabric one.
+// PUBLISHING landed with the Stage-6 integration, on all three node scripts in the same
+// commit — the Fabric one first, so this node is not the loader axis publishing ahead of it.
+// The block is at the bottom of this file and mirrors build.fabric.gradle.kts, with the two
+// deltas the loader axis owes: the version number is ALWAYS suffixed and never bare, and the
+// dependency set drops Fabric API.
 plugins {
 	id("net.neoforged.moddev") version "2.0.142"
 	// buildSrc script plugin, design R-14. See buildSrc/src/main/kotlin/neoforge-mutex.gradle.kts.
 	id("neoforge-mutex")
+	// Modrinth uploads, one version per node. Dry run unless `-PpublishLive=true`.
+	id("me.modmuss50.mod-publish-plugin") version "2.1.1"
 }
 
 version = "${property("mod.version")}+${sc.current.version}"
@@ -448,5 +449,122 @@ tasks {
 		// jar as plain `jar`.
 		from(jar.flatMap { it.archiveFile }, named<Jar>("sourcesJar").flatMap { it.archiveFile })
 		into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// MODRINTH RELEASE UPLOAD — mirrors build.fabric.gradle.kts, with the loader suffix that
+// script's own comment demands: `1.21.1-fabric` and `1.21.1-neoforge` would otherwise both
+// claim `<version>+1.21.1`.
+val nodeKey: String = sc.current.project.substringBeforeLast('-')
+val modVersion: String = sc.properties["mod.version"]
+
+/** Game versions this node's jar gets marked compatible with when published. */
+val compatibleVersions: List<String> = sc.properties.rawOrNull("mod", "mc_releases")
+	?.asList().orEmpty().map { it.toString() }
+
+// ALWAYS suffixed with the WHOLE node directory name, never bare: the bare `mod.version`
+// belongs to the newest FABRIC node. `isNewestNode` is deliberately not consulted here.
+val modrinthVersion: String = "$modVersion+$nodeKey-neoforge"
+
+val changelogPath = "changelogs/$modVersion.md"
+val changelogText: Provider<String> = providers
+	.fileContents(rootProject.layout.projectDirectory.file(changelogPath))
+	.asBytes.map { String(it, Charsets.UTF_8) }
+	.orElse(providers.provider<String> { error("No release notes at $changelogPath — write them before publishing") })
+
+val releaseTitle: Provider<String> = changelogText.map {
+	it.trim().lineSequence().firstOrNull()?.takeIf { line -> line.startsWith("# ") }?.removePrefix("# ")?.trim().orEmpty()
+}
+
+val releaseNotes: Provider<String> = changelogText.map {
+	val lines = it.trim().lines()
+	(if (lines.firstOrNull()?.startsWith("# ") == true) lines.drop(1) else lines).joinToString("\n").trim()
+}
+
+val modrinthDisplayName: Provider<String> = releaseTitle.map { title ->
+	buildString {
+		append(modVersion)
+		if (title.isNotEmpty()) append(" — ").append(title)
+		append(" (").append(nodeKey).append(" NeoForge)")
+	}
+}
+
+val publishLive: Boolean = providers.gradleProperty("publishLive").map(String::toBoolean).getOrElse(false)
+
+// THIS NODE IS THE ONE THE 38-CHARACTER TITLE BUDGET IS DERIVED FROM: ` (1.21.1 NeoForge)` is
+// the longest suffix any of the seven carries, at 18 characters. Fails the LIVE upload only —
+// `printPublishMetadata` reports the length and marks anything over, so the dry run stays a
+// usable pre-flight. Never auto-truncated.
+val modrinthNameMax = 64
+val modrinthNameSuffixLength = " ($nodeKey NeoForge)".length
+val modrinthTitleBudget = modrinthNameMax - modVersion.length - " — ".length - modrinthNameSuffixLength
+
+val checkedDisplayName: Provider<String> = modrinthDisplayName.map { name ->
+	require(!publishLive || name.length <= modrinthNameMax) {
+		"Modrinth caps a version name at $modrinthNameMax characters; this one is ${name.length}: " +
+			"\"$name\". Shorten the `# ` title line in $changelogPath to at most " +
+			"$modrinthTitleBudget characters — that is the budget every node can carry."
+	}
+	name
+}
+
+// The dependency set, and it is where this node differs from its Fabric sibling in kind
+// rather than in spelling. Both live Archetypes versions declare fabric-api REQUIRED; that
+// row is dropped here, because there is no Fabric API on this loader and a launcher told to
+// install it would be told to install a mod that cannot load. Player Animation Library stays
+// required — `deps.pal` here is `ReDTdA0C`, the NEOFORGE build of 1.1.5, and the project ships
+// for both loaders under the one id. Skill Proficiencies stays optional, as on every node.
+publishMods {
+	dryRun = !publishLive
+	// MDG produces the final jar as plain `jar` — there is no remap step on this node.
+	file = tasks.jar.flatMap { it.archiveFile }
+	version = modrinthVersion
+	displayName = checkedDisplayName
+	changelog = releaseNotes
+	type = STABLE
+	// Literal: this script is build.neoforge.gradle.kts.
+	modLoaders.add("neoforge")
+
+	modrinth {
+		projectId = "47EMhuFl"
+		accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+		minecraftVersions.addAll(
+			providers.provider {
+				compatibleVersions.ifEmpty { error("`mod.mc_releases` is not declared for node ${sc.current.project}") }
+			},
+		)
+		// NOT featured: five featured Fabric versions per release is already a lot, and this
+		// node is new. Flip it only if the user asks.
+		featured = false
+		requires("ha1mEyJS")
+		optional("d4TtjlpN")
+	}
+}
+
+tasks.register("printPublishMetadata") {
+	group = "publishing"
+	description = "Prints the Modrinth metadata this node would upload. Builds nothing, uploads nothing."
+	val rows = listOf(
+		"node" to sc.current.project,
+		"minecraft (jar)" to sc.current.version,
+		"version_number" to modrinthVersion,
+		"game_versions" to compatibleVersions.toString(),
+		"loaders" to "[neoforge]",
+		"dependencies" to "required=[ha1mEyJS player-animation-library] optional=[d4TtjlpN skill-proficiencies]",
+		"changelog file" to changelogPath,
+		"mode" to if (publishLive) "LIVE UPLOAD" else "dry run",
+		"MODRINTH_TOKEN" to if (providers.environmentVariable("MODRINTH_TOKEN").isPresent) "present" else "absent",
+	)
+	val name = modrinthDisplayName
+	val notes = releaseNotes
+	doLast {
+		rows.forEach { (k, v) -> logger.lifecycle("%-16s %s".format(k, v)) }
+		val rendered = name.get()
+		logger.lifecycle("%-16s %s".format("name", rendered))
+		logger.lifecycle("%-16s %d / %d%s".format("name length", rendered.length, modrinthNameMax,
+			if (rendered.length > modrinthNameMax) "   *** OVER THE CAP — a live upload will be refused ***" else ""))
+		logger.lifecycle("--- changelog ---")
+		logger.lifecycle(notes.get())
 	}
 }

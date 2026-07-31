@@ -5,15 +5,16 @@
 // only walks the source sets. Use `sc.current.parsed >= "…"` here and `//?` only
 // inside `src/`. (Skill Proficiencies' conventions §5f, which binds this repo.)
 //
-// NOT here yet, on purpose: `maven-publish` and `me.modmuss50.mod-publish-plugin`.
-// Archetypes publishes no mavenLocal coordinate (it is the CONSUMER of Skill
-// Proficiencies' API, not a producer), and the Modrinth release wiring is design §5.11
-// — a stage of its own, which needs the project id read back off the API and a
-// `changelogs/<version>.md`. Landing it here would be untested weight.
+// STILL not here, on purpose: `maven-publish`. Archetypes publishes no mavenLocal
+// coordinate — it is the CONSUMER of Skill Proficiencies' API, not a producer.
+// `me.modmuss50.mod-publish-plugin` IS here as of the Stage-6 integration; the block is at
+// the bottom of this file.
 
 plugins {
 	// Applies fabric-loom on 26.x (unobfuscated) or fabric-loom-remap below it.
 	id("dev.kikugie.loom-back-compat")
+	// Modrinth uploads, one version per node. Dry run unless `-PpublishLive=true`.
+	id("me.modmuss50.mod-publish-plugin") version "2.1.1"
 }
 
 // The `+<mc>` suffix is structural, not decoration: every node writes its jar into the
@@ -546,5 +547,203 @@ tasks {
 		// loomx.mod(Sources)Jar resolves to jar/sourcesJar or remapJar/remapSourcesJar.
 		from(loomx.modJar.flatMap { it.archiveFile }, loomx.modSourcesJar.flatMap { it.archiveFile })
 		into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// MODRINTH RELEASE UPLOAD — one Modrinth version per node (design §5.11).
+//
+// Skill Proficiencies' `build.fabric.gradle.kts` block, adapted. Plugin
+// `me.modmuss50.mod-publish-plugin` 2.1.1 registers one `PublishModTask` per platform —
+// ours is `publishModrinth` — plus an aggregate `publishMods` that only `dependsOn` it.
+// `stonecutter.gradle.kts` orders `publishModrinth` across nodes so the seven uploads do not
+// race Modrinth's rate limiter under `org.gradle.parallel=true`, ascending, so the newest
+// node lands on top of the version list.
+//
+// NOTHING here can run during a normal build: both tasks are in the `publishing` group and
+// no lifecycle task depends on them. Beyond that the CHECKED-IN configuration is a DRY RUN —
+// a real upload needs BOTH `-PpublishLive=true` and a `MODRINTH_TOKEN` in the environment,
+// and in dry run the plugin never reads the token at all.
+
+/** The `<version>` half of the node name: `26.1-fabric` -> `26.1`. */
+val nodeKey: String = sc.current.project.substringBeforeLast('-')
+
+/** True when no registered node targets a newer Minecraft version than this one. */
+val isNewestNode: Boolean = sc.versions.none { it.parsed > sc.current.parsed }
+
+val modVersion: String = sc.properties["mod.version"]
+
+/** Game versions this node's jar gets marked compatible with when published. */
+val compatibleVersions: List<String> = sc.properties.rawOrNull("mod", "mc_releases")
+	?.asList().orEmpty().map { it.toString() }
+
+// SP's scheme, adopted whole (design §5.11): the newest FABRIC node uploads the BARE mod
+// version and every other node appends its node key. Read back off
+// `GET /v2/project/47EMhuFl/version` rather than reconstructed — the two live versions are
+// `1.0.0` and `1.1.0`, both bare, both 26.2, because 26.2-fabric was the only node there was.
+// That is also why the bare number MOVES when a newer node registers, and why a release must
+// bump `mod.version`: `1.1.0` is taken.
+//
+// The NODE KEY, not `sc.current.version`: the 26.1 node's Minecraft version is 26.1.2 but its
+// version number is `+26.1`. The jar FILE name keeps `project.version` (with the full
+// `+26.1.2`) and is deliberately unaffected — Modrinth does not care what the file is called.
+//
+// The two loader nodes are always suffixed with their WHOLE node directory name and never
+// consult `isNewestNode`; their scripts own that. Without it `1.20.1-fabric` and
+// `1.20.1-forge` would both claim `<version>+1.20.1`.
+val modrinthVersion: String = if (isNewestNode) modVersion else "$modVersion+$nodeKey"
+
+// Release notes live in `changelogs/<mod.version>.md` — ONE file for every node, so the notes
+// cannot drift between the seven uploads of a release. If the first line is an `# H1` it
+// becomes the Modrinth version name and is stripped from the body; everything else is
+// uploaded verbatim. Read as bytes and decoded as UTF-8 explicitly: the notes contain `—` and
+// `→`, and `asText` would use the platform default.
+val changelogPath = "changelogs/$modVersion.md"
+val changelogText: Provider<String> = providers
+	.fileContents(rootProject.layout.projectDirectory.file(changelogPath))
+	.asBytes.map { String(it, Charsets.UTF_8) }
+	.orElse(providers.provider<String> { error("No release notes at $changelogPath — write them before publishing") })
+
+/** The `# H1` title of the release notes, or `""` when there is none. */
+val releaseTitle: Provider<String> = changelogText.map {
+	it.trim().lineSequence().firstOrNull()?.takeIf { line -> line.startsWith("# ") }?.removePrefix("# ")?.trim().orEmpty()
+}
+
+/** The release notes with the title line removed. */
+val releaseNotes: Provider<String> = changelogText.map {
+	val lines = it.trim().lines()
+	(if (lines.firstOrNull()?.startsWith("# ") == true) lines.drop(1) else lines).joinToString("\n").trim()
+}
+
+/** Matches the published naming: `1.1.0 — The balance update`, plus ` (<node>)` below the top. */
+val modrinthDisplayName: Provider<String> = releaseTitle.map { title ->
+	buildString {
+		append(modVersion)
+		if (title.isNotEmpty()) append(" — ").append(title)
+		if (!isNewestNode) append(" (").append(nodeKey).append(')')
+	}
+}
+
+// A live upload is opt-in, per invocation. `PublishModTask` copies the extension's `dryRun`
+// into itself and finalises it as the task is created, so this has to be set on the extension.
+val publishLive: Boolean = providers.gradleProperty("publishLive").map(String::toBoolean).getOrElse(false)
+
+// MODRINTH'S 64-CHARACTER VERSION-NAME CAP, AS A BUILD GATE. Measured against the LIVE
+// versions of THIS project rather than read off the docs: `1.1.0` is named
+// `1.1.0 — The balance update` (26 chars) and `1.0.0` is named `1.0.0 — launch` (14), both
+// unsuffixed because 26.2-fabric was the only node. From this release on, ONE `# ` title has
+// to fit EVERY node's suffix, and the longest is ` (1.21.1 NeoForge)` at 18 characters — so
+// the budget is 64 − 5 (version) − 3 (` — `) − 18 = 38 title characters.
+//
+// Deliberately NOT auto-truncated: silently renaming a release is not this script's call. And
+// it fails the LIVE upload only, so the dry run stays usable as the pre-flight that prints the
+// numbers — `printPublishMetadata` reports `name length` and marks anything over.
+//
+// The title budget is arithmetic on plain Strings on purpose. Reading `releaseTitle` here
+// would move the "no release notes" failure to CONFIGURATION time, i.e. a missing changelog
+// would break `./gradlew build`.
+val modrinthNameMax = 64
+val modrinthNameSuffixLength = if (isNewestNode) 0 else " ($nodeKey)".length
+val modrinthTitleBudget = modrinthNameMax - modVersion.length - " — ".length - modrinthNameSuffixLength
+
+val checkedDisplayName: Provider<String> = modrinthDisplayName.map { name ->
+	require(!publishLive || name.length <= modrinthNameMax) {
+		"Modrinth caps a version name at $modrinthNameMax characters; this one is ${name.length}: " +
+			"\"$name\". Shorten the `# ` title line in $changelogPath to at most " +
+			"$modrinthTitleBudget characters — that is the budget every node can carry."
+	}
+	name
+}
+
+// The dependency set, PER NODE, and it is not decoration: both published Archetypes versions
+// declare three dependencies (`GET /v2/project/47EMhuFl/version`), and two of the three are
+// NOT true on every node of this port.
+//
+//   P7dR8mSH  Fabric API                   required — this script is the Fabric one, so it
+//                                          holds on all five of its nodes and on neither
+//                                          loader node (their scripts declare no such row).
+//   ha1mEyJS  Player Animation Library     required WHERE THERE IS ONE. `deps.pal` is absent
+//                                          for 1.20.1 (design §2.2 Option B — no artifact
+//                                          exists on any loader at that version), and the
+//                                          same absence that drops the dependency, the
+//                                          `depends` line and the five animation drivers has
+//                                          to drop this row too. Declaring it would tell the
+//                                          launcher to install a mod that cannot exist.
+//   d4TtjlpN  Skill Proficiencies          optional, every node. The interop is compile-only
+//                                          and guarded at runtime by compat/SpecialitiesBridge.
+val palVersionId: String? = sc.properties.rawOrNull("deps", "pal")?.toString()
+
+publishMods {
+	dryRun = !publishLive
+	// The mod jar for this node — `loomx.modJar` resolves to `jar` (26.x) or `remapJar`
+	// (remapped nodes) and carries the task dependency with it. NEVER the `-sources` jar:
+	// `additionalFiles` is deliberately left empty.
+	file = loomx.modJar.flatMap { it.archiveFile }
+	version = modrinthVersion
+	displayName = checkedDisplayName
+	changelog = releaseNotes
+	type = STABLE
+	// Literal: this script is `build.fabric.gradle.kts`, so every node it configures is Fabric.
+	modLoaders.add("fabric")
+
+	modrinth {
+		// Slug `archetypes`; the id is frozen, the slug is not. Read back off
+		// `GET /v2/project/archetypes` (design §5.11 says to read it rather than guess).
+		projectId = "47EMhuFl"
+		// Read from the environment at publish time. The PAT lives at ~/.config/modrinth/token
+		// and is never checked in, never printed, and never created by tooling.
+		accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+		// `mod.mc_releases` from stonecutter.properties.toml — the 26.1 node's jar covers
+		// 26.1/26.1.1/26.1.2, the 1.21.1 node's covers 1.21/1.21.1. Lazy so a node that forgot
+		// the key fails when publishing rather than when building.
+		minecraftVersions.addAll(
+			providers.provider {
+				compatibleVersions.ifEmpty { error("`mod.mc_releases` is not declared for node ${sc.current.project}") }
+			},
+		)
+		// Both live versions are featured. Modrinth keeps older featured versions featured, so
+		// this is the knob to turn down once seven versions per release crowd the page.
+		featured = true
+		requires("P7dR8mSH")
+		if (palVersionId != null) requires("ha1mEyJS")
+		optional("d4TtjlpN")
+		// `environment` is deliberately unset: neither live version declares it, and a
+		// publishing stage must not change release metadata.
+	}
+}
+
+// Pre-flight check for the release: prints exactly what each node would upload, without
+// building a jar or touching the network. This is the only publishing check that works on a
+// node whose jar cannot be produced yet, which is why it exists alongside the plugin's dry run.
+tasks.register("printPublishMetadata") {
+	group = "publishing"
+	description = "Prints the Modrinth metadata this node would upload. Builds nothing, uploads nothing."
+	// Everything the action needs is captured here, at configuration time — the action itself
+	// touches no project state, and the token is reported as present/absent, never printed.
+	val rows = listOf(
+		"node" to sc.current.project,
+		"minecraft (jar)" to sc.current.version,
+		"version_number" to modrinthVersion,
+		"game_versions" to compatibleVersions.toString(),
+		"loaders" to "[fabric]",
+		"dependencies" to buildString {
+			append("required=[P7dR8mSH fabric-api")
+			if (palVersionId != null) append(", ha1mEyJS player-animation-library")
+			append("] optional=[d4TtjlpN skill-proficiencies]")
+		},
+		"changelog file" to changelogPath,
+		"mode" to if (publishLive) "LIVE UPLOAD" else "dry run",
+		"MODRINTH_TOKEN" to if (providers.environmentVariable("MODRINTH_TOKEN").isPresent) "present" else "absent",
+	)
+	val name = modrinthDisplayName
+	val notes = releaseNotes
+	doLast {
+		rows.forEach { (k, v) -> logger.lifecycle("%-16s %s".format(k, v)) }
+		val rendered = name.get()
+		logger.lifecycle("%-16s %s".format("name", rendered))
+		logger.lifecycle("%-16s %d / %d%s".format("name length", rendered.length, modrinthNameMax,
+			if (rendered.length > modrinthNameMax) "   *** OVER THE CAP — a live upload will be refused ***" else ""))
+		logger.lifecycle("--- changelog ---")
+		logger.lifecycle(notes.get())
 	}
 }

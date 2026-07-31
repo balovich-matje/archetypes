@@ -8,9 +8,10 @@
 //
 // `//?` does not work in build scripts (conventions §5f).
 //
-// NOT here, on purpose, and the same delta the NeoForge script carries: no
-// `me.modmuss50.mod-publish-plugin` and no publishing block. build.fabric.gradle.kts has none
-// either; Archetypes' Modrinth wiring is design §5.11, a stage of its own.
+// PUBLISHING landed with the Stage-6 integration, on all three node scripts in the same
+// commit. The block is at the bottom of this file and mirrors build.fabric.gradle.kts, with
+// the loader-axis deltas: always-suffixed version number, and a dependency set with neither
+// Fabric API nor Player Animation Library (this node has no artifact for either).
 plugins {
 	// Applied DIRECTLY in the node script, not in settings.gradle.kts. Together with
 	// `loom.platform=forge` in versions/1.20.1-forge/gradle.properties (read during plugin
@@ -18,6 +19,8 @@ plugins {
 	// keeps exactly one loom on this node's buildscript classpath. The other half of that is
 	// the R-01 `[fabric]` table in stonecutter.properties.toml — see the note there.
 	id("dev.architectury.loom") version "1.17.491"
+	// Modrinth uploads, one version per node. Dry run unless `-PpublishLive=true`.
+	id("me.modmuss50.mod-publish-plugin") version "2.1.1"
 }
 
 version = "${property("mod.version")}+${sc.current.version}"
@@ -407,5 +410,116 @@ tasks {
 			named<org.gradle.jvm.tasks.Jar>("remapSourcesJar").flatMap { it.archiveFile },
 		)
 		into(rootProject.layout.buildDirectory.file("libs/${project.property("mod.version")}"))
+	}
+}
+
+// ---------------------------------------------------------------------------
+// MODRINTH RELEASE UPLOAD — mirrors build.fabric.gradle.kts, with the loader suffix that
+// script's own comment demands: `1.20.1-fabric` and `1.20.1-forge` would otherwise both claim
+// `<version>+1.20.1`.
+val nodeKey: String = sc.current.project.substringBeforeLast('-')
+val modVersion: String = sc.properties["mod.version"]
+
+/** Game versions this node's jar gets marked compatible with when published. */
+val compatibleVersions: List<String> = sc.properties.rawOrNull("mod", "mc_releases")
+	?.asList().orEmpty().map { it.toString() }
+
+// ALWAYS suffixed with the WHOLE node directory name, never bare.
+val modrinthVersion: String = "$modVersion+$nodeKey-forge"
+
+val changelogPath = "changelogs/$modVersion.md"
+val changelogText: Provider<String> = providers
+	.fileContents(rootProject.layout.projectDirectory.file(changelogPath))
+	.asBytes.map { String(it, Charsets.UTF_8) }
+	.orElse(providers.provider<String> { error("No release notes at $changelogPath — write them before publishing") })
+
+val releaseTitle: Provider<String> = changelogText.map {
+	it.trim().lineSequence().firstOrNull()?.takeIf { line -> line.startsWith("# ") }?.removePrefix("# ")?.trim().orEmpty()
+}
+
+val releaseNotes: Provider<String> = changelogText.map {
+	val lines = it.trim().lines()
+	(if (lines.firstOrNull()?.startsWith("# ") == true) lines.drop(1) else lines).joinToString("\n").trim()
+}
+
+val modrinthDisplayName: Provider<String> = releaseTitle.map { title ->
+	buildString {
+		append(modVersion)
+		if (title.isNotEmpty()) append(" — ").append(title)
+		append(" (").append(nodeKey).append(" Forge)")
+	}
+}
+
+val publishLive: Boolean = providers.gradleProperty("publishLive").map(String::toBoolean).getOrElse(false)
+
+val modrinthNameMax = 64
+val modrinthNameSuffixLength = " ($nodeKey Forge)".length
+val modrinthTitleBudget = modrinthNameMax - modVersion.length - " — ".length - modrinthNameSuffixLength
+
+val checkedDisplayName: Provider<String> = modrinthDisplayName.map { name ->
+	require(!publishLive || name.length <= modrinthNameMax) {
+		"Modrinth caps a version name at $modrinthNameMax characters; this one is ${name.length}: " +
+			"\"$name\". Shorten the `# ` title line in $changelogPath to at most " +
+			"$modrinthTitleBudget characters — that is the budget every node can carry."
+	}
+	name
+}
+
+// The dependency set, and this node is the one with the SMALLEST one — both of the live
+// versions' required rows are dropped here and each absence is a decision recorded elsewhere:
+// no Fabric API because this is not a Fabric loader, and no Player Animation Library because
+// the project declares loaders ["fabric","neoforge"] and has no LexForge build at ANY
+// Minecraft version (design §2.2 Option B, the same absence that drops `deps.pal` from the
+// toml, the five animation drivers and the metadata line). Skill Proficiencies stays optional.
+publishMods {
+	dryRun = !publishLive
+	// Arch Loom's remapped output. The type argument must be `org.gradle.jvm.tasks.Jar` for
+	// the reason `buildAndCollect` above records.
+	file = tasks.named<org.gradle.jvm.tasks.Jar>("remapJar").flatMap { it.archiveFile }
+	version = modrinthVersion
+	displayName = checkedDisplayName
+	changelog = releaseNotes
+	type = STABLE
+	// Literal: this script is build.forge.gradle.kts.
+	modLoaders.add("forge")
+
+	modrinth {
+		projectId = "47EMhuFl"
+		accessToken = providers.environmentVariable("MODRINTH_TOKEN")
+		minecraftVersions.addAll(
+			providers.provider {
+				compatibleVersions.ifEmpty { error("`mod.mc_releases` is not declared for node ${sc.current.project}") }
+			},
+		)
+		// NOT featured, same as the NeoForge node.
+		featured = false
+		optional("d4TtjlpN")
+	}
+}
+
+tasks.register("printPublishMetadata") {
+	group = "publishing"
+	description = "Prints the Modrinth metadata this node would upload. Builds nothing, uploads nothing."
+	val rows = listOf(
+		"node" to sc.current.project,
+		"minecraft (jar)" to sc.current.version,
+		"version_number" to modrinthVersion,
+		"game_versions" to compatibleVersions.toString(),
+		"loaders" to "[forge]",
+		"dependencies" to "required=[] optional=[d4TtjlpN skill-proficiencies]",
+		"changelog file" to changelogPath,
+		"mode" to if (publishLive) "LIVE UPLOAD" else "dry run",
+		"MODRINTH_TOKEN" to if (providers.environmentVariable("MODRINTH_TOKEN").isPresent) "present" else "absent",
+	)
+	val name = modrinthDisplayName
+	val notes = releaseNotes
+	doLast {
+		rows.forEach { (k, v) -> logger.lifecycle("%-16s %s".format(k, v)) }
+		val rendered = name.get()
+		logger.lifecycle("%-16s %s".format("name", rendered))
+		logger.lifecycle("%-16s %d / %d%s".format("name length", rendered.length, modrinthNameMax,
+			if (rendered.length > modrinthNameMax) "   *** OVER THE CAP — a live upload will be refused ***" else ""))
+		logger.lifecycle("--- changelog ---")
+		logger.lifecycle(notes.get())
 	}
 }
