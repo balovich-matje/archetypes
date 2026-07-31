@@ -20,6 +20,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -43,6 +44,12 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "blockedByItem", at = @At("TAIL"))
 	private void archetypes$onShieldBlocked(final LivingEntity blocker, final DamageSource source,
 			final float blocked, final CallbackInfo ci) {
+		archetypes$onShieldBlockedImpl(blocker, blocked);
+	}
+
+	/** Shared implementation of {@link #archetypes$onShieldBlocked}. */
+	@Unique
+	private void archetypes$onShieldBlockedImpl(final LivingEntity blocker, final float blocked) {
 		if (!(blocker instanceof ServerPlayer player)) {
 			return;
 		}
@@ -104,6 +111,12 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Z)V", at = @At("HEAD"))
 	private void archetypes$lunge(final net.minecraft.world.InteractionHand hand,
 			final boolean broadcast, final CallbackInfo ci) {
+		archetypes$lungeImpl(hand);
+	}
+
+	/** Shared implementation of {@link #archetypes$lunge}. */
+	@Unique
+	private void archetypes$lungeImpl(final net.minecraft.world.InteractionHand hand) {
 		if (!((Object) this instanceof ServerPlayer player)
 				|| hand != net.minecraft.world.InteractionHand.MAIN_HAND
 				|| !player.isSprinting()
@@ -167,6 +180,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$greatswordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$greatswordDamageImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$greatswordDamage}. */
+	@Unique
+	private float archetypes$greatswordDamageImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
 				|| !com.archetypes.MeleeSwing.isSwinging(player)
@@ -243,6 +264,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$swordDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$swordDamageImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$swordDamage}. */
+	@Unique
+	private float archetypes$swordDamageImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
 				|| !com.archetypes.MeleeSwing.isSwinging(player)
@@ -267,6 +296,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$marksmanArrowHit(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$marksmanArrowHitImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$marksmanArrowHit}. */
+	@Unique
+	private float archetypes$marksmanArrowHitImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
 				&& source.getEntity() instanceof ServerPlayer player
 				&& com.archetypes.MarksmanCombat.fromMarksmanWeapon(arrow)) {
@@ -305,6 +342,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$magicArmamentHit(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$magicArmamentHitImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$magicArmamentHit}. */
+	@Unique
+	private float archetypes$magicArmamentHitImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!(source.getEntity() instanceof ServerPlayer player)) {
 			return amount;
 		}
@@ -356,6 +401,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$daggerDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$daggerDamageImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$daggerDamage}. */
+	@Unique
+	private float archetypes$daggerDamageImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
 				|| !com.archetypes.MeleeSwing.isSwinging(player)
@@ -549,6 +602,12 @@ public abstract class LivingEntityMixin {
 	private double archetypes$daggerKnockback(final double strength, final double strengthArg,
 			final double x, final double z, final DamageSource source, final float yStrength,
 			final boolean spinAttack) {
+		return archetypes$daggerKnockbackImpl(strength, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$daggerKnockback}. */
+	@Unique
+	private double archetypes$daggerKnockbackImpl(final double strength, final DamageSource source) {
 		if (source == null) {
 			return strength;
 		}
@@ -613,6 +672,14 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
 	private void archetypes$sidestep(final ServerLevel level, final DamageSource source,
 			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$sidestepImpl(source, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$sidestep}. */
+	@Unique
+	private void archetypes$sidestepImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!((Object) this instanceof ServerPlayer player)
 				|| !ModItems.isDagger(player.getMainHandItem())
 				|| !(source.getDirectEntity() instanceof LivingEntity)
@@ -642,6 +709,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$manaShield(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$manaShieldImpl(amount);
+	}
+
+	/** Shared implementation of {@link #archetypes$manaShield}. */
+	@Unique
+	private float archetypes$manaShieldImpl(final float amount) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!((Object) this instanceof ServerPlayer player)
 				|| !ModItems.isWand(player.getMainHandItem())) {
 			return amount;
@@ -684,6 +759,12 @@ public abstract class LivingEntityMixin {
 	@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent",
 			at = @At("RETURN"))
 	private double archetypes$dimPresence(final double original) {
+		return archetypes$dimPresenceImpl(original);
+	}
+
+	/** Shared implementation of {@link #archetypes$dimPresence}. */
+	@Unique
+	private double archetypes$dimPresenceImpl(final double original) {
 		if ((Object) this instanceof ServerPlayer player && player.isCrouching()) {
 			int rank = com.archetypes.ShadowNodes.rank(SubTree.SHADOW,
 					NodePurchases.owned(player, SubTree.SHADOW), com.archetypes.ShadowNodes.Family.DIM_PRESENCE);
@@ -721,6 +802,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$sunderDamage(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$sunderDamageImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$sunderDamage}. */
+	@Unique
+	private float archetypes$sunderDamageImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!(source.getEntity() instanceof ServerPlayer player)
 				|| source.getDirectEntity() != player
 				|| !com.archetypes.MeleeSwing.isSwinging(player)) {
@@ -780,6 +869,14 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "hurtServer", at = @At("HEAD"), cancellable = true)
 	private void archetypes$cheatDeathGrace(final ServerLevel level, final DamageSource source,
 			final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$cheatDeathGraceImpl(cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$cheatDeathGrace}. */
+	@Unique
+	private void archetypes$cheatDeathGraceImpl(final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!((Object) this instanceof ServerPlayer player)) {
 			return;
 		}
@@ -807,6 +904,12 @@ public abstract class LivingEntityMixin {
 	@Inject(method = "isInvertedHealAndHarm", at = @At("HEAD"), cancellable = true)
 	private void archetypes$nightFormIsUndead(
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$nightFormIsUndeadImpl(cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$nightFormIsUndead}. */
+	@Unique
+	private void archetypes$nightFormIsUndeadImpl(final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if ((Object) this instanceof net.minecraft.world.entity.player.Player player
 				&& com.archetypes.NightForm.isActive(player)) {
 			cir.setReturnValue(true);
@@ -827,6 +930,14 @@ public abstract class LivingEntityMixin {
 	private void archetypes$ghostForm(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$ghostFormImpl(source, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$ghostForm}. */
+	@Unique
+	private void archetypes$ghostFormImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if (!((Object) this instanceof ServerPlayer player)
 				|| !com.archetypes.NightForm.isActive(player)
 				|| source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_INVULNERABILITY)) {
@@ -875,6 +986,12 @@ public abstract class LivingEntityMixin {
 	private void archetypes$feast(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$feastImpl(source);
+	}
+
+	/** Shared implementation of {@link #archetypes$feast}. */
+	@Unique
+	private void archetypes$feastImpl(final DamageSource source) {
 		if (source.getEntity() instanceof ServerPlayer player
 				&& source.getDirectEntity() == player
 				&& com.archetypes.MeleeSwing.isSwinging(player)
@@ -892,6 +1009,12 @@ public abstract class LivingEntityMixin {
 			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
 			at = @At("HEAD"), argsOnly = true, ordinal = 0)
 	private double archetypes$incorporealKnockback(final double strength) {
+		return archetypes$incorporealKnockbackImpl(strength);
+	}
+
+	/** Shared implementation of {@link #archetypes$incorporealKnockback}. */
+	@Unique
+	private double archetypes$incorporealKnockbackImpl(final double strength) {
 		return (Object) this instanceof ServerPlayer player
 				&& com.archetypes.NightForm.isIncorporeal(player) ? 0.0 : strength;
 	}
@@ -905,6 +1028,12 @@ public abstract class LivingEntityMixin {
 			method = "knockback(DDDLnet/minecraft/world/damagesource/DamageSource;FZ)V",
 			at = @At("HEAD"), argsOnly = true, ordinal = 0)
 	private double archetypes$siegeKnockback(final double strength) {
+		return archetypes$siegeKnockbackImpl(strength);
+	}
+
+	/** Shared implementation of {@link #archetypes$siegeKnockback}. */
+	@Unique
+	private double archetypes$siegeKnockbackImpl(final double strength) {
 		return (Object) this instanceof ServerPlayer player
 				&& com.archetypes.Deadeye.isPlanted(player) ? 0.0 : strength;
 	}
@@ -919,6 +1048,12 @@ public abstract class LivingEntityMixin {
 	private void archetypes$onTheWing(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$onTheWingImpl(source, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$onTheWing}. */
+	@Unique
+	private void archetypes$onTheWingImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if ((Object) this instanceof ServerPlayer player
 				&& source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)
 				&& com.archetypes.Deadeye.isActive(player)
@@ -936,6 +1071,12 @@ public abstract class LivingEntityMixin {
 	@ModifyExpressionValue(method = "applyItemBlocking",
 			at = @At(value = "INVOKE", target = "Ljava/lang/Math;acos(D)D"))
 	private double archetypes$bulwark(final double angle) {
+		return archetypes$bulwarkImpl(angle);
+	}
+
+	/** Shared implementation of {@link #archetypes$bulwark}. */
+	@Unique
+	private double archetypes$bulwarkImpl(final double angle) {
 		if ((Object) this instanceof ServerPlayer player
 				&& ProtectorNodes.rank(SubTree.PROTECTOR, NodePurchases.owned(player, SubTree.PROTECTOR),
 						ProtectorNodes.Family.OMNI_BLOCK) > 0) {
@@ -980,6 +1121,12 @@ public abstract class LivingEntityMixin {
 							+ "Lnet/minecraft/world/damagesource/DamageSource;FD)F"))
 	private float archetypes$unstoppableForce(final float blocked, final ServerLevel level,
 			final DamageSource source, final float damage) {
+		return archetypes$unstoppableForceImpl(blocked, level, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$unstoppableForce}. */
+	@Unique
+	private float archetypes$unstoppableForceImpl(final float blocked, final ServerLevel level, final DamageSource source) {
 		if (blocked <= 0.0F || !(source.getEntity() instanceof ServerPlayer attacker)
 				|| source.getDirectEntity() != attacker
 				|| !com.archetypes.MeleeSwing.isSwinging(attacker)) {
@@ -1028,6 +1175,12 @@ public abstract class LivingEntityMixin {
 	private void archetypes$hardened(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$hardenedImpl(source, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$hardened}. */
+	@Unique
+	private void archetypes$hardenedImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if ((Object) this instanceof ServerPlayer player
 				&& Boolean.TRUE.equals(cir.getReturnValue())) {
 			com.archetypes.Hardened.onHurt(player, source);
@@ -1066,6 +1219,14 @@ public abstract class LivingEntityMixin {
 	private void archetypes$clash(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$clashImpl(source, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$clash}. */
+	@Unique
+	private void archetypes$clashImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if ((Object) this instanceof ServerPlayer defender
 				&& source.getEntity() instanceof ServerPlayer attacker
 				&& source.getDirectEntity() == attacker
@@ -1087,6 +1248,12 @@ public abstract class LivingEntityMixin {
 	private void archetypes$titansLeapFall(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$titansLeapFallImpl(source, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$titansLeapFall}. */
+	@Unique
+	private void archetypes$titansLeapFallImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		if ((Object) this instanceof ServerPlayer player
 				&& source.is(net.minecraft.tags.DamageTypeTags.IS_FALL)
 				&& com.archetypes.TitansLeap.isLeaping(player)) {
@@ -1117,6 +1284,14 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$instinctiveGuard(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$instinctiveGuardImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$instinctiveGuard}. */
+	@Unique
+	private float archetypes$instinctiveGuardImpl(final float amount, final DamageSource source) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		float result = (Object) this instanceof ServerPlayer player
 				? com.archetypes.ColossusProtector.instinctiveGuard(player, level, source, amount)
 				: amount;
@@ -1139,6 +1314,14 @@ public abstract class LivingEntityMixin {
 	private void archetypes$parry(final ServerLevel level, final DamageSource source,
 			final float amount,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$parryImpl(source, amount, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$parry}. */
+	@Unique
+	private void archetypes$parryImpl(final DamageSource source, final float amount, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		if ((Object) this instanceof ServerPlayer player
 				&& com.archetypes.ColossusSlayer.tryParry(player, level, source, amount)) {
 			cir.setReturnValue(false);
@@ -1154,6 +1337,12 @@ public abstract class LivingEntityMixin {
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$barbarian(final float amount, final ServerLevel level,
 			final DamageSource source) {
+		return archetypes$barbarianImpl(amount, source);
+	}
+
+	/** Shared implementation of {@link #archetypes$barbarian}. */
+	@Unique
+	private float archetypes$barbarianImpl(final float amount, final DamageSource source) {
 		float result = (Object) this instanceof ServerPlayer player
 				? com.archetypes.ColossusSlayer.barbarianDamage(player, source, amount)
 				: amount;
@@ -1171,6 +1360,12 @@ public abstract class LivingEntityMixin {
 	@org.spongepowered.asm.mixin.injection.ModifyVariable(method = "heal",
 			at = @At("HEAD"), argsOnly = true)
 	private float archetypes$barbarianHealing(final float amount) {
+		return archetypes$barbarianHealingImpl(amount);
+	}
+
+	/** Shared implementation of {@link #archetypes$barbarianHealing}. */
+	@Unique
+	private float archetypes$barbarianHealingImpl(final float amount) {
 		return (Object) this instanceof ServerPlayer player
 				? com.archetypes.ColossusSlayer.barbarianHealing(player, amount)
 				: amount;

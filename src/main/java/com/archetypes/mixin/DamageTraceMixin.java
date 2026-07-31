@@ -6,6 +6,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.LivingEntity;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
@@ -57,6 +58,14 @@ public abstract class DamageTraceMixin {
 	@Inject(method = "hurtServer", at = @At("HEAD"))
 	private void archetypes$traceBegin(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
+		archetypes$traceBeginImpl(source, amount);
+	}
+
+	/** Shared implementation of {@link #archetypes$traceBegin}. */
+	@Unique
+	private void archetypes$traceBeginImpl(final DamageSource source, final float amount) {
+		ServerLevel level = (ServerLevel) ((LivingEntity) (Object) this).level();
+
 		DamageTrace.begin(level, source, (LivingEntity) (Object) this, amount);
 	}
 
@@ -81,6 +90,12 @@ public abstract class DamageTraceMixin {
 	@Inject(method = "hurtServer", at = @At("RETURN"))
 	private void archetypes$traceFinish(final ServerLevel level, final DamageSource source,
 			final float amount, final CallbackInfoReturnable<Boolean> cir) {
+		archetypes$traceFinishImpl(cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$traceFinish}. */
+	@Unique
+	private void archetypes$traceFinishImpl(final CallbackInfoReturnable<Boolean> cir) {
 		DamageTrace.finish((LivingEntity) (Object) this, cir.getReturnValueZ());
 	}
 
@@ -96,6 +111,12 @@ public abstract class DamageTraceMixin {
 	@Inject(method = "applyItemBlocking", at = @At("RETURN"))
 	private void archetypes$traceBlocking(final ServerLevel level, final DamageSource source,
 			final float damage, final CallbackInfoReturnable<Float> cir) {
+		archetypes$traceBlockingImpl(damage, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$traceBlocking}. */
+	@Unique
+	private void archetypes$traceBlockingImpl(final float damage, final CallbackInfoReturnable<Float> cir) {
 		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_BLOCKING,
 				damage, damage - cir.getReturnValueF());
 	}
@@ -110,6 +131,12 @@ public abstract class DamageTraceMixin {
 	@Inject(method = "getDamageAfterArmorAbsorb", at = @At("RETURN"))
 	private void archetypes$traceArmor(final DamageSource source, final float damage,
 			final CallbackInfoReturnable<Float> cir) {
+		archetypes$traceArmorImpl(damage, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$traceArmor}. */
+	@Unique
+	private void archetypes$traceArmorImpl(final float damage, final CallbackInfoReturnable<Float> cir) {
 		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_ARMOUR,
 				damage, cir.getReturnValueF());
 	}
@@ -118,6 +145,12 @@ public abstract class DamageTraceMixin {
 	@Inject(method = "getDamageAfterMagicAbsorb", at = @At("RETURN"))
 	private void archetypes$traceMagic(final DamageSource source, final float damage,
 			final CallbackInfoReturnable<Float> cir) {
+		archetypes$traceMagicImpl(damage, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$traceMagic}. */
+	@Unique
+	private void archetypes$traceMagicImpl(final float damage, final CallbackInfoReturnable<Float> cir) {
 		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_PROTECTION,
 				damage, cir.getReturnValueF());
 	}

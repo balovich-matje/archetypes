@@ -12,6 +12,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -37,6 +38,12 @@ public abstract class AbstractArrowMixin {
 	@Inject(method = "canHitEntity", at = @At("HEAD"), cancellable = true)
 	private void archetypes$seekerPassesThrough(final net.minecraft.world.entity.Entity entity,
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$seekerPassesThroughImpl(entity, cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$seekerPassesThrough}. */
+	@Unique
+	private void archetypes$seekerPassesThroughImpl(final net.minecraft.world.entity.Entity entity, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		if (Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(arrow, ModState.TRUE_SHOT_HOMING))
@@ -55,6 +62,12 @@ public abstract class AbstractArrowMixin {
 	 */
 	@ModifyReturnValue(method = "getDefaultGravity", at = @At("RETURN"))
 	private double archetypes$spellbowGravity(final double original) {
+		return archetypes$spellbowGravityImpl(original);
+	}
+
+	/** Shared implementation of {@link #archetypes$spellbowGravity}. */
+	@Unique
+	private double archetypes$spellbowGravityImpl(final double original) {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		return Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(arrow, ModState.SPELLBOW_ARROW))
@@ -65,6 +78,12 @@ public abstract class AbstractArrowMixin {
 	/** The Spellbow's arrow carries the Wizard's missile signature down range. */
 	@Inject(method = "tick", at = @At("HEAD"))
 	private void archetypes$spellbowFlightFx(final CallbackInfo ci) {
+		archetypes$spellbowFlightFxImpl();
+	}
+
+	/** Shared implementation of {@link #archetypes$spellbowFlightFx}. */
+	@Unique
+	private void archetypes$spellbowFlightFxImpl() {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		if (!(arrow.level() instanceof net.minecraft.server.level.ServerLevel level)
@@ -84,6 +103,12 @@ public abstract class AbstractArrowMixin {
 	@Inject(method = "onHitEntity", at = @At("TAIL"))
 	private void archetypes$spellbowImpactFx(final net.minecraft.world.phys.EntityHitResult hit,
 			final CallbackInfo ci) {
+		archetypes$spellbowImpactFxImpl();
+	}
+
+	/** Shared implementation of {@link #archetypes$spellbowImpactFx}. */
+	@Unique
+	private void archetypes$spellbowImpactFxImpl() {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		if (arrow.level() instanceof net.minecraft.server.level.ServerLevel level
@@ -101,6 +126,12 @@ public abstract class AbstractArrowMixin {
 	 */
 	@Inject(method = "tick", at = @At("HEAD"))
 	private void archetypes$deadeyeFlightFx(final CallbackInfo ci) {
+		archetypes$deadeyeFlightFxImpl();
+	}
+
+	/** Shared implementation of {@link #archetypes$deadeyeFlightFx}. */
+	@Unique
+	private void archetypes$deadeyeFlightFxImpl() {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		if (!(arrow.level() instanceof net.minecraft.server.level.ServerLevel level)
@@ -121,6 +152,12 @@ public abstract class AbstractArrowMixin {
 
 	@Inject(method = "tick", at = @At("HEAD"))
 	private void archetypes$trueShotFlight(final CallbackInfo ci) {
+		archetypes$trueShotFlightImpl();
+	}
+
+	/** Shared implementation of {@link #archetypes$trueShotFlight}. */
+	@Unique
+	private void archetypes$trueShotFlightImpl() {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		if (arrow.level().isClientSide()) {
@@ -167,6 +204,12 @@ public abstract class AbstractArrowMixin {
 	@Inject(method = "onHitEntity", at = @At("TAIL"))
 	private void archetypes$applyReflectAim(final net.minecraft.world.phys.EntityHitResult hit,
 			final CallbackInfo ci) {
+		archetypes$applyReflectAimImpl();
+	}
+
+	/** Shared implementation of {@link #archetypes$applyReflectAim}. */
+	@Unique
+	private void archetypes$applyReflectAimImpl() {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
 		if (arrow.level().isClientSide()) {

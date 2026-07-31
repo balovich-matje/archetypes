@@ -7,6 +7,7 @@ import com.archetypes.SkillPoints;
 
 import net.minecraft.world.entity.player.Player;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -23,6 +24,12 @@ public abstract class PlayerMixin {
 	 */
 	@Inject(method = "giveExperiencePoints", at = @At("TAIL"))
 	private void archetypes$bankExperience(final int amount, final CallbackInfo ci) {
+		archetypes$bankExperienceImpl(amount);
+	}
+
+	/** Shared implementation of {@link #archetypes$bankExperience}. */
+	@Unique
+	private void archetypes$bankExperienceImpl(final int amount) {
 		Player player = (Player) (Object) this;
 
 		if (!player.level().isClientSide()) {
@@ -42,6 +49,12 @@ public abstract class PlayerMixin {
 	@Inject(method = "canEat", at = @At("HEAD"), cancellable = true)
 	private void archetypes$bankedHungerIsEdible(final boolean canAlwaysEat,
 			final CallbackInfoReturnable<Boolean> cir) {
+		archetypes$bankedHungerIsEdibleImpl(cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$bankedHungerIsEdible}. */
+	@Unique
+	private void archetypes$bankedHungerIsEdibleImpl(final CallbackInfoReturnable<Boolean> cir) {
 		Player player = (Player) (Object) this;
 
 		if (player.getFoodData().getFoodLevel() < ColossusProtector.hungerCeiling(player)) {
@@ -83,6 +96,12 @@ public abstract class PlayerMixin {
 	private void archetypes$daggersNeverSweep(final boolean fullStrengthAttack,
 			final boolean criticalAttack, final boolean knockbackAttack,
 			final CallbackInfoReturnable<Boolean> cir) {
+		archetypes$daggersNeverSweepImpl(cir);
+	}
+
+	/** Shared implementation of {@link #archetypes$daggersNeverSweep}. */
+	@Unique
+	private void archetypes$daggersNeverSweepImpl(final CallbackInfoReturnable<Boolean> cir) {
 		Player player = (Player) (Object) this;
 
 		if (ModItems.isDagger(player.getMainHandItem())) {
@@ -104,6 +123,12 @@ public abstract class PlayerMixin {
 	@com.llamalad7.mixinextras.injector.wrapmethod.WrapMethod(method = "attack")
 	private void archetypes$markSwing(final net.minecraft.world.entity.Entity target,
 			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
+		archetypes$markSwingImpl(target, original);
+	}
+
+	/** Shared implementation of {@link #archetypes$markSwing}. */
+	@Unique
+	private void archetypes$markSwingImpl(final net.minecraft.world.entity.Entity target, final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original) {
 		net.minecraft.world.entity.Entity previous =
 				com.archetypes.MeleeSwing.begin((Player) (Object) this);
 
