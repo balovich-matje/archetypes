@@ -875,11 +875,20 @@ Everything at `>=1.21.11` lands at once: `Identifier`→`ResourceLocation` (cont
 **Lanes, 4a:** the 18-handler `hurtServer` fork (one lane, sequential, it is one file); the shield-cluster excision decision; the `Consumable`/`FoodProperties` three-way; arrow/projectile package + `deflect` three-way.
 **Lanes, 4b:** client `GuiMixin` (SP's, extended); the three `RenderLayer`s + `AvatarRendererMixin` + `SpellProjectileRenderer` (render-state rewrite); ESP two-channel rebuild; `Toast` + `BookmarkTab` + screens; particles.
 
-#### 5.5.1 Stage 4, as landed so far — **the common half is done, the client half is not**
+#### 5.5.1 Stage 4, as landed at commit `4-B1` — **what was believed done, and what the Stage-4-D gate found**
 
-Three commits: `4-A` (registration), `4-A2` (the whole common side), `4-B1` (the client
-side's mechanical boundary). **`:1.21.1-fabric:compileJava` is green;
-`compileClientJava` is not, and one coherent thing is what is left — see "Still open" below.**
+Three commits: `4-A` (registration), `4-A2` (the common side), `4-B1` (the client side's
+mechanical boundary). **`:1.21.1-fabric:compileJava` is green; `compileClientJava` is not.**
+
+> ⚠ **CORRECTION, written by Stage 4-D and left here rather than editing the claim away.**
+> "The whole common side" was true of everything **javac can see** and false of everything it
+> cannot. `compileJava` going green proved the imports, the types and the call shapes; it
+> proved nothing about the mixin `method =` and `@At target =` STRINGS, which are strings.
+> The static resolution gate (`arch-gate/mixincheck.py`, run for the first time on this node
+> in Stage 4-D) finds **29 unresolved common-tree targets** — the whole `hurtServer` family
+> among them. See §5.5.2's blocker inventory. The lesson is the one R-20 already states in
+> another key: **a build-shaped gate cannot close a string-shaped question**, and on this node
+> the two are 29 apart.
 The three nodes above are byte-identical to the Stage-3 tip after every commit
 (385/385 resources, 244/244/250 classes, zero instruction diffs), re-measured before each
 commit rather than after.
@@ -975,6 +984,138 @@ scouted:** membership is `Minecraft.shouldEntityAppearGlowing` (put it in the ex
 client `EntityRendererMixin`, the same trick `ConsumableMixin` uses) — doing it that way adds
 **zero** new mixin-config entries, which matters because of finding 4 above.
 `EntityRenderState.NO_OUTLINE` is a compile-time `0`.
+
+#### 5.5.2 Stage 4-D, as landed — **the client half is done; the common half's strings are not**
+
+Six commits, `4-D1` … `4-D6`. **The client half of `1.21.1-fabric` is complete**: 166 compile
+errors → 0, `:1.21.1-fabric:build` green and producing a jar, and the client tree's mixin
+targets all resolve against the mapped 1.21.1 jar. The node still cannot boot, for a reason
+that is entirely on the common side and is inventoried at the end of this section.
+
+**The three nodes above did not move a byte** — re-measured after `4-D5` and again after
+`4-D6`, not once at the end: 26.2 244/244, 26.1 244/244, 1.21.11 250/250 classes
+instruction-identical, 385/385 resources byte-identical on all three.
+
+**THE COLLAPSE, WHICH IS THE HEADLINE.** §4.3 predicted that below 1.21.11 a `RenderLayer`
+gets the ENTITY rather than an extracted state and that the fork would therefore *collapse*
+the indirection rather than reimplement it. That is exactly what happened, and it is why the
+below-boundary arms are **shorter** than the arms they fork from:
+
+| Above 1.21.11 | Below | Landed as |
+|---|---|---|
+| `BulwarkRenderData`'s two `RenderStateDataKey`s | nothing to hang them on | whole compilation unit gated; no type declared, so no `.class` |
+| `BladestormLayer.ACTIVE`/`.GHOST` | same | fields gated, class kept |
+| `AvatarRendererMixin.extractRenderState` (4 handoffs) | each layer reads the attachment itself | the injection is gated; only the ctor's layer registration survives |
+| `ItemStackRenderState.submit(...)` | `ItemRenderer.renderStatic(LivingEntity, ItemStack, ItemDisplayContext, Z, PoseStack, MultiBufferSource, Level, III)` | per-layer |
+| `getItemBlockingWith()` | `getUseItem()` while `isBlocking()` | measured absent below 1.21.11 |
+| `SubmitNodeCollector.submitModelPart` | `ModelPart.render(pose, buffer, light, overlay, colour)` off `MultiBufferSource.getBuffer(RenderType.eyes(..))` | `NightEyesLayer` |
+
+**The one piece that could NOT collapse, and why it is a different shape.** Ghost Armor was
+four assignments blanking `state.*Equipment`. Below the boundary there are no such fields —
+every layer reads equipment off the entity with `getItemBySlot` at draw time — so the layers
+themselves are cancelled, by `GhostArmorMixin`. One mixin covers three targets because
+`HumanoidArmorLayer`, `CustomHeadLayer` and `ElytraLayer` all bind their entity parameter at
+`LivingEntity` and therefore share one erased `render` descriptor (`javap -p -s`). It is
+deliberately not a `@ModifyReturnValue` on `LivingEntity.getItemBySlot`: that would blank the
+armour in the inventory screen, the tooltips, the durability bar and the armour HUD row too.
+
+**ESP: the two-channel rebuild deviates from §5.5.1's plan, and the deviation is the finding.**
+§5.5.1 proposed putting membership in `MinecraftMixin`'s legacy arm and retargeting the
+existing `EntityRendererMixin` onto `Entity.getTeamColor()`, on the grounds that it adds zero
+mixin-config entries. **Measured, that plan changes behaviour.** A global hook on
+`Minecraft.shouldEntityAppearGlowing` reaches four other callers on 1.21.1 —
+`LivingEntityRenderer` and the mushroom/sheep/slime/snow-golem layers — where the answer
+decides whether an **invisible** entity is drawn as an outline-only silhouette instead of not
+at all. The render-state write it replaces has no such reach: on the newer nodes
+`outlineColor` is read only by the outline collector. So a sensed invisible mob would have
+started painting a silhouette in the world on this node and on no other.
+
+The landed shape instead wraps **both** calls scoped to
+`LevelRenderer.renderLevel(DeltaTracker,Z,Camera,GameRenderer,LightTexture,Matrix4f,Matrix4f)V`,
+where vanilla makes them back to back (offsets 977 and 1001, `javap -c`) and where each occurs
+**exactly once in the whole class**, so `defaultRequire: 1` pins them. `@WrapOperation` and not
+`@ModifyExpressionValue`, because the wrap handler is handed the RECEIVER and the receiver is
+the entity — `renderLevel` is a thousand-instruction method and picking the right `Entity`
+local out of it with `@Local` would be a guess. `EntityRendererMixin` becomes an
+above-1.21.11-only compilation unit and `LevelRendererMixin` replaces it; exactly one of the
+two is in any jar. **Cost: one config entry swapped, two added — finding 4's per-node override
+absorbs it, which is what that override is for.**
+
+**HUD: eight registrations, four anchors.** No `hud` package in fabric-rendering-v1 below
+1.21.11, so `ArchetypesClient`'s eight calls move wholesale into a client `GuiMixin` (Skill
+Proficiencies' §5h shape, doing a different job — Archetypes raises no vanilla element).
+
+| 26.x call | 1.21.1 anchor |
+|---|---|
+| `attachElementAfter(HOTBAR, …)` ×3 | TAIL of `renderItemHotbar(GuiGraphics,DeltaTracker)V` |
+| `attachElementAfter(MISC_OVERLAYS, …)` ×2 | TAIL of `renderCameraOverlays(GuiGraphics,DeltaTracker)V` — vignette+spyglass+pumpkin+frost+portal, i.e. the ids fabric groups under that name, so the two washes stay UNDER the bars |
+| `attachElementAfter(FOOD_BAR, banked_hunger)` **+** `replaceElement(FOOD_BAR, …)` | ONE `@WrapMethod` on `renderFood(GuiGraphics,Player,II)V` |
+| `replaceElement(AIR_BAR, …)` | `@WrapOperation` on the two `blitSprite` calls inside `renderPlayerHealth(GuiGraphics)V` |
+
+Two of those carry a finding each.
+
+* **The food row is one handler, not a wrap plus a TAIL inject.** `@WrapMethod` renames its
+  target, so a separate injector into the same method binds to whichever copy the transformer
+  left it and the ordering of that is not something to rely on. Written as one handler the
+  semantics are the newer nodes' exactly.
+* **There is no air-bubble METHOD below the boundary.** The bubbles are drawn inline in
+  `renderPlayerHealth` under the "air" profiler section, and those two `blitSprite` calls
+  (offsets 582 and 609) are the ONLY blits in that method — armour, hearts and food are drawn
+  by `renderArmor` / `renderHearts` / `renderFood`. Subtracting the shift from the blit's `y`
+  is arithmetically what translating the element by `-y` does above the boundary, and unlike a
+  push/pop pair split across two injection points it cannot leave an unbalanced pose stack.
+
+**THREE MECHANISM FINDINGS the stages below inherit, on top of §5.5.1's four:**
+
+5. **A javadoc inside a disabled arm is SAFE** — Stonecutter escalates the nested `/* */` to
+   `/^ ^/` and de-escalates it on generation (verified end to end on `BulwarkRenderData`). So
+   §5.5.1's finding 1 is about `//` line comments *outside* the arm's comment block, and it is
+   not a general ban on documenting a fork's else arm. Document inside it.
+6. **`ManaHud.airBarShift()` is the shape for "the mixin needs a package-private answer".**
+   A client mixin lives in `…client.mixin` and cannot see `…client`'s package-private members.
+   Widening the member would change three prior nodes' access flags. Declaring the accessor
+   **inside the fork** costs those nodes nothing and keeps the number it returns next to the
+   gate that decides it.
+7. **Three DOUBLED `//? if` directives were sitting in the tree** — a directive nested inside
+   an identical copy of itself, in `ArchetypeScreen`, `ArchetypePickerScreen` and `VanillaUi`.
+   All three generated correct code on every node, which is why nothing caught them. They are
+   removed. Worth a grep after any large fork pass: `a.strip() == b.strip()` on adjacent
+   `//? if` lines.
+
+**THE BLOCKER, and it is the whole of what Stage 5 must start with.** `arch-gate/mixincheck.py`
+on `1.21.1-fabric`: **106 targets checked, 29 unresolved, all common-tree.** The three prior
+nodes and the shared tree against 26.2 all report ALL RESOLVE, so this is a 1.21.1-only gap and
+not a tooling artefact.
+
+| Count | File | Unresolved target | Boundary / shape it needs |
+|---|---|---|---|
+| 17 | `LivingEntityMixin` | `hurtServer(ServerLevel,DamageSource,F)Z` | `>=1.21.2`; below → `hurt(DamageSource,F)Z`, drop the `level` parameter, add the `isClientSide()` early-out |
+| 2 | `DamageTraceMixin` | same | same |
+| 1 | `FlenseMixin` | same | same |
+| 1 | `HardenedMixin` | same | same |
+| 2 | `MobEffectInstanceMixin` | `tickServer(ServerLevel,LivingEntity,Runnable)Z` | → `tick(LivingEntity,Runnable)Z` |
+| 1 | `FoodDataMixin` | `tick(ServerPlayer)V` | → `tick(Player)V` |
+| 1 | `HealOrHarmMobEffectMixin` | `applyInstantenousEffect(ServerLevel,Entity,Entity,LivingEntity,I,D)V` | → the no-`ServerLevel` form |
+| 1 | `CrossbowItemMixin` | `releaseUsing(ItemStack,Level,LivingEntity,I)Z` | returns `V` below |
+| 1 | `ItemStackMixin` | `processDurabilityChange(I,ServerLevel,ServerPlayer)I` | **re-root**, do not rewrite — `EnchantmentHelper.processDurabilityChange` survives (§5.5) |
+| 1 | `PlayerMixin` | `isSweepAttack(ZZZ)Z` | **gone** below 1.21.11 — a decision, not a rename |
+| 1 | `PlayerMixin` | `@At` INVOKE `Player.causeExtraKnockback(Entity,F,Vec3)V` | **gone** — a decision |
+
+The first 21 are mechanical, and cheap for a reason worth stating: **Stage 0-D already split
+every handler into an annotated shell and a `@Unique` implementation, and the implementations
+do not take `level` — they derive it from `((LivingEntity)(Object) this).level()`.** So the
+fork is the shell's annotation and parameter list, nothing else, and `LivingEntityMixin`
+already carries a worked example of the shape in its knockback-stash block (`//? if <1.21.2`,
+with the `isClientSide()` early-out and the reason it must NOT be shared with the arm above).
+
+The last four are re-rootings or excisions and R-20 governs them: **a re-rooted event must
+reproduce the event's own CONTRACT, not merely fire somewhere plausible.**
+
+**Do not attempt the dedicated-server smoke, the mixin export audit, the funnel-ordering audit
+or the cross-mod ordering gate on this node until that table is empty.** With
+`injectors.defaultRequire: 1` — which stays on — the node aborts at mixin apply, one failure at
+a time, which is the slowest possible way to discover 29 of them. `mixincheck.py` reports all
+29 in one pass and costs seconds; run it first, every time.
 
 ### 5.6 Stage 5 — `1.20.1-fabric` — Java 17, no sprite atlas, no attachment sync, no PAL
 
