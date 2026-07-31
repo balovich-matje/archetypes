@@ -44,13 +44,25 @@ import org.jspecify.annotations.Nullable;
  * ability slot previews the real node tooltip — the same icon and
  * description the tree screen will show after the pick. (There used to be a
  * hover blurb under the cards; it read like ad copy and was cut.)
+ *
+ * <p>Unlike the tree screen this is FIXED-SIZE chrome, the way a vanilla
+ * container screen is: at a bigger GUI scale it covers more of the screen and
+ * that is correct. The one thing it may not do is be wider than the surface —
+ * Minecraft's scale clamp guarantees a GUI-scaled area of at least 320x240 and
+ * no more, and three 112px cards plus their gaps came to 380, so at the largest
+ * scale a player could pick the cards ran off both edges of the window. The card
+ * width is therefore a CEILING that shrinks to fit, and the ability row and the
+ * crest are quoted as fractions of it so a narrowed card stays composed.
  */
 public class ArchetypePickerScreen extends Screen {
-	private static final int FRAME_W = 112;
+	/** Card width at full size, and the floor it may shrink to on a narrow surface. */
+	private static final int MAX_FRAME_W = 112;
+	private static final int MIN_FRAME_W = 72;
 	private static final int FRAME_H = 140;
 	private static final int GAP = 12;
 	private static final int PAD = 10;
-	private static final int PANEL_WIDTH = FRAME_W * 3 + GAP * 2 + PAD * 2;
+	/** Breathing room between the panel's edge and the window's, when it has to shrink. */
+	private static final int MARGIN = 4;
 	private static final int PANEL_HEIGHT = 212;
 	private static final int FRAMES_TOP = 36;
 	private static final int BUTTON_TOP = 184;
@@ -59,10 +71,9 @@ public class ArchetypePickerScreen extends Screen {
 	private static final int ROLE_TOP = 16;
 	private static final int PORTRAIT_CENTER_Y = 74;
 	private static final int ABILITY_ROW_TOP = 116;
-	private static final int ABILITY_ROW_H = 18;
-	private static final int SLOT_SINGLE = 18;
-	private static final int SLOT_FORK = 36;
-	private static final int ICON_GAP = 6;
+	/** The ability row's unit at full card width: an 18px slot, a 6px gap. */
+	private static final int MAX_SLOT = 18;
+	private static final int MIN_SLOT = 12;
 
 	/**
 	 * Crest size at rest. Sized against the hover state, not the resting one:
@@ -88,7 +99,7 @@ public class ArchetypePickerScreen extends Screen {
 	@Override
 	protected void init() {
 		this.addRenderableWidget(Button.builder(CommonComponents.GUI_CANCEL, button -> this.onClose())
-				.bounds(this.panelLeft() + PANEL_WIDTH / 2 - 60, this.panelTop() + BUTTON_TOP, 120, 20)
+				.bounds(this.panelLeft() + this.panelWidth() / 2 - 60, this.panelTop() + BUTTON_TOP, 120, 20)
 				.build());
 	}
 
@@ -102,8 +113,32 @@ public class ArchetypePickerScreen extends Screen {
 		*///?}
 	}
 
+	/**
+	 * THE unit of this screen: one card's width. Its ceiling is the authored 112 —
+	 * a roomy surface gets exactly the composition the cards were drawn for — and
+	 * below that it is whatever three cards, two gaps and the panel's padding can
+	 * have without touching the window's edges.
+	 */
+	private int frameWidth() {
+		int room = this.width - MARGIN * 2 - PAD * 2 - GAP * 2;
+		return Mth.clamp(room / 3, MIN_FRAME_W, MAX_FRAME_W);
+	}
+
+	private int panelWidth() {
+		return this.frameWidth() * 3 + GAP * 2 + PAD * 2;
+	}
+
+	/** The ability row's slot, in step with the card that holds it. */
+	private int slotSize() {
+		return Mth.clamp(this.frameWidth() * MAX_SLOT / MAX_FRAME_W, MIN_SLOT, MAX_SLOT);
+	}
+
+	private int iconGap() {
+		return Math.max(3, this.slotSize() / 3);
+	}
+
 	private int panelLeft() {
-		return (this.width - PANEL_WIDTH) / 2;
+		return (this.width - this.panelWidth()) / 2;
 	}
 
 	private int panelTop() {
@@ -111,7 +146,7 @@ public class ArchetypePickerScreen extends Screen {
 	}
 
 	private int frameLeft(final int index) {
-		return this.panelLeft() + PAD + index * (FRAME_W + GAP);
+		return this.panelLeft() + PAD + index * (this.frameWidth() + GAP);
 	}
 
 	private int framesTop() {
@@ -128,7 +163,7 @@ public class ArchetypePickerScreen extends Screen {
 		for (int i = 0; i < Archetype.values().length; i++) {
 			int left = this.frameLeft(i);
 
-			if (mouseX >= left && mouseX < left + FRAME_W) {
+			if (mouseX >= left && mouseX < left + this.frameWidth()) {
 				return Archetype.values()[i];
 			}
 		}
@@ -136,28 +171,30 @@ public class ArchetypePickerScreen extends Screen {
 		return null;
 	}
 
-	/** One ability-preview slot: an 18px single or a 36px fork pair. */
+	/** One ability-preview slot: a single square or a fork pair, in slot units. */
 	private record Slot(int x, int width, SubTree tree, java.util.List<Integer> actives) {
 	}
 
 	/** The three slots of one card, geometry shared by draw and hit-test. */
 	private java.util.List<Slot> abilitySlots(final int frameIndex, final Archetype archetype) {
 		var trees = SubTree.of(archetype);
+		int slot = this.slotSize();
+		int gap = this.iconGap();
 		int[] widths = new int[3];
-		int rowWidth = ICON_GAP * 2;
+		int rowWidth = gap * 2;
 
 		for (int i = 0; i < 3; i++) {
-			widths[i] = TreeNodes.pickerActives(trees.get(i)).size() > 1 ? SLOT_FORK : SLOT_SINGLE;
+			widths[i] = TreeNodes.pickerActives(trees.get(i)).size() > 1 ? slot * 2 : slot;
 			rowWidth += widths[i];
 		}
 
 		java.util.List<Slot> slots = new java.util.ArrayList<>(3);
-		int x = this.frameLeft(frameIndex) + (FRAME_W - rowWidth) / 2;
+		int x = this.frameLeft(frameIndex) + (this.frameWidth() - rowWidth) / 2;
 
 		for (int i = 0; i < 3; i++) {
 			SubTree tree = trees.get(i);
 			slots.add(new Slot(x, widths[i], tree, TreeNodes.pickerActives(tree)));
-			x += widths[i] + ICON_GAP;
+			x += widths[i] + gap;
 		}
 
 		return slots;
@@ -166,7 +203,7 @@ public class ArchetypePickerScreen extends Screen {
 	private @Nullable Slot abilitySlotAt(final double mouseX, final double mouseY) {
 		int y = this.framesTop() + ABILITY_ROW_TOP;
 
-		if (mouseY < y || mouseY >= y + ABILITY_ROW_H) {
+		if (mouseY < y || mouseY >= y + this.slotSize()) {
 			return null;
 		}
 
@@ -282,7 +319,7 @@ public class ArchetypePickerScreen extends Screen {
 		int panelLeft = this.panelLeft();
 		int panelTop = this.panelTop();
 
-		VanillaUi.window(graphics, panelLeft, panelTop, PANEL_WIDTH, PANEL_HEIGHT);
+		VanillaUi.window(graphics, panelLeft, panelTop, this.panelWidth(), PANEL_HEIGHT);
 
 		//? if >=26.1 {
 		graphics.text(this.font, this.title, (this.width - this.font.width(this.title)) / 2, panelTop + 8,
@@ -300,6 +337,7 @@ public class ArchetypePickerScreen extends Screen {
 				VanillaUi.LABEL_FAINT, false);
 
 		int top = this.framesTop();
+		int frameWidth = this.frameWidth();
 		Archetype hovered = this.frameAt(mouseX, mouseY);
 
 		// Frames and their resting crests first, so a grown crest from any frame
@@ -308,10 +346,11 @@ public class ArchetypePickerScreen extends Screen {
 			Archetype archetype = Archetype.values()[i];
 			int left = this.frameLeft(i);
 
-			VanillaUi.inset(graphics, left, top, FRAME_W, FRAME_H);
+			VanillaUi.inset(graphics, left, top, frameWidth, FRAME_H);
 
 			if (hovered == archetype) {
-				graphics.fill(left + 1, top + 1, left + FRAME_W - 1, top + FRAME_H - 1, VanillaUi.INSET_BODY_HOVERED);
+				graphics.fill(left + 1, top + 1, left + frameWidth - 1, top + FRAME_H - 1,
+						VanillaUi.INSET_BODY_HOVERED);
 			}
 
 			if (this.hover[i] <= 0.0F) {
@@ -320,20 +359,20 @@ public class ArchetypePickerScreen extends Screen {
 
 			Component name = archetype.tierName(0);
 			//? if >=26.1 {
-			graphics.text(this.font, name, left + (FRAME_W - this.font.width(name)) / 2, top + 6,
+			graphics.text(this.font, name, left + (frameWidth - this.font.width(name)) / 2, top + 6,
 			//?} else {
-			/*graphics.drawString(this.font, name, left + (FRAME_W - this.font.width(name)) / 2, top + 6,
+			/*graphics.drawString(this.font, name, left + (frameWidth - this.font.width(name)) / 2, top + 6,
 			*///?}
 					archetype.color(), true);
 
 			// The role line: what you'll be doing, always visible.
 			int roleY = top + ROLE_TOP;
 
-			for (FormattedCharSequence line : this.font.split(archetype.role(), FRAME_W - 8)) {
+			for (FormattedCharSequence line : this.font.split(archetype.role(), frameWidth - 8)) {
 				//? if >=26.1 {
-				graphics.text(this.font, line, left + (FRAME_W - this.font.width(line)) / 2, roleY,
+				graphics.text(this.font, line, left + (frameWidth - this.font.width(line)) / 2, roleY,
 				//?} else {
-				/*graphics.drawString(this.font, line, left + (FRAME_W - this.font.width(line)) / 2, roleY,
+				/*graphics.drawString(this.font, line, left + (frameWidth - this.font.width(line)) / 2, roleY,
 				*///?}
 						VanillaUi.LABEL_FAINT, false);
 				roleY += 9;
@@ -413,26 +452,24 @@ public class ArchetypePickerScreen extends Screen {
 	*///?}
 			final Archetype archetype, final int mouseX, final int mouseY) {
 		int y = this.framesTop() + ABILITY_ROW_TOP;
+		int slotSize = this.slotSize();
 
 		for (Slot slot : this.abilitySlots(frameIndex, archetype)) {
-			if (slot.width() == SLOT_SINGLE) {
-				VanillaUi.slot(graphics, slot.x(), y);
-			} else {
-				VanillaUi.inset(graphics, slot.x(), y, SLOT_FORK, ABILITY_ROW_H);
-			}
+			VanillaUi.inset(graphics, slot.x(), y, slot.width(), slotSize);
 
 			boolean hoveredSlot = mouseX >= slot.x() && mouseX < slot.x() + slot.width()
-					&& mouseY >= y && mouseY < y + ABILITY_ROW_H;
+					&& mouseY >= y && mouseY < y + slotSize;
 
 			if (hoveredSlot) {
-				graphics.fill(slot.x() + 1, y + 1, slot.x() + slot.width() - 1, y + ABILITY_ROW_H - 1,
+				graphics.fill(slot.x() + 1, y + 1, slot.x() + slot.width() - 1, y + slotSize - 1,
 						VanillaUi.INSET_BODY_HOVERED);
 			}
 
-			// Native 16x16, never scaled — the tree screen's own resolution.
+			// The slot's bevel inset, which at the full 18px slot is the native
+			// 16x16 the tree screen draws — the two stay the same picture.
 			for (int i = 0; i < slot.actives().size(); i++) {
 				VanillaUi.nodeIcon(graphics, slot.tree(), slot.actives().get(i),
-						slot.x() + 1 + i * 18, y + 1);
+						slot.x() + 1 + i * slotSize, y + 1, slotSize - 2);
 			}
 		}
 	}
@@ -470,16 +507,21 @@ public class ArchetypePickerScreen extends Screen {
 	*///?}
 			final int index, final float progress) {
 		float eased = progress * progress * (3.0F - 2.0F * progress);
-		int size = Math.round(PORTRAIT * Mth.lerp(eased, 1.0F, HOVER_SCALE));
-		int centerX = this.frameLeft(index) + FRAME_W / 2;
+		// The crest is quoted against the card, not the screen: a card that had to
+		// shrink to fit the surface would otherwise keep a 60px crest (75px hovered)
+		// and burst its own frame.
+		float card = this.frameWidth() / (float) MAX_FRAME_W;
+		int size = Math.round(PORTRAIT * card * Mth.lerp(eased, 1.0F, HOVER_SCALE));
+		int centerX = this.frameLeft(index) + this.frameWidth() / 2;
 		int centerY = this.framesTop() + PORTRAIT_CENTER_Y;
 
 		Identifier portrait = archetype.portrait();
 
 		if (portrait == null) {
 			// Hand-composed crests (user layout), blooming with the same
-			// ease as the painted art.
-			float scale = Mth.lerp(eased, 2.0F, 2.5F);
+			// ease as the painted art — and shrinking with the card on the
+			// same factor as the painted one, so the two stay one screen.
+			float scale = Mth.lerp(eased, 2.0F, 2.5F) * card;
 			// `GuiGraphics.pose()` is a 2-D `Matrix3x2fStack` from 1.21.11 up and a 3-D
 			// `PoseStack` below it (`var` absorbs the type change; push/translate/scale/pop
 			// gain a z). The bloom easing and `scale` itself are computed above, outside the
