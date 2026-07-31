@@ -607,6 +607,22 @@ public final class Tuning {
 	public static final int FLAME_BOLT_FIRE_SECONDS = 3;
 	public static final float FLAME_BOLT_SPEED = 1.2F;
 	public static final int FLAME_BOLT_PERIOD_TICKS = 2;
+	/**
+	 * A bolt is one tick of a stream, not a shot, so it burns out on its own:
+	 * 16 blocks from the muzzle (straight line, not summed per tick) or two
+	 * seconds, whichever comes first. Both caps are needed — a bolt fired into
+	 * water keeps almost none of its speed and never collides with anything,
+	 * so it neither travels its range nor dies, and a lake fills up with
+	 * stalled fire clusters (user report).
+	 */
+	public static final double FLAME_BOLT_MAX_DISTANCE = 16.0;
+	public static final int FLAME_BOLT_MAX_TICKS = 40;
+	/**
+	 * Vaporize boils this many water blocks per projectile, then the bolt is
+	 * spent and goes away. The node used to sweep the whole 3x3x2 around the
+	 * projectile every tick, which drained ponds off one bolt.
+	 */
+	public static final int VAPORIZE_MAX_BLOCKS = 1;
 
 	/** Amnesia I's price: the fraction of earned levels KEPT after the
 	 * respec (user: "maybe 33% or even 50% shaved" — starting at a third

@@ -126,6 +126,16 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	private int judgementRank;
 	private final Set<Integer> pierced = new HashSet<>();
 	private double traveled;
+	/**
+	 * Where the spell was born, captured on its first SERVER tick. The
+	 * flamethrower's range is straight-line from here rather than the summed
+	 * per-tick delta {@link #traveled} keeps: a bolt that stalls in water
+	 * still adds a little length every tick and would take an age to reach a
+	 * path-length cap while going nowhere.
+	 */
+	private @Nullable Vec3 origin;
+	/** Vaporize: how much water this ONE projectile has already boiled. */
+	private int vaporized;
 
 	public SpellProjectile(final EntityType<? extends SpellProjectile> type, final Level level) {
 		super(type, level);
@@ -368,10 +378,29 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			return;
 		}
 
+		if (this.origin == null) {
+			this.origin = this.position();
+		}
+
 		this.traveled += this.getDeltaMovement().length();
 
 		if (this.mode == Mode.MISSILE && this.traveled
 				> (this.rangeOverride > 0.0 ? this.rangeOverride : Tuning.MISSILE_RANGE)) {
+			this.discard();
+			return;
+		}
+
+		// The flamethrower's bolts burn out by themselves. Nothing in vanilla
+		// stops them: water is not a collision for a throwable, it only drags
+		// the delta to nearly nothing, so a bolt sprayed into a lake used to
+		// hang there for good — dozens of them piling up in the same puddle
+		// (user report). Distance is straight-line from the muzzle, so a
+		// stalled bolt is killed by the time cap instead of creeping toward a
+		// path-length one.
+		if (this.mode == Mode.FLAME_BOLT
+				&& (this.tickCount > Tuning.FLAME_BOLT_MAX_TICKS
+						|| this.position().distanceToSqr(this.origin)
+								> Tuning.FLAME_BOLT_MAX_DISTANCE * Tuning.FLAME_BOLT_MAX_DISTANCE)) {
 			this.discard();
 			return;
 		}
@@ -385,6 +414,13 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		}
 
 		this.meddleWithWater((ServerLevel) this.level());
+
+		// meddleWithWater can spend the projectile (Vaporize), and a trail
+		// drawn after that is a puff of flame at a position nothing occupies.
+		if (this.isRemoved()) {
+			return;
+		}
+
 		this.trail((ServerLevel) this.level());
 	}
 
@@ -413,8 +449,16 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		}
 	}
 
-	/** Vaporize boils water off the flight path; Permafrost glazes it over
-	 * with the same self-melting ice frost walkers leave. */
+	/**
+	 * Vaporize boils water off the flight path; Permafrost glazes it over
+	 * with the same self-melting ice frost walkers leave.
+	 *
+	 * <p>Vaporize is budgeted: one projectile boils {@code VAPORIZE_MAX_BLOCKS}
+	 * blocks (source or flowing — both are {@code Blocks.WATER}) and is then
+	 * spent and discarded. It used to clear every water block in the 3x3x2
+	 * around itself EVERY tick, and since a bolt in water barely moves, one
+	 * bolt emptied a lake and then hung in the hole it dug.
+	 */
 	private void meddleWithWater(final ServerLevel level) {
 		if (!this.vaporize && !this.permafrost) {
 			return;
@@ -434,6 +478,12 @@ public class SpellProjectile extends ThrowableItemProjectile {
 						pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 3, 0.2, 0.1, 0.2, 0.01);
 				level.playSound(null, pos.getX(), pos.getY(), pos.getZ(),
 						SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.4F, 1.6F);
+				this.vaporized++;
+
+				if (this.vaporized >= Tuning.VAPORIZE_MAX_BLOCKS) {
+					this.discard();
+					return;
+				}
 			} else {
 				level.setBlockAndUpdate(pos,
 						net.minecraft.world.level.block.Blocks.FROSTED_ICE.defaultBlockState());
