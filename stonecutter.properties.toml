@@ -36,11 +36,23 @@ mod.mc_releases = ["26.2"]
 [fabric."26.2"]
 mod.mc_compat = "~26.2"
 mod.loader_floor = ">=0.19.3"
-deps.fabric_api = "0.154.2+26.2"
+# Skill Proficiencies' pin for this node, adopted rather than kept at the 0.154.2+26.2 this
+# repo used before the workspace. Two reasons, both measured: a cold rebuild against it is
+# instruction-identical and resource-byte-identical (244/244 classes, 385/385 resources), and
+# the headless smoke rig has been running 0.155.2 all along — so this closes a
+# compile-vs-runtime skew rather than opening one.
+deps.fabric_api = "0.155.2+26.2"
 # Player Animation Library, pinned by Modrinth VERSION ID and not by version number:
 # `1.1.5` is duplicated across the Fabric and NeoForge listings and only the id
 # disambiguates (design §2.1, R-C5). `g8XDqDTi` is `1.2.4+mc.26.2`, a Merged jar — mojmap
 # classes with NO `Fabric-Mapping-Namespace` header, which is why this node takes it
 # through a PLAIN `implementation` and not `modImplementation`. Getting that backwards is a
 # silent mis-remap, not a build failure.
+#
+# NOT moved to the design's `1.2.5` / `OQqtEQC6`, and that is a deliberate hold rather than
+# an oversight: 1.2.4 is what the dev run directory, the headless smoke rig and every
+# Stage-0 measurement use, and `depends: player_animation_library "*"` means compiling
+# against a newer artifact than the one the client actually loads buys a NoSuchMethodError
+# risk for nothing. The R-C5 requirement is that the coordinate be an ID, and it is. Moving
+# the number is a deps-lane call, made with the runtime updated in the same breath.
 deps.pal = "g8XDqDTi"
