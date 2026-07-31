@@ -1,10 +1,11 @@
 package com.archetypes.client.mixin;
 
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.client.BulwarkRenderData;
 import com.archetypes.client.BulwarkShieldLayer;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -41,7 +42,7 @@ public abstract class AvatarRendererMixin {
 			+ "Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;F)V", at = @At("TAIL"))
 	private void archetypes$extractBulwark(final Avatar entity, final AvatarRenderState state,
 			final float partialTick, final CallbackInfo ci) {
-		Boolean active = ((AttachmentTarget) entity).getAttached(ModAttachments.BULWARK_ACTIVE);
+		Boolean active = ArchetypeStore.INSTANCE.get(entity, ModState.BULWARK_ACTIVE);
 		boolean on = active != null && active && entity.isBlocking();
 		FabricRenderState fabricState = (FabricRenderState) state;
 		fabricState.setData(BulwarkRenderData.ACTIVE, on);
@@ -55,7 +56,7 @@ public abstract class AvatarRendererMixin {
 
 		// Ghost Armor: an invisible Shadow's armor vanishes too — the state's
 		// equipment fields are what the armor and head layers render from.
-		if (Boolean.TRUE.equals(((AttachmentTarget) entity).getAttached(ModAttachments.ARMOR_HIDDEN))) {
+		if (Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(entity, ModState.ARMOR_HIDDEN))) {
 			state.headEquipment = net.minecraft.world.item.ItemStack.EMPTY;
 			state.chestEquipment = net.minecraft.world.item.ItemStack.EMPTY;
 			state.legsEquipment = net.minecraft.world.item.ItemStack.EMPTY;
@@ -73,7 +74,7 @@ public abstract class AvatarRendererMixin {
 				com.archetypes.client.NightEyesLayer.glowFor(entity));
 
 		// Bladestorm: same handoff, keyed on the synced channel-end timestamp.
-		Long stormEnd = ((AttachmentTarget) entity).getAttached(ModAttachments.BLADESTORM_END);
+		Long stormEnd = ArchetypeStore.INSTANCE.get(entity, ModState.BLADESTORM_END);
 		boolean storming = stormEnd != null && stormEnd > entity.level().getGameTime();
 		fabricState.setData(com.archetypes.client.BladestormLayer.ACTIVE, storming);
 

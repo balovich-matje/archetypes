@@ -75,11 +75,11 @@ public final class AmnesiaPotions {
 			}
 
 			if (amplifier >= 1) {
-				ModAttachments.forgetArchetype(player);
+				ModState.forgetArchetype(player);
 				Archetypes.LOGGER.info("{} drank Amnesia II — archetype and levels forgotten",
 						player.getName().getString());
 			} else {
-				ModAttachments.forgetNodes(player);
+				ModState.forgetNodes(player);
 				SkillPoints.shaveLevels(player, Tuning.AMNESIA_LEVEL_KEEP);
 				Archetypes.LOGGER.info("{} drank Amnesia I — nodes refunded, a third of levels paid",
 						player.getName().getString());

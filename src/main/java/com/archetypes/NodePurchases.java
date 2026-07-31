@@ -7,7 +7,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -22,7 +24,7 @@ public final class NodePurchases {
 
 	/** Node indices owned in one sub-tree. */
 	public static Set<Integer> owned(final Player player, final SubTree tree) {
-		Map<String, List<Integer>> all = ((AttachmentTarget) player).getAttached(ModAttachments.PURCHASED);
+		Map<String, List<Integer>> all = ArchetypeStore.INSTANCE.get(player, ModState.PURCHASED);
 
 		if (all == null) {
 			return Set.of();
@@ -96,18 +98,18 @@ public final class NodePurchases {
 			return false;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		Map<String, List<Integer>> all = target.getAttached(ModAttachments.PURCHASED);
+		final Entity target = player;
+		Map<String, List<Integer>> all = ArchetypeStore.INSTANCE.get(target, ModState.PURCHASED);
 		Map<String, List<Integer>> next = all == null ? new HashMap<>() : new HashMap<>(all);
 		List<Integer> list = new ArrayList<>(next.getOrDefault(tree.id(), List.of()));
 		list.add(node);
 		next.put(tree.id(), list);
-		target.setAttached(ModAttachments.PURCHASED, next);
+		ArchetypeStore.INSTANCE.set(target, ModState.PURCHASED, next);
 
 		// Epic spends draw down the epic pool; base spends the normal one.
-		var counter = tree.isEpic() ? ModAttachments.EPIC_SPENT_POINTS : ModAttachments.SPENT_POINTS;
-		Integer spent = target.getAttached(counter);
-		target.setAttached(counter, (spent == null ? 0 : spent) + 1);
+		var counter = tree.isEpic() ? ModState.EPIC_SPENT_POINTS : ModState.SPENT_POINTS;
+		Integer spent = ArchetypeStore.INSTANCE.get(target, counter);
+		ArchetypeStore.INSTANCE.set(target, counter, (spent == null ? 0 : spent) + 1);
 		return true;
 	}
 }

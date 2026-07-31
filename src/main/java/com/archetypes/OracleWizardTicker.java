@@ -24,7 +24,7 @@ public final class OracleWizardTicker {
 
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				if (ModAttachments.get(player) == Archetype.INTELLECT) {
+				if (ModState.get(player) == Archetype.INTELLECT) {
 					MagicArmaments.tick(player);
 				}
 			}

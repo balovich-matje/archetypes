@@ -4,7 +4,9 @@ import java.util.Set;
 
 import com.archetypes.mixin.AbstractArrowAccessor;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -117,12 +119,12 @@ public final class MarksmanCombat {
 		}
 
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.FOCUS) > 0) {
-			AttachmentTarget target = (AttachmentTarget) player;
-			Long readyAt = target.getAttached(ModAttachments.TRUE_SHOT_READY_AT);
+			final Entity target = player;
+			Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.TRUE_SHOT_READY_AT);
 			long now = level.getGameTime();
 
 			if (readyAt != null && readyAt > now) {
-				target.setAttached(ModAttachments.TRUE_SHOT_READY_AT,
+				ArchetypeStore.INSTANCE.set(target, ModState.TRUE_SHOT_READY_AT,
 						Math.max(now, readyAt - Tuning.FOCUS_REFUND_TICKS));
 			}
 		}
@@ -160,7 +162,7 @@ public final class MarksmanCombat {
 
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, NodePurchases.owned(player, SubTree.MARKSMAN),
 				MarksmanNodes.Family.RAPID_RELOAD) > 0) {
-			((AttachmentTarget) player).setAttached(ModAttachments.CROSSBOW_PRIMED, true);
+			ArchetypeStore.INSTANCE.set(player, ModState.CROSSBOW_PRIMED, true);
 		}
 	}
 }

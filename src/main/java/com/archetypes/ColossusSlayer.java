@@ -3,7 +3,8 @@ package com.archetypes;
 import com.archetypes.ColossusSlayerNodes.Family;
 import com.archetypes.mixin.LivingEntityAccessor;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.particles.ParticleTypes;
@@ -373,7 +374,7 @@ public final class ColossusSlayer {
 	 * riposte branches on, so nothing can open a window it has no answer for.
 	 */
 	private static boolean canParry(final Player player) {
-		if (ModAttachments.get(player) != Archetype.STRENGTH
+		if (ModState.get(player) != Archetype.STRENGTH
 				|| rank(player, Family.PARRY) <= 0) {
 			return false;
 		}
@@ -391,8 +392,8 @@ public final class ColossusSlayer {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.setAttached(ModAttachments.PARRY_UNTIL,
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.set(target, ModState.PARRY_UNTIL,
 				player.level().getGameTime() + Tuning.PARRY_WINDOW_TICKS);
 	}
 
@@ -401,19 +402,19 @@ public final class ColossusSlayer {
 	 * and a client that presses every tick would otherwise stand in a permanent
 	 * window. */
 	private static boolean onCooldown(final Player player) {
-		Long readyAt = ((AttachmentTarget) player).getAttached(ModAttachments.PARRY_READY_AT);
+		Long readyAt = ArchetypeStore.INSTANCE.get(player, ModState.PARRY_READY_AT);
 		return readyAt != null && player.level().getGameTime() < readyAt;
 	}
 
 	/** Drop a running window and its cooldown — the respec path. */
 	public static void clearWindow(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.removeAttached(ModAttachments.PARRY_UNTIL);
-		target.removeAttached(ModAttachments.PARRY_READY_AT);
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.remove(target, ModState.PARRY_UNTIL);
+		ArchetypeStore.INSTANCE.remove(target, ModState.PARRY_READY_AT);
 	}
 
 	private static boolean isWindowOpen(final Player player) {
-		Long until = ((AttachmentTarget) player).getAttached(ModAttachments.PARRY_UNTIL);
+		Long until = ArchetypeStore.INSTANCE.get(player, ModState.PARRY_UNTIL);
 		return until != null && player.level().getGameTime() < until;
 	}
 
@@ -421,15 +422,15 @@ public final class ColossusSlayer {
 	 * guess — the swing is not touched, so a miss costs the key and not the
 	 * fight. */
 	private static void tickParry(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long until = target.getAttached(ModAttachments.PARRY_UNTIL);
+		final Entity target = player;
+		Long until = ArchetypeStore.INSTANCE.get(target, ModState.PARRY_UNTIL);
 
 		if (until == null || player.level().getGameTime() < until) {
 			return;
 		}
 
 		closeWindow(player);
-		target.setAttached(ModAttachments.PARRY_READY_AT,
+		ArchetypeStore.INSTANCE.set(target, ModState.PARRY_READY_AT,
 				player.level().getGameTime() + Tuning.PARRY_COOLDOWN_TICKS);
 
 		// The whiff: the only thing that tells the player the guess was wrong
@@ -441,7 +442,7 @@ public final class ColossusSlayer {
 	/** Drops the window without touching the cooldown, so the paid and unpaid
 	 * ends can each write their own. */
 	private static void closeWindow(final ServerPlayer player) {
-		((AttachmentTarget) player).removeAttached(ModAttachments.PARRY_UNTIL);
+		ArchetypeStore.INSTANCE.remove(player, ModState.PARRY_UNTIL);
 	}
 
 	// ------------------------------------------------------------------
@@ -546,7 +547,7 @@ public final class ColossusSlayer {
 	private static void pay(final ServerPlayer player, final ServerLevel level) {
 		boolean greatsword = ModItems.isGreatsword(player.getMainHandItem());
 
-		((AttachmentTarget) player).setAttached(ModAttachments.PARRY_READY_AT,
+		ArchetypeStore.INSTANCE.set(player, ModState.PARRY_READY_AT,
 				player.level().getGameTime() + (greatsword
 						? Tuning.PARRY_SUCCESS_GREATSWORD_COOLDOWN_TICKS
 						: Tuning.PARRY_SUCCESS_SWORD_COOLDOWN_TICKS));

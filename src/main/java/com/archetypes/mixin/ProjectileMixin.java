@@ -5,6 +5,8 @@ import com.archetypes.ProtectorNodes;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 
+import com.archetypes.platform.ArchetypeStore;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -64,12 +66,12 @@ public abstract class ProjectileMixin {
 		// was a smoke column rather than a pass-through.
 		if (com.archetypes.Deadeye.isEvading(player)) {
 			Projectile self = (Projectile) (Object) this;
-			var onProjectile = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) self;
+			final Entity onProjectile = self;
 
 			if (self.level() instanceof ServerLevel level
-					&& !Boolean.TRUE.equals(onProjectile.getAttached(
-							com.archetypes.ModAttachments.DEADEYE_PHASED))) {
-				onProjectile.setAttached(com.archetypes.ModAttachments.DEADEYE_PHASED, true);
+					&& !Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(onProjectile, 
+							com.archetypes.ModState.DEADEYE_PHASED))) {
+				ArchetypeStore.INSTANCE.set(onProjectile, com.archetypes.ModState.DEADEYE_PHASED, true);
 				level.sendParticles(ParticleTypes.CLOUD,
 						self.getX(), self.getY(), self.getZ(), 6, 0.15, 0.15, 0.15, 0.01);
 			}
@@ -114,8 +116,7 @@ public abstract class ProjectileMixin {
 		// back, with a floor that carries the shot to a normal skeleton range.
 		Vec3 aim = shooter.getEyePosition().subtract(self.position()).normalize();
 		double speed = Math.max(self.getDeltaMovement().length() * 2.0, Tuning.REFLECT_RETURN_SPEED);
-		((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) self)
-				.setAttached(com.archetypes.ModAttachments.REFLECT_AIM, aim.scale(speed));
+		ArchetypeStore.INSTANCE.set(self, com.archetypes.ModState.REFLECT_AIM, aim.scale(speed));
 		self.setOwner(player);
 
 		// A parried spell is deflected BEFORE its hit handler runs, so there is

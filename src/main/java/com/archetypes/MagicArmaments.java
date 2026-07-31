@@ -5,7 +5,9 @@ import java.util.Set;
 
 import com.archetypes.compat.SpecialitiesBridge;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
@@ -38,7 +40,7 @@ import net.minecraft.world.phys.Vec3;
  * Magic Armaments, the Oracle Wizard's channel: a conjured weapon stands in for
  * the wand until the player toggles it off, the mana runs dry, or the weapon
  * leaves the hand. The real wand is parked in a persistent attachment
- * ({@link ModAttachments#ARMAMENTS_WAND}) and restored exactly where it sat, so
+ * ({@link ModState#ARMAMENTS_WAND}) and restored exactly where it sat, so
  * a relog, crash or death can never eat it — {@link #restoreDirty} cleans up a
  * channel that died mid-flight on JOIN, and the death hook restores the wand
  * before drops while the conjured weapon (which can never drop, be stored, or
@@ -57,7 +59,7 @@ public final class MagicArmaments {
 	}
 
 	public static boolean isActive(final ServerPlayer player) {
-		return ((AttachmentTarget) player).getAttached(ModAttachments.ARMAMENTS_WAND) != null;
+		return ArchetypeStore.INSTANCE.get(player, ModState.ARMAMENTS_WAND) != null;
 	}
 
 	/** The Ability-6 press: toggle the channel on or off. */
@@ -93,9 +95,9 @@ public final class MagicArmaments {
 		Inventory inventory = player.getInventory();
 		int slot = inventory.getSelectedSlot();
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.setAttached(ModAttachments.ARMAMENTS_WAND, player.getMainHandItem().copy());
-		target.setAttached(ModAttachments.ARMAMENTS_SLOT, slot);
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.set(target, ModState.ARMAMENTS_WAND, player.getMainHandItem().copy());
+		ArchetypeStore.INSTANCE.set(target, ModState.ARMAMENTS_SLOT, slot);
 
 		boolean bow = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
 				OracleWizardNodes.Family.SPELLBOW) > 0;
@@ -125,9 +127,9 @@ public final class MagicArmaments {
 	/** End the channel and hand the wand back to its slot. Safe to call when the
 	 * channel is already off (it just clears any stray conjured items). */
 	public static void end(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		ItemStack wand = target.getAttached(ModAttachments.ARMAMENTS_WAND);
-		Integer slot = target.getAttached(ModAttachments.ARMAMENTS_SLOT);
+		final Entity target = player;
+		ItemStack wand = ArchetypeStore.INSTANCE.get(target, ModState.ARMAMENTS_WAND);
+		Integer slot = ArchetypeStore.INSTANCE.get(target, ModState.ARMAMENTS_SLOT);
 
 		purgeSummoned(player);
 
@@ -142,8 +144,8 @@ public final class MagicArmaments {
 			}
 		}
 
-		target.removeAttached(ModAttachments.ARMAMENTS_WAND);
-		target.removeAttached(ModAttachments.ARMAMENTS_SLOT);
+		ArchetypeStore.INSTANCE.remove(target, ModState.ARMAMENTS_WAND);
+		ArchetypeStore.INSTANCE.remove(target, ModState.ARMAMENTS_SLOT);
 
 		// Strip the channel's grants immediately, don't wait for the next tick.
 		applyArmorCap(player, NodePurchases.owned(player, SubTree.ORACLE_WIZARD), false);
@@ -275,7 +277,7 @@ public final class MagicArmaments {
 		// The wand is stashed, not held, for as long as this runs — price the
 		// upkeep off it anyway, or the Oracle's Wand would quietly exempt the
 		// one spell the player is paying for by the tick.
-		ItemStack stashed = ((AttachmentTarget) player).getAttached(ModAttachments.ARMAMENTS_WAND);
+		ItemStack stashed = ArchetypeStore.INSTANCE.get(player, ModState.ARMAMENTS_WAND);
 
 		if (stashed != null) {
 			cost = SeekerSpells.wandDiscount(stashed, cost);

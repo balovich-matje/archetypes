@@ -2,7 +2,9 @@ package com.archetypes;
 
 import java.util.Comparator;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -32,17 +34,17 @@ public final class CrusherActives {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		long now = player.level().getGameTime();
-		Long readyAt = target.getAttached(ModAttachments.QUAKE_READY_AT);
-		Long charging = target.getAttached(ModAttachments.QUAKE_CHARGE_END);
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.QUAKE_READY_AT);
+		Long charging = ArchetypeStore.INSTANCE.get(target, ModState.QUAKE_CHARGE_END);
 
 		if ((readyAt != null && now < readyAt) || (charging != null && charging > now)) {
 			return;
 		}
 
-		target.setAttached(ModAttachments.QUAKE_READY_AT, now + Tuning.QUAKE_COOLDOWN_TICKS);
-		target.setAttached(ModAttachments.QUAKE_CHARGE_END, now + Tuning.QUAKE_CHARGE_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.QUAKE_READY_AT, now + Tuning.QUAKE_COOLDOWN_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.QUAKE_CHARGE_END, now + Tuning.QUAKE_CHARGE_TICKS);
 		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.MACE_SMASH_AIR, SoundSource.PLAYERS, 0.8F, 0.5F);
 	}
@@ -75,14 +77,14 @@ public final class CrusherActives {
 		int shatter = CrusherNodes.rank(SubTree.CRUSHER, owned, CrusherNodes.Family.EARTH_SHATTER);
 
 		if (victims.isEmpty() && shatter > 0) {
-			var target = (AttachmentTarget) player;
+			final Entity target = player;
 			long now = level.getGameTime();
 			long refund = Math.round(Tuning.QUAKE_COOLDOWN_TICKS
 					* Tuning.EARTH_SHATTER_REFUND_PER_RANK * shatter);
-			Long readyAt = target.getAttached(ModAttachments.QUAKE_READY_AT);
+			Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.QUAKE_READY_AT);
 
 			if (readyAt != null) {
-				target.setAttached(ModAttachments.QUAKE_READY_AT, Math.max(now, readyAt - refund));
+				ArchetypeStore.INSTANCE.set(target, ModState.QUAKE_READY_AT, Math.max(now, readyAt - refund));
 			}
 
 			int radius = shatter * Tuning.EARTH_SHATTER_RADIUS_PER_RANK;
@@ -209,9 +211,9 @@ public final class CrusherActives {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		long now = player.level().getGameTime();
-		Long readyAt = target.getAttached(ModAttachments.HAYMAKER_READY_AT);
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.HAYMAKER_READY_AT);
 
 		if (readyAt != null && now < readyAt) {
 			return;
@@ -233,7 +235,7 @@ public final class CrusherActives {
 			return;
 		}
 
-		target.setAttached(ModAttachments.HAYMAKER_READY_AT, now + Tuning.HAYMAKER_COOLDOWN_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.HAYMAKER_READY_AT, now + Tuning.HAYMAKER_COOLDOWN_TICKS);
 		player.swing(InteractionHand.MAIN_HAND, true);
 
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)

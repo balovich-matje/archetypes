@@ -1,13 +1,14 @@
 package com.archetypes.mixin;
 
 import com.archetypes.MarksmanNodes;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.NodePurchases;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
@@ -43,8 +44,7 @@ public abstract class CrossbowItemMixin {
 			return 1;
 		}
 
-		if (!Boolean.TRUE.equals(((AttachmentTarget) player)
-				.getAttached(ModAttachments.CROSSBOW_PRIMED))) {
+		if (!Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(player, ModState.CROSSBOW_PRIMED))) {
 			return original;
 		}
 
@@ -62,7 +62,7 @@ public abstract class CrossbowItemMixin {
 	private void archetypes$consumePrime(final ItemStack stack, final Level level,
 			final LivingEntity entity, final int timeLeft, final CallbackInfoReturnable<Boolean> cir) {
 		if (entity instanceof ServerPlayer player && CrossbowItem.isCharged(stack)) {
-			((AttachmentTarget) player).removeAttached(ModAttachments.CROSSBOW_PRIMED);
+			ArchetypeStore.INSTANCE.remove(player, ModState.CROSSBOW_PRIMED);
 		}
 	}
 }

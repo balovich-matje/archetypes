@@ -3,6 +3,8 @@ package com.archetypes.client.mixin;
 import com.archetypes.MeleeSwingPayload;
 import com.archetypes.WeaponClass;
 
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -45,8 +47,7 @@ public abstract class MinecraftMixin {
 		}
 
 		// No flailing mid-bladestorm: the storm owns the blade.
-		Long stormEnd = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) this.player)
-				.getAttached(com.archetypes.ModAttachments.BLADESTORM_END);
+		Long stormEnd = ArchetypeStore.INSTANCE.get(this.player, com.archetypes.ModState.BLADESTORM_END);
 
 		if (stormEnd != null && stormEnd > this.player.level().getGameTime()) {
 			cir.setReturnValue(false);

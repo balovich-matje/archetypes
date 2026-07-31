@@ -2,7 +2,10 @@ package com.archetypes;
 
 import java.util.Optional;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+import com.archetypes.state.StateKey;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.advancements.AdvancementHolder;
 import net.minecraft.advancements.DisplayInfo;
 import net.minecraft.server.PlayerAdvancements;
@@ -130,19 +133,19 @@ public final class SkillPoints {
 
 	/** Total XP banked toward levels over this player's life. */
 	public static int bankedXp(final Player player) {
-		Integer xp = ((AttachmentTarget) player).getAttached(ModAttachments.ARCHETYPE_XP);
+		Integer xp = ArchetypeStore.INSTANCE.get(player, ModState.ARCHETYPE_XP);
 		return xp == null ? 0 : xp;
 	}
 
 	/** Normal points committed to base sub-trees. */
 	public static int spent(final Player player) {
-		Integer used = ((AttachmentTarget) player).getAttached(ModAttachments.SPENT_POINTS);
+		Integer used = ArchetypeStore.INSTANCE.get(player, ModState.SPENT_POINTS);
 		return used == null ? 0 : used;
 	}
 
 	/** Epic points committed to epic sub-trees. */
 	public static int epicSpent(final Player player) {
-		Integer used = ((AttachmentTarget) player).getAttached(ModAttachments.EPIC_SPENT_POINTS);
+		Integer used = ArchetypeStore.INSTANCE.get(player, ModState.EPIC_SPENT_POINTS);
 		return used == null ? 0 : used;
 	}
 
@@ -214,22 +217,21 @@ public final class SkillPoints {
 		// Reading the total first is what triggers the lazy server-side
 		// recount, so the two frame counts below are never stale against it.
 		int total = advancementCount(player);
-		int goals = attached(player, ModAttachments.ADVANCEMENT_GOALS);
-		int challenges = attached(player, ModAttachments.ADVANCEMENT_CHALLENGES);
+		int goals = attached(player, ModState.ADVANCEMENT_GOALS);
+		int challenges = attached(player, ModState.ADVANCEMENT_CHALLENGES);
 
 		return xpMultiplier(Math.max(total - goals - challenges, 0), goals, challenges);
 	}
 
-	private static int attached(final Player player,
-			final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Integer> type) {
-		Integer value = ((AttachmentTarget) player).getAttached(type);
+	private static int attached(final Player player, final StateKey<Integer> type) {
+		Integer value = ArchetypeStore.INSTANCE.get(player, type);
 		return value == null ? 0 : value;
 	}
 
 	/** The synced cached count, all frames together; absent means not yet
 	 * computed. */
 	public static int advancementCount(final Player player) {
-		Integer count = ((AttachmentTarget) player).getAttached(ModAttachments.ADVANCEMENT_COUNT);
+		Integer count = ArchetypeStore.INSTANCE.get(player, ModState.ADVANCEMENT_COUNT);
 
 		if (count != null) {
 			return count;
@@ -275,10 +277,10 @@ public final class SkillPoints {
 			}
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.setAttached(ModAttachments.ADVANCEMENT_GOALS, goals);
-		target.setAttached(ModAttachments.ADVANCEMENT_CHALLENGES, challenges);
-		target.setAttached(ModAttachments.ADVANCEMENT_COUNT, count);
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.set(target, ModState.ADVANCEMENT_GOALS, goals);
+		ArchetypeStore.INSTANCE.set(target, ModState.ADVANCEMENT_CHALLENGES, challenges);
+		ArchetypeStore.INSTANCE.set(target, ModState.ADVANCEMENT_COUNT, count);
 		return count;
 	}
 
@@ -294,7 +296,7 @@ public final class SkillPoints {
 		}
 
 		int scaled = Math.round(amount * xpMultiplier(serverPlayer));
-		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, bankedXp(player) + scaled);
+		ArchetypeStore.INSTANCE.set(player, ModState.ARCHETYPE_XP, bankedXp(player) + scaled);
 	}
 
 	/**
@@ -312,7 +314,7 @@ public final class SkillPoints {
 		int needed = CUM[Math.min(neededLevel, MAX_LEVEL)];
 
 		if (bankedXp(player) < needed) {
-			((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, needed);
+			ArchetypeStore.INSTANCE.set(player, ModState.ARCHETYPE_XP, needed);
 		}
 	}
 
@@ -320,7 +322,7 @@ public final class SkillPoints {
 	 * cut to exactly the kept level's cumulative cost. */
 	public static void shaveLevels(final Player player, final float keepFraction) {
 		int kept = Mth.clamp((int) Math.floor(level(player) * keepFraction), 0, MAX_LEVEL);
-		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP, CUM[kept]);
+		ArchetypeStore.INSTANCE.set(player, ModState.ARCHETYPE_XP, CUM[kept]);
 	}
 
 	/**
@@ -341,12 +343,12 @@ public final class SkillPoints {
 	 * raise the bank back on the next join if committed points now outrun it.
 	 */
 	public static void setLevel(final Player player, final int level) {
-		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
+		ArchetypeStore.INSTANCE.set(player, ModState.ARCHETYPE_XP,
 				CUM[Mth.clamp(level, 0, MAX_LEVEL)]);
 	}
 
 	public static void grantLevels(final Player player, final int levels) {
-		((AttachmentTarget) player).setAttached(ModAttachments.ARCHETYPE_XP,
+		ArchetypeStore.INSTANCE.set(player, ModState.ARCHETYPE_XP,
 				CUM[Math.min(level(player) + levels, MAX_LEVEL)]);
 	}
 }

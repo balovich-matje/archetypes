@@ -3,7 +3,9 @@ package com.archetypes;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -43,7 +45,7 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
  * <h2>Lifetime</h2>
  * The plates live on a transient, unsynced attachment, so they survive nothing:
  * a relog and a death both hand the player a fresh entity with no attachment,
- * and a respec is caught twice over — {@code ModAttachments.forgetNodes} calls
+ * and a respec is caught twice over — {@code ModState.forgetNodes} calls
  * {@link #clear} outright, and {@link #armour} drops the plates the first tick
  * the rank reads zero, which revokes the modifier in the same tick.
  */
@@ -112,7 +114,7 @@ public final class Hardened {
 		long now = player.level().getGameTime();
 		List<Plate> plates = new ArrayList<>(live(player, now));
 		plates.add(new Plate(now + (long) rank * Tuning.HARDENED_DURATION_TICKS_PER_RANK, armour));
-		((AttachmentTarget) player).setAttached(ModAttachments.HARDENED_PLATES, List.copyOf(plates));
+		ArchetypeStore.INSTANCE.set(player, ModState.HARDENED_PLATES, List.copyOf(plates));
 
 		// The node is otherwise silent — armour is a number nobody watches — so
 		// the flash is how a player learns the plate was theirs.
@@ -127,12 +129,12 @@ public final class Hardened {
 	 * on a schedule.
 	 */
 	public static double armour(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 
 		if (ColossusCrusherNodes.rank(player, ColossusCrusherNodes.Family.HARDENED) <= 0) {
 			// Respec'd out mid-stack. Drop the plates here and the ticker's own
 			// apply() takes the modifier off in the same tick.
-			target.removeAttached(ModAttachments.HARDENED_PLATES);
+			ArchetypeStore.INSTANCE.remove(target, ModState.HARDENED_PLATES);
 			return 0.0;
 		}
 
@@ -148,8 +150,8 @@ public final class Hardened {
 	/** Every plate still standing, with the expired ones written out of the
 	 * attachment as a side effect — the only pruning pass there is. */
 	private static List<Plate> live(final ServerPlayer player, final long now) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		List<Plate> stored = target.getAttached(ModAttachments.HARDENED_PLATES);
+		final Entity target = player;
+		List<Plate> stored = ArchetypeStore.INSTANCE.get(target, ModState.HARDENED_PLATES);
 
 		if (stored == null || stored.isEmpty()) {
 			return List.of();
@@ -165,9 +167,9 @@ public final class Hardened {
 
 		if (live.size() != stored.size()) {
 			if (live.isEmpty()) {
-				target.removeAttached(ModAttachments.HARDENED_PLATES);
+				ArchetypeStore.INSTANCE.remove(target, ModState.HARDENED_PLATES);
 			} else {
-				target.setAttached(ModAttachments.HARDENED_PLATES, List.copyOf(live));
+				ArchetypeStore.INSTANCE.set(target, ModState.HARDENED_PLATES, List.copyOf(live));
 			}
 		}
 
@@ -176,12 +178,12 @@ public final class Hardened {
 
 	/**
 	 * Drop every plate and the modifier they fed, immediately. Reached by
-	 * {@code ModAttachments.forgetNodes}: a respec must not leave armour
+	 * {@code ModState.forgetNodes}: a respec must not leave armour
 	 * standing on a player who no longer owns the node, and waiting for the
 	 * ticker would leave it standing for the rest of the tick.
 	 */
 	public static void clear(final ServerPlayer player) {
-		((AttachmentTarget) player).removeAttached(ModAttachments.HARDENED_PLATES);
+		ArchetypeStore.INSTANCE.remove(player, ModState.HARDENED_PLATES);
 		AttributeInstance armour = player.getAttribute(Attributes.ARMOR);
 
 		if (armour != null) {

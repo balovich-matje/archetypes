@@ -2,7 +2,7 @@ package com.archetypes.client;
 
 import com.archetypes.ActiveAbilityPayload;
 import com.archetypes.Archetype;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.ModEntities;
 import com.archetypes.NodePurchases;
 import com.archetypes.SpellChannelPayload;
@@ -116,14 +116,14 @@ public class ArchetypesClient implements ClientModInitializer {
 
 			// The level-up toast: the XP attachment syncs to this client, so
 			// watching the derived level needs no packet of its own.
-			if (client.player == null || ModAttachments.get(client.player) == null) {
+			if (client.player == null || ModState.get(client.player) == null) {
 				lastLevel = -1;
 			} else {
 				int level = com.archetypes.SkillPoints.level(client.player);
 
 				if (lastLevel >= 0 && level > lastLevel) {
 					client.gui.toastManager().addToast(new ArchetypeLevelUpToast(
-							ModAttachments.get(client.player), lastLevel, level));
+							ModState.get(client.player), lastLevel, level));
 				}
 
 				lastLevel = level;
@@ -134,7 +134,7 @@ public class ArchetypesClient implements ClientModInitializer {
 			// press payload above still goes out; the server ignores it for
 			// the channel holder.
 			if (client.player != null && ABILITY_KEYS[3].isDown()
-					&& ModAttachments.get(client.player) == Archetype.INTELLECT) {
+					&& ModState.get(client.player) == Archetype.INTELLECT) {
 				var owned = NodePurchases.owned(client.player, SubTree.ELEMENTALIST);
 
 				if (com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
@@ -305,7 +305,7 @@ public class ArchetypesClient implements ClientModInitializer {
 
 	/** Gold while you still have a choice to make; plain once you've picked. */
 	private static Component label(final net.minecraft.client.Minecraft client) {
-		boolean unpicked = client.player == null || ModAttachments.get(client.player) == null;
+		boolean unpicked = client.player == null || ModState.get(client.player) == null;
 		return Component.literal("A").withStyle(unpicked ? ChatFormatting.GOLD : ChatFormatting.WHITE);
 	}
 
@@ -316,7 +316,7 @@ public class ArchetypesClient implements ClientModInitializer {
 	 */
 	private static Component tabLabel(final net.minecraft.client.Minecraft client) {
 		boolean beckons = client.player == null
-				|| ModAttachments.get(client.player) == null
+				|| ModState.get(client.player) == null
 				|| com.archetypes.SkillPoints.available(client.player) > 0;
 		var text = Component.translatable("screen.archetypes.button");
 		return beckons ? text.withStyle(ChatFormatting.GOLD) : text;
@@ -341,7 +341,7 @@ public class ArchetypesClient implements ClientModInitializer {
 			return;
 		}
 
-		Archetype current = ModAttachments.get(client.player);
+		Archetype current = ModState.get(client.player);
 		client.gui.setScreen(current == null
 				? new ArchetypePickerScreen(parent)
 				: new ArchetypeScreen(parent, current));

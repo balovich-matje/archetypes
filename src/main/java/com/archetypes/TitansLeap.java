@@ -1,6 +1,8 @@
 package com.archetypes;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -53,7 +55,7 @@ public final class TitansLeap {
 
 	/** Whether this player is in the air on a leap of ours. */
 	public static boolean isLeaping(final Player player) {
-		return ((AttachmentTarget) player).getAttached(ModAttachments.LEAP_AT) != null;
+		return ArchetypeStore.INSTANCE.get(player, ModState.LEAP_AT) != null;
 	}
 
 	/** Owned rank in a Colossus Crusher family. */
@@ -83,10 +85,10 @@ public final class TitansLeap {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
-		Long ready = target.getAttached(ModAttachments.LEAP_READY_AT);
+		Long ready = ArchetypeStore.INSTANCE.get(target, ModState.LEAP_READY_AT);
 
 		if ((ready != null && now < ready) || isLeaping(player)) {
 			return;
@@ -105,9 +107,9 @@ public final class TitansLeap {
 				movement.z + forward.z);
 		player.hurtMarked = true;
 
-		target.setAttached(ModAttachments.LEAP_READY_AT, now + Tuning.TITAN_LEAP_COOLDOWN_TICKS);
-		target.setAttached(ModAttachments.LEAP_AT, now);
-		target.setAttached(ModAttachments.LEAP_PEAK_Y, player.getY());
+		ArchetypeStore.INSTANCE.set(target, ModState.LEAP_READY_AT, now + Tuning.TITAN_LEAP_COOLDOWN_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.LEAP_AT, now);
+		ArchetypeStore.INSTANCE.set(target, ModState.LEAP_PEAK_Y, player.getY());
 
 		// The ground gives way where you pushed off, and the mace's own air
 		// note pitched down to half.
@@ -130,11 +132,11 @@ public final class TitansLeap {
 	}
 
 	/** Drop an in-flight leap without landing it. Reached by the JOIN handler
-	 * and by {@code ModAttachments.forgetNodes}; safe on a player in no leap. */
+	 * and by {@code ModState.forgetNodes}; safe on a player in no leap. */
 	public static void clear(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.removeAttached(ModAttachments.LEAP_AT);
-		target.removeAttached(ModAttachments.LEAP_PEAK_Y);
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.remove(target, ModState.LEAP_AT);
+		ArchetypeStore.INSTANCE.remove(target, ModState.LEAP_PEAK_Y);
 	}
 
 	// ------------------------------------------------------------------
@@ -142,8 +144,8 @@ public final class TitansLeap {
 	// ------------------------------------------------------------------
 
 	static void tick(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long since = target.getAttached(ModAttachments.LEAP_AT);
+		final Entity target = player;
+		Long since = ArchetypeStore.INSTANCE.get(target, ModState.LEAP_AT);
 
 		if (since == null) {
 			return;
@@ -154,10 +156,10 @@ public final class TitansLeap {
 			return;
 		}
 
-		Double peak = target.getAttached(ModAttachments.LEAP_PEAK_Y);
+		Double peak = ArchetypeStore.INSTANCE.get(target, ModState.LEAP_PEAK_Y);
 
 		if (peak == null || player.getY() > peak) {
-			target.setAttached(ModAttachments.LEAP_PEAK_Y, player.getY());
+			ArchetypeStore.INSTANCE.set(target, ModState.LEAP_PEAK_Y, player.getY());
 			peak = player.getY();
 		}
 
@@ -242,7 +244,7 @@ public final class TitansLeap {
 					Tuning.TITAN_LEAP_STOMP_TICKS, Tuning.TITAN_LEAP_STOMP_SLOW_AMPLIFIER), player);
 		}
 
-		((AttachmentTarget) player).setAttached(ModAttachments.LEAP_STOMP_END,
+		ArchetypeStore.INSTANCE.set(player, ModState.LEAP_STOMP_END,
 				level.getGameTime() + Tuning.TITAN_LEAP_STOMP_TICKS);
 
 		stompFx(player, level, radius);

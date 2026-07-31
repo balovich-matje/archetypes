@@ -3,15 +3,16 @@ package com.archetypes.client;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.NodePurchases;
 import com.archetypes.ProtectorNodes;
 import com.archetypes.SlayerNodes;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
-import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
+import com.archetypes.platform.ArchetypeStore;
+import com.archetypes.state.StateKey;
+
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -46,10 +47,10 @@ public final class CooldownBarHud {
 		/** Cooldown-driven active: no mana involved. */
 		private Ability(final SubTree tree, final Enum<?> family,
 				final net.minecraft.client.KeyMapping key,
-				final AttachmentType<Long> readyAt, final int totalTicks) {
+				final StateKey<Long> readyAt, final int totalTicks) {
 			this(tree, com.archetypes.TreeNodes.indexOfFamily(tree, family), key,
 					player -> {
-						Long ready = ((AttachmentTarget) player).getAttached(readyAt);
+						Long ready = ArchetypeStore.INSTANCE.get(player, readyAt);
 						long left = ready == null ? 0L : ready - player.level().getGameTime();
 						return (int) Math.max(0L, Math.min(Integer.MAX_VALUE, left));
 					}, totalTicks, 0.0F, false);
@@ -173,7 +174,7 @@ public final class CooldownBarHud {
 			int recovery = ProtectorNodes.rank(SubTree.PROTECTOR, protector, ProtectorNodes.Family.COOLDOWN);
 			abilities.add(new Ability(SubTree.PROTECTOR, ProtectorNodes.Family.BASH,
 					ArchetypesClient.ABILITY_KEYS[0],
-					ModAttachments.BASH_READY_AT, Tuning.bashCooldownTicks(slam, recovery)));
+					ModState.BASH_READY_AT, Tuning.bashCooldownTicks(slam, recovery)));
 		}
 
 		var slayer = NodePurchases.owned(player, SubTree.SLAYER);
@@ -183,13 +184,13 @@ public final class CooldownBarHud {
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.DECIMATE) > 0) {
 			abilities.add(new Ability(SubTree.SLAYER, SlayerNodes.Family.DECIMATE,
 					ArchetypesClient.ABILITY_KEYS[1],
-					ModAttachments.DECIMATE_READY_AT, Tuning.DECIMATE_COOLDOWN_TICKS - relentless));
+					ModState.DECIMATE_READY_AT, Tuning.DECIMATE_COOLDOWN_TICKS - relentless));
 		}
 
 		if (SlayerNodes.rank(SubTree.SLAYER, slayer, SlayerNodes.Family.BLADESTORM) > 0) {
 			abilities.add(new Ability(SubTree.SLAYER, SlayerNodes.Family.BLADESTORM,
 					ArchetypesClient.ABILITY_KEYS[1],
-					ModAttachments.BLADESTORM_READY_AT, Tuning.BLADESTORM_COOLDOWN_TICKS - relentless));
+					ModState.BLADESTORM_READY_AT, Tuning.BLADESTORM_COOLDOWN_TICKS - relentless));
 		}
 
 		var crusher = NodePurchases.owned(player, SubTree.CRUSHER);
@@ -198,14 +199,14 @@ public final class CooldownBarHud {
 				com.archetypes.CrusherNodes.Family.HAYMAKER) > 0) {
 			abilities.add(new Ability(SubTree.CRUSHER, com.archetypes.CrusherNodes.Family.HAYMAKER,
 					ArchetypesClient.ABILITY_KEYS[2],
-					ModAttachments.HAYMAKER_READY_AT, Tuning.HAYMAKER_COOLDOWN_TICKS));
+					ModState.HAYMAKER_READY_AT, Tuning.HAYMAKER_COOLDOWN_TICKS));
 		}
 
 		if (com.archetypes.CrusherNodes.rank(SubTree.CRUSHER, crusher,
 				com.archetypes.CrusherNodes.Family.QUAKE) > 0) {
 			abilities.add(new Ability(SubTree.CRUSHER, com.archetypes.CrusherNodes.Family.QUAKE,
 					ArchetypesClient.ABILITY_KEYS[2],
-					ModAttachments.QUAKE_READY_AT, Tuning.QUAKE_COOLDOWN_TICKS));
+					ModState.QUAKE_READY_AT, Tuning.QUAKE_COOLDOWN_TICKS));
 		}
 
 		// The Cutpurse actives: cooldown-driven like Strength's. Seeker spells
@@ -218,7 +219,7 @@ public final class CooldownBarHud {
 					com.archetypes.MarksmanNodes.Family.SEEKER_ARROW) > 0;
 			abilities.add(new Ability(SubTree.MARKSMAN, com.archetypes.MarksmanNodes.Family.TRUE_SHOT,
 					ArchetypesClient.ABILITY_KEYS[0],
-					ModAttachments.TRUE_SHOT_READY_AT, seeker
+					ModState.TRUE_SHOT_READY_AT, seeker
 							? Tuning.TRUE_SHOT_SEEKER_COOLDOWN_TICKS : Tuning.TRUE_SHOT_COOLDOWN_TICKS));
 		}
 
@@ -230,7 +231,7 @@ public final class CooldownBarHud {
 					com.archetypes.AssassinNodes.Family.SHADOW_FLURRY) > 0;
 			abilities.add(new Ability(SubTree.ASSASSIN, com.archetypes.AssassinNodes.Family.SHADOW_STEP,
 					ArchetypesClient.ABILITY_KEYS[1],
-					ModAttachments.SHADOW_STEP_READY_AT, flurry
+					ModState.SHADOW_STEP_READY_AT, flurry
 							? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS
 							: Tuning.SHADOW_STEP_COOLDOWN_TICKS));
 		}
@@ -241,7 +242,7 @@ public final class CooldownBarHud {
 				com.archetypes.ShadowNodes.Family.INVISIBILITY) > 0) {
 			abilities.add(new Ability(SubTree.SHADOW, com.archetypes.ShadowNodes.Family.INVISIBILITY,
 					ArchetypesClient.ABILITY_KEYS[2],
-					ModAttachments.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
+					ModState.INVIS_READY_AT, Tuning.INVIS_COOLDOWN_TICKS));
 		}
 
 		// The Seeker's spells: no cooldowns, so these are keybind + price
@@ -341,7 +342,7 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(SubTree.NEMESIS_MARKSMAN,
 					com.archetypes.NemesisMarksmanNodes.Family.DEADEYE,
 					ArchetypesClient.ABILITY_KEYS[4],
-					ModAttachments.DEADEYE_READY_AT, Tuning.DEADEYE_COOLDOWN_TICKS));
+					ModState.DEADEYE_READY_AT, Tuning.DEADEYE_COOLDOWN_TICKS));
 		}
 
 		// Death Mark's tile drains its 45 seconds. It empties early rather than
@@ -354,7 +355,7 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(SubTree.NEMESIS_ASSASSIN,
 					com.archetypes.NemesisAssassinNodes.Family.DEATH_MARK,
 					ArchetypesClient.ABILITY_KEYS[5],
-					ModAttachments.DEATH_MARK_READY_AT, Tuning.DEATH_MARK_COOLDOWN_TICKS));
+					ModState.DEATH_MARK_READY_AT, Tuning.DEATH_MARK_COOLDOWN_TICKS));
 		}
 
 		// Titan's Leap shares slot 6 with the Dark Ritual; a Brawler only ever
@@ -366,7 +367,7 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(SubTree.COLOSSUS_CRUSHER,
 					com.archetypes.ColossusCrusherNodes.Family.TITAN_LEAP,
 					ArchetypesClient.ABILITY_KEYS[6],
-					ModAttachments.LEAP_READY_AT, Tuning.TITAN_LEAP_COOLDOWN_TICKS));
+					ModState.LEAP_READY_AT, Tuning.TITAN_LEAP_COOLDOWN_TICKS));
 		}
 
 		// The Parry shares slot 5 with Death Mark and Magic Armaments, and its
@@ -380,7 +381,7 @@ public final class CooldownBarHud {
 			abilities.add(new Ability(SubTree.COLOSSUS_SLAYER,
 					com.archetypes.ColossusSlayerNodes.Family.PARRY,
 					ArchetypesClient.ABILITY_KEYS[5],
-					ModAttachments.PARRY_READY_AT, Tuning.PARRY_COOLDOWN_TICKS));
+					ModState.PARRY_READY_AT, Tuning.PARRY_COOLDOWN_TICKS));
 		}
 
 		var oracleWiz = NodePurchases.owned(player, SubTree.ORACLE_WIZARD);

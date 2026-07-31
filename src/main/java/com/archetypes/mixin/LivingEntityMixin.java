@@ -2,7 +2,7 @@ package com.archetypes.mixin;
 
 import com.archetypes.CrusherNodes;
 import com.archetypes.WeaponClass;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.ModItems;
 import com.archetypes.NodePurchases;
 import com.archetypes.ProcIndicators;
@@ -12,7 +12,9 @@ import com.archetypes.SubTree;
 import com.archetypes.Tuning;
 import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -51,12 +53,12 @@ public abstract class LivingEntityMixin {
 		// Braced: a blocked hit shaves a second off the bash's countdown — the
 		// tree's loop closing: blocking feeds bashing feeds blocking.
 		if (ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.BRACED) > 0) {
-			AttachmentTarget target = (AttachmentTarget) player;
-			Long readyAt = target.getAttached(ModAttachments.BASH_READY_AT);
+			final Entity target = player;
+			Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.BASH_READY_AT);
 			long now = player.level().getGameTime();
 
 			if (readyAt != null && readyAt > now) {
-				target.setAttached(ModAttachments.BASH_READY_AT,
+				ArchetypeStore.INSTANCE.set(target, ModState.BASH_READY_AT,
 						Math.max(now, readyAt - Tuning.BRACED_REFUND_TICKS));
 				((ServerLevel) player.level()).sendParticles(
 						net.minecraft.core.particles.ParticleTypes.ELECTRIC_SPARK,
@@ -109,9 +111,9 @@ public abstract class LivingEntityMixin {
 			return;
 		}
 
-		var target = (AttachmentTarget) player;
+		final Entity target = player;
 
-		if (target.getAttached(ModAttachments.BLADESTORM_END) != null) {
+		if (ArchetypeStore.INSTANCE.get(target, ModState.BLADESTORM_END) != null) {
 			return;
 		}
 
@@ -123,7 +125,7 @@ public abstract class LivingEntityMixin {
 		}
 
 		long now = player.level().getGameTime();
-		Long readyAt = target.getAttached(ModAttachments.LUNGE_READY_AT);
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.LUNGE_READY_AT);
 
 		if (readyAt != null && now < readyAt) {
 			return;
@@ -133,7 +135,7 @@ public abstract class LivingEntityMixin {
 		var look = player.getLookAngle();
 		player.setDeltaMovement(player.getDeltaMovement().add(look.scale(impulse)));
 		player.hurtMarked = true;
-		target.setAttached(ModAttachments.LUNGE_READY_AT, now + Tuning.LUNGE_COOLDOWN_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.LUNGE_READY_AT, now + Tuning.LUNGE_COOLDOWN_TICKS);
 		((ServerLevel) player.level()).sendParticles(
 				net.minecraft.core.particles.ParticleTypes.CLOUD,
 				player.getX(), player.getY() + 0.1, player.getZ(), 3, 0.15, 0.02, 0.15, 0.01);
@@ -317,7 +319,7 @@ public abstract class LivingEntityMixin {
 		} else {
 			result = source.getDirectEntity() instanceof net.minecraft.world.entity.projectile.arrow.AbstractArrow arrow
 					&& Boolean.TRUE.equals(
-							((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))
+							ArchetypeStore.INSTANCE.get(arrow, ModState.SPELLBOW_ARROW))
 									? com.archetypes.MagicArmaments.shapeHit(player, level, amount, true)
 									: amount;
 		}
@@ -419,7 +421,7 @@ public abstract class LivingEntityMixin {
 
 		ambush += com.archetypes.ShadowTicker.bloodrushBonus(player);
 
-		Long stepStrike = ((AttachmentTarget) player).getAttached(ModAttachments.STEP_STRIKE_AT);
+		Long stepStrike = ArchetypeStore.INSTANCE.get(player, ModState.STEP_STRIKE_AT);
 		boolean stepping = stepStrike != null && stepStrike == level.getGameTime();
 		boolean executing = false;
 
@@ -737,8 +739,7 @@ public abstract class LivingEntityMixin {
 		// A real smash: live fallDistance, or the ticker's mid-fall stamp
 		// (belt and suspenders — vanilla resets fallDistance somewhere in the
 		// mace pipeline and the exact point is version-dependent).
-		Long stamp = ((net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player)
-				.getAttached(ModAttachments.SMASH_AT);
+		Long stamp = ArchetypeStore.INSTANCE.get(player, ModState.SMASH_AT);
 		boolean smashing = weapon == com.archetypes.WeaponClass.MACE
 				&& (player.fallDistance > Tuning.SMASH_MIN_FALL
 						|| (stamp != null && player.level().getGameTime() - stamp <= 3));
@@ -783,7 +784,7 @@ public abstract class LivingEntityMixin {
 			return;
 		}
 
-		Long immuneUntil = ((AttachmentTarget) player).getAttached(ModAttachments.IMMUNE_UNTIL);
+		Long immuneUntil = ArchetypeStore.INSTANCE.get(player, ModState.IMMUNE_UNTIL);
 
 		if (immuneUntil != null && level.getGameTime() < immuneUntil) {
 			cir.setReturnValue(false);

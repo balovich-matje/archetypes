@@ -2,8 +2,10 @@ package com.archetypes;
 
 import java.util.Set;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -13,7 +15,7 @@ import net.minecraft.world.entity.monster.Enemy;
 /**
  * The Protector's two standing, shield-gated effects.
  *
- * <p>{@link ModAttachments#BULWARK_ACTIVE} is held true exactly while a capstone
+ * <p>{@link ModState#BULWARK_ACTIVE} is held true exactly while a capstone
  * holder blocks. The attachment syncs to every client, where a render layer
  * draws ghost shields orbiting the player — set/removed only on change, so the
  * common case costs one boolean check per player per tick and no traffic.
@@ -41,13 +43,13 @@ public final class ProtectorTicker {
 						&& ProtectorNodes.rank(SubTree.PROTECTOR, owned,
 								ProtectorNodes.Family.OMNI_BLOCK) > 0;
 
-				AttachmentTarget target = (AttachmentTarget) player;
-				Boolean current = target.getAttached(ModAttachments.BULWARK_ACTIVE);
+				final Entity target = player;
+				Boolean current = ArchetypeStore.INSTANCE.get(target, ModState.BULWARK_ACTIVE);
 
 				if (should && current == null) {
-					target.setAttached(ModAttachments.BULWARK_ACTIVE, true);
+					ArchetypeStore.INSTANCE.set(target, ModState.BULWARK_ACTIVE, true);
 				} else if (!should && current != null) {
-					target.removeAttached(ModAttachments.BULWARK_ACTIVE);
+					ArchetypeStore.INSTANCE.remove(target, ModState.BULWARK_ACTIVE);
 				}
 
 				if (sweep && blocking

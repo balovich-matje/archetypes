@@ -4,8 +4,10 @@ import java.util.Set;
 
 import com.archetypes.mixin.LivingEntityAccessor;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
@@ -31,7 +33,7 @@ import net.minecraft.world.entity.player.Player;
  *
  * <p>The aura is a pure server effect and its only persistent trace is the
  * attachment holding its end tick, which is transient by design (see
- * {@link ModAttachments#RADIANCE_END}). Nothing is ever placed in the server's
+ * {@link ModState#RADIANCE_END}). Nothing is ever placed in the server's
  * world: the glow is drawn client-side from that same stamp (see
  * {@code RadianceLight}), and the halo is particles.
  */
@@ -60,14 +62,14 @@ public final class RadianceAura {
 	 * this is the whole contract the client-side glow reads.
 	 */
 	public static boolean isActive(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.RADIANCE_END);
+		Long end = ArchetypeStore.INSTANCE.get(player, ModState.RADIANCE_END);
 		return end != null && player.level().getGameTime() < end;
 	}
 
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				if (ModAttachments.get(player) == Archetype.INTELLECT) {
+				if (ModState.get(player) == Archetype.INTELLECT) {
 					tick(player);
 				}
 			}
@@ -97,7 +99,7 @@ public final class RadianceAura {
 		// one pulse short of the advertised total. With it the observed
 		// remaining runs ticks..1 or ticks+1..1 and both yield exactly
 		// ticks/RADIANCE_PULSE_TICKS pulses.
-		((AttachmentTarget) player).setAttached(ModAttachments.RADIANCE_END,
+		ArchetypeStore.INSTANCE.set(player, ModState.RADIANCE_END,
 				player.level().getGameTime() + ticks + 1);
 		RadianceEffect.show(player, ticks);
 
@@ -113,14 +115,14 @@ public final class RadianceAura {
 	 * with no aura.
 	 */
 	public static void end(final ServerPlayer player) {
-		((AttachmentTarget) player).removeAttached(ModAttachments.RADIANCE_END);
+		ArchetypeStore.INSTANCE.remove(player, ModState.RADIANCE_END);
 		steadfast(player, false);
 		RadianceEffect.hide(player);
 	}
 
 	private static void tick(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long end = target.getAttached(ModAttachments.RADIANCE_END);
+		final Entity target = player;
+		Long end = ArchetypeStore.INSTANCE.get(target, ModState.RADIANCE_END);
 		long now = player.level().getGameTime();
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.ORACLE_PRIEST);
 		// A respec mid-aura takes the aura with it, so a refunded node cannot
@@ -137,7 +139,7 @@ public final class RadianceAura {
 
 		if (!active) {
 			if (end != null) {
-				target.removeAttached(ModAttachments.RADIANCE_END);
+				ArchetypeStore.INSTANCE.remove(target, ModState.RADIANCE_END);
 				// The badge outlives the stamp only when the aura is cut short
 				// (a respec mid-aura); on a natural lapse its own duration has
 				// already run out and this is a no-op.

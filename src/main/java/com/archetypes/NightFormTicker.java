@@ -15,11 +15,11 @@ public final class NightFormTicker {
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				if (ModAttachments.get(player) == Archetype.AGILITY) {
+				if (ModState.get(player) == Archetype.AGILITY) {
 					NightForm.tick(player);
 				} else if (NightForm.isActive(player) || NightForm.isChannelling(player)) {
 					// Belt and braces: every archetype-losing path already ends
-					// the form (ModAttachments.forgetNodes), but the form's own
+					// the form (ModState.forgetNodes), but the form's own
 					// effects read the stamp while only this ticker clears it —
 					// so a stamp without the archetype would strand a vampire.
 					NightForm.end(player);

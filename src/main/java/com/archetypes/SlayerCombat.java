@@ -2,7 +2,8 @@ package com.archetypes;
 
 import java.util.List;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -77,7 +78,7 @@ public final class SlayerCombat {
 			int dance = SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.BLADE_DANCE);
 
 			if (sword && !dancing && dance > 0) {
-				Long stormEnd = ((AttachmentTarget) player).getAttached(ModAttachments.BLADESTORM_END);
+				Long stormEnd = ArchetypeStore.INSTANCE.get(player, ModState.BLADESTORM_END);
 
 				if ((stormEnd == null || stormEnd <= player.level().getGameTime())
 						&& player.getRandom().nextFloat() < dance * Tuning.BLADE_DANCE_CHANCE) {

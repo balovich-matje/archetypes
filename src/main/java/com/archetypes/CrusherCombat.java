@@ -1,6 +1,8 @@
 package com.archetypes;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.LivingEntity;
@@ -32,7 +34,7 @@ public final class CrusherCombat {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		long now = level.getGameTime();
 
 		// Shockwave: a falling mace blow rings outward — the same damage to
@@ -70,7 +72,7 @@ public final class CrusherCombat {
 			float cap = CrusherTicker.tranceCap(player, owned);
 			player.setAbsorptionAmount(Math.min(cap,
 					Math.max(player.getAbsorptionAmount(), 0.0F) + gain));
-			target.setAttached(ModAttachments.TRANCE_HIT_AT, now);
+			ArchetypeStore.INSTANCE.set(target, ModState.TRANCE_HIT_AT, now);
 			ProcIndicators.send(player, SubTree.CRUSHER, CrusherNodes.Family.BATTLE_TRANCE);
 		}
 	}

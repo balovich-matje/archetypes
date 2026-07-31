@@ -11,7 +11,8 @@ import java.util.UUID;
 
 import com.archetypes.mixin.LivingEntityAccessor;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -850,7 +851,7 @@ public final class DamageTrace {
 						: rushBonus > 0.0F ? note("bloodrush") : note("no_recent_kill"));
 		ambush += rushBonus;
 
-		Long stepStrike = ((AttachmentTarget) attacker).getAttached(ModAttachments.STEP_STRIKE_AT);
+		Long stepStrike = ArchetypeStore.INSTANCE.get(attacker, ModState.STEP_STRIKE_AT);
 		boolean stepping = stepStrike != null && stepStrike == attacker.level().getGameTime();
 
 		ambush += explainStepStrike(frame, attacker, victim, owned, marked, stepping);
@@ -978,7 +979,7 @@ public final class DamageTrace {
 			final LivingEntity victim) {
 		Set<Integer> owned = NodePurchases.owned(attacker, SubTree.CRUSHER);
 		WeaponClass weapon = WeaponClass.of(attacker);
-		Long stamp = ((AttachmentTarget) attacker).getAttached(ModAttachments.SMASH_AT);
+		Long stamp = ArchetypeStore.INSTANCE.get(attacker, ModState.SMASH_AT);
 		boolean smashing = weapon == WeaponClass.MACE
 				&& (attacker.fallDistance > Tuning.SMASH_MIN_FALL
 						|| (stamp != null && attacker.level().getGameTime() - stamp <= 3));

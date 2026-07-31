@@ -1,7 +1,7 @@
 package com.archetypes.client;
 
 import com.archetypes.Archetypes;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.zigythebird.playeranim.accessors.IAnimatedAvatar;
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
@@ -9,7 +9,8 @@ import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
 import com.zigythebird.playeranimcore.enums.PlayState;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
@@ -107,7 +108,7 @@ public final class ProtectorAnimations {
 			return;
 		}
 
-		Long sweptAt = ((AttachmentTarget) player).getAttached(ModAttachments.SHIELD_SWEEP_AT);
+		Long sweptAt = ArchetypeStore.INSTANCE.get(player, ModState.SHIELD_SWEEP_AT);
 		// Ticks the swing is already into itself: normally 0 on the tick the
 		// stamp arrives, but not for a client that learned late.
 		long since = sweptAt == null ? 0L : now - sweptAt;

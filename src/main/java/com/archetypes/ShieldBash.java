@@ -3,7 +3,8 @@ package com.archetypes;
 import java.util.List;
 import java.util.Set;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -68,8 +69,8 @@ public final class ShieldBash {
 		}
 
 		long now = player.level().getGameTime();
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long readyAt = target.getAttached(ModAttachments.BASH_READY_AT);
+		final Entity target = player;
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.BASH_READY_AT);
 
 		if (readyAt != null && now < readyAt) {
 			return;
@@ -146,14 +147,14 @@ public final class ShieldBash {
 					1.0F, dualShield ? 0.75F : 0.9F);
 			// The stamp the client's pose reads. Written before the damage, so
 			// a blow that kills its victim still animates.
-			target.setAttached(ModAttachments.SHIELD_SWEEP_AT, now);
+			ArchetypeStore.INSTANCE.set(target, ModState.SHIELD_SWEEP_AT, now);
 			arc(level, player, flat, range);
 		}
 
 		// One visible timer: swing floor + ability layer folded together (see
 		// Tuning) — no grey sweep. Bashing also spends the melee attack timer,
 		// so it replaces a sword swing instead of stacking on top of one.
-		target.setAttached(ModAttachments.BASH_READY_AT,
+		ArchetypeStore.INSTANCE.set(target, ModState.BASH_READY_AT,
 				now + Tuning.bashCooldownTicks(slam, recovery));
 		player.resetAttackStrengthTicker();
 

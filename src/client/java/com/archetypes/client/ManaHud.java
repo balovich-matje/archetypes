@@ -3,7 +3,7 @@ package com.archetypes.client;
 import com.archetypes.Archetype;
 import com.archetypes.Archetypes;
 import com.archetypes.Mana;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.DeltaTracker;
@@ -42,7 +42,7 @@ public final class ManaHud {
 	static boolean visible() {
 		Minecraft client = Minecraft.getInstance();
 		return client.player != null && client.level != null
-				&& ModAttachments.get(client.player) == Archetype.INTELLECT;
+				&& ModState.get(client.player) == Archetype.INTELLECT;
 	}
 
 	public static void render(final GuiGraphicsExtractor graphics, final DeltaTracker delta) {
@@ -50,7 +50,7 @@ public final class ManaHud {
 		Player player = client.player;
 
 		if (player == null || client.level == null
-				|| ModAttachments.get(player) != Archetype.INTELLECT) {
+				|| ModState.get(player) != Archetype.INTELLECT) {
 			return;
 		}
 

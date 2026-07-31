@@ -4,7 +4,10 @@ import java.util.Set;
 
 import com.archetypes.mixin.LivingEntityAccessor;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+import com.archetypes.state.StateKey;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -43,11 +46,11 @@ public final class AgilityActives {
 
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.TRUE_SHOT) <= 0
 				|| !weaponOk
-				|| onCooldown(player, ModAttachments.TRUE_SHOT_READY_AT)) {
+				|| onCooldown(player, ModState.TRUE_SHOT_READY_AT)) {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
 
@@ -74,27 +77,27 @@ public final class AgilityActives {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.ARROW_SHOOT, SoundSource.PLAYERS, 1.0F, 1.2F);
 		} else {
-			target.setAttached(ModAttachments.TRUE_SHOT_ARMED, true);
+			ArchetypeStore.INSTANCE.set(target, ModState.TRUE_SHOT_ARMED, true);
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.CROSSBOW_LOADING_END.value(), SoundSource.PLAYERS, 0.8F, 1.3F);
 		}
 
 		boolean seeker = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SEEKER_ARROW) > 0;
-		target.setAttached(ModAttachments.TRUE_SHOT_READY_AT, now
+		ArchetypeStore.INSTANCE.set(target, ModState.TRUE_SHOT_READY_AT, now
 				+ (seeker ? Tuning.TRUE_SHOT_SEEKER_COOLDOWN_TICKS : Tuning.TRUE_SHOT_COOLDOWN_TICKS));
 	}
 
 	/** Applied to an armed player's arrow the moment it enters the world. */
 	public static void empower(final AbstractArrow arrow, final float multiplier, final boolean homing) {
-		AttachmentTarget target = (AttachmentTarget) arrow;
+		final Entity target = arrow;
 
 		arrow.setNoGravity(true);
 		((com.archetypes.mixin.AbstractArrowAccessor) arrow).archetypes$setBaseDamage(
 				((com.archetypes.mixin.AbstractArrowAccessor) arrow).archetypes$getBaseDamage() * multiplier);
-		target.setAttached(ModAttachments.TRUE_SHOT_ORIGIN, arrow.position());
+		ArchetypeStore.INSTANCE.set(target, ModState.TRUE_SHOT_ORIGIN, arrow.position());
 
 		if (homing) {
-			target.setAttached(ModAttachments.TRUE_SHOT_HOMING, true);
+			ArchetypeStore.INSTANCE.set(target, ModState.TRUE_SHOT_HOMING, true);
 		}
 	}
 
@@ -106,7 +109,7 @@ public final class AgilityActives {
 	 * same projectile.
 	 */
 	public static void markTrueShot(final AbstractArrow arrow) {
-		((AttachmentTarget) arrow).setAttached(ModAttachments.TRUE_SHOT_ARROW, true);
+		ArchetypeStore.INSTANCE.set(arrow, ModState.TRUE_SHOT_ARROW, true);
 	}
 
 	/** Invisibility: eight seconds of the vanilla effect on a half-minute
@@ -115,7 +118,7 @@ public final class AgilityActives {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.SHADOW);
 
 		if (ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.INVISIBILITY) <= 0
-				|| onCooldown(player, ModAttachments.INVIS_READY_AT)) {
+				|| onCooldown(player, ModState.INVIS_READY_AT)) {
 			return;
 		}
 
@@ -126,7 +129,7 @@ public final class AgilityActives {
 		}
 
 		player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY, ShadowTicker.invisDuration(player)));
-		((AttachmentTarget) player).setAttached(ModAttachments.INVIS_READY_AT,
+		ArchetypeStore.INSTANCE.set(player, ModState.INVIS_READY_AT,
 				level.getGameTime() + Tuning.INVIS_COOLDOWN_TICKS);
 		level.sendParticles(ParticleTypes.LARGE_SMOKE,
 				player.getX(), player.getY() + 1.0, player.getZ(), 12, 0.3, 0.5, 0.3, 0.01);
@@ -146,7 +149,7 @@ public final class AgilityActives {
 
 		if (AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_STEP) <= 0
 				|| !ModItems.isDagger(player.getMainHandItem())
-				|| onCooldown(player, ModAttachments.SHADOW_STEP_READY_AT)) {
+				|| onCooldown(player, ModState.SHADOW_STEP_READY_AT)) {
 			return;
 		}
 
@@ -212,7 +215,7 @@ public final class AgilityActives {
 		// the cooldown there — so this write has to happen first, or a
 		// one-shot re-arms the very cooldown Momentum just cleared (user bug).
 		boolean flurry = AssassinNodes.rank(SubTree.ASSASSIN, owned, AssassinNodes.Family.SHADOW_FLURRY) > 0;
-		((AttachmentTarget) player).setAttached(ModAttachments.SHADOW_STEP_READY_AT, level.getGameTime()
+		ArchetypeStore.INSTANCE.set(player, ModState.SHADOW_STEP_READY_AT, level.getGameTime()
 				+ (flurry ? Tuning.SHADOW_STEP_FLURRY_COOLDOWN_TICKS : Tuning.SHADOW_STEP_COOLDOWN_TICKS));
 
 		strike(player, victim);
@@ -244,7 +247,7 @@ public final class AgilityActives {
 		boolean vault = NemesisMarksmanNodes.rank(player, NemesisMarksmanNodes.Family.VAULT) > 0;
 
 		if (rank <= 0 || !readyToRoll(player, vault)
-				|| onCooldown(player, ModAttachments.DISENGAGE_READY_AT)) {
+				|| onCooldown(player, ModState.DISENGAGE_READY_AT)) {
 			return;
 		}
 
@@ -263,7 +266,7 @@ public final class AgilityActives {
 		player.setDeltaMovement(player.getDeltaMovement()
 				.add(forward.normalize().scale(impulse).add(0.0, 0.15, 0.0)));
 		player.hurtMarked = true;
-		((AttachmentTarget) player).setAttached(ModAttachments.DISENGAGE_READY_AT, level.getGameTime()
+		ArchetypeStore.INSTANCE.set(player, ModState.DISENGAGE_READY_AT, level.getGameTime()
 				+ (vault ? Tuning.VAULT_COOLDOWN_TICKS : Tuning.DISENGAGE_COOLDOWN_TICKS));
 		level.sendParticles(ParticleTypes.CLOUD,
 				player.getX(), player.getY() + 0.1, player.getZ(), vault ? 12 : 5, 0.2, 0.02, 0.2, 0.01);
@@ -300,7 +303,7 @@ public final class AgilityActives {
 	 * lets Deathblow's shaping recognise it mid-pipeline. */
 	public static void strike(final ServerPlayer player, final LivingEntity victim) {
 		((LivingEntityAccessor) player).archetypes$setAttackStrengthTicker(1000);
-		((AttachmentTarget) player).setAttached(ModAttachments.STEP_STRIKE_AT,
+		ArchetypeStore.INSTANCE.set(player, ModState.STEP_STRIKE_AT,
 				player.level().getGameTime());
 
 		// The step is not a fall. A teleport carries fallDistance and onGround
@@ -316,9 +319,8 @@ public final class AgilityActives {
 		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 	}
 
-	private static boolean onCooldown(final ServerPlayer player,
-			final net.fabricmc.fabric.api.attachment.v1.AttachmentType<Long> readyAt) {
-		Long ready = ((AttachmentTarget) player).getAttached(readyAt);
+	private static boolean onCooldown(final ServerPlayer player, final StateKey<Long> readyAt) {
+		Long ready = ArchetypeStore.INSTANCE.get(player, readyAt);
 		return ready != null && player.level().getGameTime() < ready;
 	}
 }

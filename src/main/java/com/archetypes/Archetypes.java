@@ -13,7 +13,7 @@ public class Archetypes implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		ModAttachments.initialize();
+		ModState.initialize();
 		ModItems.initialize();
 		ModEntities.initialize();
 		ManaEffects.initialize();
@@ -59,7 +59,7 @@ public class Archetypes implements ModInitializer {
 					SubTree tree = SubTree.byId(payload.subTreeId());
 
 					// Only spend into trees of the archetype you actually are.
-					if (tree == null || ModAttachments.get(context.player()) != tree.archetype()) {
+					if (tree == null || ModState.get(context.player()) != tree.archetype()) {
 						return;
 					}
 
@@ -72,7 +72,7 @@ public class Archetypes implements ModInitializer {
 		ServerPlayNetworking.registerGlobalReceiver(ActiveAbilityPayload.TYPE, (payload, context) -> context
 				.server().execute(() -> {
 					var player = context.player();
-					Archetype archetype = ModAttachments.get(player);
+					Archetype archetype = ModState.get(player);
 
 					if (archetype == null || payload.slot() < 0 || payload.slot() >= 7) {
 						return;
@@ -203,8 +203,8 @@ public class Archetypes implements ModInitializer {
 			context.server().execute(() -> {
 				// One pick for now: ignore attempts to re-pick until we decide
 				// whether (and at what cost) an archetype can be changed.
-				if (ModAttachments.get(context.player()) == null) {
-					ModAttachments.set(context.player(), picked);
+				if (ModState.get(context.player()) == null) {
+					ModState.set(context.player(), picked);
 					LOGGER.info("{} chose the {} archetype", context.player().getName().getString(), picked.id());
 				}
 			});
@@ -214,6 +214,10 @@ public class Archetypes implements ModInitializer {
 		// bank-covers-spent guard that makes any future curve retune safe.
 		net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents.JOIN.register(
 				(handler, sender, server) -> {
+					// A no-op on every node whose platform syncs attached state itself
+					// (all of them today). It is the whole of the client's state on the
+					// nodes that have no such thing — see ArchetypeStore#resyncAll.
+					com.archetypes.platform.ArchetypeStore.INSTANCE.resyncAll(handler.player);
 					SkillPoints.refreshAdvancementCount(handler.player);
 					SkillPoints.ensureBankCoversSpent(handler.player);
 					// A Magic Armaments channel that outlived its server hands the
@@ -259,7 +263,7 @@ public class Archetypes implements ModInitializer {
 						return;
 					}
 
-					ModAttachments.clear(context.player());
+					ModState.clear(context.player());
 					LOGGER.info("{} reset their archetype", context.player().getName().getString());
 				}));
 

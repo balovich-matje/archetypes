@@ -4,8 +4,10 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -122,31 +124,31 @@ public final class SlayerActives {
 			return false;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
 		Vec3 look = player.getLookAngle();
 		Vec3 flat = new Vec3(look.x, 0.0, look.z).normalize();
 
 		if (free) {
-			Long freeReadyAt = target.getAttached(ModAttachments.DECIMATE_FREE_READY_AT);
+			Long freeReadyAt = ArchetypeStore.INSTANCE.get(target, ModState.DECIMATE_FREE_READY_AT);
 
 			if (freeReadyAt != null && now < freeReadyAt) {
 				return false;
 			}
 
-			target.setAttached(ModAttachments.DECIMATE_FREE_READY_AT,
+			ArchetypeStore.INSTANCE.set(target, ModState.DECIMATE_FREE_READY_AT,
 					now + Tuning.DECIMATE_FREE_COOLDOWN_TICKS);
 			// Marks this cast as the wind-up-less one, so every client — not
 			// just the caster's — plays the short cleave instead of a charge
 			// telegraph for a blow that has already landed.
-			target.setAttached(ModAttachments.DECIMATE_INSTANT_AT, now);
+			ArchetypeStore.INSTANCE.set(target, ModState.DECIMATE_INSTANT_AT, now);
 			pose(player, now);
 			resolve(player, level, flat);
 			return true;
 		}
 
-		Long readyAt = target.getAttached(ModAttachments.DECIMATE_READY_AT);
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.DECIMATE_READY_AT);
 
 		if (readyAt != null && now < readyAt) {
 			return false;
@@ -155,7 +157,7 @@ public final class SlayerActives {
 		int decimateCooldown = Tuning.DECIMATE_COOLDOWN_TICKS
 				- (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.RELENTLESS) > 0
 						? Tuning.RELENTLESS_REDUCTION_TICKS : 0);
-		target.setAttached(ModAttachments.DECIMATE_READY_AT, now + decimateCooldown);
+		ArchetypeStore.INSTANCE.set(target, ModState.DECIMATE_READY_AT, now + decimateCooldown);
 
 		// The telegraph. Everything here is for the person about to be hit:
 		// the pose is synced to every client that can see the caster, the
@@ -177,7 +179,7 @@ public final class SlayerActives {
 	/** No vanilla swing: the PAL cleave pose owns the body for the swing's
 	 * duration, on every client that can see us. */
 	private static void pose(final ServerPlayer player, final long now) {
-		((AttachmentTarget) player).setAttached(ModAttachments.DECIMATE_SWING_AT, now);
+		ArchetypeStore.INSTANCE.set(player, ModState.DECIMATE_SWING_AT, now);
 	}
 
 	/**
@@ -334,9 +336,9 @@ public final class SlayerActives {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		long now = player.level().getGameTime();
-		Long readyAt = target.getAttached(ModAttachments.BLADESTORM_READY_AT);
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.BLADESTORM_READY_AT);
 
 		if (readyAt != null && now < readyAt) {
 			return;
@@ -345,8 +347,8 @@ public final class SlayerActives {
 		int stormCooldown = Tuning.BLADESTORM_COOLDOWN_TICKS
 				- (SlayerNodes.rank(SubTree.SLAYER, owned, SlayerNodes.Family.RELENTLESS) > 0
 						? Tuning.RELENTLESS_REDUCTION_TICKS : 0);
-		target.setAttached(ModAttachments.BLADESTORM_READY_AT, now + stormCooldown);
-		target.setAttached(ModAttachments.BLADESTORM_END, now + Tuning.BLADESTORM_CHANNEL_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.BLADESTORM_READY_AT, now + stormCooldown);
+		ArchetypeStore.INSTANCE.set(target, ModState.BLADESTORM_END, now + Tuning.BLADESTORM_CHANNEL_TICKS);
 
 		((ServerLevel) player.level()).playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.7F);

@@ -1,11 +1,13 @@
 package com.archetypes.mixin;
 
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.Tuning;
 
 import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.phys.Vec3;
@@ -37,7 +39,7 @@ public abstract class AbstractArrowMixin {
 			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
-		if (Boolean.TRUE.equals(((AttachmentTarget) arrow).getAttached(ModAttachments.TRUE_SHOT_HOMING))
+		if (Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(arrow, ModState.TRUE_SHOT_HOMING))
 				&& !(entity instanceof net.minecraft.world.entity.monster.Enemy)) {
 			cir.setReturnValue(false);
 		}
@@ -55,7 +57,7 @@ public abstract class AbstractArrowMixin {
 	private double archetypes$spellbowGravity(final double original) {
 		AbstractArrow arrow = (AbstractArrow) (Object) this;
 
-		return Boolean.TRUE.equals(((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))
+		return Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(arrow, ModState.SPELLBOW_ARROW))
 				? original * Tuning.SPELLBOW_ARROW_GRAVITY_FACTOR
 				: original;
 	}
@@ -67,7 +69,7 @@ public abstract class AbstractArrowMixin {
 
 		if (!(arrow.level() instanceof net.minecraft.server.level.ServerLevel level)
 				|| !Boolean.TRUE.equals(
-						((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))) {
+						ArchetypeStore.INSTANCE.get(arrow, ModState.SPELLBOW_ARROW))) {
 			return;
 		}
 
@@ -86,7 +88,7 @@ public abstract class AbstractArrowMixin {
 
 		if (arrow.level() instanceof net.minecraft.server.level.ServerLevel level
 				&& Boolean.TRUE.equals(
-						((AttachmentTarget) arrow).getAttached(ModAttachments.SPELLBOW_ARROW))) {
+						ArchetypeStore.INSTANCE.get(arrow, ModState.SPELLBOW_ARROW))) {
 			com.archetypes.items.MagicBowItem.impactFx(level, arrow);
 		}
 	}
@@ -104,7 +106,7 @@ public abstract class AbstractArrowMixin {
 		if (!(arrow.level() instanceof net.minecraft.server.level.ServerLevel level)
 				|| arrow.tickCount % Tuning.DEADEYE_TRAIL_PERIOD_TICKS != 0
 				|| !Boolean.TRUE.equals(
-						((AttachmentTarget) arrow).getAttached(ModAttachments.DEADEYE_ARROW))) {
+						ArchetypeStore.INSTANCE.get(arrow, ModState.DEADEYE_ARROW))) {
 			return;
 		}
 
@@ -125,8 +127,8 @@ public abstract class AbstractArrowMixin {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) arrow;
-		Vec3 origin = target.getAttached(ModAttachments.TRUE_SHOT_ORIGIN);
+		final Entity target = arrow;
+		Vec3 origin = ArchetypeStore.INSTANCE.get(target, ModState.TRUE_SHOT_ORIGIN);
 
 		if (origin == null) {
 			return;
@@ -138,7 +140,7 @@ public abstract class AbstractArrowMixin {
 			return;
 		}
 
-		if (!Boolean.TRUE.equals(target.getAttached(ModAttachments.TRUE_SHOT_HOMING))) {
+		if (!Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(target, ModState.TRUE_SHOT_HOMING))) {
 			return;
 		}
 
@@ -171,7 +173,7 @@ public abstract class AbstractArrowMixin {
 			return;
 		}
 
-		Vec3 aim = ((AttachmentTarget) arrow).removeAttached(ModAttachments.REFLECT_AIM);
+		Vec3 aim = ArchetypeStore.INSTANCE.remove(arrow, ModState.REFLECT_AIM);
 
 		if (aim != null && !arrow.isRemoved()) {
 			arrow.setDeltaMovement(aim);

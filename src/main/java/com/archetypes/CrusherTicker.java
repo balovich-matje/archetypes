@@ -1,7 +1,9 @@
 package com.archetypes;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.ai.attributes.AttributeInstance;
 import net.minecraft.world.entity.ai.attributes.AttributeModifier;
@@ -44,7 +46,7 @@ public final class CrusherTicker {
 
 	private static void tick(final ServerPlayer player) {
 		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		WeaponClass weapon = WeaponClass.of(player);
 		boolean hands = weapon == WeaponClass.HANDS;
 		long now = player.level().getGameTime();
@@ -69,7 +71,7 @@ public final class CrusherTicker {
 		// deliberately NOT cleared by TitansLeap#clear (clear() runs on the
 		// landing tick, right after the stamp was written), so this rank test is
 		// what stops a respec from carrying the last landing's damage over.
-		Long stompEnd = target.getAttached(ModAttachments.LEAP_STOMP_END);
+		Long stompEnd = ArchetypeStore.INSTANCE.get(target, ModState.LEAP_STOMP_END);
 		apply(player.getAttribute(Attributes.ATTACK_DAMAGE), STOMP_DAMAGE_ID,
 				hands && stompEnd != null && now < stompEnd
 						&& TitansLeap.rank(player, ColossusCrusherNodes.Family.TITAN_LEAP) > 0,
@@ -93,7 +95,7 @@ public final class CrusherTicker {
 
 		// Quake: knockback immunity while the charge holds; the slam lands the
 		// tick the charge ends.
-		Long chargeEnd = target.getAttached(ModAttachments.QUAKE_CHARGE_END);
+		Long chargeEnd = ArchetypeStore.INSTANCE.get(target, ModState.QUAKE_CHARGE_END);
 		boolean charging = chargeEnd != null && chargeEnd > now;
 		apply(player.getAttribute(Attributes.KNOCKBACK_RESISTANCE), QUAKE_IMMUNITY_ID,
 				charging, 1.0, AttributeModifier.Operation.ADD_VALUE);
@@ -107,7 +109,7 @@ public final class CrusherTicker {
 		// server tracks fallDistance itself (fall damage depends on it).
 		if (weapon == WeaponClass.MACE && !player.onGround()
 				&& player.fallDistance > Tuning.SMASH_MIN_FALL) {
-			target.setAttached(ModAttachments.SMASH_AT, now);
+			ArchetypeStore.INSTANCE.set(target, ModState.SMASH_AT, now);
 		}
 
 		// Battle Trance banks raw absorption, and since 1.20.2 that amount is
@@ -133,7 +135,7 @@ public final class CrusherTicker {
 		boolean held = hands && bulwark > 0;
 
 		if (trance > 0 && !held && player.getAbsorptionAmount() > 0) {
-			Long lastHit = target.getAttached(ModAttachments.TRANCE_HIT_AT);
+			Long lastHit = ArchetypeStore.INSTANCE.get(target, ModState.TRANCE_HIT_AT);
 
 			if (lastHit != null && now - lastHit > Tuning.TRANCE_DECAY_DELAY_TICKS && now % 20 == 0) {
 				player.setAbsorptionAmount(Math.max(0.0F, player.getAbsorptionAmount() - 1.0F));

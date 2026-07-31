@@ -3,7 +3,8 @@ package com.archetypes;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.minecraft.core.Holder;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -67,15 +68,15 @@ public final class DeathMark {
 	/** Whether this player's mark is live: named, not lapsed. Says nothing
 	 * about the body still being there — {@link #target} answers that. */
 	public static boolean hasMark(final Player player) {
-		AttachmentTarget owner = (AttachmentTarget) player;
-		Long end = owner.getAttached(ModAttachments.MARK_END);
-		return owner.getAttached(ModAttachments.MARK_TARGET) != null
+		final Entity owner = player;
+		Long end = ArchetypeStore.INSTANCE.get(owner, ModState.MARK_END);
+		return ArchetypeStore.INSTANCE.get(owner, ModState.MARK_TARGET) != null
 				&& end != null && player.level().getGameTime() < end;
 	}
 
 	/** Ticks of mark left, or 0 when none is live. */
 	public static int remainingTicks(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.MARK_END);
+		Long end = ArchetypeStore.INSTANCE.get(player, ModState.MARK_END);
 		long now = player.level().getGameTime();
 		return end == null || now >= end ? 0 : (int) (end - now);
 	}
@@ -83,7 +84,7 @@ public final class DeathMark {
 	/** The entity id of whoever marked this creature, or null. The one thing a
 	 * client needs, and the only reason {@code MARKED_BY} is synced. */
 	public static @Nullable Integer markedBy(final Entity entity) {
-		return ((AttachmentTarget) entity).getAttached(ModAttachments.MARKED_BY);
+		return ArchetypeStore.INSTANCE.get(entity, ModState.MARKED_BY);
 	}
 
 	/** Whether this creature wears the given player's mark. */
@@ -102,7 +103,7 @@ public final class DeathMark {
 			return null;
 		}
 
-		Integer id = ((AttachmentTarget) player).getAttached(ModAttachments.MARK_TARGET);
+		Integer id = ArchetypeStore.INSTANCE.get(player, ModState.MARK_TARGET);
 		Entity entity = id == null ? null : ((ServerLevel) player.level()).getEntity(id);
 
 		return entity instanceof LivingEntity living && living.isAlive() ? living : null;
@@ -132,8 +133,8 @@ public final class DeathMark {
 
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
-		AttachmentTarget owner = (AttachmentTarget) player;
-		Long ready = owner.getAttached(ModAttachments.DEATH_MARK_READY_AT);
+		final Entity owner = player;
+		Long ready = ArchetypeStore.INSTANCE.get(owner, ModState.DEATH_MARK_READY_AT);
 
 		if (ready != null && now < ready) {
 			return;
@@ -154,11 +155,11 @@ public final class DeathMark {
 		// mark leaves an outline standing on a creature nobody is hunting.
 		clear(player);
 
-		owner.setAttached(ModAttachments.MARK_TARGET, victim.getId());
-		owner.setAttached(ModAttachments.MARK_END, now + Tuning.DEATH_MARK_TICKS);
-		owner.setAttached(ModAttachments.DEATH_MARK_READY_AT,
+		ArchetypeStore.INSTANCE.set(owner, ModState.MARK_TARGET, victim.getId());
+		ArchetypeStore.INSTANCE.set(owner, ModState.MARK_END, now + Tuning.DEATH_MARK_TICKS);
+		ArchetypeStore.INSTANCE.set(owner, ModState.DEATH_MARK_READY_AT,
 				now + Tuning.DEATH_MARK_COOLDOWN_TICKS);
-		((AttachmentTarget) victim).setAttached(ModAttachments.MARKED_BY, player.getId());
+		ArchetypeStore.INSTANCE.set(victim, ModState.MARKED_BY, player.getId());
 
 		// A name being written, not a spell being cast: a dry click at the
 		// victim and one low note under it.
@@ -175,7 +176,7 @@ public final class DeathMark {
 	/**
 	 * Drop this player's mark now, wherever it is. Reached by the ticker's
 	 * lapse and its strand-guards, by a re-cast, by the death hook, by
-	 * {@code ModAttachments.forgetNodes} and by the JOIN handler. Safe to call
+	 * {@code ModState.forgetNodes} and by the JOIN handler. Safe to call
 	 * on a player with no mark.
 	 *
 	 * <p>The flag on the BODY is the part that matters: it lives on another
@@ -191,20 +192,20 @@ public final class DeathMark {
 	 * server's three-or-so levels is not a cost worth optimising.
 	 */
 	public static void clear(final ServerPlayer player) {
-		AttachmentTarget owner = (AttachmentTarget) player;
-		Integer id = owner.getAttached(ModAttachments.MARK_TARGET);
+		final Entity owner = player;
+		Integer id = ArchetypeStore.INSTANCE.get(owner, ModState.MARK_TARGET);
 
 		if (id != null && player.level() instanceof ServerLevel here) {
 			for (ServerLevel level : here.getServer().getAllLevels()) {
 				if (level.getEntity(id) instanceof Entity body && isMarkedBy(body, player)) {
-					((AttachmentTarget) body).removeAttached(ModAttachments.MARKED_BY);
+					ArchetypeStore.INSTANCE.remove(body, ModState.MARKED_BY);
 					break;
 				}
 			}
 		}
 
-		owner.removeAttached(ModAttachments.MARK_TARGET);
-		owner.removeAttached(ModAttachments.MARK_END);
+		ArchetypeStore.INSTANCE.remove(owner, ModState.MARK_TARGET);
+		ArchetypeStore.INSTANCE.remove(owner, ModState.MARK_END);
 	}
 
 	// ------------------------------------------------------------------
@@ -212,9 +213,9 @@ public final class DeathMark {
 	// ------------------------------------------------------------------
 
 	static void tick(final ServerPlayer player) {
-		AttachmentTarget owner = (AttachmentTarget) player;
+		final Entity owner = player;
 
-		if (owner.getAttached(ModAttachments.MARK_TARGET) == null) {
+		if (ArchetypeStore.INSTANCE.get(owner, ModState.MARK_TARGET) == null) {
 			return;
 		}
 
@@ -239,7 +240,7 @@ public final class DeathMark {
 		// transient) is re-flagged rather than dropped — the owner's stamps are
 		// the mark's truth and this is only their published copy.
 		if (!isMarkedBy(mark, player)) {
-			((AttachmentTarget) mark).setAttached(ModAttachments.MARKED_BY, player.getId());
+			ArchetypeStore.INSTANCE.set(mark, ModState.MARKED_BY, player.getId());
 		}
 
 		// The tell, for everyone: a slow drip over the mark's head.
@@ -356,11 +357,11 @@ public final class DeathMark {
 				|| !(level.getEntity(by) instanceof ServerPlayer player)) {
 			// A marked body whose assassin is gone: take the flag off so it
 			// cannot outlive them on a corpse that gets revived or reloaded.
-			((AttachmentTarget) victim).removeAttached(ModAttachments.MARKED_BY);
+			ArchetypeStore.INSTANCE.remove(victim, ModState.MARKED_BY);
 			return;
 		}
 
-		((AttachmentTarget) victim).removeAttached(ModAttachments.MARKED_BY);
+		ArchetypeStore.INSTANCE.remove(victim, ModState.MARKED_BY);
 
 		if (rank(player, NemesisAssassinNodes.Family.DEATHS_HEAD) > 0) {
 			detonate(player, level, victim);
@@ -374,14 +375,14 @@ public final class DeathMark {
 		// not a fresh minute.
 		if (rank(player, NemesisAssassinNodes.Family.CONTAGION) > 0
 				&& hop(player, level, victim)) {
-			((AttachmentTarget) player).removeAttached(ModAttachments.DEATH_MARK_READY_AT);
+			ArchetypeStore.INSTANCE.remove(player, ModState.DEATH_MARK_READY_AT);
 			return;
 		}
 
 		clear(player);
 		// "Cleared when the mark dies" — by any hand, so an assassin whose mark
 		// is taken from them is not punished for it.
-		((AttachmentTarget) player).removeAttached(ModAttachments.DEATH_MARK_READY_AT);
+		ArchetypeStore.INSTANCE.remove(player, ModState.DEATH_MARK_READY_AT);
 	}
 
 	/** Death's Head: 5 hearts to everything else standing next to the corpse,
@@ -470,8 +471,8 @@ public final class DeathMark {
 
 		// clear() would take MARK_END with it and the hop is supposed to keep
 		// it, so only the target stamp and the old flag move.
-		((AttachmentTarget) player).setAttached(ModAttachments.MARK_TARGET, next.getId());
-		((AttachmentTarget) next).setAttached(ModAttachments.MARKED_BY, player.getId());
+		ArchetypeStore.INSTANCE.set(player, ModState.MARK_TARGET, next.getId());
+		ArchetypeStore.INSTANCE.set(next, ModState.MARKED_BY, player.getId());
 
 		level.sendParticles(ParticleTypes.SCULK_CHARGE_POP, next.getX(),
 				next.getY() + next.getBbHeight() * 0.9, next.getZ(), 18, 0.3, 0.3, 0.3, 0.05);

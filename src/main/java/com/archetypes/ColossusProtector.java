@@ -2,6 +2,9 @@ package com.archetypes;
 
 import com.archetypes.ColossusProtectorNodes.Family;
 
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
@@ -26,7 +29,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BlocksAttacks;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import org.jspecify.annotations.Nullable;
 
@@ -324,12 +326,12 @@ public final class ColossusProtector {
 			return false;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		long now = level.getGameTime();
-		Long last = target.getAttached(ModAttachments.IMMOVABLE_OBJECT_CUE_AT);
+		Long last = ArchetypeStore.INSTANCE.get(target, ModState.IMMOVABLE_OBJECT_CUE_AT);
 
 		if (last == null || now - last >= Tuning.IMMOVABLE_CUE_PERIOD_TICKS) {
-			target.setAttached(ModAttachments.IMMOVABLE_OBJECT_CUE_AT, now);
+			ArchetypeStore.INSTANCE.set(target, ModState.IMMOVABLE_OBJECT_CUE_AT, now);
 
 			// The shield's own note, dropped an octave: the guard held, and it
 			// held harder than a block normally does.

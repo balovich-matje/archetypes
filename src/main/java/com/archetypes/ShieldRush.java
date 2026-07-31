@@ -1,6 +1,8 @@
 package com.archetypes;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -25,9 +27,9 @@ public final class ShieldRush {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		long now = player.level().getGameTime();
-		Long readyAt = target.getAttached(ModAttachments.RUSH_READY_AT);
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.RUSH_READY_AT);
 
 		if (readyAt != null && now < readyAt) {
 			return;
@@ -39,7 +41,7 @@ public final class ShieldRush {
 
 		player.setDeltaMovement(player.getDeltaMovement().add(flat.x * impulse, 0.1, flat.z * impulse));
 		player.hurtMarked = true;
-		target.setAttached(ModAttachments.RUSH_READY_AT, now + Tuning.RUSH_COOLDOWN_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.RUSH_READY_AT, now + Tuning.RUSH_COOLDOWN_TICKS);
 
 		ServerLevel level = (ServerLevel) player.level();
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),

@@ -4,7 +4,9 @@ import java.util.Set;
 
 import com.archetypes.mixin.AbstractArrowAccessor;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -71,13 +73,13 @@ public final class Deadeye {
 
 	/** Whether the Deadeye stance holds on this player right now. */
 	public static boolean isActive(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.DEADEYE_END);
+		Long end = ArchetypeStore.INSTANCE.get(player, ModState.DEADEYE_END);
 		return end != null && player.level().getGameTime() < end;
 	}
 
 	/** Ticks of stance left, or 0 when none is running. */
 	public static int remainingTicks(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.DEADEYE_END);
+		Long end = ArchetypeStore.INSTANCE.get(player, ModState.DEADEYE_END);
 		long now = player.level().getGameTime();
 		return end == null || now >= end ? 0 : (int) (end - now);
 	}
@@ -99,7 +101,7 @@ public final class Deadeye {
 			return false;
 		}
 
-		Long since = ((AttachmentTarget) player).getAttached(ModAttachments.DEADEYE_STILL_SINCE);
+		Long since = ArchetypeStore.INSTANCE.get(player, ModState.DEADEYE_STILL_SINCE);
 		return since != null && player.level().getGameTime() - since >= Tuning.SIEGE_ARM_TICKS;
 	}
 
@@ -127,21 +129,21 @@ public final class Deadeye {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
-		Long ready = target.getAttached(ModAttachments.DEADEYE_READY_AT);
+		Long ready = ArchetypeStore.INSTANCE.get(target, ModState.DEADEYE_READY_AT);
 
 		if (ready != null && now < ready) {
 			return;
 		}
 
-		target.setAttached(ModAttachments.DEADEYE_END, now + durationTicks(player));
-		target.setAttached(ModAttachments.DEADEYE_READY_AT, now + Tuning.DEADEYE_COOLDOWN_TICKS);
+		ArchetypeStore.INSTANCE.set(target, ModState.DEADEYE_END, now + durationTicks(player));
+		ArchetypeStore.INSTANCE.set(target, ModState.DEADEYE_READY_AT, now + Tuning.DEADEYE_COOLDOWN_TICKS);
 		// The still test needs a baseline, or the first tick reads as movement
 		// and Siege's arm restarts a tick late.
-		target.setAttached(ModAttachments.DEADEYE_LAST_POS, player.position());
-		target.removeAttached(ModAttachments.DEADEYE_STILL_SINCE);
+		ArchetypeStore.INSTANCE.set(target, ModState.DEADEYE_LAST_POS, player.position());
+		ArchetypeStore.INSTANCE.remove(target, ModState.DEADEYE_STILL_SINCE);
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.SPYGLASS_USE, SoundSource.PLAYERS, 1.0F, 0.8F);
@@ -152,20 +154,20 @@ public final class Deadeye {
 	/**
 	 * End the stance now, unconditionally. Reached by the ticker's lapse, by
 	 * its strand-guard when the archetype goes, and by
-	 * {@code ModAttachments.forgetNodes} when the root is respecced away. Safe
+	 * {@code ModState.forgetNodes} when the root is respecced away. Safe
 	 * to call on a player who has no stance. The Slowness is left to lapse
 	 * rather than removed — see {@link #tick}.
 	 */
 	public static void end(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 
-		if (target.getAttached(ModAttachments.DEADEYE_END) == null) {
+		if (ArchetypeStore.INSTANCE.get(target, ModState.DEADEYE_END) == null) {
 			return;
 		}
 
-		target.removeAttached(ModAttachments.DEADEYE_END);
-		target.removeAttached(ModAttachments.DEADEYE_STILL_SINCE);
-		target.removeAttached(ModAttachments.DEADEYE_LAST_POS);
+		ArchetypeStore.INSTANCE.remove(target, ModState.DEADEYE_END);
+		ArchetypeStore.INSTANCE.remove(target, ModState.DEADEYE_STILL_SINCE);
+		ArchetypeStore.INSTANCE.remove(target, ModState.DEADEYE_LAST_POS);
 
 		if (player.isAlive()) {
 			// Smaller than the arrival, the rule NightForm.end follows.
@@ -179,8 +181,8 @@ public final class Deadeye {
 	// ------------------------------------------------------------------
 
 	static void tick(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long endAt = target.getAttached(ModAttachments.DEADEYE_END);
+		final Entity target = player;
+		Long endAt = ArchetypeStore.INSTANCE.get(target, ModState.DEADEYE_END);
 
 		if (endAt == null) {
 			return;
@@ -230,23 +232,23 @@ public final class Deadeye {
 	 * rule.
 	 */
 	private static void still(final ServerPlayer player, final ServerLevel level, final boolean siege) {
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		Vec3 pos = player.position();
-		Vec3 last = target.getAttached(ModAttachments.DEADEYE_LAST_POS);
-		target.setAttached(ModAttachments.DEADEYE_LAST_POS, pos);
+		Vec3 last = ArchetypeStore.INSTANCE.get(target, ModState.DEADEYE_LAST_POS);
+		ArchetypeStore.INSTANCE.set(target, ModState.DEADEYE_LAST_POS, pos);
 
 		boolean moved = last == null
 				|| last.distanceToSqr(pos) > Tuning.SIEGE_STILL_TOLERANCE * Tuning.SIEGE_STILL_TOLERANCE;
 
 		if (moved) {
-			target.removeAttached(ModAttachments.DEADEYE_STILL_SINCE);
+			ArchetypeStore.INSTANCE.remove(target, ModState.DEADEYE_STILL_SINCE);
 			return;
 		}
 
-		Long since = target.getAttached(ModAttachments.DEADEYE_STILL_SINCE);
+		Long since = ArchetypeStore.INSTANCE.get(target, ModState.DEADEYE_STILL_SINCE);
 
 		if (since == null) {
-			target.setAttached(ModAttachments.DEADEYE_STILL_SINCE, level.getGameTime());
+			ArchetypeStore.INSTANCE.set(target, ModState.DEADEYE_STILL_SINCE, level.getGameTime());
 			return;
 		}
 
@@ -273,11 +275,11 @@ public final class Deadeye {
 			return;
 		}
 
-		AttachmentTarget onArrow = (AttachmentTarget) arrow;
-		onArrow.setAttached(ModAttachments.DEADEYE_ARROW, true);
+		final Entity onArrow = arrow;
+		ArchetypeStore.INSTANCE.set(onArrow, ModState.DEADEYE_ARROW, true);
 
 		if (isPlanted(player)) {
-			onArrow.setAttached(ModAttachments.DEADEYE_SIEGE_ARROW, true);
+			ArchetypeStore.INSTANCE.set(onArrow, ModState.DEADEYE_SIEGE_ARROW, true);
 		}
 
 		// Full draw. Only ever upward: a crossbow already leaves at 3.15
@@ -341,26 +343,26 @@ public final class Deadeye {
 	 */
 	public static float shapeArrowHit(final ServerPlayer player, final LivingEntity victim,
 			final AbstractArrow arrow, final float amount) {
-		AttachmentTarget onArrow = (AttachmentTarget) arrow;
+		final Entity onArrow = arrow;
 
-		if (!Boolean.TRUE.equals(onArrow.getAttached(ModAttachments.DEADEYE_ARROW))) {
+		if (!Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(onArrow, ModState.DEADEYE_ARROW))) {
 			return amount;
 		}
 
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.NEMESIS_MARKSMAN);
-		boolean bigShot = Boolean.TRUE.equals(onArrow.getAttached(ModAttachments.TRUE_SHOT_ARROW));
+		boolean bigShot = Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(onArrow, ModState.TRUE_SHOT_ARROW));
 		float multiplier = 1.0F;
 
 		int longShot = NemesisMarksmanNodes.rank(SubTree.NEMESIS_MARKSMAN, owned,
 				NemesisMarksmanNodes.Family.LONG_SHOT);
-		Vec3 origin = onArrow.getAttached(ModAttachments.TRUE_SHOT_ORIGIN);
+		Vec3 origin = ArchetypeStore.INSTANCE.get(onArrow, ModState.TRUE_SHOT_ORIGIN);
 
 		if (longShot > 0 && !bigShot && origin != null) {
 			double flown = Math.min(arrow.position().distanceTo(origin), Tuning.LONG_SHOT_CAP_BLOCKS);
 			multiplier *= 1.0F + Tuning.LONG_SHOT_PER_BLOCK_PER_RANK * longShot * (float) flown;
 		}
 
-		if (!bigShot && Boolean.TRUE.equals(onArrow.getAttached(ModAttachments.DEADEYE_SIEGE_ARROW))) {
+		if (!bigShot && Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(onArrow, ModState.DEADEYE_SIEGE_ARROW))) {
 			multiplier *= Tuning.SIEGE_MULTIPLIER;
 		}
 
@@ -388,12 +390,12 @@ public final class Deadeye {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long readyAt = target.getAttached(ModAttachments.DISENGAGE_READY_AT);
+		final Entity target = player;
+		Long readyAt = ArchetypeStore.INSTANCE.get(target, ModState.DISENGAGE_READY_AT);
 		long now = player.level().getGameTime();
 
 		if (readyAt != null && readyAt > now) {
-			target.setAttached(ModAttachments.DISENGAGE_READY_AT,
+			ArchetypeStore.INSTANCE.set(target, ModState.DISENGAGE_READY_AT,
 					Math.max(now, readyAt - Tuning.ON_THE_WING_REFUND_TICKS));
 		}
 	}

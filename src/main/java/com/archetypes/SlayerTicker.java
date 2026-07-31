@@ -6,8 +6,10 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -105,8 +107,8 @@ public final class SlayerTicker {
 	}
 
 	private static void tickBladestorm(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long end = target.getAttached(ModAttachments.BLADESTORM_END);
+		final Entity target = player;
+		Long end = ArchetypeStore.INSTANCE.get(target, ModState.BLADESTORM_END);
 
 		if (end == null) {
 			return;
@@ -116,7 +118,7 @@ public final class SlayerTicker {
 
 		// Over, or the sword left the hand: the storm dies with its blade.
 		if (now >= end || !ModItems.isSword(player.getMainHandItem())) {
-			target.removeAttached(ModAttachments.BLADESTORM_END);
+			ArchetypeStore.INSTANCE.remove(target, ModState.BLADESTORM_END);
 			return;
 		}
 

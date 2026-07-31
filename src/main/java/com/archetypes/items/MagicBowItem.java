@@ -3,10 +3,11 @@ package com.archetypes.items;
 import java.util.function.Predicate;
 
 import com.archetypes.MagicArmaments;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.Tuning;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.minecraft.core.particles.DustParticleOptions;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
@@ -149,8 +150,8 @@ public class MagicBowItem extends BowItem {
 
 			// Marked before it enters the world, so the flag rides the same
 			// packet that spawns it and the client never integrates one tick of
-			// full gravity (see ModAttachments.SPELLBOW_ARROW).
-			((AttachmentTarget) arrow).setAttached(ModAttachments.SPELLBOW_ARROW, true);
+			// full gravity (see ModState.SPELLBOW_ARROW).
+			ArchetypeStore.INSTANCE.set(arrow, ModState.SPELLBOW_ARROW, true);
 
 			serverLevel.addFreshEntity(arrow);
 			serverLevel.playSound(null, player.getX(), player.getY(), player.getZ(),

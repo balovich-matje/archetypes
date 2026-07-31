@@ -1,7 +1,7 @@
 package com.archetypes.client;
 
 import com.archetypes.Archetypes;
-import com.archetypes.ModAttachments;
+import com.archetypes.ModState;
 import com.archetypes.NodePurchases;
 import com.archetypes.SlayerNodes;
 import com.archetypes.SubTree;
@@ -13,8 +13,10 @@ import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonMode;
 import com.zigythebird.playeranimcore.enums.PlayState;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Avatar;
@@ -115,17 +117,17 @@ public final class SlayerAnimations {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		Long end = target.getAttached(ModAttachments.BLADESTORM_END);
+		final Entity target = player;
+		Long end = ArchetypeStore.INSTANCE.get(target, ModState.BLADESTORM_END);
 		boolean storming = end != null && end > now;
-		Long swingAt = target.getAttached(ModAttachments.DECIMATE_SWING_AT);
+		Long swingAt = ArchetypeStore.INSTANCE.get(target, ModState.DECIMATE_SWING_AT);
 		boolean charged = swingAt != null && chargedCast(player, self, swingAt);
 		// Ticks the swing is already into itself. Normally 0 on the tick the
 		// attachment arrives, but not for a client that learned late.
 		long since = swingAt == null ? 0L : now - swingAt;
 		boolean cleaving = swingAt != null && since >= 0
 				&& since < (charged ? DECIMATE_CHARGE_TICKS : DECIMATE_SWING_TICKS);
-		Long chargeEnd = target.getAttached(ModAttachments.QUAKE_CHARGE_END);
+		Long chargeEnd = ArchetypeStore.INSTANCE.get(target, ModState.QUAKE_CHARGE_END);
 		boolean quaking = chargeEnd != null && chargeEnd > now;
 
 		if ((storming || cleaving || quaking) && !controller.isActive()) {
@@ -162,7 +164,7 @@ public final class SlayerAnimations {
 	 */
 	private static boolean chargedCast(final AbstractClientPlayer player, final Player self,
 			final long swingAt) {
-		Long instantAt = ((AttachmentTarget) player).getAttached(ModAttachments.DECIMATE_INSTANT_AT);
+		Long instantAt = ArchetypeStore.INSTANCE.get(player, ModState.DECIMATE_INSTANT_AT);
 		return instantAt == null || instantAt != swingAt;
 	}
 

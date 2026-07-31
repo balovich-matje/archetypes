@@ -2,7 +2,9 @@ package com.archetypes;
 
 import java.util.Set;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -372,7 +374,7 @@ public final class SeekerSpells {
 	 * of its own.
 	 */
 	public static boolean isChannellingFlame(final Player player) {
-		Long last = ((AttachmentTarget) player).getAttached(ModAttachments.FLAME_LAST_TICK);
+		Long last = ArchetypeStore.INSTANCE.get(player, ModState.FLAME_LAST_TICK);
 		return last != null
 				&& player.level().getGameTime() - last <= FLAME_CHANNEL_GRACE_TICKS;
 	}
@@ -462,7 +464,7 @@ public final class SeekerSpells {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
 		boolean fresh = !isChannellingFlame(player);
@@ -479,7 +481,7 @@ public final class SeekerSpells {
 		// just sits there" the author complained about: an arm animation that
 		// announced a cast the size of a single throw and then stopped while
 		// fire kept pouring out.
-		target.setAttached(ModAttachments.FLAME_LAST_TICK, now);
+		ArchetypeStore.INSTANCE.set(target, ModState.FLAME_LAST_TICK, now);
 
 		if (now % Tuning.FLAME_BOLT_PERIOD_TICKS != 0) {
 			return;
@@ -554,10 +556,10 @@ public final class SeekerSpells {
 	 * announce themselves through the proc display. */
 	public static void castMissile(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.WIZARD);
-		var target = (net.fabricmc.fabric.api.attachment.v1.AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		long now = level.getGameTime();
-		Long lastCast = target.getAttached(ModAttachments.MISSILE_CAST_AT);
+		Long lastCast = ArchetypeStore.INSTANCE.get(target, ModState.MISSILE_CAST_AT);
 
 		// The 200ms breath between casts, checked before any mana leaves.
 		if (WizardNodes.rank(SubTree.WIZARD, owned, WizardNodes.Family.MAGIC_MISSILE) <= 0
@@ -567,7 +569,7 @@ public final class SeekerSpells {
 			return;
 		}
 
-		target.setAttached(ModAttachments.MISSILE_CAST_AT, now);
+		ArchetypeStore.INSTANCE.set(target, ModState.MISSILE_CAST_AT, now);
 		player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
 
 		// Mind Well: every Nth cast leaves empowered, half again harder.
@@ -576,10 +578,10 @@ public final class SeekerSpells {
 
 		if (mindWell > 0) {
 			int every = mindWell >= 2 ? Tuning.MIND_WELL_EVERY_RANK_2 : Tuning.MIND_WELL_EVERY_RANK_1;
-			Integer count = target.getAttached(ModAttachments.MISSILE_CAST_COUNT);
+			Integer count = ArchetypeStore.INSTANCE.get(target, ModState.MISSILE_CAST_COUNT);
 			int next = (count == null ? 0 : count) + 1;
 			empowered = next >= every;
-			target.setAttached(ModAttachments.MISSILE_CAST_COUNT, empowered ? 0 : next);
+			ArchetypeStore.INSTANCE.set(target, ModState.MISSILE_CAST_COUNT, empowered ? 0 : next);
 		}
 
 		SpellProjectile missile = buildMissile(player, level, owned, empowered);

@@ -152,9 +152,9 @@ public final class ArchetypeCommands {
 	/**
 	 * The existing reset path is creative-only and the pick path refuses to
 	 * re-pick, so neither one alone can put a test account into a chosen
-	 * archetype. This is those two, in order: {@link ModAttachments#clear} (the
+	 * archetype. This is those two, in order: {@link ModState#clear} (the
 	 * {@code ResetArchetypePayload} handler's own call, which refunds every node
-	 * and keeps banked levels) followed by {@link ModAttachments#set} (the
+	 * and keeps banked levels) followed by {@link ModState#set} (the
 	 * {@code PickArchetypePayload} handler's). No third way to mutate the
 	 * attachment exists, and this does not add one.
 	 */
@@ -174,8 +174,8 @@ public final class ArchetypeCommands {
 								return 0;
 							}
 
-							ModAttachments.clear(player);
-							ModAttachments.set(player, picked);
+							ModState.clear(player);
+							ModState.set(player, picked);
 							context.getSource().sendSuccess(() -> Component.translatable(
 									KEY + "set.done",
 									picked.tierName(SkillPoints.tier(player))), false);
@@ -231,7 +231,7 @@ public final class ArchetypeCommands {
 	private static List<String> buyTargets(final @Nullable ServerPlayer player) {
 		List<String> names = new ArrayList<>();
 		names.add(ALL);
-		Archetype archetype = player == null ? null : ModAttachments.get(player);
+		Archetype archetype = player == null ? null : ModState.get(player);
 
 		if (archetype != null) {
 			for (SubTree tree : treesOf(archetype)) {
@@ -261,7 +261,7 @@ public final class ArchetypeCommands {
 	private static int buy(final CommandSourceStack source, final String name, final int count)
 			throws com.mojang.brigadier.exceptions.CommandSyntaxException {
 		ServerPlayer player = source.getPlayerOrException();
-		Archetype archetype = ModAttachments.get(player);
+		Archetype archetype = ModState.get(player);
 
 		if (archetype == null) {
 			source.sendFailure(Component.translatable(KEY + "buy.no_archetype"));

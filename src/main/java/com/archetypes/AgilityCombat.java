@@ -1,8 +1,10 @@
 package com.archetypes;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -34,13 +36,13 @@ public final class AgilityCombat {
 
 			MarksmanCombat.onArrowSpawn(player, arrow);
 
-			AttachmentTarget target = (AttachmentTarget) player;
+			final Entity target = player;
 
-			if (!Boolean.TRUE.equals(target.getAttached(ModAttachments.TRUE_SHOT_ARMED))) {
+			if (!Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(target, ModState.TRUE_SHOT_ARMED))) {
 				return;
 			}
 
-			target.removeAttached(ModAttachments.TRUE_SHOT_ARMED);
+			ArchetypeStore.INSTANCE.remove(target, ModState.TRUE_SHOT_ARMED);
 
 			boolean homing = MarksmanNodes.rank(SubTree.MARKSMAN,
 					NodePurchases.owned(player, SubTree.MARKSMAN), MarksmanNodes.Family.SEEKER_ARROW) > 0;
@@ -91,7 +93,7 @@ public final class AgilityCombat {
 				return;
 			}
 
-			AttachmentTarget target = (AttachmentTarget) player;
+			final Entity target = player;
 
 			if (source.getDirectEntity() instanceof AbstractArrow arrow) {
 				MarksmanCombat.onArrowKill(player, arrow);
@@ -111,7 +113,7 @@ public final class AgilityCombat {
 
 			if (AssassinNodes.rank(SubTree.ASSASSIN, NodePurchases.owned(player, SubTree.ASSASSIN),
 					AssassinNodes.Family.MOMENTUM) > 0) {
-				target.removeAttached(ModAttachments.SHADOW_STEP_READY_AT);
+				ArchetypeStore.INSTANCE.remove(target, ModState.SHADOW_STEP_READY_AT);
 			}
 		});
 
@@ -123,9 +125,9 @@ public final class AgilityCombat {
 				return true;
 			}
 
-			AttachmentTarget target = (AttachmentTarget) player;
+			final Entity target = player;
 			long now = player.level().getGameTime();
-			Long ready = target.getAttached(ModAttachments.CHEAT_DEATH_READY_AT);
+			Long ready = ArchetypeStore.INSTANCE.get(target, ModState.CHEAT_DEATH_READY_AT);
 
 			if ((ready != null && now < ready)
 					|| ShadowNodes.rank(SubTree.SHADOW, NodePurchases.owned(player, SubTree.SHADOW),
@@ -136,11 +138,11 @@ public final class AgilityCombat {
 			player.setHealth(1.0F);
 			ShadowTicker.cleanse(player);
 
-			target.setAttached(ModAttachments.IMMUNE_UNTIL, now + Tuning.CHEAT_DEATH_IMMUNE_TICKS);
+			ArchetypeStore.INSTANCE.set(target, ModState.IMMUNE_UNTIL, now + Tuning.CHEAT_DEATH_IMMUNE_TICKS);
 			player.addEffect(new MobEffectInstance(MobEffects.INVISIBILITY,
 					ShadowTicker.invisDuration(player)));
-			target.setAttached(ModAttachments.INVIS_READY_AT, now + Tuning.CHEAT_DEATH_COOLDOWN_TICKS);
-			target.setAttached(ModAttachments.CHEAT_DEATH_READY_AT, now + Tuning.CHEAT_DEATH_COOLDOWN_TICKS);
+			ArchetypeStore.INSTANCE.set(target, ModState.INVIS_READY_AT, now + Tuning.CHEAT_DEATH_COOLDOWN_TICKS);
+			ArchetypeStore.INSTANCE.set(target, ModState.CHEAT_DEATH_READY_AT, now + Tuning.CHEAT_DEATH_COOLDOWN_TICKS);
 
 			ServerLevel level = (ServerLevel) player.level();
 			level.sendParticles(ParticleTypes.LARGE_SMOKE,

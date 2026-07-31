@@ -2,8 +2,10 @@ package com.archetypes;
 
 import java.util.Set;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.Holder;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
@@ -73,7 +75,7 @@ public final class ShadowTicker {
 
 	private static void tick(final ServerPlayer player) {
 		Set<Integer> owned = NodePurchases.owned(player, SubTree.SHADOW);
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		boolean invisible = player.hasEffect(MobEffects.INVISIBILITY);
 		long now = player.level().getGameTime();
 
@@ -142,11 +144,11 @@ public final class ShadowTicker {
 		boolean hideArmor = invisible
 				&& ShadowNodes.rank(SubTree.SHADOW, owned, ShadowNodes.Family.GHOST_ARMOR) > 0;
 
-		if (hideArmor != Boolean.TRUE.equals(target.getAttached(ModAttachments.ARMOR_HIDDEN))) {
+		if (hideArmor != Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(target, ModState.ARMOR_HIDDEN))) {
 			if (hideArmor) {
-				target.setAttached(ModAttachments.ARMOR_HIDDEN, true);
+				ArchetypeStore.INSTANCE.set(target, ModState.ARMOR_HIDDEN, true);
 			} else {
-				target.removeAttached(ModAttachments.ARMOR_HIDDEN);
+				ArchetypeStore.INSTANCE.remove(target, ModState.ARMOR_HIDDEN);
 			}
 		}
 	}

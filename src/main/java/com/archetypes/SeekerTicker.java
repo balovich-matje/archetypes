@@ -11,7 +11,7 @@ public final class SeekerTicker {
 	public static void initialize() {
 		ServerTickEvents.END_SERVER_TICK.register(server -> {
 			for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-				if (ModAttachments.get(player) == Archetype.INTELLECT) {
+				if (ModState.get(player) == Archetype.INTELLECT) {
 					Mana.regenTick(player);
 				}
 			}

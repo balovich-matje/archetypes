@@ -4,7 +4,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -90,13 +92,13 @@ public final class NightForm {
 	/** Whether this player is transformed right now. The stamp's PRESENCE is
 	 * the answer — the form has no expiry. Safe on both sides. */
 	public static boolean isActive(final Player player) {
-		return ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_SINCE) != null;
+		return ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_FORM_SINCE) != null;
 	}
 
 	/** Ticks before the form may be dropped, or 0 when it may be (or when the
 	 * player is mortal). Counts down while the lockout runs. */
 	public static int lockoutRemainingTicks(final Player player) {
-		Long since = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_SINCE);
+		Long since = ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_FORM_SINCE);
 
 		if (since == null) {
 			return 0;
@@ -117,13 +119,13 @@ public final class NightForm {
 
 	/** Whether a Dark Ritual channel is running on this player. */
 	public static boolean isChannelling(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_CHANNEL_END);
+		Long end = ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_CHANNEL_END);
 		return end != null && player.level().getGameTime() < end;
 	}
 
 	/** Ticks of channel left, or 0 when none is running. */
 	public static int channelRemainingTicks(final Player player) {
-		Long end = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_CHANNEL_END);
+		Long end = ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_CHANNEL_END);
 		long now = player.level().getGameTime();
 		return end == null || now >= end ? 0 : (int) (end - now);
 	}
@@ -140,20 +142,20 @@ public final class NightForm {
 	/** Whether this transformed player is standing in sunlight strong enough to
 	 * burn them — the flag behind the sketch's blinding on-screen effect. */
 	public static boolean isSunlit(final Player player) {
-		return Boolean.TRUE.equals(((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_SUNLIT));
+		return Boolean.TRUE.equals(ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_SUNLIT));
 	}
 
 	/** Extra Sensory Perception: entity ids of every living thing sensed in
 	 * range, players included. Owner-synced; empty without the node. */
 	public static List<Integer> sensed(final Player player) {
-		List<Integer> ids = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_SENSED);
+		List<Integer> ids = ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_SENSED);
 		return ids == null ? List.of() : ids;
 	}
 
 	/** The subset of {@link #sensed} that is players — kept apart so the
 	 * renderer can mark them out distinctly (author's spec). */
 	public static List<Integer> sensedPlayers(final Player player) {
-		List<Integer> ids = ((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_SENSED_PLAYERS);
+		List<Integer> ids = ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_SENSED_PLAYERS);
 		return ids == null ? List.of() : ids;
 	}
 
@@ -198,12 +200,12 @@ public final class NightForm {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
-		target.setAttached(ModAttachments.NIGHT_CHANNEL_END,
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_END,
 				level.getGameTime() + Tuning.DARK_RITUAL_CHANNEL_TICKS);
-		target.setAttached(ModAttachments.NIGHT_CHANNEL_SLOT, player.getInventory().getSelectedSlot());
-		target.setAttached(ModAttachments.NIGHT_CHANNEL_HURT, player.hurtTime);
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_SLOT, player.getInventory().getSelectedSlot());
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_HURT, player.hurtTime);
 
 		// The ritual's opening thunk: the same charge vanilla plays when a
 		// respawn anchor takes a charge, dropped low. It reads as something
@@ -215,9 +217,9 @@ public final class NightForm {
 	/** Abandon a running channel. No cooldown is charged — that is the whole
 	 * point of the author's note. Safe to call when nothing is running. */
 	public static void interrupt(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 
-		if (target.getAttached(ModAttachments.NIGHT_CHANNEL_END) == null) {
+		if (ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_CHANNEL_END) == null) {
 			return;
 		}
 
@@ -233,7 +235,7 @@ public final class NightForm {
 		clearChannel(player);
 
 		ServerLevel level = (ServerLevel) player.level();
-		((AttachmentTarget) player).setAttached(ModAttachments.NIGHT_FORM_SINCE, level.getGameTime());
+		ArchetypeStore.INSTANCE.set(player, ModState.NIGHT_FORM_SINCE, level.getGameTime());
 
 		// The transformation stays with the state change rather than moving to
 		// the client FX pass: it must reach everyone in earshot, whether or not
@@ -281,20 +283,20 @@ public final class NightForm {
 	/**
 	 * End the night form now, unconditionally. Reached by the player's own
 	 * {@link #revert} once the lockout has passed, by the ticker's strand-guard
-	 * when the archetype goes, and by {@code ModAttachments.forgetNodes} when
+	 * when the archetype goes, and by {@code ModState.forgetNodes} when
 	 * the node is respecced away. Safe to call on a mortal player.
 	 */
 	public static void end(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 
-		if (target.getAttached(ModAttachments.NIGHT_FORM_SINCE) == null) {
+		if (ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_FORM_SINCE) == null) {
 			return;
 		}
 
-		target.removeAttached(ModAttachments.NIGHT_FORM_SINCE);
-		target.removeAttached(ModAttachments.NIGHT_SUNLIT);
-		target.removeAttached(ModAttachments.NIGHT_SENSED);
-		target.removeAttached(ModAttachments.NIGHT_SENSED_PLAYERS);
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_FORM_SINCE);
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_SUNLIT);
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_SENSED);
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_SENSED_PLAYERS);
 
 		if (player.isAlive()) {
 			// The return to human is deliberately small next to the arrival: a
@@ -308,10 +310,10 @@ public final class NightForm {
 	}
 
 	private static void clearChannel(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.removeAttached(ModAttachments.NIGHT_CHANNEL_END);
-		target.removeAttached(ModAttachments.NIGHT_CHANNEL_SLOT);
-		target.removeAttached(ModAttachments.NIGHT_CHANNEL_HURT);
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_CHANNEL_END);
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_CHANNEL_SLOT);
+		ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_CHANNEL_HURT);
 	}
 
 	// ------------------------------------------------------------------
@@ -319,11 +321,11 @@ public final class NightForm {
 	// ------------------------------------------------------------------
 
 	static void tick(final ServerPlayer player) {
-		if (((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_CHANNEL_END) != null) {
+		if (ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_CHANNEL_END) != null) {
 			tickChannel(player);
 		}
 
-		if (((AttachmentTarget) player).getAttached(ModAttachments.NIGHT_FORM_SINCE) != null) {
+		if (ArchetypeStore.INSTANCE.get(player, ModState.NIGHT_FORM_SINCE) != null) {
 			tickForm(player);
 		}
 	}
@@ -354,16 +356,16 @@ public final class NightForm {
 	 * a flat test would let the tail of a pre-ritual hit kill the channel.
 	 */
 	private static boolean interrupted(final ServerPlayer player) {
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 
-		Integer lastHurt = target.getAttached(ModAttachments.NIGHT_CHANNEL_HURT);
-		target.setAttached(ModAttachments.NIGHT_CHANNEL_HURT, player.hurtTime);
+		Integer lastHurt = ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_CHANNEL_HURT);
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_HURT, player.hurtTime);
 
 		if (lastHurt != null && player.hurtTime > lastHurt) {
 			return true;
 		}
 
-		Integer slot = target.getAttached(ModAttachments.NIGHT_CHANNEL_SLOT);
+		Integer slot = ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_CHANNEL_SLOT);
 
 		if (slot != null && slot != player.getInventory().getSelectedSlot()) {
 			return true;
@@ -371,7 +373,7 @@ public final class NightForm {
 
 		// The swing and use tests wait out the grace window, or a press made in
 		// the last frames of the swing that ended the fight would cancel itself.
-		Long end = target.getAttached(ModAttachments.NIGHT_CHANNEL_END);
+		Long end = ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_CHANNEL_END);
 		long elapsed = end == null ? 0
 				: Tuning.DARK_RITUAL_CHANNEL_TICKS - (end - player.level().getGameTime());
 
@@ -442,13 +444,13 @@ public final class NightForm {
 				.getValue(EnvironmentAttributes.MONSTERS_BURN, player.position())
 				&& brightness > 0.5F && !sheltered && level.canSeeSky(eye);
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 
 		if (exposed != isSunlit(player)) {
 			if (exposed) {
-				target.setAttached(ModAttachments.NIGHT_SUNLIT, true);
+				ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_SUNLIT, true);
 			} else {
-				target.removeAttached(ModAttachments.NIGHT_SUNLIT);
+				ArchetypeStore.INSTANCE.remove(target, ModState.NIGHT_SUNLIT);
 			}
 		}
 
@@ -489,9 +491,9 @@ public final class NightForm {
 			}
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
-		target.setAttached(ModAttachments.NIGHT_SENSED, List.copyOf(all));
-		target.setAttached(ModAttachments.NIGHT_SENSED_PLAYERS, List.copyOf(players));
+		final Entity target = player;
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_SENSED, List.copyOf(all));
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_SENSED_PLAYERS, List.copyOf(players));
 	}
 
 	// ------------------------------------------------------------------
@@ -511,9 +513,9 @@ public final class NightForm {
 			return;
 		}
 
-		AttachmentTarget target = (AttachmentTarget) player;
+		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
-		Long ready = target.getAttached(ModAttachments.NIGHT_DASH_READY_AT);
+		Long ready = ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_DASH_READY_AT);
 
 		if (ready != null && level.getGameTime() < ready) {
 			return;
@@ -529,7 +531,7 @@ public final class NightForm {
 		player.setDeltaMovement(player.getDeltaMovement().add(look.normalize().scale(impulse)));
 		player.hurtMarked = true;
 		player.resetFallDistance();
-		target.setAttached(ModAttachments.NIGHT_DASH_READY_AT,
+		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_DASH_READY_AT,
 				level.getGameTime() + Tuning.GHOST_DASH_COOLDOWN_TICKS);
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),

@@ -2,7 +2,9 @@ package com.archetypes;
 
 import com.archetypes.compat.SpecialitiesBridge;
 
-import net.fabricmc.fabric.api.attachment.v1.AttachmentTarget;
+import com.archetypes.platform.ArchetypeStore;
+
+import net.minecraft.world.entity.Entity;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -64,7 +66,7 @@ public final class Mana {
 
 	/** Absent attachment means full: a fresh Seeker starts topped up. */
 	public static float current(final Player player) {
-		Float mana = ((AttachmentTarget) player).getAttached(ModAttachments.MANA);
+		Float mana = ArchetypeStore.INSTANCE.get(player, ModState.MANA);
 		return mana == null ? max(player) : Math.min(mana, max(player));
 	}
 
@@ -76,7 +78,7 @@ public final class Mana {
 			return false;
 		}
 
-		((AttachmentTarget) player).setAttached(ModAttachments.MANA, current - cost);
+		ArchetypeStore.INSTANCE.set(player, ModState.MANA, current - cost);
 		awardXp(player, cost);
 		return true;
 	}
@@ -92,7 +94,7 @@ public final class Mana {
 			return 0.0F;
 		}
 
-		((AttachmentTarget) player).setAttached(ModAttachments.MANA, 0.0F);
+		ArchetypeStore.INSTANCE.set(player, ModState.MANA, 0.0F);
 		awardXp(player, current);
 		return current;
 	}
@@ -100,7 +102,7 @@ public final class Mana {
 	/** Potions and other refunds: straight in, clamped to the pool. */
 	public static void add(final ServerPlayer player, final float amount) {
 		if (amount > 0.0F) {
-			((AttachmentTarget) player).setAttached(ModAttachments.MANA,
+			ArchetypeStore.INSTANCE.set(player, ModState.MANA,
 					Math.min(max(player), current(player) + amount));
 		}
 	}
@@ -112,7 +114,7 @@ public final class Mana {
 	public static float drain(final ServerPlayer player, final float amount) {
 		float current = current(player);
 		float drained = Math.min(current, amount);
-		((AttachmentTarget) player).setAttached(ModAttachments.MANA, current - drained);
+		ArchetypeStore.INSTANCE.set(player, ModState.MANA, current - drained);
 		return drained;
 	}
 
@@ -123,7 +125,7 @@ public final class Mana {
 	 * already paid it.
 	 */
 	public static void refund(final ServerPlayer player, final float amount) {
-		((AttachmentTarget) player).setAttached(ModAttachments.MANA,
+		ArchetypeStore.INSTANCE.set(player, ModState.MANA,
 				Math.min(max(player), current(player) + amount));
 	}
 
@@ -133,7 +135,7 @@ public final class Mana {
 		float max = max(player);
 
 		if (current < max) {
-			((AttachmentTarget) player).setAttached(ModAttachments.MANA,
+			ArchetypeStore.INSTANCE.set(player, ModState.MANA,
 					Math.min(max, current + regenPerSecond(player) / 20.0F));
 		}
 	}
@@ -143,12 +145,12 @@ public final class Mana {
 	 * drip pays the same rate as one big fireball.
 	 */
 	private static void awardXp(final ServerPlayer player, final float mana) {
-		AttachmentTarget target = (AttachmentTarget) player;
-		Float carried = target.getAttached(ModAttachments.MANA_XP_REMAINDER);
+		final Entity target = player;
+		Float carried = ArchetypeStore.INSTANCE.get(target, ModState.MANA_XP_REMAINDER);
 		float total = (carried == null ? 0.0F : carried) + mana * Tuning.XP_PER_MANA;
 		int whole = (int) total;
 
-		target.setAttached(ModAttachments.MANA_XP_REMAINDER, total - whole);
+		ArchetypeStore.INSTANCE.set(target, ModState.MANA_XP_REMAINDER, total - whole);
 		SpecialitiesBridge.awardSpellcastingXp(player, whole);
 	}
 }
