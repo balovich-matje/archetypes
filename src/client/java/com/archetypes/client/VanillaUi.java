@@ -79,15 +79,87 @@ public final class VanillaUi {
 	}
 
 	/**
-	 * A node's 16x16 icon exactly as the tree screen resolves it — sprite
-	 * first (bake-off test sets included), else the item render with its
-	 * effect layer over or under. Shared with the picker's ability previews
-	 * so they stay pixel-identical to the tree.
+	 * Native pixel size of every node icon — the sprites are square, the item
+	 * render is a 16px GUI item, and a caller that wants another size scales
+	 * this one rather than asking for a different asset.
+	 */
+	public static final int ICON_NATIVE = 16;
+
+	/**
+	 * A node's icon at its native 16x16.
+	 *
+	 * @see #nodeIcon(GuiGraphicsExtractor, com.archetypes.SubTree, int, int, int, int)
 	 */
 	//? if >=26.1 {
 	public static void nodeIcon(final GuiGraphicsExtractor graphics, final com.archetypes.SubTree tree,
 	//?} else {
 	/*public static void nodeIcon(final GuiGraphics graphics, final com.archetypes.SubTree tree,
+	*///?}
+			final int index, final int x, final int y) {
+		nodeIcon(graphics, tree, index, x, y, ICON_NATIVE);
+	}
+
+	/**
+	 * A node's icon drawn into a {@code size}-pixel square.
+	 *
+	 * <p>The tree screen's node is sized from the panel, so it is 16px only by
+	 * coincidence; every other size goes through the pose, which is the one idiom
+	 * that scales a sprite blit and an item render together. Measured rather than
+	 * assumed, in all four draw pipelines this tree ships against: 26.x's
+	 * {@code fakeItem} captures {@code new Matrix3x2f(this.pose)} into the
+	 * {@code GuiItemRenderState}, 1.21.11's {@code renderItem} does the same, and
+	 * 1.21.1/1.20.1's push {@code this.pose} before translating and scaling by 16 —
+	 * so an outer scale multiplies through on all of them. The sprite blits carry
+	 * the pose the same way ({@code new Matrix3x2f(this.pose)} above the boundary,
+	 * {@code pose().last().pose()} below it).
+	 *
+	 * <p>Drawing at 16 and scaling — rather than blitting at {@code size} — is what
+	 * keeps the sprite path and the item path identical: an item render has no
+	 * width argument to pass.
+	 */
+	//? if >=26.1 {
+	public static void nodeIcon(final GuiGraphicsExtractor graphics, final com.archetypes.SubTree tree,
+	//?} else {
+	/*public static void nodeIcon(final GuiGraphics graphics, final com.archetypes.SubTree tree,
+	*///?}
+			final int index, final int x, final int y, final int size) {
+		if (size == ICON_NATIVE) {
+			icon(graphics, tree, index, x, y);
+			return;
+		}
+
+		// The scale factor and the translation are ordinary arithmetic and stay
+		// outside the fork (conventions §5b); only push/translate/scale/pop move,
+		// and they move on the `>=1.21.11` 2-D-pose boundary the section title and
+		// the picker's crest already take.
+		float scale = size / (float) ICON_NATIVE;
+		var pose = graphics.pose();
+		//? if >=1.21.11 {
+		pose.pushMatrix();
+		pose.translate((float) x, (float) y);
+		pose.scale(scale, scale);
+		//?} else {
+		/*pose.pushPose();
+		pose.translate((float) x, (float) y, 0.0F);
+		pose.scale(scale, scale, 1.0F);
+		*///?}
+		icon(graphics, tree, index, 0, 0);
+		//? if >=1.21.11 {
+		pose.popMatrix();
+		//?} else {
+		/*pose.popPose();
+		*///?}
+	}
+
+	/**
+	 * The 16x16 draw itself — sprite first (bake-off test sets included), else the
+	 * item render with its effect layer over or under. Shared with the picker's
+	 * ability previews so they stay pixel-identical to the tree.
+	 */
+	//? if >=26.1 {
+	private static void icon(final GuiGraphicsExtractor graphics, final com.archetypes.SubTree tree,
+	//?} else {
+	/*private static void icon(final GuiGraphics graphics, final com.archetypes.SubTree tree,
 	*///?}
 			final int index, final int x, final int y) {
 		var sprite = com.archetypes.TreeNodes.iconSprite(tree, index);
@@ -179,15 +251,6 @@ public final class VanillaUi {
 		graphics.fill(x + w - 1, y + 1, x + w, y + h - 1, HIGHLIGHT);
 	}
 
-	/** A vanilla 18x18 item slot. */
-	//? if >=26.1 {
-	public static void slot(final GuiGraphicsExtractor graphics, final int x, final int y) {
-	//?} else {
-	/*public static void slot(final GuiGraphics graphics, final int x, final int y) {
-	*///?}
-		inset(graphics, x, y, 18, 18);
-	}
-
 	/**
 	 * Thin engraved groove, the vanilla separator: 1px dark + 1px light, 2px
 	 * total — deliberately slimmer than the 2px-per-side bevel of a window.
@@ -222,13 +285,19 @@ public final class VanillaUi {
 		}
 	}
 
-	/** Stepped 2px-thick line between two points, for tree connections. */
+	/**
+	 * Stepped line between two points, for tree connections. {@code halfWidth} is
+	 * the stamp's radius, so the line comes out {@code 2 * halfWidth} thick — 1
+	 * gives the 2px stroke the tree has always drawn, and the tree screen raises it
+	 * with its node size so a connection stays the same fraction of a node at every
+	 * GUI scale.
+	 */
 	//? if >=26.1 {
 	public static void line(final GuiGraphicsExtractor graphics, final int x1, final int y1,
 	//?} else {
 	/*public static void line(final GuiGraphics graphics, final int x1, final int y1,
 	*///?}
-			final int x2, final int y2, final int color) {
+			final int x2, final int y2, final int color, final int halfWidth) {
 		int dx = Math.abs(x2 - x1);
 		int dy = Math.abs(y2 - y1);
 		int steps = Math.max(dx, dy);
@@ -240,7 +309,7 @@ public final class VanillaUi {
 		for (int i = 0; i <= steps; i++) {
 			int x = x1 + (x2 - x1) * i / steps;
 			int y = y1 + (y2 - y1) * i / steps;
-			graphics.fill(x - 1, y - 1, x + 1, y + 1, color);
+			graphics.fill(x - halfWidth, y - halfWidth, x + halfWidth, y + halfWidth, color);
 		}
 	}
 }

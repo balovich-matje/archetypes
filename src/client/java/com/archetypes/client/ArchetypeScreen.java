@@ -51,6 +51,20 @@ import org.jspecify.annotations.Nullable;
  * <p>Nodes carry their skill's item icon and a wrapped description on hover;
  * clicking a buyable one spends a point (server re-validates). The section
  * headers are drawn faint so they sit into the backdrop art.
+ *
+ * <h2>What scales and what does not</h2>
+ *
+ * <p>Everything here is in GUI-scaled pixels, which is the unit vanilla's font
+ * and widgets are drawn in — so the chrome (header, buttons, switchers, progress
+ * bars, tooltips) is deliberately FIXED, exactly like every vanilla screen: at a
+ * smaller GUI scale you get more room, not bigger text. The constellation is the
+ * opposite kind of thing — a diagram, not a label — so it is FLUID: a single cell
+ * {@link #pitch()} is computed from the section box and the largest grid this
+ * archetype can put in it, and node size, halo ring, connection thickness and
+ * icon size are all derived from that one unit. A tree therefore fills the same
+ * fraction of its section at GUI scale 1, 2 and 3 instead of being an island of
+ * fixed 18px squares on a big screen and a clipped, icon-less huddle on a small
+ * one.
  */
 public class ArchetypeScreen extends Screen {
 	/** Fraction of the screen the window covers. */
@@ -69,12 +83,27 @@ public class ArchetypeScreen extends Screen {
 	/** Room at the top of each section for its name, drawn at 1.5x. */
 	private static final int SECTION_HEADER = 22;
 
-	/** Node size at full size, and the floor it may shrink to on cramped screens. */
-	private static final int MAX_NODE = 18;
+	/**
+	 * The node square as a fraction of the cell it sits in; the rest of the cell is
+	 * the gap. 0.6 is the reference composition read back off it — an 18px node on
+	 * a 30px pitch, which is what GUI scale 2 drew before the layout became fluid.
+	 */
+	private static final float NODE_RATIO = 0.6F;
+	/**
+	 * Floor and ceiling on the node square. The floor keeps a node clickable on a
+	 * 320x240 surface (the smallest Minecraft's own scale clamp will ever hand us);
+	 * the ceiling stops a 4K screen at GUI scale 1 from drawing dinner plates.
+	 * Between them the size is whatever the section box says.
+	 */
 	private static final int MIN_NODE = 5;
-	/** Clear space between adjacent nodes; spacing is node + gap. */
-	private static final int NODE_GAP = 4;
-	private static final int MAX_SPACING = 30;
+	private static final int MAX_NODE = 48;
+	/**
+	 * The node size the fixed-unit layout was authored at. Ring, connection stroke
+	 * and icon inset are quoted as a fraction of it, so at that size they come out
+	 * exactly as the reference drew them: 1px each.
+	 */
+	private static final float REFERENCE_NODE = 18.0F;
+	/** Ceiling on the section title's scale; it shrinks below this to fit its section. */
 	private static final float SECTION_TITLE_SCALE = 1.5F;
 	private static final int BUTTON_WIDTH = 96;
 	private static final int BUTTON_HEIGHT = 20;
@@ -96,6 +125,19 @@ public class ArchetypeScreen extends Screen {
 	/** What each section currently shows: a base tree or its epic sibling. */
 	private final List<SubTree> shown;
 
+	/**
+	 * The largest grid this screen can ever be asked to draw, over every sub-tree
+	 * of this archetype — base AND epic.
+	 *
+	 * <p>The cell unit is sized against these rather than against what is on screen
+	 * right now, which buys two things: nothing can overflow its section whatever a
+	 * switcher is set to, and flipping one section to its (much smaller) epic tree
+	 * does not resize the two beside it. Measured once, in the constructor: the
+	 * shapes are compile-time constants.
+	 */
+	private final int gridWidth;
+	private final int gridHeight;
+
 	/** Per-section epic switchers (null where the section has no epic tree). */
 	private final Button[] epicUp = new Button[3];
 	private final Button[] epicDown = new Button[3];
@@ -111,6 +153,21 @@ public class ArchetypeScreen extends Screen {
 		this.archetype = archetype;
 		this.baseTrees = SubTree.of(archetype);
 		this.shown = new java.util.ArrayList<>(this.baseTrees);
+
+		int widest = 1;
+		int tallest = 1;
+
+		for (SubTree base : this.baseTrees) {
+			SubTree epic = base.epicCounterpart();
+
+			for (SubTree tree : epic == null ? List.of(base) : List.of(base, epic)) {
+				widest = Math.max(widest, tree.constellation().width());
+				tallest = Math.max(tallest, tree.constellation().height());
+			}
+		}
+
+		this.gridWidth = widest;
+		this.gridHeight = tallest;
 	}
 
 	@Override
@@ -225,50 +282,82 @@ public class ArchetypeScreen extends Screen {
 		return this.canvasWidth() / 3;
 	}
 
-	/** Where one constellation's nodes land: grid pitch, node size, and origin. */
-	private record Layout(int spacing, int node, int centerX, int rootTop) {
+	/** The area one constellation is fitted into: the section box minus its header. */
+	private int treeTop() {
+		return this.canvasTop() + SECTION_HEADER;
+	}
+
+	private int treeHeight() {
+		return Math.max(1, this.canvasBottom() - this.treeTop() - PAD);
+	}
+
+	private int treeWidth() {
+		return Math.max(1, this.sectionWidth() - PAD * 2);
 	}
 
 	/**
-	 * Fit a constellation to its section and centre it there.
+	 * THE unit. One cell of the node grid, in GUI-scaled pixels, for every section
+	 * of this screen.
 	 *
-	 * <p>Both the pitch and the node size fall out of the space available, so a
-	 * cramped screen shrinks the whole constellation instead of overflowing —
-	 * there is deliberately no lower bound on spacing, only on how small a node
-	 * may get. The result is then centred vertically, so a tall canvas does not
-	 * leave the tree sitting on the floor.
+	 * <p>It is the pitch at which the largest grid this archetype owns exactly fills
+	 * the tighter axis of a section — so the constellation covers the same fraction
+	 * of the panel whatever the GUI scale is, and the panel is itself a fraction of
+	 * the screen. Nothing here is a fixed pixel count except the two clamps.
+	 *
+	 * <p>A float on purpose. An integer pitch quantises: at a pitch the section can
+	 * only afford 26.7 of, rounding down to 26 throws away 0.7px per column — nine
+	 * columns of a shield lose six pixels off the width, which reads as the tree
+	 * having drifted off-centre. The positions round, the pitch does not.
+	 */
+	private float pitch() {
+		return Math.min(this.treeWidth() / (float) this.gridWidth,
+				this.treeHeight() / (float) this.gridHeight);
+	}
+
+	/**
+	 * The node square for that pitch, clamped.
+	 *
+	 * <p>The clamps are on the NODE and never on the pitch: clamping the pitch up
+	 * on a cramped screen would push the bottom rows out through the canvas floor,
+	 * whereas a node that has stopped shrinking merely closes the gaps. The last
+	 * line is that same guard from the other side — a clamped-up node may not grow
+	 * past its own cell and start overlapping its neighbour.
+	 */
+	private int nodeSize() {
+		float pitch = this.pitch();
+		int node = Mth.clamp(Math.round(pitch * NODE_RATIO), MIN_NODE, MAX_NODE);
+		return Math.min(node, Math.max(3, Math.round(pitch)));
+	}
+
+	/**
+	 * Everything else the constellation draws, in units of the node: the halo ring,
+	 * the connection stroke, the icon's inset from the node's edge. One expression
+	 * so they cannot drift apart, and 1 at the reference node size — which is what
+	 * makes a scale-2 screen come out pixel-for-pixel as it was authored.
+	 */
+	private static int stroke(final int node) {
+		return Math.max(1, Math.round(node / REFERENCE_NODE));
+	}
+
+	/** Where one constellation's nodes land: grid pitch, node size, and origin. */
+	private record Layout(float pitch, int node, int centerX, float rootTop) {
+	}
+
+	/**
+	 * Centre a constellation in its section.
+	 *
+	 * <p>The pitch and the node are the screen's, not this shape's, so three
+	 * sections of different grids still read as one drawing. Only the vertical
+	 * origin is per-shape: a short tree is centred in the canvas rather than left
+	 * sitting on the floor.
 	 */
 	private Layout layout(final int section, final Constellation shape) {
-		int availableWidth = this.sectionWidth() - PAD * 2;
-		int top = this.canvasTop() + SECTION_HEADER;
-		int availableHeight = this.canvasBottom() - top - PAD;
+		float pitch = this.pitch();
+		int node = this.nodeSize();
+		float shapeHeight = (shape.height() - 1) * pitch + node;
+		float rootTop = this.treeTop() + (this.treeHeight() - shapeHeight) / 2.0F + shapeHeight - node;
 
-		// shapeSize ~= grid * spacing - NODE_GAP, so this is the pitch that fills
-		// the axis exactly; the tighter axis wins.
-		int byWidth = (availableWidth + NODE_GAP) / Math.max(shape.width(), 1);
-		int byHeight = (availableHeight + NODE_GAP) / Math.max(shape.height(), 1);
-		int spacing = Math.min(Math.min(byWidth, byHeight), MAX_SPACING);
-		int node = Mth.clamp(spacing - NODE_GAP, MIN_NODE, MAX_NODE);
-
-		// That pitch assumed node == spacing - NODE_GAP. Wherever the node clamps
-		// instead — at its ceiling on roomy screens, at its floor on cramped ones —
-		// the assumption breaks and the shape can run a few pixels wide, so re-fit
-		// the pitch against the node size we actually got.
-		if (shape.width() > 1) {
-			spacing = Math.min(spacing, (availableWidth - node) / (shape.width() - 1));
-		}
-
-		if (shape.height() > 1) {
-			spacing = Math.min(spacing, (availableHeight - node) / (shape.height() - 1));
-		}
-
-		spacing = Math.max(spacing, 1);
-		node = Math.min(node, spacing);
-
-		int shapeHeight = (shape.height() - 1) * spacing + node;
-		int rootTop = top + (availableHeight - shapeHeight) / 2 + shapeHeight - node;
-
-		return new Layout(spacing, node, this.sectionCenter(section), rootTop);
+		return new Layout(pitch, node, this.sectionCenter(section), rootTop);
 	}
 
 	private int sectionCenter(final int section) {
@@ -277,13 +366,14 @@ public class ArchetypeScreen extends Screen {
 
 	/** Top-left of a node within its section. */
 	private static int nodeX(final Constellation shape, final Constellation.Node node, final Layout layout) {
-		int shapeWidth = (shape.width() - 1) * layout.spacing();
-		return layout.centerX() - shapeWidth / 2 + node.col() * layout.spacing() - layout.node() / 2;
+		float shapeWidth = (shape.width() - 1) * layout.pitch();
+		return Math.round(layout.centerX() - shapeWidth / 2.0F
+				+ node.col() * layout.pitch() - layout.node() / 2.0F);
 	}
 
 	/** Rows grow upward from the root row. */
 	private static int nodeY(final Constellation.Node node, final Layout layout) {
-		return layout.rootTop() - node.row() * layout.spacing();
+		return Math.round(layout.rootTop() - node.row() * layout.pitch());
 	}
 
 	/** A node under the cursor: which sub-tree column, which node index. */
@@ -421,6 +511,8 @@ public class ArchetypeScreen extends Screen {
 			Constellation shape = tree.constellation();
 			Layout layout = this.layout(section, shape);
 			int size = layout.node();
+			// Ring, stroke and icon inset all come off the node — see stroke().
+			int stroke = stroke(size);
 
 			this.sectionTitle(graphics, tree, section);
 
@@ -433,7 +525,7 @@ public class ArchetypeScreen extends Screen {
 					VanillaUi.line(graphics,
 							nodeX(shape, from, layout) + size / 2, nodeY(from, layout) + size / 2,
 							nodeX(shape, to, layout) + size / 2, nodeY(to, layout) + size / 2,
-							VanillaUi.INSET_BODY);
+							VanillaUi.INSET_BODY, stroke);
 				}
 			}
 
@@ -452,9 +544,9 @@ public class ArchetypeScreen extends Screen {
 				TreeNodes.NodeKind kind = TreeNodes.kind(tree, i);
 
 				if (kind == TreeNodes.NodeKind.ACTIVE) {
-					graphics.fill(x - 1, y - 1, x + size + 1, y + size + 1, 0xFF3B82F6);
+					graphics.fill(x - stroke, y - stroke, x + size + stroke, y + size + stroke, 0xFF3B82F6);
 				} else if (kind == TreeNodes.NodeKind.CAPSTONE) {
-					graphics.fill(x - 1, y - 1, x + size + 1, y + size + 1, 0xFFA855F7);
+					graphics.fill(x - stroke, y - stroke, x + size + stroke, y + size + stroke, 0xFFA855F7);
 				}
 
 				VanillaUi.inset(graphics, x, y, size, size);
@@ -471,12 +563,13 @@ public class ArchetypeScreen extends Screen {
 					graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, VanillaUi.INSET_BODY_HOVERED);
 				}
 
-				// The skill's icon, when the node is big enough to hold a
-				// sprite — the exact resolution the picker previews reuse.
-				if (size >= 16) {
-					VanillaUi.nodeIcon(graphics, tree, i,
-							x + (size - 16) / 2, y + (size - 16) / 2);
-				}
+				// The skill's icon, ALWAYS — a node is never too small for one.
+				// Sized to the node minus its bevel and centred: at the reference
+				// node that is a 16px icon inset by 1, i.e. the native draw, and
+				// away from it the pose does the work (VanillaUi.nodeIcon).
+				int iconSize = Math.max(3, size - stroke * 2);
+				VanillaUi.nodeIcon(graphics, tree, i,
+						x + (size - iconSize) / 2, y + (size - iconSize) / 2, iconSize);
 
 				// Unreachable nodes dim, icon included — drawn over it on purpose.
 				if (!isOwned && verdict != NodePurchases.Verdict.BUYABLE) {
@@ -757,6 +850,13 @@ public class ArchetypeScreen extends Screen {
 	 * The sub-tree's name across the top of its section: bold and 1.5x, in a
 	 * washed-out tone so it sits into the backdrop art rather than competing with
 	 * the nodes.
+	 *
+	 * <p>1.5x is a CEILING, not the size. A section is a third of a panel that is a
+	 * fraction of the screen, so at a large GUI scale on a small window there is not
+	 * 1.5x of room for "Colossus Crusher" — the title then shrinks to what fits
+	 * rather than running across the divider into its neighbour. The room it has to
+	 * fit is the section minus its padding and minus the switcher column on the
+	 * right, doubled because the title is centred and has to clear it symmetrically.
 	 */
 	//? if >=26.1 {
 	private void sectionTitle(final GuiGraphicsExtractor graphics, final SubTree tree, final int section) {
@@ -764,21 +864,24 @@ public class ArchetypeScreen extends Screen {
 	/*private void sectionTitle(final GuiGraphics graphics, final SubTree tree, final int section) {
 	*///?}
 		Component label = tree.displayName().copy().withStyle(ChatFormatting.BOLD);
-		float x = this.sectionCenter(section) - this.font.width(label) * SECTION_TITLE_SCALE / 2.0F;
+		int width = Math.max(1, this.font.width(label));
+		int room = Math.max(1, this.sectionWidth() - PAD * 2 - SWITCH_W * 2);
+		float scale = Math.min(SECTION_TITLE_SCALE, room / (float) width);
+		float x = this.sectionCenter(section) - width * scale / 2.0F;
 		float y = this.canvasTop() + 6;
 
 		// `GuiGraphics.pose()` is a 2-D `Matrix3x2fStack` from 1.21.11 up and a 3-D `PoseStack`
 		// below it, so push/translate/scale/pop all gain a z. The MATH is unchanged and stays
-		// outside the fork (conventions §5b): the same `x`, `y` and SECTION_TITLE_SCALE go in,
-		// with a zero z and a unit z-scale, which is what a 2-D stack does implicitly.
+		// outside the fork (conventions §5b): the same `x`, `y` and `scale` go in, with a zero
+		// z and a unit z-scale, which is what a 2-D stack does implicitly.
 		//? if >=1.21.11 {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
-		graphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE);
+		graphics.pose().scale(scale, scale);
 		//?} else {
 		/*graphics.pose().pushPose();
 		graphics.pose().translate(x, y, 0.0F);
-		graphics.pose().scale(SECTION_TITLE_SCALE, SECTION_TITLE_SCALE, 1.0F);
+		graphics.pose().scale(scale, scale, 1.0F);
 		*///?}
 		//? if >=26.1 {
 		graphics.text(this.font, label, 0, 0, VanillaUi.SECTION_TITLE, false);
