@@ -190,6 +190,26 @@ public final class DamageTrace {
 	private static final float ARMOR_PER_POINT = 0.04F;
 	private static final float ARMOR_CAP = 0.8F;
 
+	/**
+	 * The dev flag. <b>Off unless {@code -Darchetypes.damageTrace=true}.</b>
+	 *
+	 * <p>This class is a diagnostic, not a mechanic: it re-derives what vanilla did
+	 * to a blow and shouts when the mod's own arithmetic and the game's disagree.
+	 * That makes it 1,000 lines of the deepest coupling in the mod to a damage
+	 * pipeline that changes shape at 1.21.2, and it protects nothing at runtime —
+	 * the balance-parity review is what protects the ported nodes. So it is a
+	 * switch: {@code record}, {@code observe}, {@code begin} and {@code finish} all
+	 * return immediately when this is false, {@code /archetypes trace} does not
+	 * appear, and the port is free to make the whole class inert on a node rather
+	 * than fork it five ways.
+	 *
+	 * <p>The mixin handlers stay injected either way. Removing them would move the
+	 * damage funnel's handler order, which is the one thing about this file that IS
+	 * load-bearing (design §5.9 gate 5): {@code archetypes$traceBegin} is offset 5
+	 * of {@code hurtServer} and everything downstream is measured against it.
+	 */
+	public static final boolean ENABLED = Boolean.getBoolean("archetypes.damageTrace");
+
 	private static final String KEY = "commands.archetypes.trace.";
 
 	private static final Set<UUID> WATCHED = new HashSet<>();
@@ -307,11 +327,19 @@ public final class DamageTrace {
 
 	/** Whether this player's blows are being traced. */
 	public static boolean isWatched(final ServerPlayer player) {
+		if (!ENABLED) {
+			return false;
+		}
+
 		return watching && WATCHED.contains(player.getUUID());
 	}
 
 	/** Turn the trace on or off for one player. Returns the new state. */
 	public static boolean watch(final ServerPlayer player, final boolean on) {
+		if (!ENABLED) {
+			return false;
+		}
+
 		if (on) {
 			WATCHED.add(player.getUUID());
 		} else {
@@ -337,6 +365,10 @@ public final class DamageTrace {
 	 */
 	public static void begin(final ServerLevel level, final DamageSource source,
 			final LivingEntity victim, final float amount) {
+		if (!ENABLED) {
+			return;
+		}
+
 		if (!watching) {
 			return;
 		}
@@ -380,6 +412,10 @@ public final class DamageTrace {
 	 * get the same answers the handler just got.
 	 */
 	public static void record(final String stage, final float before, final float after) {
+		if (!ENABLED) {
+			return;
+		}
+
 		if (!watching) {
 			return;
 		}
@@ -404,6 +440,10 @@ public final class DamageTrace {
 	 */
 	public static void observe(final LivingEntity self, final String stage, final float before,
 			final float after) {
+		if (!ENABLED) {
+			return;
+		}
+
 		if (!watching) {
 			return;
 		}
@@ -486,6 +526,10 @@ public final class DamageTrace {
 	 *     unaccounted alarm can tell "nothing landed" from "nothing was left".
 	 */
 	public static void finish(final LivingEntity victim, final boolean hurt) {
+		if (!ENABLED) {
+			return;
+		}
+
 		if (!watching) {
 			return;
 		}

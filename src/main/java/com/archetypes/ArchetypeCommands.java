@@ -10,29 +10,11 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
-import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
-import net.minecraft.core.Holder;
-import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityTypes;
-import net.minecraft.world.entity.EquipmentSlot;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeInstance;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.illager.Vindicator;
-import net.minecraft.world.item.Item;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.item.enchantment.Enchantment;
-import net.minecraft.world.item.enchantment.Enchantments;
-import net.minecraft.world.phys.Vec3;
 import org.jspecify.annotations.Nullable;
 
 /**
@@ -77,16 +59,6 @@ public final class ArchetypeCommands {
 	/** {@code buy}'s wildcard: every tree of the caller's archetype, to its cap. */
 	private static final String ALL = "all";
 
-	/** The scoreboard tag every spawned dummy wears — the cheap test the
-	 * nameplate refresh does before it looks at anything else. */
-	private static final String DUMMY_TAG = "archetypes_dummy";
-
-	/** A player's pool, so a dummy dies to the same arithmetic a player would. */
-	private static final double DUMMY_HEALTH = 40.0;
-
-	/** How far in front of the caller the dummy lands. */
-	private static final double DUMMY_DISTANCE = 3.0;
-
 	private static final String KEY = "commands.archetypes.";
 
 	/**
@@ -130,21 +102,10 @@ public final class ArchetypeCommands {
 						.then(setCommand())
 						.then(levelCommand())
 						.then(buyCommand())
-						// dummyCommand() deliberately NOT registered in shipped builds —
-						// the user's pre-publish rule (2026-07-26). The implementation
-						// stays for dev sessions: re-add the line to test.
+						// `trace` is registered only when the dev flag is set — see
+						// DamageTrace.ENABLED. `dummy` is gone entirely (the user's
+						// pre-publish rule, 2026-07-26); it lives in git history.
 						.then(traceCommand())));
-
-		// The dummy's nameplate is its health readout, and this is the cheapest
-		// honest way to keep it current: an event that fires exactly when the
-		// number changed, filtered on a tag no other entity carries. Polling every
-		// entity every tick to redraw a name would be a real cost paid by every
-		// server that never spawns one.
-		ServerLivingEntityEvents.AFTER_DAMAGE.register((entity, source, blocked, taken, blockedByShield) -> {
-			if (entity.entityTags().contains(DUMMY_TAG)) {
-				nameDummy(entity);
-			}
-		});
 	}
 
 	// --- /archetypes set <archetype> ---
@@ -351,116 +312,14 @@ public final class ArchetypeCommands {
 		return bought;
 	}
 
-	// --- /archetypes dummy ---
-
-	private static LiteralArgumentBuilder<CommandSourceStack> dummyCommand() {
-		return Commands.literal("dummy").executes(context -> {
-			ServerPlayer player = context.getSource().getPlayerOrException();
-			ServerLevel level = player.level();
-			Vindicator dummy = EntityTypes.VINDICATOR.create(level, EntitySpawnReason.COMMAND);
-
-			if (dummy == null) {
-				context.getSource().sendFailure(Component.translatable(KEY + "dummy.failed"));
-				return 0;
-			}
-
-			Vec3 look = player.getLookAngle();
-			Vec3 spot = player.position().add(look.x * DUMMY_DISTANCE, 0.0, look.z * DUMMY_DISTANCE);
-			dummy.snapTo(spot.x, spot.y, spot.z, player.getYRot() + 180.0F, 0.0F);
-			dress(dummy, level);
-			level.addFreshEntity(dummy);
-			context.getSource().sendSuccess(
-					() -> Component.translatable(KEY + "dummy.done"), false);
-			return 1;
-		});
-	}
-
-	/**
-	 * The target: full netherite with Protection IV in all four slots, a player's
-	 * forty-point health pool, immovable, and asleep.
-	 *
-	 * <h2>Why a vindicator</h2>
-	 * Everything here has to be true of the dummy for the numbers to mean
-	 * anything, and each one rules something out. It has to take damage through
-	 * the ordinary {@code LivingEntity} pipeline, which is what an armor stand
-	 * does not (it overrides {@code hurtServer} outright and skips armour
-	 * absorption entirely). It has to not be undead: a zombie is immune to Venom's
-	 * Poison and Blight's Wither and takes a Smite bonus it should not, so an
-	 * Assassin build measured on one would read low on the coatings and high on
-	 * the steel. It has to not burn at dawn, which rules the skeletons out and
-	 * husks back in were they not undead too. It has to not convert, which rules
-	 * out a piglin. And it has to render armour so the target LOOKS like what it
-	 * is, which villagers do not. An illager is what is left: a humanoid,
-	 * armour-wearing, living, sunlight-proof mob with no enchantment type
-	 * attached to it.
-	 *
-	 * <p>Everything below goes through the Java API rather than an NBT string,
-	 * because a string is not type-checked against 26.2 and a component that moved
-	 * would fail silently on a dummy that then quietly ate the wrong damage.
-	 */
-	private static void dress(final Vindicator dummy, final ServerLevel level) {
-		dummy.setItemSlot(EquipmentSlot.HEAD, protectedPiece(level, Items.NETHERITE_HELMET));
-		dummy.setItemSlot(EquipmentSlot.CHEST, protectedPiece(level, Items.NETHERITE_CHESTPLATE));
-		dummy.setItemSlot(EquipmentSlot.LEGS, protectedPiece(level, Items.NETHERITE_LEGGINGS));
-		dummy.setItemSlot(EquipmentSlot.FEET, protectedPiece(level, Items.NETHERITE_BOOTS));
-
-		// Nothing it wears may drop: a dummy that scatters Protection IV netherite
-		// every time it dies re-arms whoever killed it.
-		for (EquipmentSlot slot : new EquipmentSlot[] { EquipmentSlot.HEAD, EquipmentSlot.CHEST,
-				EquipmentSlot.LEGS, EquipmentSlot.FEET }) {
-			dummy.setDropChance(slot, 0.0F);
-		}
-
-		setBase(dummy, Attributes.MAX_HEALTH, DUMMY_HEALTH);
-		// Knockback resistance rather than a movement freeze, because being shoved
-		// is being moved out of reach mid-combo, which changes what the next swing
-		// is worth. 1.0 is total.
-		setBase(dummy, Attributes.KNOCKBACK_RESISTANCE, 1.0);
-		dummy.setHealth((float) DUMMY_HEALTH);
-		dummy.setNoAi(true);
-		dummy.setPersistenceRequired();
-		dummy.addTag(DUMMY_TAG);
-		dummy.setCustomNameVisible(true);
-		nameDummy(dummy);
-	}
-
-	/** One piece of netherite with Protection IV, the enchantment resolved off
-	 * the level's registries — {@code Enchantments.PROTECTION} is only a key,
-	 * because enchantments are datapack content. */
-	private static ItemStack protectedPiece(final ServerLevel level, final Item item) {
-		ItemStack stack = new ItemStack(item);
-		Holder<Enchantment> protection = level.registryAccess()
-				.lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.PROTECTION);
-		stack.enchant(protection, 4);
-		return stack;
-	}
-
-	private static void setBase(final LivingEntity entity, final Holder<net.minecraft.world.entity.ai.attributes.Attribute> attribute,
-			final double value) {
-		AttributeInstance instance = entity.getAttribute(attribute);
-
-		if (instance != null) {
-			instance.setBaseValue(value);
-		}
-	}
-
-	/**
-	 * The nameplate, which is the dummy's health readout. Mobs cannot use the
-	 * scoreboard's {@code below_name} slot — vanilla renders that for players
-	 * only — so the number has to live in the custom name itself and be
-	 * rewritten when it changes.
-	 */
-	private static void nameDummy(final LivingEntity dummy) {
-		dummy.setCustomName(Component.translatable(KEY + "dummy.name",
-				String.format(java.util.Locale.ROOT, "%.1f", dummy.getHealth()),
-				String.format(java.util.Locale.ROOT, "%.1f", dummy.getMaxHealth()))
-						.withStyle(ChatFormatting.RED));
-	}
-
 	// --- /archetypes trace on|off ---
 
 	private static LiteralArgumentBuilder<CommandSourceStack> traceCommand() {
 		return Commands.literal("trace")
+				// The dev flag, on this node only: without it the tracer records
+				// nothing, so the branch would answer every question with an empty
+				// report. It stays out of tab-complete instead.
+				.requires(source -> DamageTrace.ENABLED)
 				.then(Commands.literal("on").executes(context -> trace(context.getSource(), true)))
 				.then(Commands.literal("off").executes(context -> trace(context.getSource(), false)));
 	}
