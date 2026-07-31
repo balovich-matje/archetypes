@@ -10,7 +10,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.ARGB;
 import net.minecraft.util.Util;
@@ -72,8 +74,18 @@ public final class SunBlindOverlay {
 			return;
 		}
 
+		// The tint has no parameter below the boundary: `setColor` is the whole
+	// mechanism there, and it is STATE — it has to be put back, or every draw after this
+	// one in the same frame inherits the tint (Skill Proficiencies' R-17).
+		//? if >=1.21.11 {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, TEXTURE, 0, 0, 0.0F, 0.0F,
 				graphics.guiWidth(), graphics.guiHeight(), graphics.guiWidth(), graphics.guiHeight(),
 				ARGB.colorFromFloat(alpha, 1.0F, 1.0F, 1.0F));
+		//?} else {
+		/*graphics.setColor(1.0F, 1.0F, 1.0F, alpha);
+		graphics.blit(TEXTURE, 0, 0, 0.0F, 0.0F,
+				graphics.guiWidth(), graphics.guiHeight(), graphics.guiWidth(), graphics.guiHeight());
+		graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+		*///?}
 	}
 }

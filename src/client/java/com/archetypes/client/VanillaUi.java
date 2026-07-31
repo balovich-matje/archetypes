@@ -94,8 +94,12 @@ public final class VanillaUi {
 
 		if (sprite != null) {
 			int tex = com.archetypes.TreeNodes.iconSpriteSize(tree, index);
+			//? if >=1.21.11 {
 			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, sprite,
 					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+			//?} else {
+			/*graphics.blit(sprite, x, y, 16, 16, 0.0F, 0.0F, tex, tex, tex, tex);
+			*///?}
 			return;
 		}
 
@@ -110,8 +114,16 @@ public final class VanillaUi {
 
 		if (behind) {
 			int tex = com.archetypes.TreeNodes.iconOverlaySize(tree, index);
+			//? if >=1.21.11 {
+			//? if >=1.21.11 {
 			graphics.blit(net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED, overlay,
 					x, y, 0.0F, 0.0F, 16, 16, tex, tex, tex, tex);
+			//?} else {
+			/*graphics.blit(overlay, x, y, 16, 16, 0.0F, 0.0F, tex, tex, tex, tex);
+			*///?}
+			//?} else {
+			/*graphics.blit(overlay, x, y, 16, 16, 0.0F, 0.0F, tex, tex, tex, tex);
+			*///?}
 		}
 
 		//? if >=26.1 {

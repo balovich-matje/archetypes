@@ -1,0 +1,20 @@
+{
+	"required": true,
+	"package": "com.archetypes.client.mixin",
+	"compatibilityLevel": "${java}",
+	"client": [
+		"AbstractContainerScreenAccessor",
+		"AvatarRendererMixin",
+		"EntityRendererMixin",
+		"HudMixin",
+		"LivingEntityRendererAccessor",
+		"LocalPlayerMixin",
+		"MinecraftMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	},
+	"overwrites": {
+		"requireAnnotations": true
+	}
+}

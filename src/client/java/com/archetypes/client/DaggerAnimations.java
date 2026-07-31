@@ -2,7 +2,11 @@ package com.archetypes.client;
 
 import com.archetypes.Archetypes;
 import com.archetypes.ModItems;
+//? if >=1.21.11 {
 import com.zigythebird.playeranim.accessors.IAnimatedAvatar;
+//?} else {
+/*import com.zigythebird.playeranim.accessors.IAnimatedPlayer;
+*///?}
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
@@ -13,7 +17,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.InteractionHand;
+//? if >=1.21.11 {
 import net.minecraft.world.entity.Avatar;
+//?}
 
 /**
  * The dagger's stab, on its own PAL layer.
@@ -107,7 +113,23 @@ public final class DaggerAnimations {
 
 	/** Turn the first tick of a main-hand dagger swing into a stab. */
 	private static void drive(final AbstractClientPlayer player) {
+		// PAL'S API FORKS HERE AND NOWHERE ABOVE, and it forks in exactly one place per file
+		// because the library's rename coincides with the vanilla one: 1.1.5 (MC 1.21.1) spells the
+		// accessor `IAnimatedPlayer` and hangs it on `AbstractClientPlayer`, where 1.1.9/1.2.x spell
+		// it `IAnimatedAvatar` on `Avatar`. MEASURED with `javap -p` on both jars, not read off a
+		// changelog: everything these drivers actually call — `registerFactory`, the controller
+		// constructor, `triggerAnimation`, `isActive`, `getTriggeredAnimation`, `stop`,
+		// `setFirstPersonMode`, `setFirstPersonConfiguration`, `FirstPersonConfiguration(b,b,b,b)`,
+		// `PlayState` — is signature-identical across the two, the setters differing only in a
+		// return value no call site reads.
+		//
+		// The cast is the whole of it. `player` is already an `AbstractClientPlayer`, so below the
+		// boundary the cast to `Avatar` simply goes.
+		//? if >=1.21.11 {
 		if (!(((Avatar) player) instanceof IAnimatedAvatar animated)
+		//?} else {
+		/*if (!(player instanceof IAnimatedPlayer animated)
+		*///?}
 				|| !(animated.playerAnimLib$getAnimation(LAYER_ID)
 						instanceof PlayerAnimationController controller)) {
 			return;

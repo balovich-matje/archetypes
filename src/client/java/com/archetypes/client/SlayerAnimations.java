@@ -6,7 +6,11 @@ import com.archetypes.NodePurchases;
 import com.archetypes.SlayerNodes;
 import com.archetypes.SubTree;
 import com.archetypes.Tuning;
+//? if >=1.21.11 {
 import com.zigythebird.playeranim.accessors.IAnimatedAvatar;
+//?} else {
+/*import com.zigythebird.playeranim.accessors.IAnimatedPlayer;
+*///?}
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
@@ -19,7 +23,9 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
+//? if >=1.21.11 {
 import net.minecraft.world.entity.Avatar;
+//?}
 import net.minecraft.world.entity.player.Player;
 
 /**
@@ -111,7 +117,12 @@ public final class SlayerAnimations {
 
 	/** Mirror the player's synced ability state onto their pose controller. */
 	private static void drive(final AbstractClientPlayer player, final Player self, final long now) {
+		// PAL's one API fork — see DaggerAnimations for the measurement.
+		//? if >=1.21.11 {
 		if (!(((Avatar) player) instanceof IAnimatedAvatar animated)
+		//?} else {
+		/*if (!(player instanceof IAnimatedPlayer animated)
+		*///?}
 				|| !(animated.playerAnimLib$getAnimation(LAYER_ID)
 						instanceof PlayerAnimationController controller)) {
 			return;

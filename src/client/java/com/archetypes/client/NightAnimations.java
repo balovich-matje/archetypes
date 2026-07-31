@@ -2,7 +2,11 @@ package com.archetypes.client;
 
 import com.archetypes.Archetypes;
 import com.archetypes.NightForm;
+//? if >=1.21.11 {
 import com.zigythebird.playeranim.accessors.IAnimatedAvatar;
+//?} else {
+/*import com.zigythebird.playeranim.accessors.IAnimatedPlayer;
+*///?}
 import com.zigythebird.playeranim.animation.PlayerAnimationController;
 import com.zigythebird.playeranim.api.PlayerAnimationFactory;
 import com.zigythebird.playeranimcore.api.firstPerson.FirstPersonConfiguration;
@@ -12,7 +16,9 @@ import com.zigythebird.playeranimcore.enums.PlayState;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.resources.Identifier;
+//? if >=1.21.11 {
 import net.minecraft.world.entity.Avatar;
+//?}
 
 /**
  * The Dark Ritual's pose, on its own PAL layer.
@@ -60,7 +66,12 @@ public final class NightAnimations {
 	}
 
 	private static void drive(final AbstractClientPlayer player) {
+		// PAL's one API fork — see DaggerAnimations for the measurement.
+		//? if >=1.21.11 {
 		if (!(((Avatar) player) instanceof IAnimatedAvatar animated)
+		//?} else {
+		/*if (!(player instanceof IAnimatedPlayer animated)
+		*///?}
 				|| !(animated.playerAnimLib$getAnimation(LAYER_ID)
 						instanceof PlayerAnimationController controller)) {
 			return;

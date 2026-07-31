@@ -8,7 +8,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
+//? if >=1.21.11 {
 import net.minecraft.client.input.MouseButtonEvent;
+//?}
 import net.minecraft.network.chat.Component;
 
 /**
@@ -40,8 +42,17 @@ final class BookmarkTab extends AbstractWidget {
 		return Minecraft.getInstance().font.width(label) + 2 * PAD;
 	}
 
+	// `MouseButtonEvent` is `>=1.21.11`; below it the callback is the two-double
+	// `onClick(mouseX, mouseY)`. Neither arm reads the parameters — the widget's own
+	// hit-test has already decided this is a click on it — so the whole body is shared and
+	// only the shell moves. Skill Proficiencies' BookmarkTab takes the identical fork.
+	//? if >=1.21.11 {
 	@Override
 	public void onClick(final MouseButtonEvent event, final boolean doubleClick) {
+	//?} else {
+	/*@Override
+	public void onClick(final double mouseX, final double mouseY) {
+	*///?}
 		this.playDownSound(Minecraft.getInstance().getSoundManager());
 		this.onPress.run();
 	}

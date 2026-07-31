@@ -1105,15 +1105,27 @@ public abstract class LivingEntityMixin {
 			final double x, final double z,
 			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
 			@com.llamalad7.mixinextras.sugar.Local(argsOnly = true) final DamageSource source) {
-		archetypes$stashHurtKnockbackImpl(self, strength, x, z, original, source);
+		DamageSource previous = com.archetypes.KnockbackSource.push(source);
+
+		try {
+			original.call(self, strength, x, z);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
 	}
 	*///?}
-	// STAGE 4: the same stash, re-targeted onto the legacy entry point. `hurt` is not
-	// `hurtServer` — it runs on BOTH logical sides — and KnockbackSource is a static whose
-	// contract is "single-threaded, server thread only". A client-thread push in
-	// singleplayer would race the server thread's, so the shared implementation early-outs
-	// on the client and simply calls the original. That is not a behaviour change: on 26.x
-	// this handler cannot be reached from a client thread in the first place.
+	// STAGE 4: the same stash, re-targeted onto the legacy entry point — and NOT sharing an
+	// implementation with the arm above, which is a deliberate exception to §5a rather than
+	// an oversight. Two reasons, and the second is the binding one:
+	//
+	//   * `hurt` runs on BOTH logical sides where `hurtServer` cannot, and KnockbackSource
+	//     is a static whose contract is "single-threaded, server thread only". A
+	//     client-thread push in singleplayer would race the server thread's, so this arm
+	//     needs an early-out the arm above must NOT have.
+	//   * Extracting the common tail into a `@Unique` helper would add a method and a
+	//     delegation to the 26.1 node's transformed class. The per-stage gate forbids that,
+	//     and it CAUGHT it: the first draft of this block did exactly that and 26.1's
+	//     LivingEntityMixin came back one instruction-diff dirty.
 	//? if <1.21.2 {
 	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
 			method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
@@ -1123,17 +1135,6 @@ public abstract class LivingEntityMixin {
 			final double x, final double z,
 			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
 			@com.llamalad7.mixinextras.sugar.Local(argsOnly = true) final DamageSource source) {
-		archetypes$stashHurtKnockbackImpl(self, strength, x, z, original, source);
-	}
-	*///?}
-
-	// Shared implementation of the stash. One copy, both legacy entry points.
-	//? if <26.2 {
-	/*@Unique
-	private void archetypes$stashHurtKnockbackImpl(final LivingEntity self, final double strength,
-			final double x, final double z,
-			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
-			final DamageSource source) {
 		if (self.level().isClientSide()) {
 			original.call(self, strength, x, z);
 			return;

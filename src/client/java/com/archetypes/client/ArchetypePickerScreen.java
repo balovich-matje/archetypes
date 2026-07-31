@@ -21,7 +21,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -430,6 +432,7 @@ public class ArchetypePickerScreen extends Screen {
 				// both tips point up-and-OUT and the blades pass through
 				// each other mid-blade (2px apart, 18px). The 20px crossbow
 				// and bow lean in behind, lower halves buried.
+				//? if >=1.21.11 {
 				graphics.blit(RenderPipelines.GUI_TEXTURED, CROSSBOW_LEFT,
 						-19, -16, 0.0F, 0.0F, 20, 20, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, VANILLA_BOW_DRAWN,
@@ -438,16 +441,27 @@ public class ArchetypePickerScreen extends Screen {
 						-10, -8, 0.0F, 0.0F, 18, 18, 16, 16, 16, 16);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, DAGGER,
 						-8, -8, 0.0F, 0.0F, 18, 18, 16, 16, 16, 16);
+				//?} else {
+				/*graphics.blit(CROSSBOW_LEFT, -19, -16, 20, 20, 0.0F, 0.0F, 16, 16, 16, 16);
+				graphics.blit(VANILLA_BOW_DRAWN, -1, -16, 20, 20, 0.0F, 0.0F, 16, 16, 16, 16);
+				graphics.blit(DAGGER_LEFT, -10, -8, 18, 18, 0.0F, 0.0F, 16, 16, 16, 16);
+				graphics.blit(DAGGER, -8, -8, 18, 18, 0.0F, 0.0F, 16, 16, 16, 16);
+				*///?}
 			} else {
 				// Same ⚔ logic: mirrored spike LEFT (head up-left), original
 				// flamethrower RIGHT (head up-right), shafts 5px apart so
 				// they genuinely interpenetrate; the spike rides 3px higher
 				// so its crystal keeps a visible neck above the crossing.
 				// The mana potion hangs in front at the crossing's foot.
+				//? if >=1.21.11 {
 				graphics.blit(RenderPipelines.GUI_TEXTURED, SPIKE_LEFT,
 						-12, -19, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
 				graphics.blit(RenderPipelines.GUI_TEXTURED, FLAME_ICON,
 						-7, -16, 0.0F, 0.0F, 20, 20, 32, 32, 32, 32);
+				//?} else {
+				/*graphics.blit(SPIKE_LEFT, -12, -19, 20, 20, 0.0F, 0.0F, 32, 32, 32, 32);
+				graphics.blit(FLAME_ICON, -7, -16, 20, 20, 0.0F, 0.0F, 32, 32, 32, 32);
+				*///?}
 				//? if >=26.1 {
 				graphics.fakeItem(net.minecraft.world.item.alchemy.PotionContents.createItemStack(
 				//?} else {
@@ -461,9 +475,15 @@ public class ArchetypePickerScreen extends Screen {
 			return;
 		}
 
+		//? if >=1.21.11 {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, portrait,
 				centerX - size / 2, centerY - size / 2, 0.0F, 0.0F,
 				size, size, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE);
+		//?} else {
+		/*graphics.blit(portrait,
+				centerX - size / 2, centerY - size / 2, size, size, 0.0F, 0.0F,
+				PORTRAIT_TEXTURE, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE, PORTRAIT_TEXTURE);
+		*///?}
 	}
 
 	/** Native size of the portrait textures. */

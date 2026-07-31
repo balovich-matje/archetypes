@@ -27,7 +27,9 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.network.chat.CommonComponents;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -371,10 +373,17 @@ public class ArchetypeScreen extends Screen {
 		float scale = Math.min(canvasWidth / (float) ART_WIDTH, canvasHeight / (float) ART_HEIGHT) * ART_ZOOM;
 		int artWidth = Math.round(ART_WIDTH * scale);
 		int artHeight = Math.round(ART_HEIGHT * scale);
+		//? if >=1.21.11 {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, this.archetype.treeBackground(),
 				this.canvasLeft() + (canvasWidth - artWidth) / 2,
 				this.canvasTop() + (canvasHeight - artHeight) / 2,
 				0.0F, 0.0F, artWidth, artHeight, ART_WIDTH, ART_HEIGHT, ART_WIDTH, ART_HEIGHT);
+		//?} else {
+		/*graphics.blit(this.archetype.treeBackground(),
+				this.canvasLeft() + (canvasWidth - artWidth) / 2,
+				this.canvasTop() + (canvasHeight - artHeight) / 2,
+				artWidth, artHeight, 0.0F, 0.0F, ART_WIDTH, ART_HEIGHT, ART_WIDTH, ART_HEIGHT);
+		*///?}
 
 		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(), canvasWidth, canvasHeight);
 

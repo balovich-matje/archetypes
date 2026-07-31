@@ -11,7 +11,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.food.FoodConstants;
@@ -137,8 +139,16 @@ public final class BankedHungerHud {
 			int x = right - i * STEP - SPRITE;
 			Identifier ring = halfEdge && i == edge ? RING_HALF : RING;
 
+			// `blitSprite` loses only the pipeline argument — the sprite/x/y/w/h/colour tail
+			// is declared identically on both (`javap -p`), tint included, so this one needs
+			// no `setColor` dance.
+			//? if >=1.21.11 {
 			graphics.blitSprite(RenderPipelines.GUI_TEXTURED, ring,
 					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE, NO_TINT);
+			//?} else {
+			/*graphics.blitSprite(ring,
+					x - RING_MARGIN, y - RING_MARGIN, RING_SPRITE, RING_SPRITE, NO_TINT);
+			*///?}
 		}
 	}
 }

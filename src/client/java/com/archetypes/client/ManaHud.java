@@ -14,7 +14,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.player.Player;
 
@@ -77,9 +79,27 @@ public final class ManaHud {
 		for (int i = 0; i < ORBS; i++) {
 			Identifier sprite = i < full ? FULL : EMPTY;
 			int x = right - SPRITE - i * STEP;
+			// THE BLIT FAMILY, 1.21.11 -> 1.21.1, measured against both jars rather than guessed:
+	// the RenderPipeline first argument does not exist below the boundary (there is no
+	// Blaze3D pipeline object to pass), and the parameter ORDER moves — `(x, y, u, v, w, h,
+	// regionW, regionH, texW, texH)` above becomes `(x, y, w, h, u, v, regionW, regionH,
+	// texW, texH)` below. Both delegate to the same private twelve-argument blit with the
+	// same arguments in the same roles (read out of the 1.21.1 bytecode), so this is an
+	// argument shuffle and not a different draw.
+			//
+			// The tint has no parameter below the boundary: `setColor` is the whole
+	// mechanism there, and it is STATE — it has to be put back, or every draw after this
+	// one in the same frame inherits the tint (Skill Proficiencies' R-17).
+			//? if >=1.21.11 {
 			graphics.blit(RenderPipelines.GUI_TEXTURED, sprite, x, y,
 					0.0F, 0.0F, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE, SPRITE,
 					blocked ? 0xFF666666 : 0xFFFFFFFF);
+			//?} else {
+			/*float grey = blocked ? 0.4F : 1.0F;
+			graphics.setColor(grey, grey, grey, 1.0F);
+			graphics.blit(sprite, x, y, SPRITE, SPRITE, 0.0F, 0.0F, SPRITE, SPRITE, SPRITE, SPRITE);
+			graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+			*///?}
 		}
 
 		// The exact count over the row's middle, outlined the way the XP bar

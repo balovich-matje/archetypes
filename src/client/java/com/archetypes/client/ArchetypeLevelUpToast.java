@@ -11,7 +11,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 *///?}
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastManager;
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.sounds.SoundEvent;
@@ -84,7 +86,11 @@ public class ArchetypeLevelUpToast implements Toast {
 	//?} else {
 	/*public void render(final GuiGraphics graphics, final Font font, final long fullyVisibleForMs) {
 	*///?}
+		//? if >=1.21.11 {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, BACKGROUND_SPRITE, 0, 0, this.width(), this.height());
+		//?} else {
+		/*graphics.blitSprite(BACKGROUND_SPRITE, 0, 0, this.width(), this.height());
+		*///?}
 		//? if >=26.1 {
 		graphics.text(font, this.archetype.tierName(0), 30, 7, this.archetype.color(), false);
 		graphics.text(font, Component.translatable("toast.archetypes.levelup.desc", this.fromLevel, this.newLevel),

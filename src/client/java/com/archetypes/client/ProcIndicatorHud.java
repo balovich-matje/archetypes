@@ -15,7 +15,9 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 //?} else {
 /*import net.minecraft.client.gui.GuiGraphics;
 *///?}
+//? if >=1.21.11 {
 import net.minecraft.client.renderer.RenderPipelines;
+//?}
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -193,9 +195,18 @@ public final class ProcIndicatorHud {
 				// while its effect layer fades on top.
 				float scale = (SIZE / 16.0F) * (1.0F - 0.35F * t);
 				int drawn = Math.round(16.0F * scale);
+				// 1.21.11 replaced the GUI's 3D `PoseStack` with a 2D `Matrix3x2fStack`, so the
+				// push/scale/pop verbs all rename and the 2D scale gains a third argument
+				// below the boundary. Same transform either way; the arithmetic that computes
+				// `scale` and the two rounded coordinates stays outside the fork.
 				var pose = graphics.pose();
+				//? if >=1.21.11 {
 				pose.pushMatrix();
 				pose.scale(scale, scale);
+				//?} else {
+				/*pose.pushPose();
+				pose.scale(scale, scale, 1.0F);
+				*///?}
 				//? if >=26.1 {
 				graphics.fakeItem(proc.item(),
 				//?} else {
@@ -203,13 +214,27 @@ public final class ProcIndicatorHud {
 				*///?}
 						Math.round((x + (SIZE - drawn) / 2.0F) / scale),
 						Math.round((y + (SIZE - drawn) / 2.0F) / scale));
+				//? if >=1.21.11 {
 				pose.popMatrix();
+				//?} else {
+				/*pose.popPose();
+				*///?}
 			}
 
 			if (proc.sprite() != null) {
+				// The tint is a parameter above and `setColor` STATE below — see ManaHud. The
+				// alpha is the whole point here (the indicator fades as it falls), so it is
+				// unpacked from the same `tint` word rather than recomputed.
+				//? if >=1.21.11 {
 				graphics.blit(RenderPipelines.GUI_TEXTURED, proc.sprite(), x, y, 0.0F, 0.0F,
 						SIZE, SIZE, proc.texSize(), proc.texSize(), proc.texSize(), proc.texSize(),
 						tint);
+				//?} else {
+				/*graphics.setColor(1.0F, 1.0F, 1.0F, (tint >>> 24) / 255.0F);
+				graphics.blit(proc.sprite(), x, y, SIZE, SIZE, 0.0F, 0.0F,
+						proc.texSize(), proc.texSize(), proc.texSize(), proc.texSize());
+				graphics.setColor(1.0F, 1.0F, 1.0F, 1.0F);
+				*///?}
 			}
 		}
 	}

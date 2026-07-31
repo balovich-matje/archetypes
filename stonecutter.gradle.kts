@@ -143,6 +143,21 @@ stonecutter parameters {
 			replace("MobEffects.DAMAGE_RESISTANCE", "MobEffects.RESISTANCE")
 		}
 
+		// STAGE 4, client side. `net.minecraft.util.ARGB` is 1.21.11's promotion of the
+		// nested `net.minecraft.util.FastColor.ARGB32` to a class of its own. Every member
+		// this tree calls — `opaque(int)`, `colorFromFloat(float,float,float,float)` — is
+		// declared identically on both (`javap -p` on the two jars), so this really is a
+		// spelling and nothing else, and Skill Proficiencies' frozen `>=1.21.11` row already
+		// names the pair.
+		//
+		// Two rules because the name appears in two shapes, and neither can hit the other:
+		// the import line ends `ARGB;` and never contains `ARGB.`, and `FastColor.ARGB32.`
+		// does not contain `ARGB.` (the character after `ARGB` there is `3`).
+		string(current.parsed >= "1.21.11") {
+			replace("import net.minecraft.util.FastColor;", "import net.minecraft.util.ARGB;")
+			replace("FastColor.ARGB32.", "ARGB.")
+		}
+
 		string(current.parsed >= "1.21.11") {
 			replace(
 				"net.minecraft.world.entity.projectile.AbstractArrow",
