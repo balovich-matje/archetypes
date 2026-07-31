@@ -133,7 +133,23 @@ public final class RadianceLight {
 	}
 
 	public static void initialize() {
+		// STAGE 6, THE OTHER HALF OF THE FIX THE IMPORT GATE ABOVE ONLY STARTED. Gating the
+		// import to `fabric` left this REGISTRATION line naming `ClientTickEvents`
+		// unconditionally, so both loader nodes generated a live fabric-api call with no
+		// fabric-api on the classpath. Neither is visible from any Fabric node: the five of
+		// them keep the first arm, which is this line unchanged, so their jars do not move.
+		//
+		// Registration only; the whole body below is shared. What a loader helper owes is
+		// NightFormFx's contract, restated because it bites here too: fire ONCE per client
+		// tick, at the END of it — LexForge's `TickEvent.ClientTickEvent` fires twice per
+		// tick and an unchecked phase would place and revert this light on every half-tick.
+		//? if fabric {
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
+		//?} elif neoforge {
+		/*NeoForgeClientEvents.endClientTick(client -> {
+		*///?} elif forge {
+		/*ForgeClientEvents.endClientTick(client -> {
+		*///?}
 			ClientLevel level = client.level;
 
 			if (level != tracked) {

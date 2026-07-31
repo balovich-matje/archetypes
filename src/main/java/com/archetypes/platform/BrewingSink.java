@@ -43,5 +43,28 @@ import net.minecraft.world.item.alchemy.Potion;
 @FunctionalInterface
 public interface BrewingSink {
 	void mix(Holder<Potion> from, Item ingredient, Holder<Potion> to);
+
+	// STAGE 6b — AN OVERLOAD, BELOW 1.21 ONLY, AND IT EXISTS SO THE RECIPE TABLE NEED NOT
+	// MOVE. `Potions.AWKWARD` is a `Holder<Potion>` from 1.21 up and a bare `Potion` below
+	// it, while this mod's own four/two potions are `Holder<Potion>` on every version
+	// (`Registry.registerForHolder`). So on 1.20.1-forge the shared `brew` bodies hand this
+	// interface a MIXTURE of the two types — `out.mix(Potions.AWKWARD, …)` and
+	// `out.mix(MANA_RESTORE, …)` in consecutive lines — and no single three-parameter
+	// signature accepts both.
+	//
+	// The alternatives were a per-node copy of the six mixes (the content drift R-20 exists
+	// to catch) or a `.value()`/wrap edit at every call site inside `ManaPotions`/
+	// `AmnesiaPotions` (six lines of CONTENT rewritten for a type). An overload moves
+	// nothing: javac picks it per call site and the tables stay byte-for-byte what the
+	// Fabric arms say.
+	//
+	// Inert everywhere else by construction. The whole compilation unit is already
+	// loader-axis-only, so no Fabric jar can see it; and `>=1.21` — which is every node but
+	// this one, loader axis included — does not compile this member at all.
+	//? if <1.21 {
+	/^default void mix(final Potion from, final Item ingredient, final Holder<Potion> to) {
+		mix(net.minecraft.core.registries.BuiltInRegistries.POTION.wrapAsHolder(from), ingredient, to);
+	}
+	^///?}
 }
 *///?}

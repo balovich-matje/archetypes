@@ -105,20 +105,60 @@ public abstract class FoodPropertiesMixin {
 	// saturation, which is exactly what the record's `saturation()` carries from 1.20.5 up.
 	// The ceiling, the "did vanilla already reach it" early-out and the saturation clamp are
 	// character for character the same.
+	//
+	// STAGE 6b — AND ON THIS ONE HANDLER THE WRAPPED CALL'S DESCRIPTOR ALSO FORKS BY LOADER.
+	// LexForge PATCHES the very line this handler wraps: patches/…/player/Player.java.patch
+	// turns `this.getFoodData().eat(stack.getItem(), stack)` into
+	// `this.getFoodData().eat(stack.getItem(), stack, this)`, because
+	// patches/…/food/FoodData.java.patch deprecates the two-argument `eat` and adds a
+	// three-argument one that can ask `ItemStack.getFoodProperties(entity)`. The HOSTING method
+	// is untouched — `Player.eat(Level, ItemStack)` still exists with the same descriptor and
+	// still contains exactly one call to `FoodData.eat` — so only the target descriptor and the
+	// wrapped call's arity move.
+	//
+	// MEASURED, not guessed: the first 1.20.1-forge boot failed with "expected 1 invocation(s)
+	// but 0 succeeded. Scanned 1 target(s)" — the method was found and the INVOKE inside it was
+	// not, which is that patch exactly.
+	//
+	// §5a APPLIED LITERALLY: annotation and parameter list inside the conditional, body outside
+	// it. The arithmetic stays ONE implementation for both loaders, which matters more here than
+	// usual — this handler's body is already the port's one deliberate duplicate, and a third
+	// copy is where a banked-hunger ceiling would quietly differ by loader.
+	//
+	// The explanation lives ABOVE the directive rather than inside the branch, and that is
+	// mechanical rather than stylistic: Stonecutter strips comment markers from a branch it
+	// enables, so `//` lines placed between `else {` and the branch's own opening `/*` come out
+	// of the generator with their `//` removed. Measured here, once.
 	//? if >=1.20.5 {
 	//?} else {
 	/*@WrapOperation(method = "eat(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;)Lnet/minecraft/world/item/ItemStack;",
 			at = @At(value = "INVOKE",
+					//? if fabric {
 					target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/item/Item;"
 							+ "Lnet/minecraft/world/item/ItemStack;)V"))
+					//?} elif forge {
+					/^target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/item/Item;"
+							+ "Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/entity/LivingEntity;)V"))
+					^///?}
 	private void archetypes$bankHunger(final FoodData data, final net.minecraft.world.item.Item item,
-			final ItemStack food, final Operation<Void> original) {
+			final ItemStack food,
+			//? if forge {
+			/^final LivingEntity eater,
+			^///?}
+			final Operation<Void> original) {
 		final LivingEntity user = (LivingEntity) (Object) this;
 		final FoodProperties properties = item.getFoodProperties();
 		int before = data.getFoodLevel();
 		float saturationBefore = data.getSaturationLevel();
 
+		// The captured original argument is passed straight back through, not `user`: they are
+		// the same object here, but a wrap that substitutes its own value for one of the
+		// wrapped call's arguments is a behaviour change hiding in a plumbing line.
+		//? if fabric {
 		original.call(data, item, food);
+		//?} elif forge {
+		/^original.call(data, item, food, eater);
+		^///?}
 
 		if (properties == null || !(user instanceof Player player)) {
 			return;
