@@ -745,6 +745,71 @@ The `>=26.1` boundary lands here as one wide, shallow diff: `GuiGraphicsExtracto
 
 **Lanes:** 3-A `VanillaUi` + screens; 3-B HUDs + toast + widget; 3-C keybinds/brewing/fabric-api; 3-D common-side (largely free at this boundary).
 
+#### 5.4.1 Stage 3, as landed — the measured outcome
+
+The node needed **98 `//?` blocks across 26 shared files** (`git diff` against the Stage-2
+tip: 28 files touched, 98 blocks added, none removed), two new whole-file-gated compilation
+units and one node-script fork. **Two predicates and one conjunction of them**: `>=26.1` for
+everything the boundary owns, the pre-existing `>=26.2` in `HudMixin`'s three-arm chain, and
+`>=1.21.11 && <26.2` for the sweep stash. No new predicate was invented.
+
+**The extract-vs-immediate split is wide and shallow, exactly as designed — and the fork is
+one line wide.** `GuiGraphicsExtractor` and `GuiGraphics` declare `fill` and all five `blit`
+overloads identically, so only the type name, `text()`→`drawString()` and
+`fakeItem()`→`renderFakeItem()` move. Wrapping only the line that carries the token leaves
+every multi-line signature's continuation and every drawing arithmetic expression shared
+(conventions §5b). `VanillaUi` carries the explanation for the other eleven files.
+
+**TWO DESIGN PREDICTIONS WERE WRONG, BOTH IN THE SAME DIRECTION — §4.3 over-forecast the
+client work.** The render-state architecture and the extract-based particle pipeline both
+survive this node intact: `SubmitNodeCollector`, `ThrownItemRenderState`, `AvatarRenderer`,
+`FabricRenderState`, `RenderStateDataKey`, `SingleQuadParticle.extract` and both
+`extractRotatedQuad` overloads all resolve on 1.21.11 with 26.x's shapes. The three
+`RenderLayer`s, `AvatarRendererMixin` and `BulwarkRenderData` needed **zero** changes. The
+only delta is a package move, `client.renderer.state.level` → `client.renderer.state`, worth
+two import forks. The rewrite §4.3 describes is real but belongs to **Stage 4**.
+
+**THE BOUNDARY NOBODY PREDICTED IS A BUILD-MECHANICS ONE, and it will bite again.** From
+1.21.11 down the node runs fabric-loom-remap, which splits split-environment mod jars and
+gives `src/main` the `-common` half only, so `src/main` can no longer name
+`net.fabricmc.fabric.api.client.…` or `com.specialities.client.…`. Two long-standing
+conventions-§5g violations surfaced at once (`FabricNet`'s `ClientPlayNetworking` holder and
+`SpecialitiesBridge.hudShift`) and both became client hand-downs. **Standing review test from
+here on: a new `src/main` reference to a client-only package compiles green on the two 26.x
+nodes and fails only on a remapped one.**
+
+**A whole-file `//?` gate works pointing DOWN as well as up.** `LevelExtractorMixin` is
+`>=26.2`; `platform/ClientNetHooks` and `client/ClientHandDown` are `<26.1`. Same trick, same
+constraint — no javadoc inside a disabled branch, because a `*/` would close Stonecutter's own
+comment early — and it is what keeps the two 26.x jars byte-identical while the node below
+gains six classes.
+
+**PAL 1.1.9 needed no source fork, and that was verified rather than assumed** (design §2.1):
+`javap -p` on `BXYewCJb` and on 26.1's `SdKAeB6x` shows all six imported types
+signature-identical, return types included. Its dependency CONFIGURATION did fork
+(`modImplementation`, the jar declares `Fabric-Mapping-Namespace: intermediary`), and Skill
+Proficiencies' matching artifact forked with it (`modCompileOnly`).
+
+**Stage 2's knockback residue is half closed.** `Player.doSweepAttack` is wrapped on the two
+nodes that have it. `Player.sweepAttack()` on 1.21.1 and 1.20.1 carries no source at all and
+is Stage 4's problem; the mob-AI residue stands as accepted, unchanged from Stage 2.
+
+**Gates, all green.** 26.2 byte-identical to the Stage-2 tip (244 classes / 385 resources);
+26.1 byte-identical for commit 3-B and a 43-line pure insertion for 3-C, resources untouched;
+`:1.21.11-fabric:build` green; 112/112 mixin targets resolve statically against the 1.21.11
+mapped jar, client mixins included; the dedicated server boots clean on all three nodes with
+the **same 18 common mixin classes**, exit 0, R-16 positive tag probes passing against a live
+bogus control, item-registry probes likewise; and the damage-funnel order in `hurtServer` is
+**identical on 26.1 and 1.21.11**, `archetypes$flense` still after Skill Proficiencies'
+combat multiplier and stealth crit, `traceFinish (500) < hardened (900) < afterDamage (1000)`
+at every RETURN.
+
+**One benign log line to expect on this node and NOT to "fix":** `Compatibility level JAVA_21
+specified by archetypes.mixins.json is higher than the maximum level supported by this version
+of mixin (JAVA_13)`. Loader 0.19.3 carries sponge-mixin 0.8.7 here; the level governs
+vouched-for features, not whether ASM can read the class, and all 18 mixins applied in the
+same run. Skill Proficiencies records the identical line on `1.20.1-forge`.
+
 ### 5.5 Stage 4 — `1.21.1-fabric` — **the biggest single step in the port**
 
 Everything at `>=1.21.11` lands at once: `Identifier`→`ResourceLocation` (controller `replacements`, free), `.projectile.arrow` package, the **entire render-state architecture**, `AvatarRenderer`→`PlayerRenderer`, `RenderLayer.submit`→`render`, `FabricRenderState`/`RenderStateDataKey` absent, `HudElementRegistry`→client `GuiMixin`, `KeyMapping.Category`→String, `hurtServer`→`hurt` × **18 + DamageTrace + Flense**, `applyItemBlocking`/`BlocksAttacks` gone, `Consumable`/`FoodProperties.onConsume` gone, `Player.isSweepAttack`/`canGlide` gone, `LocalPlayer.itemUseSpeedMultiplier` gone, `MobEffectInstance.tickServer`→`tick`, `ItemStack.processDurabilityChange` gone (but `EnchantmentHelper.processDurabilityChange` **survives** — re-root, don't rewrite), `UseDuration`→`ItemProperties`, `ARGB`→`FastColor.ARGB32`, jspecify→jetbrains (import-only fork), `Toast` split.
