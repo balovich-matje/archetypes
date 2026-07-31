@@ -1,0 +1,46 @@
+# THE single source of version truth for every node.
+# A release edits `mod.version` here, once. Nothing else.
+# Gradle-only options live in gradle.properties; everything else lives here.
+
+mod.id = "archetypes"
+mod.name = "Archetypes"
+mod.group = "com.archetypes"
+mod.version = "1.1.0"
+
+deps.fabric_loader = "0.19.3"
+
+# Skill Proficiencies is a COMPILE-ONLY soft dependency (compat/SpecialitiesBridge guards
+# every touch at runtime). One artifact provably cannot serve every node — measured on the
+# shipped jars, `SkillType.iconTexture()` returns `Identifier` on 26.x, `ResourceLocation`
+# on the loader jars and `class_2960` on the legacy Fabric jars — so the node script picks
+# the per-node jar out of `../specialities/build/libs/<this version>/`. Only the version
+# number lives here; the file NAME is assembled per node (design §3.5, fallback mechanism,
+# which is the one in force).
+deps.specialities = "1.6.0"
+
+# R-01, MEASURED IN THE OTHER REPO — `loomx.loom_version` must be visible to FABRIC nodes
+# ONLY, hence this bare `[fabric]` table. The TOML ROOT is as dangerous as gradle.properties:
+# `dev.kikugie.loom-back-compat` is a SETTINGS plugin whose `beforeProject` hook puts
+# fabric-loom on the buildscript classpath of every project that has the key, which breaks
+# an Architectury Loom node with "Unresolved reference: platform". Do not move it.
+#
+# 1.17.17, not the 1.17.13 this repo used before the workspace: the pin comes WITH the
+# scaffold so both repos run one loom.
+[fabric]
+loomx.loom_version = "1.17.17"
+
+["26.2"]
+# Game versions this node's jar is marked compatible with on Modrinth.
+mod.mc_releases = ["26.2"]
+
+[fabric."26.2"]
+mod.mc_compat = "~26.2"
+mod.loader_floor = ">=0.19.3"
+deps.fabric_api = "0.154.2+26.2"
+# Player Animation Library, pinned by Modrinth VERSION ID and not by version number:
+# `1.1.5` is duplicated across the Fabric and NeoForge listings and only the id
+# disambiguates (design §2.1, R-C5). `g8XDqDTi` is `1.2.4+mc.26.2`, a Merged jar — mojmap
+# classes with NO `Fabric-Mapping-Namespace` header, which is why this node takes it
+# through a PLAIN `implementation` and not `modImplementation`. Getting that backwards is a
+# silent mis-remap, not a build failure.
+deps.pal = "g8XDqDTi"

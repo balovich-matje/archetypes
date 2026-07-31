@@ -1,10 +1,23 @@
-# Automatically build the project and run any configured tests for every push
-# and submitted pull request. This can help catch issues that only occur on
-# certain platforms or Java versions, and provides a first line of defence
-# against bad commits.
+# Builds every registered node on push and pull request. This is the COMPILE-side drift
+# detector for the multi-version workspace: a `//?` fork whose live branch stops type-checking
+# on any node fails here.
+#
+# What it does NOT catch: a single mixin injection point. Loom never applies mixins; Mixin is
+# a runtime transformer and `injectors.defaultRequire: 1` is only consulted when a target class
+# is first loaded. The injector gate is the dedicated-server smoke test, run by hand per node.
+#
+# `buildAndCollect`, not `build`: an unqualified `build` also runs on nodes whose shared-tree
+# forks have not landed yet, and those fail by design mid-port.
 
 name: build
-on: [pull_request, push]
+on:
+  pull_request:
+  push:
+    branches: [main, workspace]
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -22,7 +35,7 @@ jobs:
       - name: make gradle wrapper executable
         run: chmod +x ./gradlew
       - name: build
-        run: ./gradlew build
+        run: ./gradlew buildAndCollect
       - name: capture build artifacts
         uses: actions/upload-artifact@v7
         with:
