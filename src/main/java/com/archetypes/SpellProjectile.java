@@ -358,6 +358,14 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	}
 
 	private void trail(final ServerLevel level) {
+		// The null guard is explicit rather than a null switch LABEL: labelled
+		// nulls are a Java 21 switch pattern and Java 17 is the shared-code ceiling
+		// (conventions §5e). Switching on a null enum throws, so the check has to
+		// be here and not a `default` arm.
+		if (this.mode == null) {
+			return;
+		}
+
 		switch (this.mode) {
 			case FIREBALL -> {
 				level.sendParticles(ParticleTypes.FLAME, this.getX(), this.getY(), this.getZ(),
@@ -416,7 +424,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					this.getX(), this.getY(), this.getZ(), 3, 0.15, 0.15, 0.15, 0.01);
 			case GLACIAL_SPIKE -> level.sendParticles(ParticleTypes.SNOWFLAKE,
 					this.getX(), this.getY(), this.getZ(), 5, 0.1, 0.1, 0.1, 0.02);
-			case null -> {
+			default -> {
 			}
 		}
 	}
@@ -476,6 +484,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		ServerLevel level = (ServerLevel) this.level();
 
+		// Java 17 ceiling again — see trail().
+		if (this.mode == null) {
+			return;
+		}
+
 		switch (this.mode) {
 			case FLAME_BOLT -> {
 				victim.igniteForSeconds(this.igniteSeconds >= 0
@@ -501,7 +514,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
 						base * (chilled ? Tuning.GLACIAL_CHILLED_MULTIPLIER : Tuning.GLACIAL_BASE_MULTIPLIER));
 			}
-			case null, default -> {
+			default -> {
 				// Fireball, Ice Blast, Meteor and Holy Light all area-effect
 				// from onHit — ground or flesh alike.
 			}
@@ -518,30 +531,34 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 		ServerLevel level = (ServerLevel) this.level();
 
-		switch (this.mode) {
-			case FIREBALL -> {
-				this.elementBurst(level, true);
-				level.sendParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
-						1, 0.0, 0.0, 0.0, 0.0);
-				level.playSound(null, this.getX(), this.getY(), this.getZ(),
-						SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 1.4F);
-			}
-			case METEOR -> this.impact(level);
-			case HOLY_LIGHT -> this.burst(level);
-			case ICE_BLAST -> {
-				this.elementBurst(level, false);
-				level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
-						15, 0.3, 0.3, 0.3, 0.05);
-				level.playSound(null, this.getX(), this.getY(), this.getZ(),
-						SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.8F, 1.4F);
-			}
-			case GLACIAL_SPIKE -> {
-				level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
-						20, 0.2, 0.2, 0.2, 0.08);
-				level.playSound(null, this.getX(), this.getY(), this.getZ(),
-						SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.0F, 0.9F);
-			}
-			case null, default -> {
+		// Guarded rather than returned early — the discard() below this switch has
+		// to happen either way. Java 17 ceiling, as in trail().
+		if (this.mode != null) {
+			switch (this.mode) {
+				case FIREBALL -> {
+					this.elementBurst(level, true);
+					level.sendParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
+							1, 0.0, 0.0, 0.0, 0.0);
+					level.playSound(null, this.getX(), this.getY(), this.getZ(),
+							SoundEvents.GENERIC_EXPLODE.value(), SoundSource.PLAYERS, 0.6F, 1.4F);
+				}
+				case METEOR -> this.impact(level);
+				case HOLY_LIGHT -> this.burst(level);
+				case ICE_BLAST -> {
+					this.elementBurst(level, false);
+					level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
+							15, 0.3, 0.3, 0.3, 0.05);
+					level.playSound(null, this.getX(), this.getY(), this.getZ(),
+							SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 0.8F, 1.4F);
+				}
+				case GLACIAL_SPIKE -> {
+					level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
+							20, 0.2, 0.2, 0.2, 0.08);
+					level.playSound(null, this.getX(), this.getY(), this.getZ(),
+							SoundEvents.GLASS_BREAK, SoundSource.PLAYERS, 1.0F, 0.9F);
+				}
+				default -> {
+				}
 			}
 		}
 
