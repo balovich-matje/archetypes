@@ -2,7 +2,15 @@ package com.archetypes.client;
 
 import com.archetypes.Archetypes;
 
+// STAGE 7: the import goes with its ONE use, and that use does not exist on the two 1.21.1
+// nodes — see the long note at the `y` fork below for why. Gated rather than left dangling so
+// no node compiles an import it never resolves a reference through.
+//? if >=1.21.11 {
 import com.archetypes.compat.SpecialitiesBridge;
+//?} elif >=1.21 {
+//?} else {
+/*import com.archetypes.compat.SpecialitiesBridge;
+*///?}
 
 //? if >=1.21 {
 import net.minecraft.client.DeltaTracker;
@@ -141,8 +149,61 @@ public final class BankedHungerHud {
 		int right = client.getWindow().getGuiScaledWidth() / 2 + 91;
 		// Same live read as ManaHud's, and for the same reason (design R-C4): the
 		// hunger row rides the vanilla stack Specialities may or may not be raising.
+		//
+		// STAGE 7 CORRECTION — THE SHIFT IS A QUESTION ABOUT *WHERE THIS DRAW SITS*, AND THIS
+		// DRAW DOES NOT SIT IN THE SAME PLACE ON ALL SEVEN NODES. Reported in game on
+		// 1.21.1-fabric: with the ring finally blitting (the previous fix), the halos came out
+		// as a row floating ABOVE the drumsticks instead of outlining them. Measured, not
+		// guessed:
+		//
+		//   1.21.1 vanilla `Gui.renderPlayerHealth` (`javap -c`) computes
+		//       local 9  = guiWidth()  / 2 + 91      -> the row's RIGHT edge
+		//       local 10 = guiHeight() - 39          -> the row's TOP
+		//   and calls `renderFood(g, player, iload 10, iload 9)` at offset 426, i.e. the
+		//   descriptor is `renderFood(GuiGraphics, Player, int y, int x)` — Y THIRD, X FOURTH,
+		//   which is the order both wrap handlers already declare. Inside, the icon x is
+		//   `param4 - j * 8 - 9` and the icon y is `param3`. So `right`/`BOTTOM` above are
+		//   vanilla's own basis, to the pixel, and the x half of this was never wrong.
+		//
+		// What IS wrong below 1.21.11 is subtracting Skill Proficiencies' shift a SECOND time.
+		// Their raise is a POSE TRANSLATE, and on those two nodes our draw runs INSIDE it:
+		//
+		//   >=1.21.11  we are a SIBLING. `HudElementRegistry.attachElementAfter(FOOD_BAR, …)`
+		//              adds our element next to the one their `replaceElement(FOOD_BAR, …)`
+		//              wraps, so their translate is already popped when we draw and we have to
+		//              apply the shift ourselves. Unchanged — this is the reference arm and
+		//              26.2 has been in daily use.
+		//   >=1.21     we are NESTED. Both 1.21.1 nodes reach this through a `@WrapMethod` on
+		//              `Gui.renderFood`, which vanilla calls from `renderPlayerHealth` — and
+		//              that is exactly the method Skill Proficiencies' own `GuiMixin` wraps
+		//              with `pose().translate(0, -hudShift(), 0)` on 1.21.1-fabric. On
+		//              1.21.1-neoforge it is the same nesting one level out: their
+		//              `RegisterGuiLayersEvent.wrapLayer` translates the whole `FOOD_LEVEL`
+		//              layer, whose body is `renderFoodLevel` -> `renderFood`. Either way the
+		//              pose is ALREADY shifted when this runs, so subtracting again put the
+		//              ring HUD_SHIFT (7 px) above its drumstick — which is what the screenshot
+		//              shows.
+		//   <1.21      we are a SIBLING again, and by a different route: on 1.20.1 there is no
+		//              food method to anchor to at all, so `GuiMixin` (fabric) and
+		//              `ForgeGuiMixin` (forge) both draw at the TAIL of the whole HUD frame,
+		//              outside every wrapped element. Unchanged.
+		//
+		// The rule this leaves behind, and it is NOT a version rule: an element that reads
+		// another mod's HUD offset must know whether it draws INSIDE or BESIDE the thing that
+		// offset moved. Same class of trap as the render-phase one, one level up — nothing
+		// about the arithmetic is version-specific, only the composition the port chose per
+		// node. `ManaHud` is unaffected and stays as it is: its anchor is the hotbar
+		// (`renderItemHotbar` TAIL / the HOTBAR element), which Skill Proficiencies does not
+		// raise, so it is a sibling on every node.
+		//? if >=1.21.11 {
 		int y = client.getWindow().getGuiScaledHeight() - BOTTOM
 				- SpecialitiesBridge.hudShift();
+		//?} elif >=1.21 {
+		/*int y = client.getWindow().getGuiScaledHeight() - BOTTOM;
+		*///?} else {
+		/*int y = client.getWindow().getGuiScaledHeight() - BOTTOM
+				- SpecialitiesBridge.hudShift();
+		*///?}
 
 		for (int i = edge; i < SLOTS; i++) {
 			int x = right - i * STEP - SPRITE;

@@ -1824,6 +1824,76 @@ matching shape.** The repo has now been bitten by this exact family twice on `bl
 (the first is recorded in `HudMixin`'s header, where a six-argument target string was caught by
 the boot instead), and both times the tell was an argument list that still fit.
 
+#### 5.8.4 Stage 7, fourth in-game finding — **another mod's HUD offset is a question about COMPOSITION, not about the version**
+
+**Reported:** on `1.21.1-fabric`, with §5.8.3's fix in, Well Fed's banked-hunger halo finally blits —
+but the rings come out as a row floating **above** the drumsticks instead of outlining them. 26.2 is
+in daily use and outlines them exactly.
+
+**The basis was right. The x half was never in question, and that was measured before anything was
+changed** — because the suspicion on the table was §5.8.3's own family, a parameter list read from
+the wrong side of a boundary. It is not that. From `javap -c` of the 1.21.1 mojmap `Gui`:
+
+```
+renderPlayerHealth(GuiGraphics)V
+  local  9 = guiWidth()  / 2 + 91          the hunger row's RIGHT edge
+  local 10 = guiHeight() - 39              the hunger row's TOP
+  offset 426: renderFood(g, player, iload 10, iload 9)
+renderFood(GuiGraphics, Player, int y, int x)      <- Y THIRD, X FOURTH
+  offset  26: iload_3 -> istore 8          the icon y IS param 3
+  offset 115: iload 4 - j*8 - 9            the icon x IS param 4
+  offset 128/153/178: blitSprite(Identifier, l, k, 9, 9)
+```
+
+`GuiGraphics.guiWidth()`/`guiHeight()` are one-line forwards to
+`Minecraft.getWindow().getGuiScaled{Width,Height}()` on this version, so `BankedHungerHud`'s
+`right = w/2 + 91` and `BOTTOM = 39` already reproduce vanilla's own basis to the pixel, and both
+wrap handlers (`GuiMixin`, `NeoForgeGuiMixin`) already declare `(graphics, player, y, x)` in the
+right order.
+
+**The defect is that the mod subtracts Skill Proficiencies' `HUD_SHIFT` a SECOND time on exactly two
+nodes**, because their raise is a **pose translate** and on those two nodes our draw runs *inside*
+it. Written out, because the whole point is that it is not a version boundary:
+
+| node | where the banked halo draws | where Skill Proficiencies raises | relation |
+|---|---|---|---|
+| `26.2` / `26.1` / `1.21.11` | `HudElementRegistry.attachElementAfter(FOOD_BAR, banked_hunger)` | `replaceElement(FOOD_BAR, …)` | **sibling** — subtract |
+| `1.21.1-fabric` | `@WrapMethod Gui.renderFood` | `@WrapMethod renderPlayerHealth` + `pose().translate(0,-shift,0)` | **NESTED** — do not |
+| `1.21.1-neoforge` | `@WrapMethod Gui.renderFood` (own file, same shared body) | `wrapLayer(FOOD_LEVEL)` + the same translate | **NESTED** — do not |
+| `1.20.1-fabric` | TAIL of `Gui.render(GuiGraphics,F)V` | `@WrapMethod renderPlayerHealth` | **sibling** — subtract |
+| `1.20.1-forge` | TAIL of `ForgeGui.render(GuiGraphics,F)V` | seven wrapped `ForgeGui` methods | **sibling** — subtract |
+
+Vanilla calls `renderFood` from inside `renderPlayerHealth`, and `renderFoodLevel` (the NeoForge
+`FOOD_LEVEL` layer body) calls it too — so on both 1.21.1 nodes the pose is already shifted when our
+handler runs and the ring landed `HUD_SHIFT` = 7 px above its drumstick. Below and above that band
+the mod's own draw is a *sibling* of the raised element and has to apply the shift itself, which is
+what it has always done and what 26.2 proves correct.
+
+**The fix** forks the one statement that computes `y`, on the existing frozen rows, with the
+`>=1.21.11` and `<1.21` arms emitting today's statement character for character and the `>=1.21` arm
+dropping the subtraction. The `SpecialitiesBridge` import is gated with it so no node carries an
+import it never resolves a reference through. **No new predicate, no new call site, no change to
+`ManaHud`** — that one anchors to the hotbar (`renderItemHotbar` TAIL / the `HOTBAR` element), which
+Skill Proficiencies does not raise, so it is a sibling on every node and its own live read stays.
+
+**Gate, measured.** `26.2` / `26.1` / `1.21.11` / `1.20.1-fabric` / `1.20.1-forge`: **0 resource
+differences and 0 changed classes** (244 / 244 / 250 / 240 / 251 instruction-identical). The two
+1.21.1 jars differ in exactly one class, `BankedHungerHud`, by exactly **two instructions removed** —
+`invokestatic SpecialitiesBridge.hudShift:()I` and the `isub` — with every following branch target
+sliding by the same four bytes and nothing else moving.
+
+**The lesson.** §5.8.1 was a *phase*, §5.8.2 a *unit*, §5.8.3 an *arity*; this one is a
+**composition**. `SpecialitiesBridge.hudShift()` is read live and is correct on every node — what
+differs is whether this mod's draw is a SIBLING of the element the other mod moved or is NESTED
+inside it, and the port chose a different answer per node for reasons that had nothing to do with
+this number (there is no `HudElementRegistry` below 1.21.11, and no food method to wrap below 1.21).
+The rule this leaves behind: **an element that reads another mod's HUD offset must state, per node,
+whether it draws inside or beside the thing that offset moved** — a live read is not enough, and a
+pose translate applies to everything downstream of it including handlers that were written as if
+they were peers. Every gate this port runs is blind to it for the same reason as the other three:
+the arithmetic is shared, the bytecode is right, and only a launched client can see where a draw
+ended up.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:
@@ -1834,7 +1904,7 @@ Every stage, without exception:
 4. **`injectors.defaultRequire: 1` on every node's config, both common and client.**
 5. **NEW, no SP precedent — the damage-shaper ordering audit.** Archetypes has 15 `@ModifyVariable`s on one method and they do **not** all commute (§4.2b). Per node, read the transformed `hurtServer`/`hurt` and assert the handler offsets are in source order and that `FlenseMixin` (priority 1500) is last and `DamageTraceMixin` (priority 500) is first. **This is Archetypes' R-07.**
 6. **Cross-mod ordering gate** (Archetypes-only): with Skill Proficiencies also installed, re-verify by bytecode export that `FlenseMixin` still lands after SP's Combat multiplier and stealth crit, and that `UseDurationMixin` still divides out exactly SP's applied Archery reduction. Per node — mixin ordering is not guaranteed by priority docs, which is why `ARCHITECTURE.md` says it was verified by export.
-7. **In-game pass per node family** — not deferred to the end. SP's Stage-5 item-model bug and Stage-6 missing-Forge-client-bootstrap were both in-game-only, and Archetypes' client half is 3× the risk. **At more than one GUI scale** (§5.8.2): a screen is measured in GUI-scaled pixels, every gate here is scale-blind, and the first in-game pass ran at one scale and passed a screen that drew no node icons at another.
+7. **In-game pass per node family** — not deferred to the end. SP's Stage-5 item-model bug and Stage-6 missing-Forge-client-bootstrap were both in-game-only, and Archetypes' client half is 3× the risk. **At more than one GUI scale** (§5.8.2): a screen is measured in GUI-scaled pixels, every gate here is scale-blind, and the first in-game pass ran at one scale and passed a screen that drew no node icons at another. **With Skill Proficiencies installed and its HUD bar both ON and OFF** (§5.8.4): `SpecialitiesBridge.hudShift()` is 0 with the bar hidden, so a node that double-counts the shift looks perfect in that state and only misdraws in the other.
 8. **At the end: balance-parity review + Tuning-propagation proof.** `Tuning.java` is 1,653 lines with **verified zero `net.minecraft`/`net.fabricmc` imports** — the ideal oracle, exactly SP's. Proof: a 1-character edit changes that value in all seven `Tuning.class` files and **nothing else changes** (whole-class `javap` diff, constant-pool indices normalised). Plus an adversarial per-node behavioural review against 26.2 — **R-20's lesson is that every build-shaped gate passed while four behavioural regressions sat in one re-rooted event.** Archetypes has *three* re-rootings queued (knockback, `EnchantmentHelper.processDurabilityChange`, the `ALL_TRACKING` sync) plus one excision, so budget this review generously.
 
 ### 5.10 Conflict analysis for parallel lanes
