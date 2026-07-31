@@ -130,7 +130,9 @@ public final class ArchetypeCommands {
 						.then(setCommand())
 						.then(levelCommand())
 						.then(buyCommand())
-						.then(dummyCommand())
+						// dummyCommand() deliberately NOT registered in shipped builds —
+						// the user's pre-publish rule (2026-07-26). The implementation
+						// stays for dev sessions: re-add the line to test.
 						.then(traceCommand())));
 
 		// The dummy's nameplate is its health readout, and this is the cheapest
