@@ -170,4 +170,54 @@ public abstract class PlayerMixin {
 		}
 	}
 	*///?}
+
+	// ---- The sweep leg of the same stash: STAGE 3 CLOSES STAGE 2's RESIDUE. ----
+	//
+	// Stage 2 wrapped three sites (hurtServer x2, Player.attack -> causeExtraKnockback) and
+	// left `Player.doSweepAttack` open, on the argument that vanilla only sweeps with a
+	// sweeping-ratio weapon so no dagger, fist or spell reaches it. That argument covers four
+	// of the impl's five behaviours and NOT the fifth: the three global pulse flags
+	// (`BlizzardZones.isPulsing`, `SlayerTicker.isBleeding`, `RadianceAura.isPulsing`) are
+	// read for ANY non-null source. On 26.2 a sweep's knockback carries a source, so a sweep
+	// swung during a Blizzard/Rend/Radiance pulse is zeroed; below 26.2, with nothing stashed,
+	// `KnockbackSource.current()` is null and the impl returns early with the shove intact.
+	// That is a real, if narrow, balance divergence, and it is why the handover said to close
+	// it here rather than reason about it four more times.
+	//
+	// MEASURED, on 26.1.2 AND 1.21.11 (`javap -c` on both mojmap `Player`s): `doSweepAttack`
+	// has the identical descriptor `(Entity, float, DamageSource, float)V` on both, and each
+	// contains EXACTLY ONE `LivingEntity.knockback(DDD)V`, at the same offset 222. The
+	// DamageSource is a parameter, so this needs no `@Local` — the four target args are
+	// captured after the Operation.
+	//
+	// WHY THE PREDICATE IS A CONJUNCTION and not a bare `<26.2`: 1.21.1 and 1.20.1 do not have
+	// this method at all. They spell it `Player.sweepAttack()`, with NO parameters and
+	// therefore no source in scope (measured on both). So this arm covers exactly the two
+	// nodes whose sweep carries a source but whose knockback does not, and the 1.21.1/1.20.1
+	// sweep leg stays an open item for Stage 4 — where it needs a different re-rooting, not
+	// this one with a different descriptor.
+	//
+	// Ordering inside the target is safe by construction: the `hurtServer` call at offset 184
+	// runs to completion (with LivingEntityMixin's own push/pop around ITS knockback) before
+	// the sweep's own knockback at 222, and push/pop is save-and-restore.
+	//? if >=1.21.11 && <26.2 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "doSweepAttack(Lnet/minecraft/world/entity/Entity;FLnet/minecraft/world/damagesource/DamageSource;F)V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"))
+	private void archetypes$stashSweepKnockback(final net.minecraft.world.entity.LivingEntity victim,
+			final double strength, final double x, final double z,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
+			final net.minecraft.world.entity.Entity target, final float damage,
+			final net.minecraft.world.damagesource.DamageSource source, final float sweepRatio) {
+		net.minecraft.world.damagesource.DamageSource previous =
+				com.archetypes.KnockbackSource.push(source);
+
+		try {
+			original.call(victim, strength, x, z);
+		} finally {
+			com.archetypes.KnockbackSource.pop(previous);
+		}
+	}
+	*///?}
 }

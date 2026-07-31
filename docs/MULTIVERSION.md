@@ -465,6 +465,7 @@ two frozen ones, not a synonym.
 | `Level.getDayTime()` | **`getOverworldClockTime()`** (26.x moved the clock behind `WorldClock` holders) | `getDayTime()` | `ShadowTicker.isNight` |
 | `Player.displayClientMessage(Component, boolean)` | **`sendOverlayMessage(Component)`** | `displayClientMessage(c, true)` | `NightForm`, `SkillTokenItem`, `SpellcastingTomeItem` |
 | `BlocksAttacks.bypassedBy()` | `Optional<HolderSet<DamageType>>` | **`Optional<TagKey<DamageType>>`** | `ColossusProtector`. `DamageSource.is(TagKey)` exists on every node, so the legacy arm is a direct read |
+| `Player.doSweepAttack(Entity,float,DamageSource,float)` | present | present on 1.21.11 with the SAME descriptor, **absent on 1.21.1 and 1.20.1** — they spell it `sweepAttack()`, no parameters and no source in scope | the sweep knockback stash, §5.4.1. This is why that block's predicate is the conjunction `>=1.21.11 && <26.2` rather than a bare `<26.2` |
 *fabric-api:*
 
 | API | `>=26.1` | below | Used by |
