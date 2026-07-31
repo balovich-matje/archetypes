@@ -3,16 +3,16 @@ package com.archetypes.client;
 import java.util.List;
 
 import com.archetypes.Archetype;
-import com.archetypes.BuyNodePayload;
 import com.archetypes.Constellation;
 import com.archetypes.NodePurchases;
 import com.archetypes.ProtectorNodes;
-import com.archetypes.ResetArchetypePayload;
 import com.archetypes.SkillPoints;
 import com.archetypes.SubTree;
 import com.archetypes.TreeNodes;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -154,7 +154,7 @@ public class ArchetypeScreen extends Screen {
 		}
 
 		this.addRenderableWidget(Button.builder(Component.translatable("screen.archetypes.tree.reset"), button -> {
-					ClientPlayNetworking.send(new ResetArchetypePayload());
+					Net.INSTANCE.sendToServer(WireId.RESET_ARCHETYPE, buf -> { });
 					this.minecraft.gui.setScreen(new ArchetypePickerScreen(this.parent));
 				})
 				.bounds(this.panelLeft() + this.panelWidth() - PAD - BUTTON_WIDTH, buttonY,
@@ -304,7 +304,10 @@ public class ArchetypeScreen extends Screen {
 
 		// Client-side check is a courtesy; the server re-runs all of it.
 		if (NodePurchases.check(this.minecraft.player, tree, hit.index()) == NodePurchases.Verdict.BUYABLE) {
-			ClientPlayNetworking.send(new BuyNodePayload(tree.id(), hit.index()));
+			Net.INSTANCE.sendToServer(WireId.BUY_NODE, buf -> {
+				buf.writeUtf(tree.id());
+				buf.writeVarInt(hit.index());
+			});
 		}
 
 		return true;

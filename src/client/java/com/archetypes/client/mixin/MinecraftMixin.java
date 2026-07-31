@@ -1,11 +1,12 @@
 package com.archetypes.client.mixin;
 
-import com.archetypes.MeleeSwingPayload;
 import com.archetypes.WeaponClass;
 
 import com.archetypes.platform.ArchetypeStore;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.world.phys.HitResult;
@@ -61,7 +62,7 @@ public abstract class MinecraftMixin {
 			return;
 		}
 
-		ClientPlayNetworking.send(new MeleeSwingPayload());
+		Net.INSTANCE.sendToServer(WireId.MELEE_SWING, buf -> { });
 	}
 
 	/**

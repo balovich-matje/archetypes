@@ -4,9 +4,10 @@ import com.archetypes.ColossusSlayerNodes.Family;
 import com.archetypes.mixin.LivingEntityAccessor;
 
 import com.archetypes.platform.ArchetypeStore;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
@@ -662,7 +663,7 @@ public final class ColossusSlayer {
 	 */
 	private static void setSwingTicker(final ServerPlayer player, final int ticker) {
 		applySwingTicker(player, ticker);
-		ServerPlayNetworking.send(player, new ParrySwingPayload(ticker));
+		Net.INSTANCE.sendToClient(player, WireId.PARRY_SWING, buf -> buf.writeVarInt(ticker));
 	}
 
 	/** The write itself, shared with the client's payload handler so the two

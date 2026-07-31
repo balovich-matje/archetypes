@@ -1,19 +1,21 @@
 package com.archetypes.client;
 
-import com.archetypes.ActiveAbilityPayload;
+import java.util.Map;
+
 import com.archetypes.Archetype;
 import com.archetypes.ModState;
 import com.archetypes.ModEntities;
 import com.archetypes.NodePurchases;
-import com.archetypes.SpellChannelPayload;
 import com.archetypes.SubTree;
 import com.archetypes.client.mixin.AbstractContainerScreenAccessor;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
+
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
@@ -21,6 +23,7 @@ import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
@@ -108,7 +111,8 @@ public class ArchetypesClient implements ClientModInitializer {
 				// is not down NOW, so it cannot be a repeat); several clicks
 				// in one tick collapse to one payload.
 				if (clicked && !(held && ABILITY_KEY_HELD[slot]) && client.player != null) {
-					ClientPlayNetworking.send(new ActiveAbilityPayload(slot));
+					final int pressed = slot;
+					Net.INSTANCE.sendToServer(WireId.ACTIVE_ABILITY, buf -> buf.writeVarInt(pressed));
 				}
 
 				ABILITY_KEY_HELD[slot] = held;
@@ -139,7 +143,7 @@ public class ArchetypesClient implements ClientModInitializer {
 
 				if (com.archetypes.ElementalistNodes.rank(SubTree.ELEMENTALIST, owned,
 						com.archetypes.ElementalistNodes.Family.FLAMETHROWER) > 0) {
-					ClientPlayNetworking.send(new SpellChannelPayload());
+					Net.INSTANCE.sendToServer(WireId.SPELL_CHANNEL, buf -> { });
 				}
 			}
 
@@ -149,7 +153,7 @@ public class ArchetypesClient implements ClientModInitializer {
 			if (client.player != null && client.player.isShiftKeyDown()
 					&& com.archetypes.NightForm.isActive(client.player)) {
 				while (client.options.keySprint.consumeClick()) {
-					ClientPlayNetworking.send(new com.archetypes.NightDashPayload());
+					Net.INSTANCE.sendToServer(WireId.NIGHT_DASH, buf -> { });
 				}
 			}
 
@@ -157,7 +161,7 @@ public class ArchetypesClient implements ClientModInitializer {
 			// consumed while blocking, so normal sprinting is untouched.
 			if (client.player != null && client.player.isBlocking()) {
 				while (client.options.keySprint.consumeClick()) {
-					ClientPlayNetworking.send(new com.archetypes.RushPayload());
+					Net.INSTANCE.sendToServer(WireId.RUSH, buf -> { });
 				}
 			}
 
@@ -187,7 +191,7 @@ public class ArchetypesClient implements ClientModInitializer {
 			if (drawingBow) {
 				while (client.options.keySprint.consumeClick()) {
 					if (wasDrawingBow) {
-						ClientPlayNetworking.send(new com.archetypes.DisengagePayload());
+						Net.INSTANCE.sendToServer(WireId.DISENGAGE, buf -> { });
 					}
 				}
 			}
@@ -255,18 +259,27 @@ public class ArchetypesClient implements ClientModInitializer {
 					}
 				});
 
-		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.PassiveProcPayload.TYPE,
-				(payload, context) -> context.client().execute(() -> ProcIndicatorHud.push(payload)));
-
-		// What a parry did to the swing timer. The server already wrote its own
-		// copy; this keeps the crosshair's charge indicator, and the mod's own
-		// "no half-charged flicks" gate in MinecraftMixin, telling the truth.
-		ClientPlayNetworking.registerGlobalReceiver(com.archetypes.ParrySwingPayload.TYPE,
-				(payload, context) -> context.client().execute(() -> {
-					if (context.player() != null) {
-						com.archetypes.ColossusSlayer.applySwingTicker(context.player(),
-								payload.ticker());
-					}
+		// The two clientbound channels, handed down to the seam so registration itself
+		// stays in common init on every loader (see Net#clientReceivers). Each sink
+		// schedules its own hop onto the client thread — the buffer is ours, so a
+		// deferred read of it is safe. The second one is what a parry did to the swing
+		// timer: the server already wrote its own copy, and this keeps the crosshair's
+		// charge indicator, and the mod's own "no half-charged flicks" gate in
+		// MinecraftMixin, telling the truth.
+		Net.INSTANCE.clientReceivers(Map.of(
+				WireId.PASSIVE_PROC, buf -> {
+					String subTreeId = buf.readUtf();
+					String family = buf.readUtf();
+					Minecraft.getInstance().execute(() -> ProcIndicatorHud.push(subTreeId, family));
+				},
+				WireId.PARRY_SWING, buf -> {
+					int ticker = buf.readVarInt();
+					Minecraft.getInstance().execute(() -> {
+						if (Minecraft.getInstance().player != null) {
+							com.archetypes.ColossusSlayer.applySwingTicker(
+									Minecraft.getInstance().player, ticker);
+						}
+					});
 				}));
 
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {

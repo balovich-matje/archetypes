@@ -1,8 +1,10 @@
 package com.archetypes;
 
+import com.archetypes.platform.ArchetypeStore;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
+
 import net.fabricmc.api.ModInitializer;
-import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,45 +44,36 @@ public class Archetypes implements ModInitializer {
 		// Idle until somebody with permission level 2 asks for it.
 		ArchetypeCommands.initialize();
 
-		PayloadTypeRegistry.clientboundPlay().register(PassiveProcPayload.TYPE, PassiveProcPayload.CODEC);
-		PayloadTypeRegistry.clientboundPlay().register(ParrySwingPayload.TYPE, ParrySwingPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(PickArchetypePayload.TYPE, PickArchetypePayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(ResetArchetypePayload.TYPE, ResetArchetypePayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(BuyNodePayload.TYPE, BuyNodePayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(ActiveAbilityPayload.TYPE, ActiveAbilityPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(SpellChannelPayload.TYPE, SpellChannelPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(MeleeSwingPayload.TYPE, MeleeSwingPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(RushPayload.TYPE, RushPayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(DisengagePayload.TYPE, DisengagePayload.CODEC);
-		PayloadTypeRegistry.serverboundPlay().register(NightDashPayload.TYPE, NightDashPayload.CODEC);
+		// All eleven channel types, both directions, in one call — a dedicated server
+		// registers the clientbound pair too, which is why this cannot live client-side.
+		Net.INSTANCE.registerAll();
 
-		ServerPlayNetworking.registerGlobalReceiver(BuyNodePayload.TYPE, (payload, context) -> context
-				.server().execute(() -> {
-					SubTree tree = SubTree.byId(payload.subTreeId());
+		Net.INSTANCE.onServerbound(WireId.BUY_NODE, (player, buf) -> {
+			SubTree tree = SubTree.byId(buf.readUtf());
+			int node = buf.readVarInt();
 
-					// Only spend into trees of the archetype you actually are.
-					if (tree == null || ModState.get(context.player()) != tree.archetype()) {
-						return;
-					}
+			// Only spend into trees of the archetype you actually are.
+			if (tree == null || ModState.get(player) != tree.archetype()) {
+				return;
+			}
 
-					NodePurchases.buy(context.player(), tree, payload.node());
-				}));
+			NodePurchases.buy(player, tree, node);
+		});
 
 		// The three ability keys are slots, one per sub-tree in screen order;
 		// what a slot casts depends on the archetype. Strength trees keep
 		// their internal weapon dispatch (the capstone pairs are exclusive).
-		ServerPlayNetworking.registerGlobalReceiver(ActiveAbilityPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> {
-					var player = context.player();
+		Net.INSTANCE.onServerbound(WireId.ACTIVE_ABILITY, (player, buf) -> {
+					int slot = buf.readVarInt();
 					Archetype archetype = ModState.get(player);
 
-					if (archetype == null || payload.slot() < 0 || payload.slot() >= 7) {
+					if (archetype == null || slot < 0 || slot >= 7) {
 						return;
 					}
 
 					// Slot 3 is the capstone key — Elementalist-only for now,
 					// with room for more trees in later versions.
-					if (payload.slot() == 3) {
+					if (slot == 3) {
 						if (archetype == Archetype.INTELLECT) {
 							SeekerSpells.castElementalistCapstone(player);
 						}
@@ -92,7 +85,7 @@ public class Archetypes implements ModInitializer {
 					// an epic tree takes slot 4 + N, where N is its base tree's
 					// place in SubTree.of. Two trees on one slot never collide,
 					// because they belong to different archetypes.
-					if (payload.slot() == 4) {
+					if (slot == 4) {
 						if (archetype == Archetype.INTELLECT) {
 							OracleSpells.lightningStrike(player);
 						} else if (archetype == Archetype.AGILITY) {
@@ -102,7 +95,7 @@ public class Archetypes implements ModInitializer {
 						return;
 					}
 
-					if (payload.slot() == 5) {
+					if (slot == 5) {
 						if (archetype == Archetype.INTELLECT) {
 							OracleSpells.magicArmaments(player);
 						} else if (archetype == Archetype.AGILITY) {
@@ -114,7 +107,7 @@ public class Archetypes implements ModInitializer {
 						return;
 					}
 
-					if (payload.slot() == 6) {
+					if (slot == 6) {
 						if (archetype == Archetype.AGILITY) {
 							NightForm.beginRitual(player);
 						} else if (archetype == Archetype.STRENGTH) {
@@ -124,7 +117,7 @@ public class Archetypes implements ModInitializer {
 						return;
 					}
 
-					switch (SubTree.of(archetype).get(payload.slot())) {
+					switch (SubTree.of(archetype).get(slot)) {
 						case PROTECTOR -> ShieldBash.execute(player);
 						case SLAYER -> {
 							if (ModItems.isGreatsword(player.getMainHandItem())) {
@@ -147,19 +140,16 @@ public class Archetypes implements ModInitializer {
 						case WIZARD -> SeekerSpells.castMissile(player);
 						case PRIEST -> SeekerSpells.castHolyLight(player);
 					}
-				}));
+		});
 
-		ServerPlayNetworking.registerGlobalReceiver(SpellChannelPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> SeekerSpells.channelFlame(context.player())));
+		Net.INSTANCE.onServerbound(WireId.SPELL_CHANNEL,
+				(player, buf) -> SeekerSpells.channelFlame(player));
 
-		ServerPlayNetworking.registerGlobalReceiver(RushPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> ShieldRush.execute(context.player())));
+		Net.INSTANCE.onServerbound(WireId.RUSH, (player, buf) -> ShieldRush.execute(player));
 
-		ServerPlayNetworking.registerGlobalReceiver(DisengagePayload.TYPE, (payload, context) -> context
-				.server().execute(() -> AgilityActives.acrobatics(context.player())));
+		Net.INSTANCE.onServerbound(WireId.DISENGAGE, (player, buf) -> AgilityActives.acrobatics(player));
 
-		ServerPlayNetworking.registerGlobalReceiver(NightDashPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> NightForm.dash(context.player())));
+		Net.INSTANCE.onServerbound(WireId.NIGHT_DASH, (player, buf) -> NightForm.dash(player));
 
 		// The greatsword is strictly two-handed: while it's in the main hand
 		// the offhand is dead weight — no shields, no food, no blocks from it.
@@ -177,10 +167,7 @@ public class Archetypes implements ModInitializer {
 		// Custom swing poses were deprecated (see notes/design.md — Better
 		// Combat compat), but the slab still announces itself: a deep whoosh
 		// under every charged greatsword swing.
-		ServerPlayNetworking.registerGlobalReceiver(MeleeSwingPayload.TYPE, (payload, context) -> context
-				.server().execute(() -> {
-					var player = context.player();
-
+		Net.INSTANCE.onServerbound(WireId.MELEE_SWING, (player, buf) -> {
 					if (WeaponClass.of(player) == WeaponClass.GREATSWORD) {
 						player.level().playSound(null, player.getX(), player.getY(), player.getZ(),
 								net.minecraft.sounds.SoundEvents.PLAYER_ATTACK_SWEEP,
@@ -191,23 +178,21 @@ public class Archetypes implements ModInitializer {
 					if (ModItems.isMagicSword(player.getMainHandItem())) {
 						MagicArmaments.blink(player);
 					}
-				}));
+		});
 
-		ServerPlayNetworking.registerGlobalReceiver(PickArchetypePayload.TYPE, (payload, context) -> {
-			Archetype picked = Archetype.byId(payload.archetypeId()).orElse(null);
+		Net.INSTANCE.onServerbound(WireId.PICK_ARCHETYPE, (player, buf) -> {
+			Archetype picked = Archetype.byId(buf.readUtf()).orElse(null);
 
 			if (picked == null) {
 				return;
 			}
 
-			context.server().execute(() -> {
-				// One pick for now: ignore attempts to re-pick until we decide
-				// whether (and at what cost) an archetype can be changed.
-				if (ModState.get(context.player()) == null) {
-					ModState.set(context.player(), picked);
-					LOGGER.info("{} chose the {} archetype", context.player().getName().getString(), picked.id());
-				}
-			});
+			// One pick for now: ignore attempts to re-pick until we decide
+			// whether (and at what cost) an archetype can be changed.
+			if (ModState.get(player) == null) {
+				ModState.set(player, picked);
+				LOGGER.info("{} chose the {} archetype", player.getName().getString(), picked.id());
+			}
 		});
 
 		// Fresh advancement count each login (self-heals staleness), and the
@@ -217,7 +202,7 @@ public class Archetypes implements ModInitializer {
 					// A no-op on every node whose platform syncs attached state itself
 					// (all of them today). It is the whole of the client's state on the
 					// nodes that have no such thing — see ArchetypeStore#resyncAll.
-					com.archetypes.platform.ArchetypeStore.INSTANCE.resyncAll(handler.player);
+					ArchetypeStore.INSTANCE.resyncAll(handler.player);
 					SkillPoints.refreshAdvancementCount(handler.player);
 					SkillPoints.ensureBankCoversSpent(handler.player);
 					// A Magic Armaments channel that outlived its server hands the
@@ -255,17 +240,16 @@ public class Archetypes implements ModInitializer {
 					return true;
 				});
 
-		ServerPlayNetworking.registerGlobalReceiver(ResetArchetypePayload.TYPE, (payload, context) -> context
-				.server().execute(() -> {
-					// The client only shows this button in creative, but the client
-					// is not to be trusted about game mode — check it here.
-					if (!context.player().isCreative()) {
-						return;
-					}
+		Net.INSTANCE.onServerbound(WireId.RESET_ARCHETYPE, (player, buf) -> {
+			// The client only shows this button in creative, but the client
+			// is not to be trusted about game mode — check it here.
+			if (!player.isCreative()) {
+				return;
+			}
 
-					ModState.clear(context.player());
-					LOGGER.info("{} reset their archetype", context.player().getName().getString());
-				}));
+			ModState.clear(player);
+			LOGGER.info("{} reset their archetype", player.getName().getString());
+		});
 
 		LOGGER.info("Archetypes initialized");
 	}

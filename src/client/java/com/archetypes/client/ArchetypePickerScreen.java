@@ -1,11 +1,12 @@
 package com.archetypes.client;
 
 import com.archetypes.Archetype;
-import com.archetypes.PickArchetypePayload;
 import com.archetypes.SubTree;
 import com.archetypes.TreeNodes;
 
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -180,7 +181,7 @@ public class ArchetypePickerScreen extends Screen {
 		this.minecraft.gui.setScreen(new ConfirmScreen(
 				confirmed -> {
 					if (confirmed) {
-						ClientPlayNetworking.send(new PickArchetypePayload(picked.id()));
+						Net.INSTANCE.sendToServer(WireId.PICK_ARCHETYPE, buf -> buf.writeUtf(picked.id()));
 						// Straight into the new tree rather than back to the
 						// inventory. Passing `picked` rather than reading the
 						// attachment: the server owns it and the sync has not

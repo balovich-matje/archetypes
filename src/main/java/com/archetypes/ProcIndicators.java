@@ -1,6 +1,8 @@
 package com.archetypes;
 
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.archetypes.platform.Net;
+import com.archetypes.state.WireId;
+
 import net.minecraft.server.level.ServerPlayer;
 
 /**
@@ -13,6 +15,9 @@ public final class ProcIndicators {
 	}
 
 	public static void send(final ServerPlayer player, final SubTree tree, final Enum<?> family) {
-		ServerPlayNetworking.send(player, new PassiveProcPayload(tree.id(), family.name()));
+		Net.INSTANCE.sendToClient(player, WireId.PASSIVE_PROC, buf -> {
+			buf.writeUtf(tree.id());
+			buf.writeUtf(family.name());
+		});
 	}
 }

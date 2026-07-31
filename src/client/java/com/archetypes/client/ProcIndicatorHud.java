@@ -5,7 +5,6 @@ import java.util.Deque;
 import java.util.Iterator;
 import java.util.concurrent.ThreadLocalRandom;
 
-import com.archetypes.PassiveProcPayload;
 import com.archetypes.ProtectorNodes;
 import com.archetypes.SlayerNodes;
 
@@ -43,7 +42,7 @@ public final class ProcIndicatorHud {
 	private ProcIndicatorHud() {
 	}
 
-	public static void push(final PassiveProcPayload payload) {
+	public static void push(final String subTreeId, final String familyName) {
 		Identifier sprite;
 		int size;
 		ItemStack item = ItemStack.EMPTY;
@@ -51,8 +50,8 @@ public final class ProcIndicatorHud {
 		// The indicator wears the skill tree's own icon for the family: the
 		// Slayer families are full sprites, the Protector ones are the real
 		// item render with the effect layer over it.
-		if ("slayer".equals(payload.subTreeId())) {
-			var family = SlayerNodes.Family.valueOf(payload.family());
+		if ("slayer".equals(subTreeId)) {
+			var family = SlayerNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.SLAYER, family);
 			size = 32;
 
@@ -60,8 +59,8 @@ public final class ProcIndicatorHud {
 				sprite = family.sprite();
 				size = family.spriteSize();
 			}
-		} else if ("crusher".equals(payload.subTreeId())) {
-			var family = com.archetypes.CrusherNodes.Family.valueOf(payload.family());
+		} else if ("crusher".equals(subTreeId)) {
+			var family = com.archetypes.CrusherNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.CRUSHER, family);
 			size = 32;
 
@@ -74,10 +73,10 @@ public final class ProcIndicatorHud {
 				Item base = family.icon();
 				item = base == null ? ItemStack.EMPTY : new ItemStack(base);
 			}
-		} else if ("wizard".equals(payload.subTreeId())) {
+		} else if ("wizard".equals(subTreeId)) {
 			// The wizard flash wears the same bake-off sprite the tree
 			// screen shows, so the proc display follows TEST_ICON_SET.
-			var family = com.archetypes.WizardNodes.Family.valueOf(payload.family());
+			var family = com.archetypes.WizardNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(com.archetypes.SubTree.WIZARD, family);
 			size = 32;
 
@@ -85,25 +84,25 @@ public final class ProcIndicatorHud {
 				Item base = family.icon();
 				item = base == null ? ItemStack.EMPTY : new ItemStack(base);
 			}
-		} else if ("colossus_crusher".equals(payload.subTreeId())) {
+		} else if ("colossus_crusher".equals(subTreeId)) {
 			// The epic tree ships a complete 32px set, so there is no item or
 			// overlay fallback to walk — the sprite is the whole resolution.
-			var family = com.archetypes.ColossusCrusherNodes.Family.valueOf(payload.family());
+			var family = com.archetypes.ColossusCrusherNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(
 					com.archetypes.SubTree.COLOSSUS_CRUSHER, family);
 			size = 32;
-		} else if ("colossus_slayer".equals(payload.subTreeId())) {
-			var family = com.archetypes.ColossusSlayerNodes.Family.valueOf(payload.family());
+		} else if ("colossus_slayer".equals(subTreeId)) {
+			var family = com.archetypes.ColossusSlayerNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(
 					com.archetypes.SubTree.COLOSSUS_SLAYER, family);
 			size = 32;
-		} else if ("colossus_protector".equals(payload.subTreeId())) {
-			var family = com.archetypes.ColossusProtectorNodes.Family.valueOf(payload.family());
+		} else if ("colossus_protector".equals(subTreeId)) {
+			var family = com.archetypes.ColossusProtectorNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(
 					com.archetypes.SubTree.COLOSSUS_PROTECTOR, family);
 			size = 32;
-		} else if ("nemesis_assassin".equals(payload.subTreeId())) {
-			var family = com.archetypes.NemesisAssassinNodes.Family.valueOf(payload.family());
+		} else if ("nemesis_assassin".equals(subTreeId)) {
+			var family = com.archetypes.NemesisAssassinNodes.Family.valueOf(familyName);
 			sprite = com.archetypes.TreeNodes.familySprite(
 					com.archetypes.SubTree.NEMESIS_ASSASSIN, family);
 			size = 32;
@@ -115,7 +114,7 @@ public final class ProcIndicatorHud {
 			ProtectorNodes.Family family = null;
 
 			for (ProtectorNodes.Family candidate : ProtectorNodes.Family.values()) {
-				if (candidate.name().equals(payload.family())) {
+				if (candidate.name().equals(family)) {
 					family = candidate;
 					break;
 				}
