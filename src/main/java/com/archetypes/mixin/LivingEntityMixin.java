@@ -1154,38 +1154,12 @@ public abstract class LivingEntityMixin {
 		return 0.0F;
 	}
 
-	/**
-	 * Hardened: a blow taken plates the Colossus for two or four seconds, +1
-	 * with a mace and +2 bare-fisted, and the plates stack without ever
-	 * refreshing each other.
-	 *
-	 * <p>At RETURN, not at HEAD like the rest of this file, and it is the one
-	 * hook here that wants to be: every other hook shapes or cancels the hit
-	 * and so has to run before vanilla resolves it, while this one asks a
-	 * question only the finished call can answer — {@code hurtServer} returns
-	 * true exactly when damage was actually taken, so an i-frame'd or fully
-	 * refused hit hands out no plate. Lethal hits still count (the method
-	 * returns true for them), which is why this is not an AFTER_DAMAGE listener.
-	 *
-	 * <p>{@link com.archetypes.Hardened#onHurt} owns the rest of the test —
-	 * the rank, the weapon, and the "an entity must have thrown it" clause that
-	 * keeps fire, fall and drowning out.
-	 */
-	@Inject(method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z", at = @At("RETURN"))
-	private void archetypes$hardened(final ServerLevel level, final DamageSource source,
-			final float amount,
-			final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
-		archetypes$hardenedImpl(source, cir);
-	}
-
-	/** Shared implementation of {@link #archetypes$hardened}. */
-	@Unique
-	private void archetypes$hardenedImpl(final DamageSource source, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
-		if ((Object) this instanceof ServerPlayer player
-				&& Boolean.TRUE.equals(cir.getReturnValue())) {
-			com.archetypes.Hardened.onHurt(player, source);
-		}
-	}
+	// Hardened's `hurtServer` RETURN hook used to live here. It moved to
+	// mixin/HardenedMixin so its ORDER against Fabric API's own AFTER_DAMAGE
+	// handler — which lands on the same RETURN at the same default priority —
+	// is a stated number instead of a load-order coin flip. Same reason
+	// DamageTraceMixin is its own class; the javadoc there and there explains
+	// both directions.
 
 	/**
 	 * An unstoppable force has met an immovable object. Neither node wins: the
