@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "category": "equipment",
+  "key": {
+    "S": {
+      "item": "minecraft:nether_star"
+    },
+    "#": {
+      "item": "minecraft:netherite_ingot"
+    }
+  },
+  "pattern": [
+    "S",
+    "#",
+    "#"
+  ],
+  "result": {
+    "item": "archetypes:oracle_wand"
+  }
+}
