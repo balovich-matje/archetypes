@@ -1384,6 +1384,83 @@ shape, and **exactly the 20 recipe resources changed** — the R-B9 fix and noth
 
 ⚠ **The two loader nodes are the only place Archetypes' 5 PAL drivers have a NeoForge artifact (`ReDTdA0C`) and, on Forge, none at all** — so `1.20.1-forge` inherits `1.20.1-fabric`'s animation decision automatically, and `1.21.1-neoforge` inherits `1.21.1-fabric`'s 1.1.x source fork.
 
+#### 5.7.1 Stage 6 groundwork, as landed — the scaffold, and the two lanes it opens
+
+Four commits, mirroring Skill Proficiencies' own Stage-6 groundwork (`653fc5b`, `3213a15`, `b0a4ea4`, `2201836`) file for file:
+
+1. **buildSrc** — the NeoForge artifact mutex, from the template (R-14).
+2. **Register `1.21.1-neoforge`** — bottleneck files + `build.neoforge.gradle.kts`.
+3. **Register `1.20.1-forge`** — bottleneck files + `build.forge.gradle.kts` + `versions/1.20.1-forge/gradle.properties`.
+4. **Shared-tree loader forks** — 41 files, wiring only.
+
+**R-01 was already handled** (the `[fabric]` table) and is now proven in the real tree rather than in a probe: at configure, the five Fabric nodes print `Fabric Loom: 1.17.17`, `1.20.1-forge` prints `Architectury Loom: 1.17.491`, and `1.21.1-neoforge` prints no loom at all.
+
+**Gate at every commit, all four green:** five Fabric nodes build; every class instruction-identical and every resource byte-identical to the pre-Stage-6 jars (244 / 244 / 250 / 250 / 240 classes; 385 / 385 / 385 / 361 / 359 resources; +0/-0 shape); both loader nodes' `stonecutterGenerate` + `stonecutterGenerateClient` green; **zero live `net.fabricmc` references anywhere in either loader node's generated tree**, outside the `Fabric*.java` their node scripts exclude by glob.
+
+##### The event helpers the two lanes must write
+
+SP's ten give **five reused unchanged** — `playerJoin`, `endServerTick`, item registration, `creativeTabOutput`, `registerCommands` — plus its three client screen helpers (`afterScreenInit`, `addWidget`, `afterScreenTick`), because the bookmark surface is the same one. **Twelve are new**, and every one of them has its contract written at the call site rather than left to be inferred:
+
+| Helper | Sites | Contract the caller depends on |
+|---|---|---|
+| `allowDeath` | 2 | **false = the entity SURVIVES at current health**, not that damage was voided. Carries Last Shadow. An inverted helper is an immortality bug. |
+| `afterDeath` | 4 | fires once, server-side, after the death is final. Same `LivingDeathEvent` as `allowDeath` on both loaders — post must not fire when the death was cancelled. Must support several listeners in registration order. |
+| `entityLoad` | 2 | once per entity added to a **server** level; the `tickCount > 0` filter stays in the shared body. |
+| `serverStopped` / `serverStopping` | 1 + 1 | genuinely different events. `PENDING.clear()` needs STOPPING (while the server still owns the schedule); the bleed list needs STOPPED. |
+| `denyUseItem` / `denyUseBlock` | 1 + 1 | a **deny** predicate — the loaders' interact events are cancellable and have no result to return. `true` cancels that hand and nothing else. |
+| `brewingRecipes` | 2 | takes `platform/BrewingSink`, so the loader axis shares ONE copy of the recipe table. |
+| `creativeTabBuilder` | 1 | returns a `CreativeModeTab.Builder`; the whole title/icon/`displayItems` chain stays shared. |
+| `endClientTick` | 6 files | **LexForge's `TickEvent.ClientTickEvent` fires TWICE per tick.** An unchecked phase drains every `consumeClick` twice and sends two payloads per keypress. |
+| `registerKeyMapping` | 7 keys | must return **the same instance**, or seven keys are bound in the controls screen and dead in game. |
+| `entityRenderer`, `particleProvider` | 1 + 1 | MOD event bus, client side. |
+
+`afterDamage` is **not** in that list for the Forge node: `platform/LegacyDamageEvents` is a `<1.20.5` whole-file unit, so `1.20.1-forge` already has it, and the shared `LivingEntityMixin.archetypes$afterDamage` already fires it on the same `hurt(DamageSource,F)Z`. Only NeoForge needs a helper.
+
+##### Ownership — 6a and 6b are disjoint
+
+**Stage 6a owns `1.21.1-neoforge`:**
+
+```
+build.neoforge.gradle.kts                                    (edit)
+src/main/java/com/archetypes/platform/NeoForgeArchetypeStore.java
+src/main/java/com/archetypes/platform/NeoForgeNet.java
+src/main/java/com/archetypes/platform/NeoForgePlatform.java
+src/main/java/com/archetypes/platform/NeoForgeEvents.java
+src/main/java/com/archetypes/platform/ArchetypesNeoForge.java        @Mod entrypoint
+src/client/java/com/archetypes/client/NeoForgeClientEvents.java
+src/client/java/com/archetypes/client/NeoForge*.java                 the second, Dist.CLIENT entrypoint
+versions/1.21.1-neoforge/src/**                                      every per-node override
+```
+
+**Stage 6b owns `1.20.1-forge`:**
+
+```
+build.forge.gradle.kts                                       (edit)
+versions/1.20.1-forge/gradle.properties                      (edit)
+src/main/java/com/archetypes/platform/ForgeArchetypeStore.java
+src/main/java/com/archetypes/platform/ForgeNet.java
+src/main/java/com/archetypes/platform/ForgePlatform.java
+src/main/java/com/archetypes/platform/ForgeEvents.java
+src/main/java/com/archetypes/platform/ArchetypesForge.java           @Mod entrypoint
+src/client/java/com/archetypes/client/ForgeClientEvents.java
+src/client/java/com/archetypes/client/Forge*.java                    the client bootstrap
+versions/1.20.1-forge/src/**                                         every per-node override,
+                                                                     incl. client/mixin/ForgeGuiMixin.java
+```
+
+`Forge*` is anchored and does not match `NeoForge*`; the two `versions/` trees and the two node scripts do not overlap. **Neither lane may edit shared `src/`, the three bottleneck files, `build.fabric.gradle.kts`, either shared mixin config, or `buildSrc/`** — a further shared fork is an integration commit with one writer.
+
+##### What each lane owes beyond the seam, and must not discover late
+
+- **The per-node resource overrides do not inherit.** Each lane must copy its Fabric sibling's — `1.21.1-neoforge` needs the **20 recipe overrides** at `versions/1.21.1-fabric/src/main/resources/data/archetypes/recipe/`, and `1.20.1-forge` needs 1.20.1-fabric's **20 recipes + 20 recipe-advancements + `tags/item/meat.json`**. Nothing warns about this: a datapack directory the loader does not walk is an absence, not a parse failure (R-B9's lesson, one node over).
+- **`pack.mcmeta` is load-bearing**, not cosmetic: without it neither loader mounts `assets/` or `data/` and the R-16 cascade fires silently.
+- **The client mixin config is a per-node override on both.** NeoForge's is 1.21.1-fabric's list **minus `GuiMixin`** (R-11: the HUD is `RegisterGuiLayersEvent.wrapLayer`; the class ships but must not be listed). Forge's is 1.20.1-fabric's list with `GuiMixin` **replaced** by a per-node `ForgeGuiMixin`. And LexForge has no per-config `environment` key, so a client mixin left in the common list is a dedicated-server boot crash under `defaultRequire: 1`.
+- **R-22 has not been resolved, only recorded.** Experiment E-R22-1 — which of `Item.<init>`, `EntityType.Builder.build`, `SimpleParticleType`, the three `MobEffect`s and the four `Potion`s asks for an intrusive holder — is each lane's first job, before the seam. The failure is `<clinit>`-time and lands far from the call that moved.
+- **`new SimpleParticleType(false)` is unverified on both loaders.** Vanilla's constructor is protected (that is why fabric-api ships `simple()`); if the loader does not widen it, the answer is an access transformer or an accessor mixin, never `alwaysShow = true`.
+- **`1.20.1-forge` has no state sync at all.** `platform/LegacyStateSync` is now scoped `fabric && <1.20.5` and its header records what that node owes in its place: 16 `ALL_TRACKING` keys and 31 `TARGET_ONLY` ones, moved onto the `Net` seam with the frozen wire format kept. It is that lane's largest single piece of work, and Stage 5 proved the failure is **silent** — server state stays perfect and the whole visible half is blank, which a dedicated-server smoke cannot see by construction.
+- **The Forge client bootstrap.** Skill Proficiencies shipped its 1.20.1-forge jar with every client helper present and nothing invoking them. `@Mod.EventBusSubscriber(Dist.CLIENT, bus = MOD)` + `FMLClientSetupEvent`, and **the `@SubscribeEvent` method must be public** or it silently never fires.
+- **`[modproperties.archetypes] specialities_skills`** goes in each node's metadata file and is blocked on the R-A4 sign-off. Without it, neither loader node registers Spellcasting.
+
 ### 5.8 Stage 7 — parity review, in-game passes, release
 
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
