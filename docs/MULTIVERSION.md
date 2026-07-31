@@ -1601,6 +1601,66 @@ Proficiencies optional everywhere.
 
 ### 5.8 Stage 7 — parity review, in-game passes, release
 
+#### 5.8.1 Stage 7, first in-game finding — **the menu-blur phase trap on 1.21.1**
+
+**Reported:** on `1.21.1-fabric` the Archetype PICKER renders fully blurred — panel, text and
+item icons alike. 26.2 has been in daily use and is fine.
+
+**The defect, named rather than guessed.** Both screens (`ArchetypePickerScreen`,
+`ArchetypeScreen`) draw their whole body and *then* call `super`, with the comment "Widgets
+last … anything drawn after it covers the buttons". That is correct at 26.1+, where the draw
+method is `extractRenderState` and `Screen.extractRenderState` only walks the renderables. It
+is correct on 1.21.11 too. It is **wrong on 1.21.1**, and the reason is a phase contract that
+moves twice across the legacy band. Measured in the mapped 1.21.1 client jar:
+
+```
+1.21.1     Screen.render          = renderBackground(g,mx,my,a) THEN the renderable walk
+           Screen.renderBackground= [renderPanorama if level==null] -> renderBlurredBackground
+                                    -> renderMenuBackground
+           renderBlurredBackground= GameRenderer.processBlurEffect(f)   <- post-pass over the
+                                    then mainRenderTarget.bindWrite       WHOLE main target
+1.21.11    Screen.render          = the renderable walk ONLY. The background moved up into the
+                                    final renderWithTooltipAndSubtitles, which runs
+                                    nextStratum -> renderBackground -> nextStratum -> render
+1.20.1     Screen.render          = the renderable walk ONLY, and renderBackground is the
+                                    1-arg (GuiGraphics) form that NOTHING calls for you
+```
+
+So on 1.21.1 the mod drew its panel, then `super.render(...)` ran `processBlurEffect` over a
+framebuffer that already contained it. `GuiGraphics.fill`, `drawString`, `fillGradient` and
+`renderItem` all `flushIfUnmanaged` on that version — verified in the same jar — so the
+content really is resident when the post-pass runs, which is why *everything* came back
+blurred rather than just the parts that happen to flush late.
+
+**A second, quieter defect the same reading exposed: 1.20.1 had no backdrop at all.** There
+`Screen.render` never draws one and the screens never called the 1-arg
+`renderBackground(GuiGraphics)` themselves, so the world showed through around the panel at
+full brightness. That is SP's `>=1.20.5` "`Screen.render` drawing own background" row biting
+in the other direction, and no gate could see it either.
+
+**The fix, in the `<1.21.11` arms only.** Vanilla's own shape on 1.21.1 is
+`AbstractContainerScreen`: background first, content on top of it, widgets last. Both screens
+now draw the background explicitly at the top of the draw method —
+`super.renderBackground(g,mx,my,a)` at `>=1.20.5`, `super.renderBackground(g)` below it — and
+on 1.21.1 **only**, override `renderBackground` to a no-op so `Screen.render`'s own later call
+cannot run the blur a second time over the content and darken it twice. `Screen.render` is
+that method's only caller on our instances, so the neutered override costs exactly the
+duplicate pass. Predicate bands are the existing frozen rows; **no new vocabulary**.
+
+**Gate, measured.** `26.2` / `26.1` / `1.21.11`: **0 classes changed, 0 resource diffs** — the
+proven pipeline is untouched. The four changed jars differ in exactly two classes each
+(`ArchetypePickerScreen`, `ArchetypeScreen`), **insertion-only, zero instructions removed**
+once bytecode offsets and branch targets are normalised away (`arch-gate/offsetdiff.py`, added
+for this — a raw `javap` diff reads a top-of-method insertion as a whole-method rewrite): the
+1.21.1 pair gains the 6-instruction `super` call plus an empty `renderBackground`, the 1.20.1
+pair gains the 3-instruction 1-arg call. Both loader pairs stay byte-identical to their Fabric
+sibling on both screens.
+
+**The lesson, and it is §5.9's item 7 again.** This was invisible to every gate the port
+runs — it builds, it resolves, it boots, the bytecode is right, and the two screens are
+byte-identical across each loader pair *while being wrong on four nodes*. The bug is not in
+what the code does but in **when** it does it, and only a launched client can see a phase.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:
