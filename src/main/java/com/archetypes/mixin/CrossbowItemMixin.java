@@ -58,9 +58,24 @@ public abstract class CrossbowItemMixin {
 		return Math.max(1, Math.round(original * (1.0F - Tuning.RAPID_RELOAD_PER_RANK * rank)));
 	}
 
+	// `releaseUsing` returns `void` below 1.21.2 — the boolean ("did the item consume the
+	// release") arrived with the same rework that split `hurt`. Only the callback type moves
+	// with it, from CallbackInfoReturnable to CallbackInfo; the handler never read the return
+	// value, and TAIL means the same instruction either way. Fully qualified rather than a new
+	// import, so the arm above keeps the import list it compiles with today.
+	//
+	// `releaseUsing` runs on both logical sides on every node, and always has: the
+	// `instanceof ServerPlayer` in the body is the guard, unchanged, on all four.
+	//? if >=1.21.2 {
 	@Inject(method = "releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)Z", at = @At("TAIL"))
 	private void archetypes$consumePrime(final ItemStack stack, final Level level,
 			final LivingEntity entity, final int timeLeft, final CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "releaseUsing(Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;I)V", at = @At("TAIL"))
+	private void archetypes$consumePrime(final ItemStack stack, final Level level,
+			final LivingEntity entity, final int timeLeft,
+			final org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+	*///?}
 		if (entity instanceof ServerPlayer player && CrossbowItem.isCharged(stack)) {
 			ArchetypeStore.INSTANCE.remove(player, ModState.CROSSBOW_PRIMED);
 		}

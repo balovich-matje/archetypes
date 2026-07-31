@@ -27,6 +27,21 @@ public abstract class HealOrHarmMobEffectMixin {
 	 * anywhere under here would leave every later heal in the server marked
 	 * magical until the next potion. try/finally cannot leak.
 	 */
+	// TWO deltas below 1.21.2, and the first is a SPELLING: the method is
+	// `applyInstantenousEffect` there — Mojang's own misspelling, which 1.21.2 fixed at the
+	// same time it added the `ServerLevel`. Read out of the 1.21.1 jar with `javap -s`, not
+	// guessed; a rename that looks like a typo is exactly the kind a resolver has to be shown.
+	//
+	// ⚠ THE ONLY WHOLE-METHOD FORK IN THIS PASS. `@WrapMethod`'s handler descriptor IS the
+	// target's, so the parameter list and the `original.call` argument list move together and
+	// the body cannot stay outside the block. Nothing balance-bearing is duplicated — the flag
+	// is a boolean and the arithmetic it gates lives in ColossusSlayer — but the try/finally
+	// now exists twice and has to be edited twice.
+	//
+	// The legacy arm early-outs on a client level for MobEffectInstanceMixin's reason: the
+	// `ServerLevel` parameter is what makes the arm above server-only, and below it nothing
+	// does, while `ColossusSlayer.magicalHealing` is a plain static.
+	//? if >=1.21.2 {
 	@WrapMethod(method = "applyInstantaneousEffect(Lnet/minecraft/server/level/ServerLevel;"
 			+ "Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/Entity;"
 			+ "Lnet/minecraft/world/entity/LivingEntity;ID)V")
@@ -41,4 +56,25 @@ public abstract class HealOrHarmMobEffectMixin {
 			ColossusSlayer.endMagicalHealing();
 		}
 	}
+	//?} else {
+	/*@WrapMethod(method = "applyInstantenousEffect(Lnet/minecraft/world/entity/Entity;"
+			+ "Lnet/minecraft/world/entity/Entity;"
+			+ "Lnet/minecraft/world/entity/LivingEntity;ID)V")
+	private void archetypes$magicalHeal(final Entity source, final Entity owner,
+			final LivingEntity mob, final int amplification, final double scale,
+			final Operation<Void> original) {
+		if (mob.level().isClientSide()) {
+			original.call(source, owner, mob, amplification, scale);
+			return;
+		}
+
+		ColossusSlayer.beginMagicalHealing();
+
+		try {
+			original.call(source, owner, mob, amplification, scale);
+		} finally {
+			ColossusSlayer.endMagicalHealing();
+		}
+	}
+	*///?}
 }
