@@ -87,12 +87,26 @@ ordering = "NONE"
 side = "BOTH"
 
 # Skill Proficiencies is a SOFT dependency — compat/SpecialitiesBridge guards every touch at
-# runtime and the mod is fully playable without it — so `mandatory = false`. It is declared at
-# all for the ordering: the bridge and the [modproperties] scan above both want Skill
-# Proficiencies constructed first.
+# runtime and the mod is fully playable without it — so `mandatory = false`.
+#
+# `ordering = "NONE"`, AND THAT IS A MEASUREMENT RATHER THAN A DEFAULT. The first draft said
+# "AFTER", on the reasoning that the bridge and the [modproperties] scan want Skill
+# Proficiencies constructed first. Both reasons were wrong — the bridge is guarded at its first
+# CALL, long after construction, and the scan reads this file's metadata plus a reflective
+# no-arg constructor, neither of which needs this mod initialised — and the cost was real:
+#
+# Forge's mod ORDER is Mixin's config-selection order, which is the tiebreak for handlers at
+# equal priority. With "AFTER", the damage-funnel export showed Skill Proficiencies' three
+# shapers landing ahead of ALL EIGHTEEN of this mod's, where on 1.20.1-fabric they land after
+# them; and the two AFTER_DAMAGE handlers swapped as well. Archetypes' shapers are not all pure
+# multiplications (design's own R-07 note), so that is a genuine per-node balance divergence,
+# not a cosmetic one — the exact class §5.9's cross-mod gate exists to catch.
+#
+# With "NONE" the export matches 1.20.1-fabric handler for handler. The dependency entry is
+# kept, rather than deleted, so the version floor is still declared.
 [[dependencies.${id}]]
 modId = "specialities"
 mandatory = false
 versionRange = "[1.6.0,)"
-ordering = "AFTER"
+ordering = "NONE"
 side = "BOTH"
