@@ -41,7 +41,13 @@ public final class RadianceAura {
 	private static final Identifier STEADFAST_ID = Archetypes.id("radiance_steadfast");
 	/** The Priest's palette, so the aura reads as the same light Holy Light
 	 * throws (SpellProjectile's HOLY_DUST is the identical colour). */
+	// The DustParticleOptions constructor fork — see SpellProjectile for the whole note.
+	//? if >=1.21.11 {
 	private static final DustParticleOptions HALO_DUST = new DustParticleOptions(0xFFD75E, 1.0F);
+	//?} else {
+	/*private static final DustParticleOptions HALO_DUST = new DustParticleOptions(
+			net.minecraft.world.phys.Vec3.fromRGB24(0xFFD75E).toVector3f(), 1.0F);
+	*///?}
 
 	/** True only while a pulse's damage is being dealt — the knockback mixin
 	 * reads it to keep the aura from shoving the undead out of its own radius
@@ -253,7 +259,11 @@ public final class RadianceAura {
 		accessor.archetypes$setLastHurt(0.0F);
 
 		try {
+			//? if >=1.21.2 {
 			victim.hurtServer(level, level.damageSources().indirectMagic(player, player), amount);
+			//?} else {
+			/*victim.hurt(level.damageSources().indirectMagic(player, player), amount);
+			*///?}
 		} finally {
 			victim.invulnerableTime = invulnerable;
 			accessor.archetypes$setLastHurt(lastHurt);

@@ -108,6 +108,13 @@ public abstract class DamageTraceMixin {
 	 * <p>The method returns the amount it took off rather than what is left, so
 	 * the stage's {@code after} is the subtraction, not the return value.
 	 */
+	// R-A5: no host below 1.21.11. `applyItemBlocking` is where blocking became a STEP with
+	// a return value; below the boundary it is a branch inside `hurt` that assigns the
+	// amount to zero, so there is nothing whose return the trace could observe. The stage
+	// is simply absent from the legacy trace, which is honest — a blocked blow there is
+	// reported by the unaccounted alarm, and DamageTrace is a dev tool behind
+	// `DamageTrace.ENABLED`, not a shipped surface.
+	//? if >=1.21.11 {
 	@Inject(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F", at = @At("RETURN"))
 	private void archetypes$traceBlocking(final ServerLevel level, final DamageSource source,
 			final float damage, final CallbackInfoReturnable<Float> cir) {
@@ -120,6 +127,7 @@ public abstract class DamageTraceMixin {
 		DamageTrace.observe((LivingEntity) (Object) this, DamageTrace.STAGE_BLOCKING,
 				damage, damage - cir.getReturnValueF());
 	}
+	//?}
 
 	/**
 	 * Vanilla's armour step. Observed at its own RETURN rather than reconstructed

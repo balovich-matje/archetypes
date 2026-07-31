@@ -16,7 +16,9 @@ import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Mth;
 import net.minecraft.util.RandomSource;
+//? if >=1.21.11 {
 import net.minecraft.world.entity.EntitySpawnReason;
+//?}
 // 26.2 split the entity registry the same way it split blocks and items: the vanilla
 // EntityType CONSTANTS moved out of `EntityType` into a new `EntityTypes` holder (and the
 // ids into `EntityTypeIds`). Measured: `net/minecraft/world/entity/EntityTypes.class` is
@@ -193,18 +195,36 @@ public final class OracleStrikes {
 	 * thunder sell it. */
 	private static void skyStrike(final ServerLevel level, final ServerPlayer caster,
 			final LivingEntity victim, final float damage) {
+		//? if >=1.21.2 {
 		victim.hurtServer(level, level.damageSources().indirectMagic(caster, caster), damage);
+		//?} else {
+		/*victim.hurt(level.damageSources().indirectMagic(caster, caster), damage);
+		*///?}
 
+		// A three-arm chain over two boundaries: 26.2 moved the vanilla EntityType constants
+		// onto `EntityTypes`, and 1.21.11 introduced `EntitySpawnReason` (below it the
+		// reason is `MobSpawnType` and the one-argument `create(Level)` is what vanilla's
+		// own trigger paths call). TRIGGERED is the reason a summoned bolt has always
+		// carried; the legacy overload sets it internally.
 		//? if >=26.2 {
 		LightningBolt bolt = EntityTypes.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
-		//?} else {
+		//?} elif >=1.21.11 {
 		/*LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level, EntitySpawnReason.TRIGGERED);
+		*///?} else {
+		/*LightningBolt bolt = EntityType.LIGHTNING_BOLT.create(level);
 		*///?}
 
 		if (bolt != null) {
 			// Visual-only: no vanilla damage, no fires — the 40 stays exactly ours.
 			bolt.setVisualOnly(true);
+			// `snapTo` is 1.21.11's rename of `moveTo` (the teleport-without-interpolation
+			// setter); `EntitySpawnReason` is its rename of `MobSpawnType`, and the
+			// two-argument `create` that takes it does not exist below the boundary.
+			//? if >=1.21.11 {
 			bolt.snapTo(victim.getX(), victim.getY(), victim.getZ());
+			//?} else {
+			/*bolt.moveTo(victim.getX(), victim.getY(), victim.getZ());
+			*///?}
 			level.addFreshEntity(bolt);
 		}
 
@@ -216,7 +236,11 @@ public final class OracleStrikes {
 	 * crackle are the whole tell. */
 	private static void chainHit(final ServerLevel level, final ServerPlayer caster,
 			final LivingEntity victim, final float damage) {
+		//? if >=1.21.2 {
 		victim.hurtServer(level, level.damageSources().indirectMagic(caster, caster), damage);
+		//?} else {
+		/*victim.hurt(level.damageSources().indirectMagic(caster, caster), damage);
+		*///?}
 		level.sendParticles(ParticleTypes.ELECTRIC_SPARK, victim.getX(),
 				victim.getY() + victim.getBbHeight() * 0.5, victim.getZ(), 8, 0.2, 0.3, 0.2, 0.05);
 		level.playSound(null, victim.getX(), victim.getY(), victim.getZ(),

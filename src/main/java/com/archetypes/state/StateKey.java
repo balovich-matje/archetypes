@@ -4,7 +4,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.mojang.serialization.Codec;
 
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * One piece of attached state, described portably — the key table entry that

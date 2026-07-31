@@ -134,7 +134,15 @@ public final class ShadowTicker {
 				&& invisible && isNight(player.level());
 
 		if (nightStalker) {
+			// The one MobEffects rename that cannot ride the controller's replacement
+			// rule: `JUMP` is a PREFIX of `JUMP_BOOST`, so a directional textual rule
+			// would rewrite the modern spelling into itself twice over on every node at
+			// or above the boundary. See stonecutter.gradle.kts.
+			//? if >=1.21.2 {
 			player.addEffect(new MobEffectInstance(MobEffects.JUMP_BOOST, Tuning.NIGHT_STALKER_TICKS, 1, true, false));
+			//?} else {
+			/*player.addEffect(new MobEffectInstance(MobEffects.JUMP, Tuning.NIGHT_STALKER_TICKS, 1, true, false));
+			*///?}
 			player.addEffect(new MobEffectInstance(MobEffects.SLOW_FALLING,
 					Tuning.NIGHT_STALKER_TICKS, 0, true, false));
 		}

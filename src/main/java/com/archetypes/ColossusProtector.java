@@ -27,10 +27,36 @@ import net.minecraft.world.food.FoodConstants;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
+// ─── R-A5: THE SHIELD-MODIFIER CLUSTER IS EXCISED BELOW 1.21.11 ──────────────────────────
+// The decision in force (design §4.2 / R-A5), applied here and in LivingEntityMixin,
+// BlocksAttacksMixin and DamageTraceMixin. What is missing is not a name but a mechanism:
+// the `BlocksAttacks` COMPONENT, `LivingEntity.applyItemBlocking` and
+// `BlocksAttacks.disable` all arrive together at 1.21.11. Below it, blocking is resolved
+// inline inside `LivingEntity.hurt` (`isDamageSourceBlocked` + `hurtCurrentlyUsedShield`)
+// and a shield is knocked aside through `Player.disableShield()` plus `ItemCooldowns` —
+// two chokepoints, not one, and neither of them is a place where "how much would this
+// shield have stopped" is a question that can be asked at all.
+//
+// So the two nodes whose whole effect is a number taken off a BLOCKED hit — Instinctive
+// Guard and Omni Block — no-op on this node family rather than being approximated through
+// a different chokepoint. Approximating a defensive multiplier somewhere vanilla resolves
+// blocking differently is exactly the silent-divergence class R-20 exists to catch.
+//
+// THE NODES STAY PURCHASABLE AND THE TREE STAYS VALID: both sit mid-tree with children
+// beyond them, and a hole in a constellation would strand the rest of the epic branch. The
+// lang file carries a per-node-family note saying the effect is inactive on this version.
+// Everything else in this class — Ironclad's armour multiplier, Hearty Meal, Well Fed,
+// Free Hand, and the two `blocking(...)` reads — is unaffected and ports cleanly.
+//? if >=1.21.11 {
 import net.minecraft.world.item.component.BlocksAttacks;
+//?}
 
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Every node of the epic Colossus-Protector tree. The sketch dropped the
@@ -208,6 +234,12 @@ public final class ColossusProtector {
 	 */
 	public static float instinctiveGuard(final ServerPlayer player, final ServerLevel level,
 			final DamageSource source, final float amount) {
+		//? if <1.21.11 {
+		/*// R-A5, see the header: no BlocksAttacks component, so there is no shield to ask
+		// what it would have stopped. The node stays purchasable and does nothing.
+		return amount;
+		*///?}
+		//? if >=1.21.11 {
 		int rank = rank(player, Family.INSTINCTIVE_GUARD);
 
 		if (rank <= 0 || amount <= 0.0F || player.getItemBlockingWith() != null) {
@@ -250,17 +282,25 @@ public final class ColossusProtector {
 
 		// Audibly a lesser block than a raised one: the same clang, quieter and
 		// higher, so the guard is legible without pretending to be a shield up.
+		//? if >=1.21.11 {
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.5F, 1.3F);
+		//?} else {
+		/*level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.5F, 1.3F);
+		*///?}
 		level.sendParticles(ParticleTypes.CRIT,
 				player.getX(), player.getY() + 1.2, player.getZ(), 5, 0.25, 0.25, 0.25, 0.05);
 
 		return amount - blockable * Tuning.INSTINCTIVE_GUARD_PER_RANK * rank;
+		//?}
 	}
 
 	/** The hand a carried shield is in, offhand first because that is where one
 	 * lives; null if neither hand holds something that blocks or the shield is
 	 * on its disable cooldown. */
+	// Instinctive Guard is its only caller, so it goes with it (R-A5, see the header).
+	//? if >=1.21.11 {
 	private static @Nullable InteractionHand guardHand(final Player player) {
 		for (InteractionHand hand : new InteractionHand[] {
 				InteractionHand.OFF_HAND, InteractionHand.MAIN_HAND }) {
@@ -274,12 +314,20 @@ public final class ColossusProtector {
 
 		return null;
 	}
+	//?}
 
 	/** Whether this player is blocking at all, by vanilla's single definition of
 	 * it — {@code getItemBlockingWith} is what {@code isBlocking}, the block
 	 * arc and every blocking pose read. */
 	public static boolean blocking(final Player player) {
+		// NOT excised: `isBlocking()` answers the identical question on every version, and
+		// on 1.21.11 it is literally implemented as `getItemBlockingWith() != null`. Free
+		// Hand therefore works unchanged on the legacy node family.
+		//? if >=1.21.11 {
 		return player.getItemBlockingWith() != null;
+		//?} else {
+		/*return player.isBlocking();
+		*///?}
 	}
 
 	/**
@@ -331,6 +379,10 @@ public final class ColossusProtector {
 	 * @return true if the disable must not happen
 	 */
 	public static boolean immovableObject(final ServerPlayer player, final ServerLevel level) {
+		// Its only caller is BlocksAttacksMixin, which does not exist below 1.21.11 (R-A5,
+		// see the header) — the disable path there is `Player.disableShield()` plus a raw
+		// `ItemCooldowns` write, two chokepoints rather than the one this node's promise
+		// ("nothing normal breaks it") depends on.
 		if (rank(player, Family.IMMOVABLE_OBJECT) <= 0) {
 			return false;
 		}
@@ -344,8 +396,13 @@ public final class ColossusProtector {
 
 			// The shield's own note, dropped an octave: the guard held, and it
 			// held harder than a block normally does.
+			//? if >=1.21.11 {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.9F, 0.5F);
+			//?} else {
+			/*level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.9F, 0.5F);
+			*///?}
 			level.sendParticles(ParticleTypes.CRIT,
 					player.getX(), player.getY() + 1.0, player.getZ(), 10, 0.3, 0.3, 0.3, 0.1);
 			ProcIndicators.send(player, SubTree.COLOSSUS_PROTECTOR, Family.IMMOVABLE_OBJECT);

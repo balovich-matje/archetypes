@@ -523,7 +523,11 @@ public final class ColossusSlayer {
 			return;
 		}
 
+		//? if >=1.21.2 {
 		attacker.hurtServer(level, player.damageSources().thorns(player), amount);
+		//?} else {
+		/*attacker.hurt(player.damageSources().thorns(player), amount);
+		*///?}
 
 		if (attacker.isAlive()) {
 			// Server-side only: {@link #pay} fills the ticker again a moment
@@ -579,7 +583,11 @@ public final class ColossusSlayer {
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.ANVIL_LAND, SoundSource.PLAYERS, 0.7F, 1.9F);
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
+					//? if >=1.21.11 {
 					SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.9F, 1.6F);
+					//?} else {
+					/*SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.9F, 1.6F);
+					*///?}
 		}
 
 		level.sendParticles(ParticleTypes.CRIT, player.getX(),

@@ -5,7 +5,11 @@ import java.util.function.Predicate;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.phys.Vec3;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Shared projectile guidance for Seeker Arrow and Seeker Missile. The first

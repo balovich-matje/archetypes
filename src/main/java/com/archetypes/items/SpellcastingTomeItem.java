@@ -23,6 +23,8 @@ public class SpellcastingTomeItem extends Item {
 		this.levels = levels;
 	}
 
+	// The `Item.use` return-type fork — see SkillTokenItem for the whole story.
+	//? if >=1.21.2 {
 	@Override
 	public InteractionResult use(final Level level, final Player player, final InteractionHand hand) {
 		if (!player.isCreative()) {
@@ -32,6 +34,18 @@ public class SpellcastingTomeItem extends Item {
 		if (level.isClientSide()) {
 			return InteractionResult.SUCCESS;
 		}
+	//?} else {
+	/*@Override
+	public net.minecraft.world.InteractionResultHolder<net.minecraft.world.item.ItemStack> use(
+			final Level level, final Player player, final InteractionHand hand) {
+		if (!player.isCreative()) {
+			return net.minecraft.world.InteractionResultHolder.pass(player.getItemInHand(hand));
+		}
+
+		if (level.isClientSide()) {
+			return net.minecraft.world.InteractionResultHolder.success(player.getItemInHand(hand));
+		}
+	*///?}
 
 		int reached = SpecialitiesBridge.grantSpellcastingLevels((ServerPlayer) player, this.levels);
 		// The 26.1 `sendOverlayMessage` rename — see SkillTokenItem.
@@ -44,6 +58,10 @@ public class SpellcastingTomeItem extends Item {
 				? Component.translatable("item.archetypes.spellcasting_tome.no_specialities")
 				: Component.translatable("item.archetypes.spellcasting_tome.granted", reached), true);
 		*///?}
+		//? if >=1.21.2 {
 		return InteractionResult.SUCCESS;
+		//?} else {
+		/*return net.minecraft.world.InteractionResultHolder.success(player.getItemInHand(hand));
+		*///?}
 	}
 }

@@ -107,7 +107,15 @@ public final class ReinforcedStraps {
 	 * Guard and Immovable Object use — a modded shield is a shield.
 	 */
 	private static boolean heldShieldOf(final Player player, final ItemStack stack) {
+		// "Shield" is the BLOCKS_ATTACKS component from 1.21.11 and the BLOCK use animation
+		// below it — which is vanilla's OWN definition on those versions
+		// (`LivingEntity.isBlocking` reads exactly that), so a modded shield is still a
+		// shield either way.
+		//? if >=1.21.11 {
 		return stack.has(DataComponents.BLOCKS_ATTACKS)
+		//?} else {
+		/*return stack.getUseAnimation() == net.minecraft.world.item.UseAnim.BLOCK
+		*///?}
 				&& (player.getMainHandItem() == stack || player.getOffhandItem() == stack);
 	}
 

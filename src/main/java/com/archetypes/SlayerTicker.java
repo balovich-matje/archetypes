@@ -163,7 +163,11 @@ public final class SlayerTicker {
 					player.getBoundingBox().inflate(Tuning.BLADESTORM_RADIUS, 1.0,
 							Tuning.BLADESTORM_RADIUS),
 					entity -> entity != player && entity.isAlive() && !entity.isSpectator())) {
+				//? if >=1.21.2 {
 				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+				//?} else {
+				/*victim.hurt(player.damageSources().playerAttack(player), damage);
+				*///?}
 			}
 		} finally {
 			MeleeSwing.end(previousSwing);
@@ -229,10 +233,17 @@ public final class SlayerTicker {
 			bleeding = true;
 
 			try {
+				//? if >=1.21.2 {
 				victim.hurtServer(level,
 						source.isAlive() ? victim.damageSources().playerAttack(source)
 								: victim.damageSources().generic(),
 						entry.getValue().rank());
+				//?} else {
+				/*victim.hurt(
+						source.isAlive() ? victim.damageSources().playerAttack(source)
+								: victim.damageSources().generic(),
+						entry.getValue().rank());
+				*///?}
 			} finally {
 				bleeding = false;
 			}

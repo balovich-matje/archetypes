@@ -256,11 +256,17 @@ val strippedMetadataLines: List<String> =
 // — the client list is alphabetical and UseDurationMixin is last.
 //
 // 26.2 gets no transform at all, which is what keeps its resource bytes where they were.
-val strippedMixinEntries: List<String> =
-	if (sc.current.parsed >= "26.2") emptyList()
+val strippedMixinEntries: List<String> = buildList {
 	// `client.renderer.extract` does not exist below 26.2, so LevelExtractorMixin's whole
 	// compilation unit is `//?`-ed out and produces no class. See that file's header.
-	else listOf("\"LevelExtractorMixin\"")
+	if (sc.current.parsed < "26.2") add("\"LevelExtractorMixin\"")
+	// STAGE 4 / R-A5: `world.item.component.BlocksAttacks` does not exist below 1.21.11, so
+	// BlocksAttacksMixin's whole compilation unit goes with it and Immovable Object no-ops
+	// on that node family. Same constraint as above — the entry must not be the LAST element
+	// of its array or blanking it would leave a trailing comma. It is not: the common list
+	// is alphabetical and ProjectileMixin is last.
+	if (sc.current.parsed < "1.21.11") add("\"BlocksAttacksMixin\"")
+}
 
 tasks.withType<ProcessResources>().configureEach {
 	val mixinJava = "JAVA_${requiredJava.majorVersion}"
@@ -282,6 +288,44 @@ tasks.withType<ProcessResources>().configureEach {
 			filter { line -> if (strippedMetadataLines.any(line::contains)) "" else line }
 		}
 	}
+	// ---- R-A5 / R-A6: the excised nodes SAY SO, on the nodes where they are inert ----
+	//
+	// The shield-modifier cluster (Instinctive Guard, Bulwark, Immovable Object,
+	// Unstoppable Force) and Magic Armaments' glide have no host below 1.21.11 — the
+	// reasoning is in ColossusProtector's header and MagicArmaments.fitGlider. The design's
+	// prescription is that the NODES stay purchasable (a hole mid-constellation would strand
+	// the branch beyond it) and that their descriptions say the effect is inactive here.
+	//
+	// A `filter` and not `//?`, for the reason that is now a rule in this repo: Stonecutter
+	// does not process `.json` at all, and a leftover directive in a lang file is a silent
+	// half-loaded resource. Keyed on the full `.desc` key so nothing else can match, and
+	// appended INSIDE the closing quote so the file stays valid JSON.
+	val inertNodeKeys: List<String> =
+		if (sc.current.parsed >= "1.21.11") emptyList()
+		else listOf(
+			"node.archetypes.protector.omni_block.desc",
+			"node.archetypes.colossus_protector.instinctive_guard.desc",
+			"node.archetypes.colossus_protector.immovable_object.desc",
+			"node.archetypes.colossus_crusher.siegebreaker.desc",
+			"node.archetypes.oracle_wizard.levitation.desc",
+		)
+	inputs.property("inertNodeKeys", inertNodeKeys)
+
+	if (inertNodeKeys.isNotEmpty()) {
+		filesMatching("assets/*/lang/*.json") {
+			filter { line ->
+				if (inertNodeKeys.none { line.contains("\"$it\"") }) {
+					line
+				} else {
+					val end = line.lastIndexOf('"')
+					line.substring(0, end) +
+						" \\u00a77(Inactive on this Minecraft version.)\\u00a7r" +
+						line.substring(end)
+				}
+			}
+		}
+	}
+
 	filesMatching("*.mixins.json") {
 		expand("java" to mixinJava)
 		if (strippedMixinEntries.isNotEmpty()) {

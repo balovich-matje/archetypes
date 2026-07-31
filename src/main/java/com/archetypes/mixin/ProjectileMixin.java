@@ -13,7 +13,12 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.Entity;
+// `Projectile.deflect`'s third parameter is an `EntityReference<Entity>` from 1.21.11 and a
+// bare `Entity` below (the type does not exist there at all). Only the descriptor and the
+// parameter fork; the handler body never touches that parameter.
+//? if >=1.21.11 {
 import net.minecraft.world.entity.EntityReference;
+//?}
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.entity.projectile.ProjectileDeflection;
@@ -80,10 +85,17 @@ public abstract class ProjectileMixin {
 		}
 	}
 
+	//? if >=1.21.11 {
 	@Inject(method = "deflect(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EntityReference;Z)Z", at = @At("RETURN"))
 	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
 			final EntityReference<Entity> newOwner, final boolean fromAttack,
 			final CallbackInfoReturnable<Boolean> cir) {
+	//?} else {
+	/*@Inject(method = "deflect(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/Entity;Z)Z", at = @At("RETURN"))
+	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
+			final Entity newOwner, final boolean fromAttack,
+			final CallbackInfoReturnable<Boolean> cir) {
+	*///?}
 		Projectile self = (Projectile) (Object) this;
 
 		if (!cir.getReturnValue() || self.level().isClientSide()
@@ -125,14 +137,24 @@ public abstract class ProjectileMixin {
 		// nothing else consumes it.
 		if (parried && !(self instanceof AbstractArrow)) {
 			self.setDeltaMovement(aim.scale(speed));
+			// `Entity.needsSync` is 1.21.11's rename of `hasImpulse`; same field, same
+			// meaning (force a movement packet this tick).
+			//? if >=1.21.11 {
 			self.needsSync = true;
+			//?} else {
+			/*self.hasImpulse = true;
+			*///?}
 		}
 
 		ServerLevel level = (ServerLevel) self.level();
 		level.sendParticles(ParticleTypes.CRIT, self.getX(), self.getY(), self.getZ(),
 				6, 0.1, 0.1, 0.1, 0.05);
 		level.playSound(null, self.getX(), self.getY(), self.getZ(),
+				//? if >=1.21.11 {
 				SoundEvents.SHIELD_BLOCK.value(), SoundSource.PLAYERS, 0.8F, 1.5F);
+				//?} else {
+				/*SoundEvents.SHIELD_BLOCK, SoundSource.PLAYERS, 0.8F, 1.5F);
+				*///?}
 
 		// What comes back, and how hard. The node's rank decides — half at rank
 		// 1, whole at rank 2 — and it wins over the parry's flat half when a

@@ -44,17 +44,34 @@ public final class ManaEffects {
 			super(category, color);
 		}
 
+		//? if >=1.21.11 {
 		@Override
 		public void applyInstantaneousEffect(final ServerLevel level, final Entity source,
 				final Entity indirectSource, final LivingEntity target, final int amplifier,
 				final double factor) {
+		//?} else {
+		/*@Override
+		public void applyInstantaneousEffect(final Entity source,
+				final Entity indirectSource, final LivingEntity target, final int amplifier,
+				final double factor) {
+		*///?}
 			if (target instanceof ServerPlayer player) {
 				Mana.add(player, (float) (Tuning.MANA_RESTORE_PER_LEVEL * (amplifier + 1) * factor));
 			}
 		}
 
+		// `MobEffect.applyEffectTick` gained its leading ServerLevel somewhere between
+		// 1.21.1 and 1.21.11 (bracketed on the two mojmap jars; no artifact in between
+		// exists on this machine to pinpoint it, and no node in range falls between them).
+		// `applyInstantaneousEffect` moved in the same pass, and its NAME is handled by the
+		// controller's `Instantenous` typo rule rather than here.
+		//? if >=1.21.11 {
 		@Override
 		public boolean applyEffectTick(final ServerLevel level, final LivingEntity target, final int amplifier) {
+		//?} else {
+		/*@Override
+		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
+		*///?}
 			if (target instanceof ServerPlayer player) {
 				Mana.add(player, Tuning.MANA_RESTORE_PER_LEVEL * (amplifier + 1));
 			}
@@ -73,8 +90,13 @@ public final class ManaEffects {
 			return true;
 		}
 
+		//? if >=1.21.11 {
 		@Override
 		public boolean applyEffectTick(final ServerLevel level, final LivingEntity target, final int amplifier) {
+		//?} else {
+		/*@Override
+		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
+		*///?}
 			if (target instanceof ServerPlayer player) {
 				Mana.add(player,
 						Tuning.MANA_REGEN_POTION_PER_LEVEL_PER_SECOND * (amplifier + 1) / 20.0F);

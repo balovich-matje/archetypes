@@ -10,7 +10,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+// jspecify is one of the game's OWN libraries only from 1.21.11 up (Skill
+// Proficiencies' conventions §5e-bis); below that it is absent, and
+// org.jetbrains:annotations 26.0.2 — on the compile classpath via fabric-loader,
+// checked with `dependencies --configuration compileClasspath` rather than assumed
+// — supplies a @Nullable that is @Target(TYPE_USE) as well. That last part is what
+// makes this an import-only fork: this tree writes @Nullable in type-use position
+// (`net.minecraft.resources.@Nullable Identifier`, ten sites in CrusherNodes and
+// TreeNodes), which a METHOD/FIELD-only annotation could not occupy.
+//
+// The other 43 files in this tree carry the bare fork without this note.
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * The three archetypes. Each has a start name (what you pick, minute one) and a

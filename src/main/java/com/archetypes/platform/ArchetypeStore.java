@@ -6,7 +6,11 @@ import com.archetypes.state.StateKey;
 
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Seam 1 of three (design {@code docs/MULTIVERSION.md} §3.1) — every piece of

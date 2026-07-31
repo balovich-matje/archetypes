@@ -22,7 +22,18 @@ import net.minecraft.tags.TagKey;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.Item;
+// 1.21.11 replaced the `Tier` INTERFACE + `Tiers` enum with the `ToolMaterial` RECORD, and
+// moved everything a tiered item needs — durability, repairability, enchantment value, the
+// TOOL component, the attack attributes — from the `TieredItem` class hierarchy onto data
+// components applied by `ToolMaterial.applySwordProperties`. Both classes are ABSENT below
+// the boundary (measured on the mojmap common jars of 1.21.1 and 1.20.1, which agree), so
+// this is a genuine two-shape fork rather than a rename, and it reaches five methods below.
+//? if >=1.21.11 {
 import net.minecraft.world.item.ToolMaterial;
+//?} else {
+/*import net.minecraft.world.item.Tier;
+import net.minecraft.world.item.Tiers;
+*///?}
 
 /**
  * Items. Each one amplifies an archetype; none of them switches it on — see
@@ -95,7 +106,12 @@ public final class ModItems {
 	 * mana: real weapons and shields, in either hand. */
 	public static boolean isCombatWeapon(final net.minecraft.world.item.ItemStack stack) {
 		return stack.is(ItemTags.SWORDS) // greatswords and daggers live in this tag too
+				// Spears arrived with 1.21.11 and the tag does not exist below it — the
+				// clause is dropped rather than substituted, because there is nothing on
+				// the older versions it could be describing.
+				//? if >=1.21.11 {
 				|| stack.is(ItemTags.SPEARS)
+				//?}
 				|| stack.is(net.minecraft.world.item.Items.MACE)
 				|| stack.is(net.minecraft.world.item.Items.BOW)
 				|| stack.is(net.minecraft.world.item.Items.CROSSBOW)
@@ -131,6 +147,54 @@ public final class ModItems {
 	public static final Item SPELLCASTING_TOME_25 = registerTome(25);
 	public static final Item SPELLCASTING_TOME_100 = registerTome(100);
 
+	// COPPER HAS NO `Tiers` CONSTANT BELOW 1.21.11 — copper tools are part of the same
+	// release that introduced `ToolMaterial` — so the copper greatsword and dagger, which
+	// this mod ships on every node, need their tier spelled out. Every number here is READ
+	// OFF 26.x's own `ToolMaterial.COPPER` (`javap -c` on the static initialiser: durability
+	// 190, speed 5.0, attack bonus 1.0, enchantment value 13, repair
+	// `#minecraft:copper_tool_materials`), so the legacy item is the same item, not an
+	// approximation.
+	//
+	// Two of the six fields are provably inert for a SWORD and are filled with the nearest
+	// valid value rather than being invented: `getSpeed` and `getIncorrectBlocksForDrops`
+	// feed `Tier.createToolProperties`, and neither 1.21.1's `SwordItem.createToolProperties`
+	// nor 26.x's `ToolMaterial.applySwordProperties` calls it — both build the sword's TOOL
+	// component from COBWEB and `#minecraft:sword_efficient` alone (measured in both jars).
+	//? if <1.21.11 {
+	/*private static final Tier COPPER_TIER = new Tier() {
+		@Override
+		public int getUses() {
+			return 190;
+		}
+
+		@Override
+		public float getSpeed() {
+			return 5.0F;
+		}
+
+		@Override
+		public float getAttackDamageBonus() {
+			return 1.0F;
+		}
+
+		@Override
+		public net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> getIncorrectBlocksForDrops() {
+			return net.minecraft.tags.BlockTags.INCORRECT_FOR_STONE_TOOL;
+		}
+
+		@Override
+		public int getEnchantmentValue() {
+			return 13;
+		}
+
+		@Override
+		public net.minecraft.world.item.crafting.Ingredient getRepairIngredient() {
+			return net.minecraft.world.item.crafting.Ingredient.of(net.minecraft.world.item.Items.COPPER_INGOT);
+		}
+	};
+	*///?}
+
+	//? if >=1.21.11 {
 	public static final Item WOODEN_GREATSWORD = greatsword("wooden", ToolMaterial.WOOD);
 	public static final Item STONE_GREATSWORD = greatsword("stone", ToolMaterial.STONE);
 	public static final Item COPPER_GREATSWORD = greatsword("copper", ToolMaterial.COPPER);
@@ -146,6 +210,23 @@ public final class ModItems {
 	public static final Item GOLDEN_DAGGER = dagger("golden", ToolMaterial.GOLD);
 	public static final Item DIAMOND_DAGGER = dagger("diamond", ToolMaterial.DIAMOND);
 	public static final Item NETHERITE_DAGGER = dagger("netherite", ToolMaterial.NETHERITE);
+	//?} else {
+	/*public static final Item WOODEN_GREATSWORD = greatsword("wooden", Tiers.WOOD);
+	public static final Item STONE_GREATSWORD = greatsword("stone", Tiers.STONE);
+	public static final Item COPPER_GREATSWORD = greatsword("copper", COPPER_TIER);
+	public static final Item IRON_GREATSWORD = greatsword("iron", Tiers.IRON);
+	public static final Item GOLDEN_GREATSWORD = greatsword("golden", Tiers.GOLD);
+	public static final Item DIAMOND_GREATSWORD = greatsword("diamond", Tiers.DIAMOND);
+	public static final Item NETHERITE_GREATSWORD = greatsword("netherite", Tiers.NETHERITE);
+
+	public static final Item WOODEN_DAGGER = dagger("wooden", Tiers.WOOD);
+	public static final Item STONE_DAGGER = dagger("stone", Tiers.STONE);
+	public static final Item COPPER_DAGGER = dagger("copper", COPPER_TIER);
+	public static final Item IRON_DAGGER = dagger("iron", Tiers.IRON);
+	public static final Item GOLDEN_DAGGER = dagger("golden", Tiers.GOLD);
+	public static final Item DIAMOND_DAGGER = dagger("diamond", Tiers.DIAMOND);
+	public static final Item NETHERITE_DAGGER = dagger("netherite", Tiers.NETHERITE);
+	*///?}
 
 	/** The Seeker's casting foci. No melee stats: a wand casts, it does not
 	 * club — whacking with one is exactly as effective as an empty fist.
@@ -177,24 +258,56 @@ public final class ModItems {
 	}
 
 	/** Base damage that makes this material's greatsword exactly 1.5x its sword. */
+	// Only the SIGNATURE and the one accessor call fork. The formula line below is outside
+	// the block on purpose (conventions §5b): two copies of a balance expression are two
+	// things that can drift, and this one decides every greatsword's damage.
+	//? if >=1.21.11 {
 	private static float baseDamageFor(final ToolMaterial material) {
 		float bonus = material.attackDamageBonus();
+	//?} else {
+	/*private static float baseDamageFor(final Tier material) {
+		float bonus = material.getAttackDamageBonus();
+	*///?}
 		return DAMAGE_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + bonus) - 1.0F - bonus;
 	}
 
 	private static Item registerSkillToken(final String path, final int levels) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
+		//? if >=1.21.11 {
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new SkillTokenItem(new Item.Properties().setId(key), levels));
+		//?} else {
+		/*return Registry.register(BuiltInRegistries.ITEM, key,
+				new SkillTokenItem(new Item.Properties(), levels));
+		*///?}
 	}
 
 	private static Item registerTome(final int levels) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM,
 				Archetypes.id("spellcasting_tome_" + levels));
+		//? if >=1.21.11 {
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.SpellcastingTomeItem(new Item.Properties().setId(key), levels));
+		//?} else {
+		/*return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.SpellcastingTomeItem(new Item.Properties(), levels));
+		*///?}
 	}
 
+	// WHY THE LEGACY ARM BUILDS A `SwordItem` AND NOT A PLAIN `Item`, measured rather than
+	// stylistic. 1.21.11 moved everything a sword is into data components, so 26.x can hang
+	// them on a bare `Item`. Below the boundary three of them still live in the CLASS:
+	//   * repairability — `TieredItem.isValidRepairItem`; there is no repair component yet
+	//   * enchantment value — `TieredItem.getEnchantmentValue`; no component either
+	//   * SWEEPING — `Player.attack` gates the sweep on
+	//     `getItemInHand(MAIN_HAND).getItem() instanceof SwordItem` (read out of the 1.21.1
+	//     `Player.attack` bytecode, offset 415). A plain Item would silently lose the sweep
+	//     that the same weapon has on 26.x. That is exactly the class of divergence the
+	//     port's gates exist to catch, and it is invisible to every build.
+	// The attributes are NOT taken from `SwordItem.createAttributes`, which quantises the
+	// base damage to an `int` — these are derived floats (`5 + bonus/2` and friends), so
+	// they are built here with the same two modifiers, ids and operations vanilla uses.
+	//? if >=1.21.11 {
 	private static Item greatsword(final String prefix, final ToolMaterial material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_greatsword"));
 		Item.Properties properties = material.applySwordProperties(
@@ -203,10 +316,86 @@ public final class ModItems {
 				.durability(material.durability() * 3);
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
+	//?} else {
+	/*private static Item greatsword(final String prefix, final Tier material) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_greatsword"));
+		// Three times the ingots, three times the life in it — carried on the TIER rather
+		// than on the properties, because `TieredItem`'s constructor applies
+		// `properties.durability(tier.getUses())` AFTER whatever the caller set.
+		Item.Properties properties = new Item.Properties()
+				.attributes(swordAttributes(material, baseDamageFor(material), GREATSWORD_ATTACK_SPEED));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new net.minecraft.world.item.SwordItem(scaledDurability(material, 3), properties));
+	}
+
+	// A tier that is `base` in every respect but durability. Line comments, not javadoc:
+	// a `*` followed by `/` inside a disabled `//?` branch closes Stonecutter's own block
+	// comment early (the trap Stage 2 hit on LevelExtractorMixin).
+	private static Tier scaledDurability(final Tier base, final int factor) {
+		return new Tier() {
+			@Override
+			public int getUses() {
+				return base.getUses() * factor;
+			}
+
+			@Override
+			public float getSpeed() {
+				return base.getSpeed();
+			}
+
+			@Override
+			public float getAttackDamageBonus() {
+				return base.getAttackDamageBonus();
+			}
+
+			@Override
+			public net.minecraft.tags.TagKey<net.minecraft.world.level.block.Block> getIncorrectBlocksForDrops() {
+				return base.getIncorrectBlocksForDrops();
+			}
+
+			@Override
+			public int getEnchantmentValue() {
+				return base.getEnchantmentValue();
+			}
+
+			@Override
+			public net.minecraft.world.item.crafting.Ingredient getRepairIngredient() {
+				return base.getRepairIngredient();
+			}
+		};
+	}
+
+	// The two modifiers `ToolMaterial.createSwordAttributes` adds on 26.x, rebuilt here.
+	// Same attributes, same modifier ids, same ADD_VALUE operation, same MAINHAND group —
+	// read off both versions' bytecode, which differ only in the mapping namespace of the
+	// id type. Vanilla's own `SwordItem.createAttributes` is deliberately NOT used: its
+	// base-damage parameter is an `int`.
+	private static net.minecraft.world.item.component.ItemAttributeModifiers swordAttributes(
+			final Tier material, final float damage, final float speed) {
+		return net.minecraft.world.item.component.ItemAttributeModifiers.builder()
+				.add(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_DAMAGE,
+						new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+								Item.BASE_ATTACK_DAMAGE_ID, damage + material.getAttackDamageBonus(),
+								net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE),
+						net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
+				.add(net.minecraft.world.entity.ai.attributes.Attributes.ATTACK_SPEED,
+						new net.minecraft.world.entity.ai.attributes.AttributeModifier(
+								Item.BASE_ATTACK_SPEED_ID, speed,
+								net.minecraft.world.entity.ai.attributes.AttributeModifier.Operation.ADD_VALUE),
+						net.minecraft.world.entity.EquipmentSlotGroup.MAINHAND)
+				.build();
+	}
+	*///?}
 
 	/** A dagger's full swing damage (fist plus item), for Twin Fangs'
 	 * off-hand ratio. Zero for anything that isn't one of our daggers. */
+	// ⚠ THE ONLY PLACE IN THIS FILE WHERE A BALANCE EXPRESSION IS WRITTEN TWICE. Everywhere
+	// else the fork is narrowed to the signature and the accessor so the formula stays
+	// shared (conventions §5b); here the accessor sits INSIDE the returned expression, and
+	// hoisting it into a local would change the 26.x bytecode — which the per-stage gate
+	// forbids. Edit both arms together; the parity gate compares the two nodes' numbers.
 	public static float daggerSwingDamage(final net.minecraft.world.item.ItemStack stack) {
+		//? if >=1.21.11 {
 		ToolMaterial material = stack.is(WOODEN_DAGGER) ? ToolMaterial.WOOD
 				: stack.is(STONE_DAGGER) ? ToolMaterial.STONE
 				: stack.is(COPPER_DAGGER) ? ToolMaterial.COPPER
@@ -216,24 +405,54 @@ public final class ModItems {
 				: stack.is(NETHERITE_DAGGER) ? ToolMaterial.NETHERITE : null;
 		return material == null ? 0.0F
 				: DAGGER_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + material.attackDamageBonus());
+		//?} else {
+		/*Tier material = stack.is(WOODEN_DAGGER) ? Tiers.WOOD
+				: stack.is(STONE_DAGGER) ? Tiers.STONE
+				: stack.is(COPPER_DAGGER) ? COPPER_TIER
+				: stack.is(IRON_DAGGER) ? Tiers.IRON
+				: stack.is(GOLDEN_DAGGER) ? Tiers.GOLD
+				: stack.is(DIAMOND_DAGGER) ? Tiers.DIAMOND
+				: stack.is(NETHERITE_DAGGER) ? Tiers.NETHERITE : null;
+		return material == null ? 0.0F
+				: DAGGER_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + material.getAttackDamageBonus());
+		*///?}
 	}
 
 	/** Base damage that makes this material's dagger exactly 0.6x its sword. */
+	//? if >=1.21.11 {
 	private static float daggerDamageFor(final ToolMaterial material) {
 		float bonus = material.attackDamageBonus();
+	//?} else {
+	/*private static float daggerDamageFor(final Tier material) {
+		float bonus = material.getAttackDamageBonus();
+	*///?}
 		return DAGGER_MULTIPLIER * (1.0F + SWORD_BASE_DAMAGE + bonus) - 1.0F - bonus;
 	}
 
+	//? if >=1.21.11 {
 	private static Item dagger(final String prefix, final ToolMaterial material) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_dagger"));
 		Item.Properties properties = material.applySwordProperties(
 				new Item.Properties().setId(key), daggerDamageFor(material), DAGGER_ATTACK_SPEED);
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(properties));
 	}
+	//?} else {
+	/*private static Item dagger(final String prefix, final Tier material) {
+		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(prefix + "_dagger"));
+		Item.Properties properties = new Item.Properties()
+				.attributes(swordAttributes(material, daggerDamageFor(material), DAGGER_ATTACK_SPEED));
+		return Registry.register(BuiltInRegistries.ITEM, key,
+				new net.minecraft.world.item.SwordItem(material, properties));
+	}
+	*///?}
 
 	private static Item plain(final String path) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
+		//? if >=1.21.11 {
 		return Registry.register(BuiltInRegistries.ITEM, key, new Item(new Item.Properties().setId(key)));
+		//?} else {
+		/*return Registry.register(BuiltInRegistries.ITEM, key, new Item(new Item.Properties()));
+		*///?}
 	}
 
 	/**
@@ -244,6 +463,17 @@ public final class ModItems {
 	 * per-component hiding, NOT the hide_tooltip flag: that one suppresses the
 	 * name too (ItemStack.getTooltipLines returns an empty list for it).
 	 */
+	// Below 1.21.11 there IS no `TooltipDisplay` component: hiding was a per-component
+	// `showInTooltip` flag on each of the components that print, and 1.21.11 lifted all of
+	// them into one. The legacy arms below therefore set the flags one at a time; the
+	// intent — name only — carries across, and the two residues are stated rather than
+	// hidden:
+	//   * the DAMAGE line has no flag on 1.21.1, and needs none: both conjured weapons are
+	//     UNBREAKABLE, so vanilla never prints a durability line for them;
+	//   * the ENCHANTMENTS flag cannot be set here, because MagicArmaments REPLACES that
+	//     component every time it re-enchants. It is set at that write instead — see the
+	//     `withTooltip(false)` fork in `MagicArmaments.enchant`.
+	//? if >=1.21.11 {
 	private static net.minecraft.world.item.component.TooltipDisplay silentTooltip() {
 		return net.minecraft.world.item.component.TooltipDisplay.DEFAULT
 				.withHidden(net.minecraft.core.component.DataComponents.ATTRIBUTE_MODIFIERS, true)
@@ -251,6 +481,7 @@ public final class ModItems {
 				.withHidden(net.minecraft.core.component.DataComponents.ENCHANTMENTS, true)
 				.withHidden(net.minecraft.core.component.DataComponents.DAMAGE, true);
 	}
+	//?}
 
 	/** The conjured sword: exactly a diamond sword's melee (3 base + diamond's
 	 * bonus, -2.4 speed), but unbreakable and single-stack. Its real damage is
@@ -259,6 +490,7 @@ public final class ModItems {
 	 * so only an explicit false keeps vanilla's glint off the animated sprite. */
 	private static Item registerMagicSword() {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_sword"));
+		//? if >=1.21.11 {
 		Item.Properties properties = ToolMaterial.DIAMOND.applySwordProperties(
 				new Item.Properties().setId(key), SWORD_BASE_DAMAGE, -2.4F)
 				.stacksTo(1)
@@ -267,12 +499,22 @@ public final class ModItems {
 						net.minecraft.util.Unit.INSTANCE)
 				.component(net.minecraft.core.component.DataComponents.TOOLTIP_DISPLAY, silentTooltip())
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
+		//?} else {
+		/*Item.Properties properties = new Item.Properties()
+				.attributes(swordAttributes(Tiers.DIAMOND, SWORD_BASE_DAMAGE, -2.4F).withTooltip(false))
+				.stacksTo(1)
+				.rarity(net.minecraft.world.item.Rarity.EPIC)
+				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
+						new net.minecraft.world.item.component.Unbreakable(false))
+				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, false);
+		*///?}
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicSwordItem(properties));
 	}
 
 	private static Item registerMagicBow() {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id("magic_bow"));
+		//? if >=1.21.11 {
 		Item.Properties properties = new Item.Properties().setId(key)
 				.stacksTo(1)
 				.rarity(net.minecraft.world.item.Rarity.EPIC)
@@ -280,14 +522,27 @@ public final class ModItems {
 						net.minecraft.util.Unit.INSTANCE)
 				.component(net.minecraft.core.component.DataComponents.TOOLTIP_DISPLAY, silentTooltip())
 				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		//?} else {
+		/*Item.Properties properties = new Item.Properties()
+				.stacksTo(1)
+				.rarity(net.minecraft.world.item.Rarity.EPIC)
+				.component(net.minecraft.core.component.DataComponents.UNBREAKABLE,
+						new net.minecraft.world.item.component.Unbreakable(false))
+				.component(net.minecraft.core.component.DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		*///?}
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.MagicBowItem(properties));
 	}
 
 	private static Item registerWand(final String path) {
 		ResourceKey<Item> key = ResourceKey.create(Registries.ITEM, Archetypes.id(path));
+		//? if >=1.21.11 {
 		return Registry.register(BuiltInRegistries.ITEM, key,
 				new com.archetypes.items.WandItem(new Item.Properties().setId(key).stacksTo(1),
+		//?} else {
+		/*return Registry.register(BuiltInRegistries.ITEM, key,
+				new com.archetypes.items.WandItem(new Item.Properties().stacksTo(1),
+		*///?}
 						path.equals("magic_wand") ? null : "item.archetypes." + path + ".tooltip"));
 	}
 

@@ -14,7 +14,9 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+//? if >=1.21.11 {
 import net.minecraft.world.attribute.EnvironmentAttributes;
+//?}
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.EquipmentSlot;
@@ -204,7 +206,11 @@ public final class NightForm {
 		ServerLevel level = (ServerLevel) player.level();
 		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_END,
 				level.getGameTime() + Tuning.DARK_RITUAL_CHANNEL_TICKS);
+		//? if >=1.21.11 {
 		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_SLOT, player.getInventory().getSelectedSlot());
+		//?} else {
+		/*ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_SLOT, player.getInventory().selected);
+		*///?}
 		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_HURT, player.hurtTime);
 
 		// The ritual's opening thunk: the same charge vanilla plays when a
@@ -374,7 +380,11 @@ public final class NightForm {
 
 		Integer slot = ArchetypeStore.INSTANCE.get(target, ModState.NIGHT_CHANNEL_SLOT);
 
+		//? if >=1.21.11 {
 		if (slot != null && slot != player.getInventory().getSelectedSlot()) {
+		//?} else {
+		/*if (slot != null && slot != player.getInventory().selected) {
+		*///?}
 			return true;
 		}
 
@@ -447,9 +457,23 @@ public final class NightForm {
 		float brightness = player.getLightLevelDependentMagicValue();
 		BlockPos eye = BlockPos.containing(player.getX(), player.getEyeY(), player.getZ());
 		boolean sheltered = player.isInWaterOrRain() || player.isInPowderSnow;
+		// 1.21.11 moved "would a monster burn here" out of `Level.isDay()` and into the
+		// environment-attribute table. THE BOUNDARY IS 1.21.11, NOT 26.2 — this was written
+		// as `>=26.2` first and the 26.1 build caught it: `net.minecraft.world.attribute`,
+		// `Level.environmentAttributes()` and `EnvironmentAttributes.MONSTERS_BURN` are all
+		// present on 26.1 AND on 1.21.11, and `Mob.isSunBurnTick` reads exactly this
+		// expression on both (bytecode, offsets 14-30). They are absent on 1.21.1, where the
+		// same method reads `Level.isDay()` — which is what the legacy arm calls, so the
+		// burn stays vanilla's burn rather than being re-derived. (Conventions §5k: ask
+		// which row the missing API is in, and do not invent a boundary for it.)
+		//? if >=1.21.11 {
 		boolean exposed = level.environmentAttributes()
 				.getValue(EnvironmentAttributes.MONSTERS_BURN, player.position())
 				&& brightness > 0.5F && !sheltered && level.canSeeSky(eye);
+		//?} else {
+		/*boolean exposed = level.isDay()
+				&& brightness > 0.5F && !sheltered && level.canSeeSky(eye);
+		*///?}
 
 		final Entity target = player;
 
@@ -664,9 +688,15 @@ public final class NightForm {
 				// Attributed to the feeder so a bleed kill still credits them,
 				// and through the same indirect-magic source the aura uses so
 				// it reads as a DoT rather than a swing.
+				//? if >=1.21.2 {
 				bleed.victim.hurtServer(level,
 						level.damageSources().indirectMagic(bleed.feeder, bleed.feeder),
 						bleed.perPulse);
+				//?} else {
+				/*bleed.victim.hurt(
+						level.damageSources().indirectMagic(bleed.feeder, bleed.feeder),
+						bleed.perPulse);
+				*///?}
 			} finally {
 				bleeding = false;
 			}

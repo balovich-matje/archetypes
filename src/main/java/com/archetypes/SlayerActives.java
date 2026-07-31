@@ -259,7 +259,11 @@ public final class SlayerActives {
 
 		try {
 			for (LivingEntity victim : victims) {
+				//? if >=1.21.2 {
 				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+				//?} else {
+				/*victim.hurt(player.damageSources().playerAttack(player), damage);
+				*///?}
 
 				Vec3 away = victim.position().subtract(player.position());
 				Vec3 push = new Vec3(away.x, 0.0, away.z).normalize();

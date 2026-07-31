@@ -12,7 +12,11 @@ import com.archetypes.state.StateKey.Sync;
 import com.archetypes.state.WireCodec;
 
 import net.minecraft.world.entity.player.Player;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 public final class ModState {
 	/**

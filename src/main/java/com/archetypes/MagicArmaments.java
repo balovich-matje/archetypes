@@ -93,7 +93,13 @@ public final class MagicArmaments {
 
 		ServerLevel level = (ServerLevel) player.level();
 		Inventory inventory = player.getInventory();
+		// `Inventory.selected` became the private field behind `getSelectedSlot()` in
+		// 1.21.11; below it the field is public and there is no accessor.
+		//? if >=1.21.11 {
 		int slot = inventory.getSelectedSlot();
+		//?} else {
+		/*int slot = inventory.selected;
+		*///?}
 
 		final Entity target = player;
 		ArchetypeStore.INSTANCE.set(target, ModState.ARMAMENTS_WAND, player.getMainHandItem().copy());
@@ -242,6 +248,19 @@ public final class MagicArmaments {
 	 * cannot outlive the channel because the weapon cannot: the ticker ends the
 	 * channel the tick it leaves the hand.
 	 */
+	// EXCISED BELOW 1.21.11, AND THE DESIGN'S R-A6 UNDER-STATED THE BOUNDARY: it says the
+	// GLIDER component is missing "on 1.20.1". MEASURED, it is missing on 1.21.1 too —
+	// `DataComponents.GLIDER`, `DataComponents.EQUIPPABLE` and the whole
+	// `net.minecraft.world.item.equipment` package are absent from the 1.21.1 mojmap jar,
+	// so the glide has no host on either legacy Fabric node, not just the lower one.
+	//
+	// Excised rather than reimplemented, for the reason the method's own javadoc gives: the
+	// obvious substitute — claiming the glide by overriding `Player.canGlide` — is a SERVER
+	// CRASH, because `LivingEntity.updateFallFlying` then calls `Util.getRandom` on an empty
+	// list of glider slots. A Levitation-effect stand-in is a different mechanic wearing the
+	// node's name. The node stays purchasable; everything else Levitation does (the ward,
+	// the upkeep, the absorption) is untouched.
+	//? if >=1.21.11 {
 	private static void fitGlider(final ItemStack stack, final Set<Integer> owned) {
 		boolean levitation = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
 				OracleWizardNodes.Family.LEVITATION) > 0;
@@ -267,6 +286,10 @@ public final class MagicArmaments {
 			stack.remove(DataComponents.EQUIPPABLE);
 		}
 	}
+	//?} else {
+	/*private static void fitGlider(final ItemStack stack, final Set<Integer> owned) {
+	}
+	*///?}
 
 	/** A twentieth of the per-second rate, every tick. Same cost per second, but
 	 * the pool trickles instead of stepping — and because Magic Armor's grant is
@@ -369,7 +392,12 @@ public final class MagicArmaments {
 		}
 
 		level.sendParticles(ParticleTypes.PORTAL, start.x, start.y + 1.0, start.z, 16, 0.3, 0.6, 0.3, 0.4);
+		// The trailing `setCamera` flag — see AgilityActives for the note.
+		//? if >=1.21.11 {
 		player.teleportTo(level, best.x, best.y, best.z, Set.of(), player.getYRot(), player.getXRot(), false);
+		//?} else {
+		/*player.teleportTo(level, best.x, best.y, best.z, Set.of(), player.getYRot(), player.getXRot());
+		*///?}
 		player.resetFallDistance();
 		level.sendParticles(ParticleTypes.PORTAL, best.x, best.y + 1.0, best.z, 16, 0.3, 0.6, 0.3, 0.4);
 		level.playSound(null, best.x, best.y, best.z,

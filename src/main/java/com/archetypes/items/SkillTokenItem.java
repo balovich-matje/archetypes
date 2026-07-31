@@ -24,6 +24,12 @@ public class SkillTokenItem extends Item {
 		this.levels = levels;
 	}
 
+	// 1.21.2 changed `Item.use`'s return from `InteractionResultHolder<ItemStack>` to a bare
+	// `InteractionResult`, and the two vocabularies do not overlap: below the boundary
+	// SUCCESS/PASS carry the stack, and the "succeed on this side only" case is
+	// `sidedSuccess(stack, isClientSide)` rather than a plain SUCCESS. Only the signature
+	// and the three returns fork; the body between them is shared.
+	//? if >=1.21.2 {
 	@Override
 	public InteractionResult use(final Level level, final Player player, final InteractionHand hand) {
 		if (!player.isCreative()) {
@@ -33,6 +39,18 @@ public class SkillTokenItem extends Item {
 		if (level.isClientSide()) {
 			return InteractionResult.SUCCESS;
 		}
+	//?} else {
+	/*@Override
+	public net.minecraft.world.InteractionResultHolder<net.minecraft.world.item.ItemStack> use(
+			final Level level, final Player player, final InteractionHand hand) {
+		if (!player.isCreative()) {
+			return net.minecraft.world.InteractionResultHolder.pass(player.getItemInHand(hand));
+		}
+
+		if (level.isClientSide()) {
+			return net.minecraft.world.InteractionResultHolder.success(player.getItemInHand(hand));
+		}
+	*///?}
 
 		SkillPoints.grantLevels(player, this.levels);
 		// Action bar rather than chat: this fires on every click while testing.
@@ -46,6 +64,10 @@ public class SkillTokenItem extends Item {
 		/*player.displayClientMessage(Component.translatable("item.archetypes.skill_token.granted",
 				SkillPoints.level(player), SkillPoints.MAX_LEVEL), true);
 		*///?}
+		//? if >=1.21.2 {
 		return InteractionResult.SUCCESS;
+		//?} else {
+		/*return net.minecraft.world.InteractionResultHolder.success(player.getItemInHand(hand));
+		*///?}
 	}
 }

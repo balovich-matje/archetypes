@@ -8,7 +8,11 @@ import java.util.function.Supplier;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * What each node of the Crusher constellation is. The constellation IS a mace:

@@ -70,9 +70,15 @@ public final class RadianceEffect {
 			return false;
 		}
 
+		// The ServerLevel parameter — see ManaEffects for the measurement note.
+		//? if >=1.21.11 {
 		@Override
 		public boolean applyEffectTick(final ServerLevel level, final LivingEntity target,
 				final int amplifier) {
+		//?} else {
+		/*@Override
+		public boolean applyEffectTick(final LivingEntity target, final int amplifier) {
+		*///?}
 			return true;
 		}
 	}

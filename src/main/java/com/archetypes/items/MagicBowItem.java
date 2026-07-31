@@ -26,7 +26,11 @@ import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * The Spellbow variant of Magic Armaments. It needs no ammo — every draw
@@ -45,10 +49,18 @@ import org.jspecify.annotations.Nullable;
  * conjured it is gone.
  */
 public class MagicBowItem extends BowItem {
+	// The DustParticleOptions constructor fork — see SpellProjectile for the whole note.
+	//? if >=1.21.11 {
 	private static final DustParticleOptions TRAIL_DUST =
 			new DustParticleOptions(Tuning.MISSILE_DUST_COLOR, 0.6F);
 	private static final DustParticleOptions TRAIL_BRIGHT_DUST =
 			new DustParticleOptions(Tuning.MISSILE_DUST_BRIGHT_COLOR, 1.0F);
+	//?} else {
+	/*private static final DustParticleOptions TRAIL_DUST = new DustParticleOptions(
+			net.minecraft.world.phys.Vec3.fromRGB24(Tuning.MISSILE_DUST_COLOR).toVector3f(), 0.6F);
+	private static final DustParticleOptions TRAIL_BRIGHT_DUST = new DustParticleOptions(
+			net.minecraft.world.phys.Vec3.fromRGB24(Tuning.MISSILE_DUST_BRIGHT_COLOR).toVector3f(), 1.0F);
+	*///?}
 
 	public MagicBowItem(final Properties properties) {
 		super(properties);
@@ -91,22 +103,57 @@ public class MagicBowItem extends BowItem {
 		return stack -> true;
 	}
 
+	// Three lifecycle hooks, three separate 1.21.2/1.21.11 signature moves, all of them
+	// shell-only: `inventoryTick` takes a ServerLevel + EquipmentSlot from 1.21.11 (below it
+	// a plain Level + slot index, running on BOTH logical sides — hence the explicit
+	// early-out); `use` returns a bare InteractionResult from 1.21.2 (below,
+	// `InteractionResultHolder<ItemStack>`); `releaseUsing` returns boolean from 1.21.11
+	// (below, void, so the two `return`s become a bare `return`/fall-through). Every line of
+	// the draw curve, the arrow's damage budget and the spawn stays shared.
+	//? if >=1.21.11 {
 	@Override
 	public void inventoryTick(final ItemStack stack, final ServerLevel level, final Entity entity,
 			final @Nullable EquipmentSlot slot) {
 		MagicArmaments.purgeStray(stack, entity);
 	}
+	//?} else {
+	/*@Override
+	public void inventoryTick(final ItemStack stack, final Level level, final Entity entity,
+			final int slotId, final boolean selected) {
+		if (level.isClientSide()) {
+			return;
+		}
 
+		MagicArmaments.purgeStray(stack, entity);
+	}
+	*///?}
+
+	//? if >=1.21.2 {
 	@Override
 	public InteractionResult use(final Level level, final Player player, final InteractionHand hand) {
 		// Draw regardless of ammo — the arrow is conjured on release.
 		player.startUsingItem(hand);
 		return InteractionResult.CONSUME;
 	}
+	//?} else {
+	/*@Override
+	public net.minecraft.world.InteractionResultHolder<ItemStack> use(
+			final Level level, final Player player, final InteractionHand hand) {
+		// Draw regardless of ammo — the arrow is conjured on release.
+		player.startUsingItem(hand);
+		return net.minecraft.world.InteractionResultHolder.consume(player.getItemInHand(hand));
+	}
+	*///?}
 
+	//? if >=1.21.11 {
 	@Override
 	public boolean releaseUsing(final ItemStack stack, final Level level,
 			final LivingEntity entity, final int timeLeft) {
+	//?} else {
+	/*@Override
+	public void releaseUsing(final ItemStack stack, final Level level,
+			final LivingEntity entity, final int timeLeft) {
+	*///?}
 		int used = this.getUseDuration(stack, entity) - timeLeft;
 
 		// Vanilla's power curve is the only thing that knows about draw time, so
@@ -121,7 +168,11 @@ public class MagicBowItem extends BowItem {
 		float power = BowItem.getPowerForTime(used);
 
 		if (power < 0.1F) {
+			//? if >=1.21.11 {
 			return false;
+			//?} else {
+			/*return;
+			*///?}
 		}
 
 		// Only a live channel conjures arrows: a strayed bow (a dupe attempt
@@ -159,6 +210,8 @@ public class MagicBowItem extends BowItem {
 					1.0F / (level.getRandom().nextFloat() * 0.4F + 1.2F) + power * 0.5F);
 		}
 
+		//? if >=1.21.11 {
 		return true;
+		//?}
 	}
 }

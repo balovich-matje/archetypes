@@ -8,7 +8,11 @@ import java.util.function.Supplier;
 
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * What each node of the epic Oracle-Elementalist constellation is (draft
@@ -24,7 +28,11 @@ public final class OracleElementalistNodes {
 		/** The epic active: a targeted bolt for massive single-target damage. */
 		LIGHTNING_STRIKE(() -> Items.END_ROD),
 		/** The strike arcs to +1/2/3 nearby hostiles. */
+		//? if >=1.21.11 {
 		CHAIN(() -> Items.IRON_CHAIN),
+		//?} else {
+		/*CHAIN(() -> Items.CHAIN),
+		*///?}
 		/** The strike lands again on the same target, 1/2/3 extra times. */
 		RECURRENCE(() -> Items.COPPER_INGOT),
 		/** +50/100% max mana. */

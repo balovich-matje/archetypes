@@ -15,7 +15,11 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * {@code /archetypes} — the developer test kit: reach a finished build in one
@@ -68,8 +72,17 @@ public final class ArchetypeCommands {
 	 * witness {@code Commands.<CommandSourceStack>hasPermission(...)} would
 	 * otherwise need: assigning it here gives the inference its target type.
 	 */
+	// 1.21.11 turned `Commands.LEVEL_GAMEMASTERS` from an `int` into a `PermissionCheck`
+	// and added `Commands.hasPermission(check)` to build the predicate; below it the
+	// constant is still the plain level 2 and the predicate is written by hand. Same
+	// permission level either way — this is the spelling moving, not the gate.
+	//? if >=1.21.11 {
 	private static final java.util.function.Predicate<CommandSourceStack> GAMEMASTER =
 			Commands.hasPermission(Commands.LEVEL_GAMEMASTERS);
+	//?} else {
+	/*private static final java.util.function.Predicate<CommandSourceStack> GAMEMASTER =
+			source -> source.hasPermission(Commands.LEVEL_GAMEMASTERS);
+	*///?}
 
 	private ArchetypeCommands() {
 	}

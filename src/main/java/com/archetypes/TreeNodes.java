@@ -3,7 +3,11 @@ package com.archetypes;
 import java.util.Set;
 
 import net.minecraft.world.item.Item;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * One face over the per-tree node tables, so the screen and the purchase rules

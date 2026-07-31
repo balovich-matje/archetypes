@@ -7,8 +7,14 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.TooltipFlag;
+//? if >=1.21.11 {
 import net.minecraft.world.item.component.TooltipDisplay;
+//?}
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * A casting focus. The tooltip says what every wand does (cast) and what
@@ -23,10 +29,22 @@ public class WandItem extends Item {
 		this.bonusKey = bonusKey;
 	}
 
+	// 1.21.11 gave `appendHoverText` the TooltipDisplay parameter and swapped the
+	// `List<Component>` sink for a `Consumer<Component>`. `List::add` IS a
+	// `Consumer<Component>`, so the legacy arm hands the list through under the shared
+	// name and every `lines.accept(...)` below stays one implementation.
+	//? if >=1.21.11 {
 	@Override
 	public void appendHoverText(final ItemStack stack, final Item.TooltipContext context,
 			final TooltipDisplay display, final Consumer<Component> lines, final TooltipFlag flag) {
 		super.appendHoverText(stack, context, display, lines, flag);
+	//?} else {
+	/*@Override
+	public void appendHoverText(final ItemStack stack, final Item.TooltipContext context,
+			final java.util.List<Component> list, final TooltipFlag flag) {
+		super.appendHoverText(stack, context, list, flag);
+		Consumer<Component> lines = list::add;
+	*///?}
 		lines.accept(Component.translatable("item.archetypes.wand.casts")
 				.withStyle(ChatFormatting.GRAY));
 

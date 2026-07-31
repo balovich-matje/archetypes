@@ -22,7 +22,11 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.ProjectileUtil;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Death Mark — the Nemesis Assassin's epic active, ability slot 5 for a
@@ -400,8 +404,13 @@ public final class DeathMark {
 
 		try {
 			for (LivingEntity caughtEntity : caught) {
+				//? if >=1.21.2 {
 				caughtEntity.hurtServer(level, level.damageSources().indirectMagic(player, player),
 						Tuning.DEATHS_HEAD_DAMAGE);
+				//?} else {
+				/*caughtEntity.hurt(level.damageSources().indirectMagic(player, player),
+						Tuning.DEATHS_HEAD_DAMAGE);
+				*///?}
 			}
 		} finally {
 			detonating = false;

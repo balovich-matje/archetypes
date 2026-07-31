@@ -1,7 +1,11 @@
 package com.archetypes;
 
 import net.minecraft.world.entity.Entity;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Whether the damage being resolved right now came out of a player actually

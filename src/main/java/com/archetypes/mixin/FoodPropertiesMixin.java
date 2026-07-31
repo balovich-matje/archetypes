@@ -10,7 +10,9 @@ import net.minecraft.world.food.FoodConstants;
 import net.minecraft.world.food.FoodData;
 import net.minecraft.world.food.FoodProperties;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.21.11 {
 import net.minecraft.world.item.component.Consumable;
+//?}
 import net.minecraft.world.level.Level;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -30,14 +32,36 @@ import org.spongepowered.asm.mixin.injection.At;
  * {@code FoodData.eat} by other routes and are left on vanilla's 20; neither
  * is a bite of food in the player's hand.
  */
+// RE-ROOTED, NOT EXCISED, BELOW 1.21.11. The WRAPPED CALL is the same one on every node —
+// `FoodData.eat(FoodProperties)` — so the invariant this hook exists for (vanilla's clamped
+// add, then the bar topped back up to the raised ceiling) is preserved exactly; only the
+// method that HOSTS that call moves. 1.21.11 put it in `FoodProperties.onConsume`; below the
+// boundary it is `Player.eat(Level, ItemStack, FoodProperties)`, whose first instruction is
+// `getFoodData().eat(foodProperties)` (read out of the 1.21.1 bytecode, offset 5).
+//
+// The eater arrives differently and that is the whole of the shell's difference: a parameter
+// above, `this` below. Everything from `int before` down is one implementation.
+//? if >=1.21.11 {
 @Mixin(FoodProperties.class)
+//?} else {
+/*@Mixin(net.minecraft.world.entity.player.Player.class)
+*///?}
 public abstract class FoodPropertiesMixin {
+	//? if >=1.21.11 {
 	@WrapOperation(method = "onConsume(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/item/component/Consumable;)V",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/food/FoodProperties;)V"))
 	private void archetypes$bankHunger(final FoodData data, final FoodProperties properties,
 			final Operation<Void> original, final Level level, final LivingEntity user,
 			final ItemStack stack, final Consumable consumable) {
+	//?} else {
+	/*@WrapOperation(method = "eat(Lnet/minecraft/world/level/Level;Lnet/minecraft/world/item/ItemStack;Lnet/minecraft/world/food/FoodProperties;)Lnet/minecraft/world/item/ItemStack;",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/food/FoodData;eat(Lnet/minecraft/world/food/FoodProperties;)V"))
+	private void archetypes$bankHunger(final FoodData data, final FoodProperties properties,
+			final Operation<Void> original) {
+		final LivingEntity user = (LivingEntity) (Object) this;
+	*///?}
 		int before = data.getFoodLevel();
 		float saturationBefore = data.getSaturationLevel();
 

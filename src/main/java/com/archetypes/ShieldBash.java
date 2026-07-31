@@ -138,7 +138,11 @@ public final class ShieldBash {
 		player.swing(hand, true);
 		// Slam ranks deepen the thunk; the sweep gets a whoosh over it.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
+				//? if >=1.21.11 {
 				SoundEvents.SHIELD_BLOCK.value(),
+				//?} else {
+				/*SoundEvents.SHIELD_BLOCK,
+				*///?}
 				SoundSource.PLAYERS, 1.0F, 0.65F - 0.05F * slam);
 
 		if (sweep) {
@@ -213,7 +217,11 @@ public final class ShieldBash {
 
 	private static void strike(final ServerPlayer player, final ServerLevel level,
 			final LivingEntity victim, final float damage, final double shove) {
+		//? if >=1.21.2 {
 		victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+		//?} else {
+		/*victim.hurt(player.damageSources().playerAttack(player), damage);
+		*///?}
 
 		// Placeholder knockback: plain push away from the player. TODO: switch
 		// to LivingEntity.knockback once its 26.2 argument semantics are pinned

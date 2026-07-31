@@ -21,7 +21,14 @@ public final class ModEntities {
 	private static <T extends net.minecraft.world.entity.Entity> EntityType<T> register(
 			final String path, final EntityType.Builder<T> builder) {
 		ResourceKey<EntityType<?>> key = ResourceKey.create(Registries.ENTITY_TYPE, Archetypes.id(path));
+		// `EntityType.Builder.build` takes the registry KEY from 1.21.11 and the bare id
+		// STRING below it. The registration itself is unchanged — `Registry.register` has
+		// taken a ResourceKey on every version in range (measured).
+		//? if >=1.21.11 {
 		return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(key));
+		//?} else {
+		/*return Registry.register(BuiltInRegistries.ENTITY_TYPE, key, builder.build(path));
+		*///?}
 	}
 
 	public static void initialize() {

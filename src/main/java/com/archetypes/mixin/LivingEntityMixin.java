@@ -46,14 +46,30 @@ public abstract class LivingEntityMixin {
 	// declares `blockedByItem(LivingEntity)` and has neither. Nothing is lost — the impl
 	// takes `blocked` and never reads it (Braced keys on the block happening at all, Iron
 	// Spikes rolls vanilla's own thorns numbers), so the legacy arm passes 0.
+	//
+	// STAGE 4 adds the third arm: 1.21.11 RENAMED the pair. `blockUsingShield(attacker)` is
+	// called ON THE BLOCKER and does `attacker.blockedByShield(blocker)` — byte for byte
+	// the same shape as `blockUsingItem` -> `blockedByItem` (both read out of the two
+	// jars), so `this` is still the ATTACKER and the parameter is still the BLOCKER. Iron
+	// Spikes and Braced therefore port with a name change and nothing else; they are NOT
+	// part of the excised shield-modifier cluster.
+	//
+	// TRAP, learned here: a line comment placed inside a DISABLED arm but outside its
+	// `/* */` is eaten when the arm is enabled — Stonecutter strips a leading `//` as part
+	// of un-commenting. Notes go above the whole chain, or inside the block comment.
 	//? if >=26.2 {
 	@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;F)V", at = @At("TAIL"))
 	private void archetypes$onShieldBlocked(final LivingEntity blocker, final DamageSource source,
 			final float blocked, final CallbackInfo ci) {
 		archetypes$onShieldBlockedImpl(blocker, blocked);
 	}
-	//?} else {
+	//?} elif >=1.21.11 {
 	/*@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;)V", at = @At("TAIL"))
+	private void archetypes$onShieldBlocked(final LivingEntity blocker, final CallbackInfo ci) {
+		archetypes$onShieldBlockedImpl(blocker, 0.0F);
+	}
+	*///?} else {
+	/*@Inject(method = "blockedByShield(Lnet/minecraft/world/entity/LivingEntity;)V", at = @At("TAIL"))
 	private void archetypes$onShieldBlocked(final LivingEntity blocker, final CallbackInfo ci) {
 		archetypes$onShieldBlockedImpl(blocker, 0.0F);
 	}
@@ -104,8 +120,13 @@ public abstract class LivingEntityMixin {
 		}
 
 		int damage = 1 + player.getRandom().nextInt(4) + Math.max(0, level - 10);
+		//? if >=1.21.2 {
 		attacker.hurtServer((ServerLevel) player.level(),
 				player.damageSources().thorns(player), damage);
+		//?} else {
+		/*attacker.hurt(
+				player.damageSources().thorns(player), damage);
+		*///?}
 		((ServerLevel) player.level()).playSound(null,
 				attacker.getX(), attacker.getY(), attacker.getZ(),
 				net.minecraft.sounds.SoundEvents.THORNS_HIT,
@@ -1075,7 +1096,7 @@ public abstract class LivingEntityMixin {
 	// Neither touches balance: each sets the source, calls the original unchanged, and
 	// restores in a finally. They exist so `archetypes$daggerKnockback` above sees on 26.1
 	// exactly the source 26.2 would have handed it as a parameter.
-	//? if <26.2 {
+	//? if >=1.21.2 && <26.2 {
 	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
 			method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At(value = "INVOKE",
@@ -1084,6 +1105,40 @@ public abstract class LivingEntityMixin {
 			final double x, final double z,
 			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
 			@com.llamalad7.mixinextras.sugar.Local(argsOnly = true) final DamageSource source) {
+		archetypes$stashHurtKnockbackImpl(self, strength, x, z, original, source);
+	}
+	*///?}
+	// STAGE 4: the same stash, re-targeted onto the legacy entry point. `hurt` is not
+	// `hurtServer` — it runs on BOTH logical sides — and KnockbackSource is a static whose
+	// contract is "single-threaded, server thread only". A client-thread push in
+	// singleplayer would race the server thread's, so the shared implementation early-outs
+	// on the client and simply calls the original. That is not a behaviour change: on 26.x
+	// this handler cannot be reached from a client thread in the first place.
+	//? if <1.21.2 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;knockback(DDD)V"))
+	private void archetypes$stashHurtKnockback(final LivingEntity self, final double strength,
+			final double x, final double z,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
+			@com.llamalad7.mixinextras.sugar.Local(argsOnly = true) final DamageSource source) {
+		archetypes$stashHurtKnockbackImpl(self, strength, x, z, original, source);
+	}
+	*///?}
+
+	// Shared implementation of the stash. One copy, both legacy entry points.
+	//? if <26.2 {
+	/*@Unique
+	private void archetypes$stashHurtKnockbackImpl(final LivingEntity self, final double strength,
+			final double x, final double z,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<Void> original,
+			final DamageSource source) {
+		if (self.level().isClientSide()) {
+			original.call(self, strength, x, z);
+			return;
+		}
+
 		DamageSource previous = com.archetypes.KnockbackSource.push(source);
 
 		try {
@@ -1092,10 +1147,15 @@ public abstract class LivingEntityMixin {
 			com.archetypes.KnockbackSource.pop(previous);
 		}
 	}
+	*///?}
 
 	// The shield-block leg: applyItemBlocking -> blockUsingItem -> blockedByItem ->
-	// knockback, three frames down, none of which carries the source on 26.1.
-	@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+	// knockback, three frames down, none of which carries the source on 26.1. The host
+	// method is 1.21.11-and-up only (R-A5), so this leg stops existing one node lower —
+	// and it has nothing to cover there, because the shield-modifier cluster it feeds is
+	// excised on that family too.
+	//? if >=1.21.11 && <26.2 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
 			method = "hurtServer(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)Z",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/entity/LivingEntity;applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F"))
@@ -1150,6 +1210,12 @@ public abstract class LivingEntityMixin {
 	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
 	 * "in front" for a capstone holder. {@code this} is the blocker here.
 	 */
+	// R-A5: EXCISED BELOW 1.21.11. `applyItemBlocking` does not exist there and the arc test
+	// it hosts is not a separable step — below the boundary the facing check lives inside
+	// `LivingEntity.isDamageSourceBlocked`, mixed into the same expression as the "is a
+	// shield raised at all" test, so there is no `Math.acos` whose result is only the angle.
+	// Omni Block therefore no-ops on that node family; see ColossusProtector's header.
+	//? if >=1.21.11 {
 	@ModifyExpressionValue(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F",
 			at = @At(value = "INVOKE", target = "Ljava/lang/Math;acos(D)D"))
 	private double archetypes$bulwark(final double angle) {
@@ -1167,6 +1233,7 @@ public abstract class LivingEntityMixin {
 
 		return angle;
 	}
+	//?}
 
 	/**
 	 * Unstoppable Force: a mace or a bare fist is not blocked, and the shield
@@ -1197,6 +1264,15 @@ public abstract class LivingEntityMixin {
 	 * costs. The Crusher's own actives mark themselves, so a Quake or a Haymaker
 	 * still breaks the shield it lands on.
 	 */
+	// R-A5, the cluster's fourth member — the design's R-A5 row named three, and this is the
+	// one it missed. Siegebreaker is a Colossus CRUSHER node, not a Protector one, but it
+	// lives in the same host: it intercepts `BlocksAttacks.resolveBlockedDamage` INSIDE
+	// `applyItemBlocking`, and calls `BlocksAttacks.disable` by hand. Both are gone below
+	// 1.21.11. Excised with the rest of the cluster rather than half-rooted onto
+	// `isDamageSourceBlocked`: Siegebreaker's whole point is that it MEETS Immovable Object
+	// as an authored event, and Immovable Object cannot exist there — one of the pair
+	// working and the other silently not is worse than neither.
+	//? if >=1.21.11 {
 	@ModifyExpressionValue(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/world/item/component/BlocksAttacks;resolveBlockedDamage("
@@ -1235,6 +1311,7 @@ public abstract class LivingEntityMixin {
 		com.archetypes.TitansLeap.unstoppableCue(attacker, level, blocker);
 		return 0.0F;
 	}
+	//?}
 
 	// Hardened's `hurtServer` RETURN hook used to live here. It moved to
 	// mixin/HardenedMixin so its ORDER against Fabric API's own AFTER_DAMAGE

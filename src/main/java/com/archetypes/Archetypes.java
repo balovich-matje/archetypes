@@ -153,11 +153,24 @@ public class Archetypes implements ModInitializer {
 
 		// The greatsword is strictly two-handed: while it's in the main hand
 		// the offhand is dead weight — no shields, no food, no blocks from it.
+		// `UseItemCallback` returns fabric-api's mirror of `Item.use`'s return type, so it
+		// follows the same 1.21.2 boundary: a bare `InteractionResult` above,
+		// `InteractionResultHolder<ItemStack>` below. `UseBlockCallback` below is NOT
+		// affected — it returned a plain `InteractionResult` on every version (measured on
+		// fabric-api 0.116.14 and 0.155.2).
+		//? if >=1.21.2 {
 		net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, level, hand) ->
 				hand == net.minecraft.world.InteractionHand.OFF_HAND
 						&& ModItems.isGreatsword(player.getMainHandItem())
 						? net.minecraft.world.InteractionResult.FAIL
 						: net.minecraft.world.InteractionResult.PASS);
+		//?} else {
+		/*net.fabricmc.fabric.api.event.player.UseItemCallback.EVENT.register((player, level, hand) ->
+				hand == net.minecraft.world.InteractionHand.OFF_HAND
+						&& ModItems.isGreatsword(player.getMainHandItem())
+						? net.minecraft.world.InteractionResultHolder.fail(player.getItemInHand(hand))
+						: net.minecraft.world.InteractionResultHolder.pass(player.getItemInHand(hand)));
+		*///?}
 		net.fabricmc.fabric.api.event.player.UseBlockCallback.EVENT.register((player, level, hand, hit) ->
 				hand == net.minecraft.world.InteractionHand.OFF_HAND
 						&& ModItems.isGreatsword(player.getMainHandItem())

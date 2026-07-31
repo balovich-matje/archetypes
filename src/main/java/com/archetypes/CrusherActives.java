@@ -152,7 +152,11 @@ public final class CrusherActives {
 
 		try {
 			for (LivingEntity victim : victims) {
+				//? if >=1.21.2 {
 				victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+				//?} else {
+				/*victim.hurt(player.damageSources().playerAttack(player), damage);
+				*///?}
 
 				if (launch > 0.0 && victim instanceof net.minecraft.world.entity.monster.Monster) {
 					victim.push(0.0, launch, 0.0);
@@ -243,7 +247,11 @@ public final class CrusherActives {
 		var previousSwing = MeleeSwing.begin(player);
 
 		try {
+			//? if >=1.21.2 {
 			victim.hurtServer(level, player.damageSources().playerAttack(player), damage);
+			//?} else {
+			/*victim.hurt(player.damageSources().playerAttack(player), damage);
+			*///?}
 		} finally {
 			MeleeSwing.end(previousSwing);
 		}

@@ -19,6 +19,11 @@ import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+//? if >=1.21.11 {
+import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * "That passive just fired": the node's own icon born at the crosshair,
@@ -37,7 +42,7 @@ public final class ProcIndicatorHud {
 	private static final int SIZE = 24;
 	private static final int MAX_ACTIVE = 6;
 
-	private record Proc(@org.jspecify.annotations.Nullable Identifier sprite, int texSize,
+	private record Proc(@Nullable Identifier sprite, int texSize,
 			ItemStack item, int direction, long spawnedMs) {
 	}
 

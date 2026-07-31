@@ -24,7 +24,11 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+//? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /**
  * Every Seeker spell in flight is this one entity wearing a different item:
@@ -40,19 +44,41 @@ public class SpellProjectile extends ThrowableItemProjectile {
 
 	/** Holy Light's palette: gold by default; Benediction burns orange;
 	 * Renewal keeps vanilla's green glow (see holyParticle). */
+	// 1.21.11 gave DustParticleOptions an int-RGB constructor; below it the parameter is an
+	// org.joml.Vector3f, and vanilla itself builds that with `Vec3.fromRGB24(rgb)` — the same
+	// 0xRRGGBB word unpacked one step earlier. The colour CONSTANTS stay single and shared;
+	// only the constructor call forks.
+	//? if >=1.21.11 {
 	private static final net.minecraft.core.particles.DustParticleOptions HOLY_DUST =
 			new net.minecraft.core.particles.DustParticleOptions(0xFFD75E, 1.0F);
 	private static final net.minecraft.core.particles.DustParticleOptions BENEDICTION_DUST =
 			new net.minecraft.core.particles.DustParticleOptions(0xF07818, 1.0F);
+	//?} else {
+	/*private static final net.minecraft.core.particles.DustParticleOptions HOLY_DUST =
+			new net.minecraft.core.particles.DustParticleOptions(
+					net.minecraft.world.phys.Vec3.fromRGB24(0xFFD75E).toVector3f(), 1.0F);
+	private static final net.minecraft.core.particles.DustParticleOptions BENEDICTION_DUST =
+			new net.minecraft.core.particles.DustParticleOptions(
+					net.minecraft.world.phys.Vec3.fromRGB24(0xF07818).toVector3f(), 1.0F);
+	*///?}
 	/** Lance's travelling ring: how many sparks trace the sweep's width. */
 	private static final int LANCE_RING_POINTS = 6;
 
 	/** Missile FX variant A, the Arcane Mote's palette: a faint violet
 	 * thread for the rank and file, a bright one for empowered/homing. */
+	//? if >=1.21.11 {
 	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST =
 			new net.minecraft.core.particles.DustParticleOptions(Tuning.MISSILE_DUST_COLOR, 0.6F);
 	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST_BRIGHT =
 			new net.minecraft.core.particles.DustParticleOptions(Tuning.MISSILE_DUST_BRIGHT_COLOR, 1.0F);
+	//?} else {
+	/*private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST =
+			new net.minecraft.core.particles.DustParticleOptions(
+					net.minecraft.world.phys.Vec3.fromRGB24(Tuning.MISSILE_DUST_COLOR).toVector3f(), 0.6F);
+	private static final net.minecraft.core.particles.DustParticleOptions MISSILE_DUST_BRIGHT =
+			new net.minecraft.core.particles.DustParticleOptions(
+					net.minecraft.world.phys.Vec3.fromRGB24(Tuning.MISSILE_DUST_BRIGHT_COLOR).toVector3f(), 1.0F);
+	*///?}
 
 	/** Mind Well's empowered missile — synced, because the client renders it
 	 * half again bigger; it's also the only missile that keeps the trail. */
@@ -106,7 +132,19 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	}
 
 	public SpellProjectile(final LivingEntity owner, final Level level, final Mode mode, final ItemStack look) {
-		super(ModEntities.SPELL_PROJECTILE, owner, level, look);
+		// 1.21.11 folded the display stack into the owner constructor; below it that
+		// constructor takes no ItemStack and the stack is a separate `setItem` — which is
+		// exactly what vanilla's own 1.21.1 throwables do. Same field, same value, one call
+		// later, and `setItem` is before `addFreshEntity` at every call site, so the stack
+		// still rides the spawn packet rather than a later sync.
+		super(ModEntities.SPELL_PROJECTILE, owner, level
+				//? if >=1.21.11 {
+				, look
+				//?}
+				);
+		//? if <1.21.11 {
+		/*this.setItem(look);
+		*///?}
 		this.mode = mode;
 	}
 
@@ -517,9 +555,15 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			case FLAME_BOLT -> {
 				victim.igniteForSeconds(this.igniteSeconds >= 0
 						? this.igniteSeconds : Tuning.FLAME_BOLT_FIRE_SECONDS);
+				//? if >=1.21.2 {
 				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
 						this.shattered(victim, this.damageOverride > 0.0F
 								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
+				//?} else {
+				/*victim.hurt(this.damageSources().thrown(this, this.getOwner()),
+						this.shattered(victim, this.damageOverride > 0.0F
+								? this.damageOverride : Tuning.FLAME_BOLT_DAMAGE));
+				*///?}
 			}
 			case MISSILE -> this.missileHit(level, victim);
 			case GLACIAL_SPIKE -> {
@@ -535,8 +579,13 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					victim.setTicksFrozen(Math.max(victim.getTicksFrozen(), this.freezeTicks));
 				}
 
+				//? if >=1.21.2 {
 				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
 						base * (chilled ? Tuning.GLACIAL_CHILLED_MULTIPLIER : Tuning.GLACIAL_BASE_MULTIPLIER));
+				//?} else {
+				/*victim.hurt(this.damageSources().indirectMagic(this, this.getOwner()),
+						base * (chilled ? Tuning.GLACIAL_CHILLED_MULTIPLIER : Tuning.GLACIAL_BASE_MULTIPLIER));
+				*///?}
 			}
 			default -> {
 				// Fireball, Ice Blast, Meteor and Holy Light all area-effect
@@ -601,9 +650,15 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			if (fire) {
 				victim.igniteForSeconds(this.igniteSeconds >= 0
 						? this.igniteSeconds : Tuning.FIREBALL_FIRE_SECONDS);
+				//? if >=1.21.2 {
 				victim.hurtServer(level, this.damageSources().thrown(this, this.getOwner()),
 						this.shattered(victim, this.damageOverride > 0.0F
 								? this.damageOverride : Tuning.FIREBALL_DAMAGE));
+				//?} else {
+				/*victim.hurt(this.damageSources().thrown(this, this.getOwner()),
+						this.shattered(victim, this.damageOverride > 0.0F
+								? this.damageOverride : Tuning.FIREBALL_DAMAGE));
+				*///?}
 			} else {
 				// Shatter reads the slow/freeze the victim ALREADY has, so a
 				// volley ramps: the first bolt tags, the next ones profit.
@@ -619,7 +674,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					victim.setTicksFrozen(Math.max(victim.getTicksFrozen(), this.freezeTicks));
 				}
 
+				//? if >=1.21.2 {
 				victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+				//?} else {
+				/*victim.hurt(this.damageSources().indirectMagic(this, this.getOwner()), damage);
+				*///?}
 			}
 		}
 	}
@@ -646,7 +705,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				living -> living.isAlive() && living != this.getOwner()
 						&& living.distanceToSqr(this) <= radius * radius)) {
 			victim.igniteForSeconds(3);
+			//? if >=1.21.2 {
 			victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+			//?} else {
+			/*victim.hurt(this.damageSources().indirectMagic(this, this.getOwner()), damage);
+			*///?}
 
 			if (victim.isAlive()) {
 				Vec3 away = new Vec3(victim.getX() - this.getX(), 0.0, victim.getZ() - this.getZ());
@@ -698,8 +761,13 @@ public class SpellProjectile extends ThrowableItemProjectile {
 					creature.igniteForSeconds(Tuning.IMMOLATION_FIRE_SECONDS_PER_RANK * this.immolationRank);
 				}
 
+				//? if >=1.21.2 {
 				creature.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()),
 						this.harmOverride > 0.0F ? this.harmOverride : Tuning.HOLY_AMOUNT);
+				//?} else {
+				/*creature.hurt(this.damageSources().indirectMagic(this, this.getOwner()),
+						this.harmOverride > 0.0F ? this.harmOverride : Tuning.HOLY_AMOUNT);
+				*///?}
 
 				// Judgement: the light saps the undead arm.
 				if (this.judgementRank > 0 && creature.isAlive()) {
@@ -764,7 +832,11 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			damage *= 1.0F + this.overwhelmBonus;
 		}
 
+		//? if >=1.21.2 {
 		victim.hurtServer(level, this.damageSources().indirectMagic(this, this.getOwner()), damage);
+		//?} else {
+		/*victim.hurt(this.damageSources().indirectMagic(this, this.getOwner()), damage);
+		*///?}
 
 		// Variant A: hits tick softly — connection you can hear without a
 		// fourth loud event in the spam.

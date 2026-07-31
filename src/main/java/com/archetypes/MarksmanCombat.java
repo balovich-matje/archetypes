@@ -137,7 +137,11 @@ public final class MarksmanCombat {
 						victim.getBoundingBox().inflate(Tuning.COMBUSTION_RADIUS),
 						living -> living != player && living != victim && living.isAlive()
 								&& !living.isSpectator())) {
+					//? if >=1.21.2 {
 					other.hurtServer(level, player.damageSources().playerAttack(player), result);
+					//?} else {
+					/*other.hurt(player.damageSources().playerAttack(player), result);
+					*///?}
 				}
 			} finally {
 				detonating = false;

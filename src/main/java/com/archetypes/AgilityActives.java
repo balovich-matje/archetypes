@@ -23,6 +23,11 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.Vec3;
+//? if >=1.21.11 {
+import org.jspecify.annotations.Nullable;
+//?} else {
+/*import org.jetbrains.annotations.Nullable;
+*///?}
 
 /** The Cutpurse's three actives. Cooldowns and ownership all check server-side. */
 public final class AgilityActives {
@@ -203,7 +208,14 @@ public final class AgilityActives {
 
 		float yaw = (float) (Math.toDegrees(Math.atan2(
 				victim.getZ() - dest.z, victim.getX() - dest.x)) - 90.0);
+		// 1.21.11 added the trailing `setCamera` flag and renamed `RelativeMovement` to
+		// `Relative`; the relative set is EMPTY at both call sites, so the type name never
+		// has to be written and only the flag forks. `false` is the legacy behaviour.
+		//? if >=1.21.11 {
 		player.teleportTo(level, dest.x, dest.y, dest.z, java.util.Set.of(), yaw, player.getXRot(), false);
+		//?} else {
+		/*player.teleportTo(level, dest.x, dest.y, dest.z, java.util.Set.of(), yaw, player.getXRot());
+		*///?}
 
 		level.sendParticles(ParticleTypes.PORTAL,
 				dest.x, dest.y + 1.0, dest.z, 20, 0.3, 0.6, 0.3, 0.05);
@@ -227,7 +239,7 @@ public final class AgilityActives {
 	 * range. Null when there is no mark or it has walked out of range, and the
 	 * step falls back to today's raycast.
 	 */
-	private static @org.jspecify.annotations.Nullable LivingEntity markedVictim(
+	private static @Nullable LivingEntity markedVictim(
 			final ServerPlayer player) {
 		LivingEntity mark = DeathMark.target(player);
 

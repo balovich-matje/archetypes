@@ -48,7 +48,11 @@ public final class CrusherCombat {
 				for (var other : level.getEntitiesOfClass(LivingEntity.class,
 						victim.getBoundingBox().inflate(radius, 1.0, radius),
 						o -> o != player && o != victim && o.isAlive() && !o.isSpectator())) {
+					//? if >=1.21.2 {
 					other.hurtServer(level, player.damageSources().playerAttack(player), damage);
+					//?} else {
+					/*other.hurt(player.damageSources().playerAttack(player), damage);
+					*///?}
 				}
 			} finally {
 				splashing = false;

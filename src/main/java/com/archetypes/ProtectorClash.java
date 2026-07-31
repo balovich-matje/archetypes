@@ -81,7 +81,14 @@ public final class ProtectorClash {
 	 */
 	public static boolean clash(final ServerPlayer attacker, final ServerPlayer blocker,
 			final ServerLevel level) {
+		// `getItemBlockingWith() != null` IS `isBlocking()` on 1.21.11 — the accessor was
+		// added there and `isBlocking` was reimplemented in terms of it. Below the boundary
+		// only `isBlocking()` exists, and it is the same question.
+		//? if >=1.21.11 {
 		if (clashing || attacker == blocker || blocker.getItemBlockingWith() == null) {
+		//?} else {
+		/*if (clashing || attacker == blocker || !blocker.isBlocking()) {
+		*///?}
 			return false;
 		}
 
@@ -212,8 +219,16 @@ public final class ProtectorClash {
 		clashing = true;
 
 		try {
+			//? if >=1.21.2 {
 			attacker.hurtServer(level, onAttacker, Tuning.CLASH_DAMAGE);
+			//?} else {
+			/*attacker.hurt(onAttacker, Tuning.CLASH_DAMAGE);
+			*///?}
+			//? if >=1.21.2 {
 			blocker.hurtServer(level, onBlocker, Tuning.CLASH_DAMAGE);
+			//?} else {
+			/*blocker.hurt(onBlocker, Tuning.CLASH_DAMAGE);
+			*///?}
 		} finally {
 			clashing = false;
 		}

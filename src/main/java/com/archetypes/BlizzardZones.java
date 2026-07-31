@@ -118,8 +118,13 @@ public final class BlizzardZones {
 		try {
 			for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class, box,
 					living -> living.isAlive() && living instanceof Enemy)) {
+				//? if >=1.21.2 {
 				victim.hurtServer(level, level.damageSources().indirectMagic(caster, caster),
 						zone.damagePerPulse());
+				//?} else {
+				/*victim.hurt(level.damageSources().indirectMagic(caster, caster),
+						zone.damagePerPulse());
+				*///?}
 			}
 		} finally {
 			pulsing = false;

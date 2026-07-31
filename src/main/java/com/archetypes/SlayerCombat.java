@@ -137,7 +137,11 @@ public final class SlayerCombat {
 
 		dancing = true;
 		try {
+			//? if >=1.21.2 {
 			target.hurtServer(level, player.damageSources().playerAttack(player), damage);
+			//?} else {
+			/*target.hurt(player.damageSources().playerAttack(player), damage);
+			*///?}
 		} finally {
 			dancing = false;
 		}

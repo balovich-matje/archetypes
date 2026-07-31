@@ -73,10 +73,22 @@ public final class AmnesiaPotions {
 			super(category, color);
 		}
 
+		// The ServerLevel parameter — see ManaEffects for the measurement note.
+		//? if >=1.21.11 {
 		@Override
 		public void applyInstantaneousEffect(final ServerLevel level, final Entity source,
 				final Entity indirectSource, final LivingEntity target, final int amplifier,
 				final double factor) {
+		//?} else {
+		/*@Override
+		public void applyInstantaneousEffect(final Entity source,
+				final Entity indirectSource, final LivingEntity target, final int amplifier,
+				final double factor) {
+			// The level arrives as a parameter above and is derived here — the same shape
+			// Stage 0-D used for every `hurtServer` impl. An instantaneous effect is only
+			// ever applied server-side, on both versions.
+			final ServerLevel level = (ServerLevel) target.level();
+		*///?}
 			// Drinking passes the drinker as both source and target; every
 			// projectile path passes the projectile. Only the drink counts.
 			if (source != target || !(target instanceof ServerPlayer player)) {
