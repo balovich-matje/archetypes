@@ -618,11 +618,16 @@ public final class Tuning {
 	public static final double FLAME_BOLT_MAX_DISTANCE = 16.0;
 	public static final int FLAME_BOLT_MAX_TICKS = 40;
 	/**
-	 * Vaporize boils this many water blocks per projectile, then the bolt is
+	 * Vaporize's IN-FLIGHT budget, and the flame bolt is the only mode that
+	 * spends it: one tick of a stream boils this many water blocks and is then
 	 * spent and goes away. The node used to sweep the whole 3x3x2 around the
 	 * projectile every tick, which drained ponds off one bolt.
+	 *
+	 * <p>A fireball boils nothing in flight — it carries the water clear into
+	 * its detonation instead (see {@code VAPORIZE_BURST_RADIUS}), which is
+	 * also why it does not die over the first pond it crosses.
 	 */
-	public static final int VAPORIZE_MAX_BLOCKS = 1;
+	public static final int VAPORIZE_BOLT_MAX_BLOCKS = 1;
 
 	/** Amnesia I's price: the fraction of earned levels KEPT after the
 	 * respec (user: "maybe 33% or even 50% shaved" — starting at a third
@@ -744,6 +749,17 @@ public final class Tuning {
 	/** Ice Blast bursts in a 4x4 (user call, 2026-08-01) — its own number
 	 * because only the ice half was widened; Fireball stays at 3x3. */
 	public static final double ICE_BURST_RADIUS = 2.0;
+	/**
+	 * Vaporize on a FIREBALL clears water in the burst's own footprint,
+	 * centred on the same impact point, so the steam and the blast are one
+	 * event. Deliberately DEFINED as the fireball's burst radius rather than
+	 * a copy of the number: widen the blast and the hole follows.
+	 *
+	 * <p>In blocks that is a 4x4: the cube is 3.0 wide in world space, and a
+	 * 3.0-wide box laid anywhere reaches into four block columns — the same
+	 * "does it reach in" test the damage runs against a victim's hitbox.
+	 */
+	public static final double VAPORIZE_BURST_RADIUS = ELEMENT_BURST_RADIUS;
 
 	// --- Oracle (epic) actives ---
 	/** Lightning Strike's flat mana price. Display-only for now — the effect is

@@ -288,7 +288,7 @@
 	"node.archetypes.elementalist.ignition": "Ignition",
 	"node.archetypes.elementalist.ignition.desc": "Your fire burns 3/6 seconds longer.",
 	"node.archetypes.elementalist.vaporize": "Vaporize",
-	"node.archetypes.elementalist.vaporize.desc": "Fire projectiles boil away the water they pass over.",
+	"node.archetypes.elementalist.vaporize.desc": "Fireballs blast the water out of the area they explode in. Flame bolts boil away the water they hit.",
 	"node.archetypes.elementalist.chill": "Chill",
 	"node.archetypes.elementalist.chill.desc": "Ice spells cost 5/10 less mana.",
 	"node.archetypes.elementalist.frostbite": "Frostbite",

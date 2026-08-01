@@ -135,7 +135,9 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	 * path-length cap while going nowhere.
 	 */
 	private @Nullable Vec3 origin;
-	/** Vaporize: how much water this ONE projectile has already boiled. */
+	/** Vaporize's in-flight budget: how much water this ONE projectile has
+	 * already boiled on the way. Only the flame bolt spends it — a fireball
+	 * takes its Vaporize at the impact instead (see vaporizeBurst). */
 	private int vaporized;
 
 	public SpellProjectile(final EntityType<? extends SpellProjectile> type, final Level level) {
@@ -467,42 +469,111 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	 * Vaporize boils water off the flight path; Permafrost glazes it over
 	 * with the same self-melting ice frost walkers leave.
 	 *
-	 * <p>Vaporize is budgeted: one projectile boils {@code VAPORIZE_MAX_BLOCKS}
-	 * blocks (source or flowing — both are {@code Blocks.WATER}) and is then
-	 * spent and discarded. It used to clear every water block in the 3x3x2
-	 * around itself EVERY tick, and since a bolt in water barely moves, one
-	 * bolt emptied a lake and then hung in the hole it dug.
+	 * <p>Vaporize's geometry is PER MODE, because the two spells that can
+	 * carry the node are not the same shape of thing:
+	 *
+	 * <ul>
+	 * <li>A flame bolt is one tick of a stream, so it is budgeted here: it
+	 * boils {@code VAPORIZE_BOLT_MAX_BLOCKS} blocks (source or flowing — both
+	 * are {@code Blocks.WATER}) and is then spent and discarded. It used to
+	 * clear every water block in the 3x3x2 around itself EVERY tick, and since
+	 * a bolt in water barely moves, one bolt emptied a lake and then hung in
+	 * the hole it dug.
+	 * <li>A fireball boils NOTHING in flight — it is a shot, not a stream, and
+	 * spending it on the first pond it crosses would mean it never reached
+	 * what it was aimed at. Its water clear happens at the detonation instead,
+	 * over the burst's own footprint (see {@link #vaporizeBurst}).
+	 * </ul>
 	 */
 	private void meddleWithWater(final ServerLevel level) {
-		if (!this.vaporize && !this.permafrost) {
+		// The burst modes take their Vaporize at impact, so they must not be
+		// caught by the in-flight budget below.
+		boolean boilInFlight = this.vaporize && !this.vaporizesOnImpact();
+
+		if (!boilInFlight && !this.permafrost) {
 			return;
 		}
 
-		net.minecraft.core.BlockPos center = this.blockPosition();
+		BlockPos center = this.blockPosition();
 
-		for (net.minecraft.core.BlockPos pos : net.minecraft.core.BlockPos.betweenClosed(
+		for (BlockPos pos : BlockPos.betweenClosed(
 				center.offset(-1, -1, -1), center.offset(1, 0, 1))) {
 			if (!level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER)) {
 				continue;
 			}
 
-			if (this.vaporize) {
-				level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
-				level.sendParticles(ParticleTypes.CLOUD,
-						pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 3, 0.2, 0.1, 0.2, 0.01);
+			if (boilInFlight) {
+				this.boil(level, pos);
 				level.playSound(null, pos.getX(), pos.getY(), pos.getZ(),
 						SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.4F, 1.6F);
 				this.vaporized++;
 
-				if (this.vaporized >= Tuning.VAPORIZE_MAX_BLOCKS) {
+				if (this.vaporized >= Tuning.VAPORIZE_BOLT_MAX_BLOCKS) {
 					this.discard();
 					return;
 				}
-			} else {
+			} else if (this.permafrost) {
 				level.setBlockAndUpdate(pos,
 						net.minecraft.world.level.block.Blocks.FROSTED_ICE.defaultBlockState());
 			}
 		}
+	}
+
+	/**
+	 * Which modes take their Vaporize at the detonation instead of off the
+	 * flight path. Only the fireball does today; the flame bolt keeps the
+	 * one-block-then-die budget it was given when stalled bolts were drilling
+	 * ponds, and no other mode is ever handed the node (Permafrost is the ice
+	 * half's water interaction and rides Ice Blast).
+	 */
+	private boolean vaporizesOnImpact() {
+		return this.mode == Mode.FIREBALL;
+	}
+
+	/**
+	 * Vaporize at the detonation: the fireball flashes off the water in the
+	 * burst's OWN footprint, centred on the same impact point the damage is,
+	 * so the hole and the blast are one event. Every block cube the burst
+	 * reaches into counts — the same "does it reach in" test the damage runs
+	 * against a victim's hitbox — which is a 4x4 at the burst radius.
+	 *
+	 * <p>It ADDS to the burst and replaces nothing: the explosion, the damage
+	 * and the ignite have all already happened by the time this runs, and
+	 * {@code onHit} discards the projectile straight after either way.
+	 */
+	private void vaporizeBurst(final ServerLevel level, final Vec3 center) {
+		if (!this.vaporize) {
+			return;
+		}
+
+		double radius = Tuning.VAPORIZE_BURST_RADIUS;
+		BlockPos min = new BlockPos((int) Math.floor(center.x - radius),
+				(int) Math.floor(center.y - radius), (int) Math.floor(center.z - radius));
+		BlockPos max = new BlockPos((int) Math.floor(center.x + radius),
+				(int) Math.floor(center.y + radius), (int) Math.floor(center.z + radius));
+		boolean boiled = false;
+
+		for (BlockPos pos : BlockPos.betweenClosed(min, max)) {
+			if (level.getBlockState(pos).is(net.minecraft.world.level.block.Blocks.WATER)) {
+				this.boil(level, pos);
+				boiled = true;
+			}
+		}
+
+		// One hiss for the whole footprint — the bolt's per-block sound played
+		// sixty-odd times over would be a wall of noise.
+		if (boiled) {
+			level.playSound(null, center.x, center.y, center.z,
+					SoundEvents.FIRE_EXTINGUISH, SoundSource.PLAYERS, 0.9F, 1.2F);
+		}
+	}
+
+	/** One water block turned to air and steam. The sound is the caller's:
+	 * the bolt hisses per block, the fireball once for the whole burst. */
+	private void boil(final ServerLevel level, final BlockPos pos) {
+		level.setBlockAndUpdate(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState());
+		level.sendParticles(ParticleTypes.CLOUD,
+				pos.getX() + 0.5, pos.getY() + 0.8, pos.getZ() + 0.5, 3, 0.2, 0.1, 0.2, 0.01);
 	}
 
 	private void trail(final ServerLevel level) {
@@ -697,6 +768,10 @@ public class SpellProjectile extends ThrowableItemProjectile {
 			switch (this.mode) {
 				case FIREBALL -> {
 					this.elementBurst(level, true, result);
+					// After the burst, never instead of it: Vaporize is an
+					// addition to the explosion, and the water clear must not
+					// be able to swallow the damage if it ever throws.
+					this.vaporizeBurst(level, result.getLocation());
 					level.sendParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
 							1, 0.0, 0.0, 0.0, 0.0);
 					level.playSound(null, this.getX(), this.getY(), this.getZ(),
