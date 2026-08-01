@@ -1917,6 +1917,7 @@ public abstract class LivingEntityMixin {
 
 		com.archetypes.platform.LegacyDamageEvents.fireAfterDamage(self, source, amount, amount, blocked);
 	}
+	*///?}
 
 	// STAGE 5 — Well Fed's faster eating, re-rooted off `ItemStack` because below 1.20.5
 	// `ItemStack.getUseDuration()` takes no user and Well Fed is per-player (see
@@ -1927,10 +1928,73 @@ public abstract class LivingEntityMixin {
 	// the class) — so covering all four is what reproduces the modern contract, where the
 	// countdown AND everything measured against it move together.
 	//
-	// `getUseItem()` is the stack in every one of them, and it is already assigned when the
-	// earliest of them reads it: `startUsingItem` does `putfield useItem` at offset 23 and
-	// calls `getUseDuration` at 28.
-	@ModifyExpressionValue(method = { "startUsingItem(Lnet/minecraft/world/InteractionHand;)V",
+	// On VANILLA 1.20.1 (the `else` arm) `getUseItem()` is the stack in every one of them, and
+	// it is already assigned when the earliest of them reads it: `startUsingItem` does
+	// `putfield useItem` at offset 23 and calls `getUseDuration` at 28.
+	//
+	// LEXFORGE BREAKS EXACTLY THAT, AND IT IS THE ONE THING THAT BREAKS (found in-game, then
+	// read out of the transformed `LivingEntity` of both nodes). Forge patches
+	// `startUsingItem` to route the duration through `ForgeEventFactory.onItemUseStart` and
+	// REORDERS the method to do it: `getUseDuration` is at offset 23, the event call at 31,
+	// and `putfield useItem` does not happen until offset 48. So the handler runs while
+	// `this.useItem` is still the PREVIOUS stack — `ItemStack.EMPTY` in the normal case —
+	// `Items.AIR.getFoodProperties()` is null, the guard returns `original`, and the countdown
+	// that actually governs eating is never shortened. The mixin applies, the log is clean,
+	// the injector resolves, and the node silently eats at vanilla speed. The other three
+	// sites are unaffected there (they read the field after it is assigned), which is why the
+	// bug looks like "only the speed half of Well Fed is missing".
+	//
+	// The forge arm therefore SPLITS the four sites in two: the three field-readers keep the
+	// `getUseItem()` shell, and `startUsingItem` takes the stack from the hand it was given.
+	// `getItemInHand(hand)` is the same expression Forge's own first line uses to produce the
+	// stack it then measures (offsets 0-5), so this is the identical object, one instruction
+	// earlier. `startUsingItem` MUST leave the shared handler's method list on that node —
+	// leaving it in would double-scale the client's optimistic second call, which re-enters
+	// with `useItem` already holding the food because the using FLAG is server-synced and has
+	// not arrived yet.
+	//
+	// NeoForge reorders `startUsingItem` the same way (`putfield useItem` at 39, after the
+	// read at 25) and is NOT affected: at and above 1.20.5 the hook is
+	// `ItemStackMixin.archetypes$wellFed`, a `@ModifyReturnValue` on
+	// `ItemStack.getUseDuration(LivingEntity)` itself, which takes the user as the target
+	// method's own argument and never consults `useItem`. Verified in that node's transformed
+	// `ItemStack`: the handler sits at the RETURN of `getUseDuration`, so every caller —
+	// including NeoForge's reordered one — gets the scaled value.
+	//
+	// The balance number is `ColossusProtector.eatSpeedFactor` on both arms and is called from
+	// one place each; only the shell is written twice, for the same reason ItemStackMixin's is.
+	//? if >=1.20.5 {
+	//?} elif forge {
+	/*@ModifyExpressionValue(method = { "getTicksUsingItem()I", "shouldTriggerItemUseEffects()Z",
+			"onSyncedDataUpdated(Lnet/minecraft/network/syncher/EntityDataAccessor;)V" },
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getUseDuration()I"))
+	private int archetypes$wellFedDuration(final int original) {
+		return archetypes$wellFedScale(original, ((LivingEntity) (Object) this).getUseItem());
+	}
+
+	@ModifyExpressionValue(method = "startUsingItem(Lnet/minecraft/world/InteractionHand;)V",
+			at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getUseDuration()I"))
+	private int archetypes$wellFedStartDuration(final int original,
+			@com.llamalad7.mixinextras.sugar.Local(argsOnly = true)
+			final net.minecraft.world.InteractionHand hand) {
+		return archetypes$wellFedScale(original,
+				((LivingEntity) (Object) this).getItemInHand(hand));
+	}
+
+	@Unique
+	private int archetypes$wellFedScale(final int original,
+			final net.minecraft.world.item.ItemStack stack) {
+		if (original <= 0
+				|| !((Object) this instanceof net.minecraft.world.entity.player.Player player)
+				|| stack.getItem().getFoodProperties() == null) {
+			return original;
+		}
+
+		float factor = com.archetypes.ColossusProtector.eatSpeedFactor(player);
+		return factor >= 1.0F ? original : Math.max(1, Math.round(original * factor));
+	}
+	*///?} else {
+	/*@ModifyExpressionValue(method = { "startUsingItem(Lnet/minecraft/world/InteractionHand;)V",
 			"getTicksUsingItem()I", "shouldTriggerItemUseEffects()Z",
 			"onSyncedDataUpdated(Lnet/minecraft/network/syncher/EntityDataAccessor;)V" },
 			at = @At(value = "INVOKE", target = "Lnet/minecraft/world/item/ItemStack;getUseDuration()I"))

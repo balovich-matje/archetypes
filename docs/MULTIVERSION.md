@@ -2131,6 +2131,81 @@ ARTWORK against them.** An alpha-keyed texture is a silent dependency on the ble
 the failure is total rather than subtle — which is why the only gate that can catch it is a
 launched client.
 
+#### 5.8.6 Stage 7, sixth in-game finding — **LexForge REORDERED the method the hook reads state from**
+
+**Reported:** on `1.20.1-forge`, Well Fed's faster-eating half (a 25%/50% cut) does nothing. The
+banked-hunger half of the same node works. `1.20.1-fabric` — same MC, same shared tree, same
+generated source but for one `//?` arm — is correct.
+
+**Why nothing before this caught it.** The mixin is listed, applied and *resolved*: the forge
+node's transformed `LivingEntity` carries
+`modifyExpressionValue$…$archetypes$wellFedDuration` at all four
+`ItemStack.getUseDuration()I` sites, `injectors.defaultRequire: 1` is satisfied, the boot log is
+clean and the export audit shows the handler in exactly the places §5.6 said it would be. Every
+build-shaped, server-shaped and bytecode-shaped gate we have passes, because the handler is
+*there* and it *runs*. What it does not do is return a different number.
+
+**The defect.** The legacy arm has to re-root off `ItemStack` — below 1.20.5
+`ItemStack.getUseDuration()` takes no user and Well Fed is per-player — so it lives in
+`LivingEntity`, where `this` is the user, and it reads the stack out of `getUseItem()`. That is
+sound on vanilla 1.20.1 and the arm says so explicitly: `startUsingItem` does `putfield useItem`
+at offset 23 and calls `getUseDuration` at 28. **LexForge reverses those two.** Its patch routes
+the duration through `ForgeEventFactory.onItemUseStart` and rewrites the method to do it:
+
+```
+1.20.1-fabric  method_6019   23: putfield useItem      <- assigned FIRST
+                             28: getUseDuration        <- handler here, useItem is the food
+1.20.1-forge   m_6672_       23: getUseDuration        <- handler here, useItem is still EMPTY
+                             31: ForgeEventFactory.onItemUseStart
+                             48: putfield useItem
+                             53: putfield useItemRemaining
+1.21.1-neoforge startUsingItem 25: getUseDuration ... 39: putfield useItem   (same reorder)
+```
+
+So on Forge the handler runs while `this.useItem` is the *previous* stack — `ItemStack.EMPTY` in
+the normal case — `Items.AIR.getFoodProperties()` is null, the guard returns `original`, and the
+one write that governs how long eating takes never sees the cut. The other three sites
+(`getTicksUsingItem`, `shouldTriggerItemUseEffects`, `onSyncedDataUpdated`) read the field after
+it is assigned and were scaling correctly the whole time, which is why the bug presents as "only
+the speed half of Well Fed is missing" rather than as anything visibly broken.
+
+**NeoForge reorders identically and is NOT affected**, and the reason is worth keeping: at and
+above 1.20.5 the hook is `ItemStackMixin.archetypes$wellFed`, a `@ModifyReturnValue` on
+`ItemStack.getUseDuration(LivingEntity)` *itself*, which takes the user as the target method's own
+argument and never consults `useItem`. Verified in that node's transformed `ItemStack` — the
+handler sits at the RETURN, so every caller including NeoForge's reordered one gets the scaled
+value. The modern arm is immune by construction; only the legacy re-root depends on ambient state.
+
+**The fix**, a `//? if >=1.20.5 { //?} elif forge { //?} else {` chain in `LivingEntityMixin`. The
+forge arm splits the four sites in two: the three field-readers keep the `getUseItem()` shell, and
+`startUsingItem` gets its own handler taking the stack from
+`getItemInHand(hand)` via `@Local(argsOnly = true)` — the same expression Forge's own first line
+uses to produce the stack it then measures, i.e. the identical object one instruction earlier.
+`startUsingItem` **must** leave the shared handler's method list on that node: leaving it in would
+double-scale the client's optimistic second call, which re-enters with `useItem` already holding
+the food because the using flag is server-synced and has not arrived yet. Both arms call
+`ColossusProtector.eatSpeedFactor` and nothing else — only the shell is written twice, for the
+same reason `ItemStackMixin`'s is.
+
+**Gate, measured.** Five Fabric nodes: `LivingEntityMixin.class` **instruction-identical** before
+and after on `26.2-fabric` and `1.20.1-fabric` (`javap -c -p -constants`, empty diff), and the
+non-comment source diff against `HEAD` touches nothing outside the new forge arm — the arms below
+the boundary are unchanged character for character. `mixincheck.py`: 114/114 resolve on
+`1.20.1-forge`, 112/112 on `1.20.1-fabric`. Forge dedicated-server smoke clean, exit 0, and the
+export shows `m_6672_` now calling
+`archetypes$wellFedStartDuration:(ILnet/minecraft/world/InteractionHand;)I` at offset 29 while the
+other three keep `archetypes$wellFedDuration:(I)I`.
+
+**The lesson.** §5.8.1 was a *phase*, §5.8.2 a *unit*, §5.8.3 an *arity*, §5.8.4 a *composition*,
+§5.8.5 a *state*; this one is **order**. SP's conventions already warn that a loader can patch a
+call site so a mixin on the vanilla method never runs; this is the quieter sibling — the call site
+is intact and the injector resolves, but the loader moved a *field assignment* across it, so a
+handler that reads ambient state reads it one instruction too early. The rule: **a re-rooted hook
+that reads anything other than its own arguments has a precondition, and that precondition is a
+byte offset. Write it down, and re-measure it on every loader node**, because a loader patch is
+free to reorder statements the vanilla method kept in one order and no gate short of the real
+behaviour will say so.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:
