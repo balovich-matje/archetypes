@@ -196,7 +196,20 @@ public final class SlayerActives {
 	}
 
 	/** No vanilla swing: the PAL cleave pose owns the body for the swing's
-	 * duration, on every client that can see us. */
+	 * duration, on every client that can see us.
+	 *
+	 * <p>Below 1.21 there is no PAL — the library has no artifact for 1.20.1 on
+	 * any loader — so the pose never plays and the body would stay still through
+	 * the mod's biggest blow. The legacy cue is a plain vanilla arm swing, and it
+	 * is raised in {@link #resolve} rather than here on purpose: {@code pose()}
+	 * runs at CAST, which for a charged Decimate is the start of the 20-tick
+	 * wind-up, and a swing there would announce a blow that has not landed yet.
+	 * {@code resolve()} is the cleave itself on both paths — immediate for the
+	 * parry's free cast, post-wind-up for the charged one — so one cue site
+	 * covers {@code decimate} and {@code decimate_charge} at the right tick each.
+	 * The wind-up keeps its own telegraph regardless: Slowness plus
+	 * {@link #paintWindup}'s dotted ground arc, both server-side and both
+	 * already node-agnostic. */
 	private static void pose(final ServerPlayer player, final long now) {
 		ArchetypeStore.INSTANCE.set(player, ModState.DECIMATE_SWING_AT, now);
 	}
@@ -258,6 +271,16 @@ public final class SlayerActives {
 		double range = Tuning.DECIMATE_RANGE;
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.DECIMATE_DAMAGE_MULTIPLIER);
+
+		// The legacy cue for `decimate` / `decimate_charge` (see pose()). Raised
+		// before the victim pass so a Decimate that connects with nothing still
+		// swings — a whiff is feedback, and it is what the PAL pose does above
+		// this boundary. Cosmetic only: swing() writes swinging/swingTime/
+		// swingingArm and broadcasts ClientboundAnimatePacket, and touches no
+		// attack-strength timer, so it cannot reach the damage this method deals.
+		//? if <1.21 {
+		/*player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+		*///?}
 
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),
 				SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 1.2F, 0.6F);

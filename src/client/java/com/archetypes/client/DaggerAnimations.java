@@ -66,6 +66,16 @@ import net.minecraft.world.entity.Avatar;
  * therefore see the stab for free; no attachment, no payload, and no swing
  * mixin of our own is needed.
  *
+ * <p><b>Below 1.21 this whole file is gone and nothing has to replace it.</b>
+ * The Player Animation Library has no artifact for 1.20.1 on any loader, so the
+ * five drivers are whole-unit gated and the other four lost poses got vanilla
+ * stand-ins raised server-side. This one needs none, precisely because of the
+ * paragraph above: the driver does not CAUSE the stab's arm motion, it triggers
+ * OFF a vanilla swing that has already been broadcast and only overrides the
+ * pose on top of it. Strip the layer and the vanilla main-hand swing is still
+ * there, still correct, still seen by every onlooker. `dagger_stab` is the one
+ * animation in the mod that degrades to the right thing for free.
+ *
  * <p><b>The trigger edge.</b> {@code swing} sets {@code swingTime} to -1 and the
  * owning entity's tick raises it by one each tick, resetting to 0 and clearing
  * {@code swinging} when the swing expires. So {@code swinging && swingTime == 0}

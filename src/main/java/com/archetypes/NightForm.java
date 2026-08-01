@@ -202,6 +202,17 @@ public final class NightForm {
 			return;
 		}
 
+		// NO legacy animation cue here, and the absence is the decision. Below
+		// 1.21 there is no Player Animation Library and `dark_ritual`'s channel
+		// pose does not play; every other lost pose in the mod got a vanilla
+		// stand-in, this one deliberately did not. A 200-tick static channel has
+		// no vanilla analogue: a repeating arm swing would read as attacking for
+		// ten seconds, and the only genuinely close cue — crouching — changes
+		// hitbox height, eye height and movement speed, which would turn a
+		// cosmetic fallback into a gameplay change. The ritual's own telegraph
+		// is already server-side and node-agnostic: the RESPAWN_ANCHOR_CHARGE /
+		// _DEPLETE pair below plus the SOUL/SCULK_SOUL particles the ticker
+		// draws. Do not "finish" this by adding a swing.
 		final Entity target = player;
 		ServerLevel level = (ServerLevel) player.level();
 		ArchetypeStore.INSTANCE.set(target, ModState.NIGHT_CHANNEL_END,

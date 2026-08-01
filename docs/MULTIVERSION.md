@@ -273,6 +273,29 @@ What survives: `PlayerAnimationFactory.ANIMATION_DATA_FACTORY` with the same `in
 
 Net: **10 of 10 animations, 5 of 5 layers, on 2 of 7 nodes.** First-person casters lose the most — the poses are what put these abilities on the caster's own screen via `FirstPersonMode.THIRD_PERSON_MODEL`.
 
+#### 2.2.1 `SUPERSEDES THE TABLE ABOVE` — Option B's loss was filled with vanilla cues (2026-08-01)
+
+Option A was re-checked against the live Modrinth API and is still impossible, not merely expensive: `ha1mEyJS` has **85 versions**, and the union of `game_versions` over all of them contains **no 1.20.x**, while the union of `loaders` is `["fabric","neoforge"]` — **no LexForge build at any MC version**. The sibling `kosmx/playerAnimator` (`gedNE4y2`) *does* cover both 1.20.1 loaders, but it is a different paradigm (`ModifierLayer`/`setAnimation`, no `PlayerAnimationController`/`PlayState`/`triggerAnimation`), it scans the singular resource dir `player_animation` against our plural `player_animations`, and its last 1.20.1 builds are 2023 release candidates. So Option B stands.
+
+What changed is that **Option B is no longer a silent no-op**. The 1.20.1 seam now raises vanilla arm swings server-side at the tick each lost pose would have started. `LivingEntity.swing(InteractionHand, boolean)` was confirmed present on the 1.20.1 mapped jar and confirmed cosmetic by `javap -c`: it writes `swinging`/`swingTime`/`swingingArm` and broadcasts `ClientboundAnimatePacket`, touching no attack-strength timer — so a cue can never become a gameplay change. Six of the ten needed work; four already degraded correctly for free.
+
+| Animation | 1.20.1 outcome | Where |
+|---|---|---|
+| `dagger_stab` | **already correct, no code** — the driver triggers *off* a vanilla swing and only overrode the pose | — |
+| `shield_sweep_{left,right,dual}` | **already correct, no code** — `ShieldBash` already swings the shield-holding hand unconditionally, before the sweep stamp | `ShieldBash.java` |
+| `decimate` | main-arm swing at the cleave | `SlayerActives.resolve()` |
+| `decimate_charge` | main-arm swing at the release; wind-up still telegraphed by Slowness + `paintWindup`'s ground arc | same site — `resolve()` runs at the blow on both paths, which is why the cue is there and not in `pose()` |
+| `quake_charge` | main-arm swing at the slam; the charge keeps its existing sound cue | `CrusherActives.quakeSlam()` |
+| `bladestorm` | one swing per volley — 6 over the 60-tick channel, matching the damage cadence | `SlayerTicker` |
+| `flame_channel` | throttled swing every 10 ticks (`FLAME_BOLT_PERIOD_TICKS * 5`); **not** per bolt, which would strobe the arm at 10 Hz | `SeekerSpells.channelFlame()` |
+| `dark_ritual` | **deliberately none** — a 200-tick static channel has no vanilla analogue, and crouch (the only close cue) changes hitbox height, eye height and speed. Left to its `RESPAWN_ANCHOR_CHARGE`/`_DEPLETE` + `SOUL`/`SCULK_SOUL` FX | `NightForm.beginRitual()`, documented in place |
+
+Implementation notes: every cue sits in the `<1.21` arm of the **existing** `>=1.21` boundary — no new predicate, and `//? if <1.21 {` was already in use at this exact boundary (`LegacyAttributes`, `PlayerMixin`). The ten JSONs keep shipping unused on 1.20.1 rather than being excluded, because the shared resource root feeds every node's jar and excluding them would move all five Fabric jars' resource bytes.
+
+**Verified:** seven jars green. Cue bytecode counted per node — the four new `swing` invocations appear on `1.20.1-fabric` and `1.20.1-forge` and on no other node. Non-regression gate re-run before/after across the five nodes that must not move: **instruction-identical** (26.2 244/244, 26.1 244/244, 1.21.11 250/250, 1.21.1 251/251, 1.21.1-neoforge 254/254) and **resource-byte-identical**.
+
+⚠ **Release metadata is deliberately untouched and needs a decision.** These cues do not add a PAL dependency to either 1.20.1 node — there is nothing to depend on — so the per-node dependency sets in §4 stand as they are: PAL required only where `deps.pal` exists, i.e. still neither 1.20.1 node. Nothing here changes what any node uploads.
+
 **Recommendation: ship Option B first, treat Option A as a follow-up.** Reasons: (i) B is a bounded `//?` arm that unblocks both 1.20.1 nodes today; (ii) A's decisive unknown is untested — *do the 9 authored `player_animations/*.json` load unchanged on the 1.0.x loader?* PAL is a fork of playerAnimator and the `"version": 3` torso/body trap documented in `DaggerAnimations.java` is a 1.0.x-lineage trap, so reuse is *likely* — but a failure means re-authoring 10 animations, not porting a driver; (iii) `1.20.1-forge` is the node where PAL never existed on any loader, so if the answer is "1.20.1 ships without poses", **both 1.20.1 nodes converge on one code path** and the fork cost halves.
 
 **If Option A is taken**, add `maven("https://maven.kosmx.dev/")` to the node script's repositories and run experiment **E-PAL-1** (§6) *before* committing.

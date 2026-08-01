@@ -57,6 +57,17 @@ public final class CrusherActives {
 		ServerLevel level = (ServerLevel) player.level();
 		var owned = NodePurchases.owned(player, SubTree.CRUSHER);
 
+		// The legacy cue for `quake_charge`, below 1.21 where there is no PAL.
+		// It lands on the SLAM and not on the charge: the 30-tick charge has no
+		// vanilla analogue worth forcing — a use-item pose would lock the mace
+		// and slow the player, i.e. a gameplay change, which is exactly what the
+		// no-PAL fallback promises never to be — while the slam is a swing in
+		// every sense. The charge keeps the telegraph it already had on every
+		// node: the MACE_SMASH_AIR/PLAYER_ATTACK_SWEEP cue raised in quake().
+		//? if <1.21 {
+		/*player.swing(InteractionHand.MAIN_HAND, true);
+		*///?}
+
 		// Density feeds the slam, Meteor doubles down — at Density V with
 		// full Meteor the slam one-shots a fresh zombie.
 		//? if >=1.21 {

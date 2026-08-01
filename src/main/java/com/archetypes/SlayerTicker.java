@@ -157,7 +157,11 @@ public final class SlayerTicker {
 		// under pitched sweeps on the half-beats.
 		if (remaining % (Tuning.BLADESTORM_VOLLEY_PERIOD / 2) == 0) {
 			// No arm swing: on this branch the Player Animation Library pose
-			// owns the body during the channel.
+			// owns the body during the channel. Below 1.21 there is no PAL, and
+			// the legacy cue rides the FULL volley period instead of this
+			// half-beat — see the swing below. Half-beat swinging would be a
+			// 5-tick strobe, shorter than vanilla's own swing duration, which
+			// reads as a broken arm rather than a flurry.
 			level.playSound(null, player.getX(), player.getY(), player.getZ(),
 					SoundEvents.PLAYER_ATTACK_SWEEP, SoundSource.PLAYERS, 0.9F,
 					0.8F + level.getRandom().nextFloat() * 0.5F);
@@ -180,6 +184,15 @@ public final class SlayerTicker {
 		if (remaining % Tuning.BLADESTORM_VOLLEY_PERIOD != 0) {
 			return;
 		}
+
+		// The legacy cue for `bladestorm`. One swing per volley — six over the
+		// 60-tick channel — so the arm matches the damage cadence exactly and
+		// the "stay out of this circle" read the 3-block AoE needs survives the
+		// missing pose. Cosmetic only; MeleeSwing below is what marks the volley
+		// as a swing to the rest of the mod, and this does not touch it.
+		//? if <1.21 {
+		/*player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+		*///?}
 
 		float damage = (float) (player.getAttributeValue(Attributes.ATTACK_DAMAGE)
 				* Tuning.BLADESTORM_DAMAGE_FACTOR);

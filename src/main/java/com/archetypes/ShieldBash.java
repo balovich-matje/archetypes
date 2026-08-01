@@ -135,6 +135,15 @@ public final class ShieldBash {
 		}
 
 		// The swing happens whether or not it lands — whiffing is feedback too.
+		//
+		// This line is ALSO the whole legacy fallback for `shield_sweep_left` /
+		// `_right` / `_dual`, and it needs no `//?` arm to be one. It is
+		// unconditional, it already fires for every bash, and `hand` is the
+		// shield-holding hand — the same off-hand-preferred choice the client
+		// driver's animationFor() re-derives. So below 1.21, where there is no
+		// Player Animation Library, Shield Sweep still swings the correct arm.
+		// The dual-shield case collapses to one arm; that is the accepted
+		// degradation. Do not add a second swing in a `<1.21` arm here.
 		player.swing(hand, true);
 		// Slam ranks deepen the thunk; the sweep gets a whoosh over it.
 		level.playSound(null, player.getX(), player.getY(), player.getZ(),

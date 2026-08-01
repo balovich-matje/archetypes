@@ -484,6 +484,20 @@ public final class SeekerSpells {
 		// fire kept pouring out.
 		ArchetypeStore.INSTANCE.set(target, ModState.FLAME_LAST_TICK, now);
 
+		// Below 1.21 there is no PAL and so no aimed channel pose, which puts
+		// the author's original complaint back on the table from the other end:
+		// with nothing at all the wand just sits there while fire pours out.
+		// The legacy cue is a slow repeating swing — deliberately NOT one per
+		// bolt. FLAME_BOLT_PERIOD_TICKS is 2, so a per-bolt swing would restart
+		// the arm at 10 Hz, far inside vanilla's 6-tick swing duration, and read
+		// as a stutter rather than a cast. x5 gives one swing every 10 ticks:
+		// enough to say "still channelling", slow enough to look deliberate.
+		//? if <1.21 {
+		/*if (now % (Tuning.FLAME_BOLT_PERIOD_TICKS * 5L) == 0L) {
+			player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true);
+		}
+		*///?}
+
 		if (now % Tuning.FLAME_BOLT_PERIOD_TICKS != 0) {
 			return;
 		}
