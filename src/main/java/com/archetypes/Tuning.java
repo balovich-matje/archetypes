@@ -1434,6 +1434,10 @@ public final class Tuning {
 	 *
 	 * <p>A vanilla shield blocks 100% of what it blocks at all, so rank 2 is
 	 * half of every non-bypassing hit, always, with no button and no facing.
+	 * Below 1.21.11 that 100% is vanilla's own all-or-nothing blocking branch
+	 * rather than a resolved {@code damage_reductions} number; the two come out
+	 * at the same figure for a vanilla shield, which is why the node ports at
+	 * full strength (see {@link ColossusProtector#instinctiveGuard}).
 	 * That is two of this tree's five points and it is fenced by the shield
 	 * itself: the durability charged is the whole block, not the quarter or
 	 * half kept ({@link ColossusProtector#instinctiveGuard}), so a Colossus who

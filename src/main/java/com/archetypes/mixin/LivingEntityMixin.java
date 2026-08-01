@@ -1354,34 +1354,80 @@ public abstract class LivingEntityMixin {
 	}
 
 	/**
-	 * Bulwark: vanilla's block-angle check boils down to one Math.acos in
+	 * Omni Block: vanilla's block-angle check boils down to one Math.acos in
 	 * applyItemBlocking — forcing the angle to 0 makes every direction count as
 	 * "in front" for a capstone holder. {@code this} is the blocker here.
 	 */
-	// R-A5: EXCISED BELOW 1.21.11. `applyItemBlocking` does not exist there and the arc test
-	// it hosts is not a separable step — below the boundary the facing check lives inside
-	// `LivingEntity.isDamageSourceBlocked`, mixed into the same expression as the "is a
-	// shield raised at all" test, so there is no `Math.acos` whose result is only the angle.
-	// Omni Block therefore no-ops on that node family; see ColossusProtector's header.
+	// ---- R-A5 REOPENED, AND THE CLAIM THAT EXCISED THIS NODE IS REFUTED BY THE BYTECODE. ----
+	//
+	// Stage 4 wrote that below 1.21.11 "the facing check lives inside
+	// `LivingEntity.isDamageSourceBlocked`, mixed into the same expression as the 'is a shield
+	// raised at all' test, so there is no `Math.acos` whose result is only the angle". The
+	// second half is true — there is no `acos` — and the first half is false. MEASURED,
+	// `javap -c` on all four legacy targets: `isDamageSourceBlocked` is SIX CLAUSES IN
+	// SEQUENCE, each with its own conditional jump to a shared `iconst_0; ireturn` tail, and
+	// the facing test is the LAST basic block, entered only after every other clause passed.
+	// Its whole contribution to the return value is one double:
+	//
+	//     107/103: aload 6                 // toSource, flattened + normalised
+	//     109/105: aload 5                 // view vector
+	//     111/107: invokevirtual Vec3.dot:(Lnet/minecraft/world/phys/Vec3;)D
+	//     114/110: dconst_0 / dcmpg / ifge <false tail>
+	//
+	// (offsets 1.21.1 & NeoForge / 1.20.1 & LexForge). `Vec3.dot` occurs EXACTLY ONCE in the
+	// method and exactly once in the whole `LivingEntity` class on every one of the four, so
+	// the target resolves without an ordinal and `defaultRequire: 1` pins it. Both loaders
+	// leave `isDamageSourceBlocked` unpatched and wrap only the CALLER, so their own
+	// shield-block events still see a consistent story — the R-20 contract test.
+	//
+	// `dcmpg; ifge` means `dot < 0.0` is "in front", so ANY negative double defeats the arc
+	// and nothing else. Clauses 1-6 (`#bypasses_shield`, `isBlocking()`, the piercing arrow,
+	// the null source position) all still run and still gate — which is precisely what
+	// forcing `acos` to 0 does above the boundary, and precisely what the lang string
+	// promises: "WHILE BLOCKING, your shield stops attacks from every direction."
+	//
+	// THE TWO ARMS DO NOT SHARE AN IMPL, ON PURPOSE. The modern sentinel is an ANGLE in
+	// radians and the legacy one is a DOT PRODUCT; conflating them would be a units bug. What
+	// IS shared is the only thing that must be — the node-ownership test, i.e. the balance
+	// logic (conventions §5a). Each arm is then two lines picking its own sentinel, which is
+	// arithmetic at the call site and explicitly permitted.
+	//
+	// ORDER AGAINST SIEGEBREAKER, verified and it comes out right: Omni Block hooks INSIDE
+	// the callee, Siegebreaker's legacy arm hooks the callee's return IN `hurt`. Callee first.
+	// So Omni Block forces the arc, Siegebreaker then flips the true to false and runs
+	// `archetypes$breakGuard`, which asks `ColossusProtector.immovableObject` and can still be
+	// refused. Siegebreaker beats Omni Block and Immovable Object still meets it — the same
+	// direction as 26.x, where Omni Block zeroes the `acos` and Siegebreaker then zeroes
+	// `resolveBlockedDamage` later in the same instruction stream. The authored clash
+	// survives the port intact.
+	//
+	// NOTHING IS ADDED TO THE `hurt` FUNNEL: this handler lives in `isDamageSourceBlocked`, so
+	// the 15-`@ModifyVariable` order, Skill Proficiencies' three multipliers and Flense's 1500
+	// are all untouched.
 	//? if >=1.21.11 {
 	@ModifyExpressionValue(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F",
 			at = @At(value = "INVOKE", target = "Ljava/lang/Math;acos(D)D"))
 	private double archetypes$bulwark(final double angle) {
-		return archetypes$bulwarkImpl(angle);
+		return archetypes$hasBulwark() ? 0.0 : angle;
 	}
+	//?} else {
+	/*@ModifyExpressionValue(method = "isDamageSourceBlocked(Lnet/minecraft/world/damagesource/DamageSource;)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/phys/Vec3;dot(Lnet/minecraft/world/phys/Vec3;)D"))
+	private double archetypes$bulwark(final double dot) {
+		return archetypes$hasBulwark() ? -1.0 : dot;
+	}
+	*///?}
 
-	/** Shared implementation of {@link #archetypes$bulwark}. */
+	/** The one balance test behind {@link #archetypes$bulwark}, shared by both
+	 * arms because it is the same question on every node — only the sentinel
+	 * each arm hands back is version-shaped. */
 	@Unique
-	private double archetypes$bulwarkImpl(final double angle) {
-		if ((Object) this instanceof ServerPlayer player
+	private boolean archetypes$hasBulwark() {
+		return (Object) this instanceof ServerPlayer player
 				&& ProtectorNodes.rank(SubTree.PROTECTOR, NodePurchases.owned(player, SubTree.PROTECTOR),
-						ProtectorNodes.Family.OMNI_BLOCK) > 0) {
-			return 0.0;
-		}
-
-		return angle;
+						ProtectorNodes.Family.OMNI_BLOCK) > 0;
 	}
-	//?}
 
 	/**
 	 * Unstoppable Force: a mace or a bare fist is not blocked, and the shield
@@ -1898,6 +1944,34 @@ public abstract class LivingEntityMixin {
 
 		float factor = com.archetypes.ColossusProtector.eatSpeedFactor(player);
 		return factor >= 1.0F ? original : Math.max(1, Math.round(original * factor));
+	}
+	*///?}
+
+	// ---- R-A6: LEVITATION, ANCHOR 2 OF 3. `LivingEntity.updateFallFlying()V` (private). ----
+	//
+	// The full account is in `MagicArmaments`, above `fitGlider`. What is here: this is the
+	// per-tick "may I keep gliding" question, called from `LivingEntity.aiStep`. Its WRITE of
+	// shared flag 7 is behind `if (!level.isClientSide)`, so the handler running on a client
+	// tick costs nothing and cannot desync anything — the server owns the flag and every
+	// change it makes reaches the owning client through `ServerEntity.sendDirtyEntityData`.
+	//
+	// `getItemBySlot(EquipmentSlot)ItemStack` appears EXACTLY ONCE in the method, at offset 39
+	// on all four legacy targets, owner `LivingEntity` (`#1663` on 1.21.1, `#1051` on 1.20.1).
+	// One occurrence, so no ordinal; `injectors.defaultRequire: 1` is the drift detector.
+	//
+	// APPENDED AT THE END OF THE CLASS DELIBERATELY (design finding 3), and it adds NOTHING to
+	// the `hurt`/`hurtServer` funnel: the target is a different method, so the 15
+	// `@ModifyVariable` shapers keep their order and their offsets.
+	//? if <1.21.11 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "updateFallFlying()V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;getItemBySlot("
+							+ "Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;"))
+	private net.minecraft.world.item.ItemStack archetypes$levitationGlider(final LivingEntity self,
+			final net.minecraft.world.entity.EquipmentSlot slot,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<net.minecraft.world.item.ItemStack> original) {
+		return com.archetypes.MagicArmaments.legacyGliderSlot(self, slot, original.call(self, slot));
 	}
 	*///?}
 }

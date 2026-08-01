@@ -235,7 +235,7 @@ in.
 - **Exclusive capstone pairs**: `TreeNodes.exclusiveTaken(tree, owned, index)`
   encodes each tree's mutually-exclusive capstones (owning one locks the other),
   e.g. Slayer's Bladestorm|Decimate, Crusher's Quake|Haymaker, Protector's
-  Bulwark(`OMNI_BLOCK`)|Shield Sweep(`GROUND_SLAM`). Elementalist is special: its four capstones
+  Omni Block(`OMNI_BLOCK`)|Shield Sweep(`GROUND_SLAM`). Elementalist is special: its four capstones
   are **one choice total** — any owned capstone locks the other three.
 
 ### Compacting a family instead of redrawing a grid
@@ -416,11 +416,14 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    funnels all knockback: daggers and missiles shove at half, Flamethrower and
    Blizzard pulses at zero, and Clinch reduces a bare-fisted Crusher's shove.
 4. `archetypes$bulwark` (`@ModifyExpressionValue` on the `Math.acos` block-angle
-   check in `applyItemBlocking`) forces the angle to 0 so a Bulwark holder blocks
-   from every direction. (That is the Protector's `OMNI_BLOCK`. The Colossus
-   Crusher's same-named node is not on this funnel at all — it used to be a flat
-   victim-side reduction and is now a standing `MAX_HEALTH` modifier, for the
-   reason in the next paragraph.)
+   check in `applyItemBlocking`) forces the angle to 0 so an Omni Block holder
+   blocks from every direction. Below 1.21.11 the same handler name targets the
+   single `Vec3.dot` inside `LivingEntity.isDamageSourceBlocked` and hands back a
+   negative double, which defeats the arc and nothing else — same effect, and it
+   is not on the `hurt` funnel either. (That is the Protector's `OMNI_BLOCK`. The
+   Colossus Crusher's once-same-named node is not on this funnel at all — it used
+   to be a flat victim-side reduction and is now a standing `MAX_HEALTH`
+   modifier, for the reason in the next paragraph.)
 
 **Why a defensive node should not be a shaper.** A `@ModifyVariable` at
 `hurtServer`'s HEAD is *pre-armour*, and vanilla's armour term degrades by
@@ -436,7 +439,10 @@ is worth and it has to be earned hit by hit before it is worth anything at all.
 kept the other one — a zero-input node — which is why it did not last.)
 Both remaining victim-side entries earn their place
 by not being flat: Mana Shield moves damage into another pool, Instinctive Guard
-spends shield durability and answers the shield's own `BlocksAttacks`.
+spends shield durability and answers the shield's own `BlocksAttacks` (below
+1.21.11, vanilla's own `isDamageSourceBlocked` clauses instead — same numbers,
+and there the handler is a pure multiplication, so it commutes with everything
+else on the funnel).
 
 **`ArmourMath` is signed.** `afterArmour`/`rawForAfterArmour` transcribe
 `CombatRules.getDamageAfterAbsorb` and its exact inverse, and they now also
@@ -474,11 +480,13 @@ spear, and it existed only because Spearwall could make "am I blocking?" true
 without a shield being raised. The arm itself is deliberately left alone,
 because it is also what lowers the shield when the use key comes up.
 
-Other mixins: `PlayerMixin` (XP mirror, the `canGlide` hook that lets a
-Magic Armaments channel glide in an elytra's place — declared common because
-`Player` is common and the client's jump-to-deploy runs the same check — and
-`canEat`, so Well Fed's raised hunger ceiling is fillable past 20 on both
-sides), `PlayerAdvancementsMixin` (advancement
+Other mixins: `PlayerMixin` (XP mirror, `canEat` so Well Fed's raised hunger
+ceiling is fillable past 20 on both sides, and — below 1.21.11 only — one of the
+three `getItemBySlot` wraps that let a Magic Armaments channel glide in an
+elytra's place, declared common because `Player` is common and the client's
+jump-to-deploy runs the same check; at 1.21.11 and up the glide is the conjured
+weapon's own GLIDER component and needs no mixin at all),
+`PlayerAdvancementsMixin` (advancement
 count), `AbstractArrowMixin`/`AbstractArrowAccessor`/`ProjectileMixin` (True Shot
 flight and reflection), `CrossbowItemMixin` (Rapid Reload), `BlocksAttacksMixin`,
 `ItemStackMixin` (Well Fed's faster eating on `getUseDuration`, and
@@ -519,7 +527,7 @@ same index. Only the lang VALUE and the sprite's pixels move. Never "tidy" the
 constant to match the title.
 
 It is deliberately not a second ability, and that is the whole design. The node
-opposite it is Bulwark; a capstone with its own key, its own timer and its own
+opposite it is Omni Block; a capstone with its own key, its own timer and its own
 animation would have made the tree's left column optional. So Shield Sweep is
 three edits to `ShieldBash.execute`, all of them gated on one boolean:
 

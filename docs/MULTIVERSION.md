@@ -958,6 +958,56 @@ filter keyed on the full `.desc` key. `//?` cannot do it: Stonecutter never proc
 > blocking.") over-promises there by one clause; a per-node lang override is the fix if it is
 > judged worth one.
 
+> ⚠⚠ **SECOND CORRECTION, and it empties the row: R-A5 IS ZERO AND `inertNodeKeys` IS GONE.**
+> The paragraph immediately above kept two nodes excised on the sentence "below the boundary
+> blocking has no number — the answer is the whole hit or nothing". That sentence is *true*
+> and the conclusion drawn from it is *wrong*, because the 26.x number is not an arbitrary
+> one: for a vanilla shield it **is** the whole hit.
+>
+> * **Instinctive Guard.** Dumped `BlocksAttacks*` out of the 26.2 common jar plus the vanilla
+>   shield's own component factory. The shield is
+>   `BlocksAttacks(0.25, 1.0, [DamageReduction(90°, ∅, base 0, factor 1)], ItemDamageFunction(3,1,1), #bypasses_shield…)`,
+>   and `DamageReduction.resolve` at the literal `0.0` angle this node passes is
+>   `clamp(0 + 1×dmg, 0, dmg)` — i.e. **`blockable == amount`, always**. The durability rule is
+>   the same identity: `ItemDamageFunction.apply(f)` is `f < 3 ? 0 : floor(1 + f)`, and legacy
+>   `Player.hurtCurrentlyUsedShield` is `if (amount >= 3) { int i = 1 + floor(amount); … }` —
+>   equal for every `x >= 0`. So the legacy arm reproduces the node EXACTLY, not approximately.
+>   The reimplemented predicate is vanilla's own `isDamageSourceBlocked` clause list: KEEP the
+>   piercing arrow, KEEP `#bypasses_shield` (which *is* the shield's `bypassedBy()` there), KEEP
+>   `getSourcePosition() == null` (load-bearing — 26.2's `bypassed_by` gained cactus/campfire/
+>   dry_out/hot_floor/in_fire/lava/sweet_berry_bush/sulfur_cube_hot, all null-position, so the
+>   clause restores parity by another route), INVERT `isBlocking()` into the head as a gate, DROP
+>   the facing test. One residual: `lightning_bolt` is in 26.2's `bypassed_by` and not in the
+>   legacy tag, so a legacy carried shield soaks lightning — which is what a *raised* vanilla
+>   shield does on 1.21.1/1.20.1. That is the node keeping its own version's contract.
+>   **Side effect worth naming: on the four legacy nodes this handler is a strictly pure
+>   multiplication** (`blockable == amount` always), so it commutes with SP's three `hurtServer`
+>   multipliers and drops off R-C3's non-commuting list there. A strengthening, not a risk.
+> * **Omni Block.** The claim that excised it — "the facing check is mixed into the same
+>   expression as the shield test, there is no `Math.acos` whose result is only the angle" — is
+>   **refuted by the bytecode**. `isDamageSourceBlocked` is six clauses in sequence, each with
+>   its own jump to a shared `iconst_0; ireturn` tail, and the facing test is the LAST basic
+>   block. Its entire contribution is one `Vec3.dot`, which occurs **exactly once in the method
+>   and exactly once in the whole `LivingEntity` class** on all four legacy targets (1.21.1-fab
+>   / NF offset 111, 1.20.1-fab / FG offset 107, trailing `dconst_0; dcmpg; ifge`). So
+>   `@ModifyExpressionValue` returning any negative double defeats the arc and nothing else,
+>   while clauses 1–6 still gate — precisely what forcing `acos` to 0 does above the boundary.
+>   Both loaders leave `isDamageSourceBlocked` unpatched and wrap only the CALLER
+>   (`CommonHooks.onDamageBlock` / `ForgeHooks.onShieldBlock`), so their shield-block events
+>   still see a consistent story. Ordering comes out right: callee resolves before caller, so
+>   Omni Block forces the arc, Siegebreaker then flips the boolean, and Immovable Object can
+>   still refuse the disable — the authored clash, intact.
+>
+> `inertNodeKeys` is therefore **removed from all three node scripts**, not merely emptied; the
+> shape to reuse if a key ever has to come back is documented over the fabric script's
+> Unstoppable-Force mace filter, which is the same machinery and is still live.
+>
+> **The 1.20.1 mace over-promise named above is CLOSED**, by that filter:
+> `macelessSiegebreaker = sc.current.parsed < "1.21"` rewrites "Your mace and unarmed attacks"
+> to "Your unarmed attacks" on the two 1.20.1 nodes only. Not a per-node `en_us.json` override,
+> deliberately — the shared resource root ships into every node's jar, so a copy would move all
+> five Fabric jars' resource bytes.
+
 **Not excised, each verified rather than assumed:** Iron Spikes and Braced (`blockedByItem`
 is `blockedByShield` here, same contract), Free Hand (`isBlocking()` is the same question),
 Ironclad, Hearty Meal, Well Fed.
@@ -968,6 +1018,53 @@ and the whole `world.item.equipment` package are absent from the 1.21.1 jar too.
 Armaments' glide is excised on **both** legacy Fabric nodes — and not reimplemented, because
 the obvious substitute (overriding `Player.canGlide`) is the server crash that method's own
 javadoc documents.
+
+> ⚠⚠ **CORRECTION: R-A6 IS CLOSED TOO, AND THE CRASH PREMISE IS 1.21.11+-ONLY.** The boundary
+> correction above stands; the excision it justified does not. Three measurements:
+>
+> 1. **The crash cannot happen below the boundary.** There is no glider-slot list and no
+>    `Util.getRandom` anywhere in the legacy `updateFallFlying` — it reads the CHEST stack
+>    directly. `Util.getRandom` appears in `LivingEntity` only inside `tickEffects()` on
+>    1.21.1-fabric and NeoForge, and not at all on 1.20.1-fabric or LexForge. `canGlide` does
+>    not exist as a method on any of the four (`javap -p` on `Player` and `LivingEntity`: 0
+>    hits). There is no hook there to be afraid of.
+> 2. **A server-only fix would be a total no-op, not a rubber-band.** `LocalPlayer.aiStep`
+>    INLINES the chest test before it will call `tryToStartFallFlying()` or send
+>    `START_FALL_FLYING` — `chest.is(Items.ELYTRA) && ElytraItem.isFlyEnabled(chest)` on
+>    Fabric, `chest.canElytraFly(this)` on both loaders. Without a client half the packet is
+>    never sent. That is a GATE, not a prediction mismatch.
+> 3. **Once started there is no prediction problem at all.** `LivingEntity.travel`'s glide
+>    branch is gated on `isFallFlying()` = shared flag 7 alone; the client never writes it
+>    (both the `updateFallFlying` write and `travel`'s landing clear sit behind
+>    `if (!level.isClientSide)`), every clear reaches the owner via
+>    `ServerEntity.sendDirtyEntityData`, and `handleMovePlayer` picks its 300-vs-100 cap off
+>    the SERVER's flag — so no "moved too quickly" either.
+>
+> **The route taken: wrap the CHEST-slot READ, hand vanilla a stand-in elytra.** The boolean
+> forks per loader; `getItemBySlot(EquipmentSlot)ItemStack` does not — it is present exactly
+> once in each target method on all four arms, same structural position, same owner, so the
+> handler is one shape with **zero annotation fork**. Three anchors, because the client gate is
+> where the node actually died:
+>
+> | # | Target | `@At` owner | offset 1.21.1-fab / 1.20.1-fab / NF 21.1 / FG 47.4 |
+> |---|---|---|---|
+> | 1 | `Player.tryToStartFallFlying()Z` | `Player` | 35 / 35 / 35 / 35 |
+> | 2 | `LivingEntity.updateFallFlying()V` (private) | `LivingEntity` | 39 / 39 / 39 / 39 |
+> | 3 | `LocalPlayer.aiStep()V` | `LocalPlayer` | 858 / 825 / 956 / 924 |
+>
+> One occurrence each ⇒ no ordinal, and `injectors.defaultRequire: 1` is the detector. Neither
+> `ServerPlayer` nor `LocalPlayer` overrides `tryToStartFallFlying`/`startFallFlying`/
+> `stopFallFlying`/`updateFallFlying`, so anchors 1–2 cover both logical sides from `src/main`.
+> The predicate (`ModItems.isSummoned(mainHand)` + `NodePurchases.owned`) is identical on both
+> sides and reads only synced state — `ARMAMENTS_WAND` is server-only and deliberately not
+> consulted. Everything downstream is stock vanilla: deploy gesture, packet, flag 7, physics,
+> firework boosts, landing, the `fallFlyTicks` lean, the `ElytraOnPlayerSoundInstance` wind.
+> `ElytraLayer` keys on `Items.ELYTRA` in the CHEST, so **no wings are drawn** — which is
+> exactly what 26.x looks like, because its EQUIPPABLE names MAINHAND.
+>
+> Residual, stated: deploy LATENCY (the client's main-hand slot arrives a tick or two after
+> `start()` swaps the wand, so worst case is one missed jump press), and on the two loader
+> nodes another mod's `canElytraFly` chestpiece is shadowed for the duration of the channel.
 
 **Two re-rootings rather than excisions, both reproducing the CONTRACT (R-20).** Hearty Meal
 moves from `Consumable.onConsume` to a `@WrapOperation` on `ItemStack.finishUsingItem` —
@@ -1977,8 +2074,8 @@ Ordered by "blocks the port" first. Every row names the experiment that resolves
 | **R-A2** | **E-PAL-1 (untested, decisive for Option A):** do the 9 `assets/archetypes/player_animations/*.json` load unchanged on `dev.kosmx.player-anim:player-animation-lib-fabric:1.0.2-rc1+1.20`? PAL is a fork of playerAnimator and the `"version": 3` torso/body trap is a 1.0.x-lineage trap, so reuse is *likely*. | **EXPERIMENT.** Drop the 9 JSONs into a 1.20.1 Fabric dev client with the 1.0.x lib, call `PlayerAnimationRegistry.getAnimation(id)` on each, assert non-null and that bone names survive. Cheap. **Failure = re-authoring 10 animations, not porting a driver.** Run before committing to A. |
 | **R-A3** | **SP cannot supply Archetypes on 6 of 7 nodes today.** `build.fabric.gradle.kts:324` gates publishing to `>= "26.2"`; `build.neoforge.gradle.kts:294` states only 26.2 owns the coordinate. One artifact provably cannot serve seven (measured: `iconTexture()` returns `Identifier`/`ResourceLocation`/`class_2960` by node; namespaces `official`/`intermediary`/mojmap-no-header). | **DECISION + SP-SIDE EDIT.** Preferred: extend SP's publishing to all seven as `…:<version>+<node key>` while 26.2 keeps the bare coordinate. Touches SP's single-writer wiring → **needs the user's go-ahead and its own commit.** Fallback that needs zero SP change and works today: `modCompileOnly(files("../specialities/build/libs/1.6.0/…jar"))` per node. |
 | **R-A4** | **SP's loader-node external-skill contract is not a published API.** `NeoForgePlatform.java:33` requires the user's sign-off before `[modproperties.<modid>]`/`specialities_skills` is documented as one; SP's README was deliberately left unedited "because Archetypes is the first consumer". | **SIGN-OFF.** Without it, `1.21.1-neoforge` and `1.20.1-forge` cannot register Spellcasting. |
-| **R-A5** | **The `BlocksAttacks` shield subsystem has no host below 1.21.11** (`applyItemBlocking` absent; disable paths plural). Affects `archetypes$bulwark`, `archetypes$instinctiveGuard`, `BlocksAttacksMixin`, `DamageTraceMixin`'s blocking leg — i.e. the Colossus Protector epic tree's core, on 4 of 7 nodes. | **DECISION.** Recommend **excise on the two legacy pairs and say so in the changelog**, rather than approximate through a different chokepoint — approximation is precisely the silent-balance-divergence class R-20 exists to catch. |
-| **R-A6** | **`Equippable`/`DataComponents.GLIDER` is `>=1.21.2`** — Magic Armaments' "conjured weapon doubles as an Elytra" has no component on 1.20.1. | **DECISION.** Levitation-effect reimplementation vs excision on 1.20.1. Recommend excision (a Levitation stand-in is a different mechanic, not the same one). |
+| **R-A5** | **The `BlocksAttacks` shield subsystem has no host below 1.21.11** (`applyItemBlocking` absent; disable paths plural). Affects `archetypes$bulwark`, `archetypes$instinctiveGuard`, `BlocksAttacksMixin`, `DamageTraceMixin`'s blocking leg — i.e. the Colossus Protector epic tree's core, on 4 of 7 nodes. | ✅ **CLOSED — ALL FOUR NODES ARE LIVE ON ALL FOUR LEGACY NODES, NOTHING EXCISED.** The recommendation here (excise rather than approximate) was right about approximation and wrong about this being one. Measured, in two rounds: `disableShield` is ONE chokepoint (Immovable Object, Unstoppable Force); the vanilla shield's `DamageReduction(90°,0,1)` at the literal angle 0 is `blockable == amount` and `ItemDamageFunction(3,1,1)` is `hurtCurrentlyUsedShield` byte for byte (Instinctive Guard — a reimplementation, not an approximation); `Vec3.dot` in `isDamageSourceBlocked` occurs exactly once in the whole `LivingEntity` class and is the facing test's entire contribution (Omni Block). Only `BlocksAttacksMixin` and `DamageTraceMixin`'s blocking leg stay stripped — a host and a dev-tool observation, not a node. `inertNodeKeys` is gone from all three node scripts. Full account in §5.5.1's two ⚠⚠ corrections. |
+| **R-A6** | **`Equippable`/`DataComponents.GLIDER` is `>=1.21.2`** — Magic Armaments' "conjured weapon doubles as an Elytra" has no component on **1.21.1 and 1.20.1** (the design under-stated the boundary). | ✅ **CLOSED — LIVE ON ALL FOUR LEGACY NODES, WITH REAL VANILLA FALL-FLYING.** Neither branch of the question was taken: not excision, and not a Levitation-effect stand-in (which would have been a different mechanic wearing the node's name). The component route has no host, but the CHEST-slot read does — one `getItemBySlot` occurrence in each of three target methods on all four arms, zero annotation fork, handing vanilla a throwaway unbreakable elytra while the channel is up. The crash premise that drove the excision (`Util.getRandom` on an empty glider-slot list) is 1.21.11+-only. Deploy, boosts, physics, landing, wind sound and the wingless look are all stock. Full account in §5.5.1's R-A6 ⚠⚠ correction. |
 
 ### Tier 2 — large but tractable; the experiment is a build, not a question
 
@@ -2014,8 +2111,8 @@ Ordered by "blocks the port" first. Every row names the experiment that resolves
 1. **PAL on 1.20.1** — Option A or Option B? (§2.2, R-A1)
 2. **SP publishing extension** — go-ahead to edit the Specialities repo so it publishes a per-node mavenLocal coordinate? (§3.5, R-A3) If no → fallback `files(...)` and accept the fragility.
 3. **`[modproperties]` external-skill API** — sign-off to publish it as an API surface? (§3.5, R-A4) If no → the two loader nodes ship without Spellcasting.
-4. **Colossus Protector shield subsystem on 1.21.1 + 1.20.1** — excise, or approximate? (§4.2, R-A5)
-5. **Magic Armaments glide on 1.20.1** — excise, or Levitation stand-in? (R-A6)
+4. ~~**Colossus Protector shield subsystem on 1.21.1 + 1.20.1** — excise, or approximate? (§4.2, R-A5)~~ **ANSWERED: neither.** All four members reimplemented against vanilla's own legacy chokepoints, measured to produce the same numbers. See R-A5's row and §5.5.1.
+5. ~~**Magic Armaments glide on 1.20.1** — excise, or Levitation stand-in? (R-A6)~~ **ANSWERED: neither.** Real vanilla fall-flying on all four legacy nodes, through the chest-slot read. See R-A6's row and §5.5.1.
 6. **ESP wall-piercing on 6 of 7 nodes** — accept the loss? (R-B3)
 
 Everything else in this design is decided, or is decided by an experiment that costs less than an hour.

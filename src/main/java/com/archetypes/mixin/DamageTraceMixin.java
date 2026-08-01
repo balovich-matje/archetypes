@@ -137,6 +137,24 @@ public abstract class DamageTraceMixin {
 	// is simply absent from the legacy trace, which is honest — a blocked blow there is
 	// reported by the unaccounted alarm, and DamageTrace is a dev tool behind
 	// `DamageTrace.ENABLED`, not a shipped surface.
+	//
+	// OMNI BLOCK WIDENS THAT WINDOW AND DOES NOT CREATE IT. Since the capstone's legacy arm
+	// landed (`LivingEntityMixin.archetypes$bulwark`), a legacy holder blocks from every
+	// direction, so more hits reach the branch this stage cannot see — but an ordinary raised
+	// vanilla shield already read as an unaccounted x0.00 here before the node existed.
+	// Closing it is possible and was costed: an `@Inject` in `hurt` immediately after
+	// `isDamageSourceBlocked` returns true would do it, except that the blocked amount on the
+	// two loader nodes comes from their own `LivingShieldBlockEvent` / `ShieldBlockEvent`
+	// rather than the raw one — a LOADER FORK, for a dev-only tool that never ships enabled.
+	// Not done, deliberately.
+	//
+	// Instinctive Guard needs nothing here either, and adding something would be a
+	// REGRESSION: `STAGE_INSTINCTIVE_GUARD` is already recorded outside every `//?` by
+	// `LivingEntityMixin.archetypes$instinctiveGuardImpl`, `hasBreakdown` does not list it and
+	// `explain` has no case for it — so the mismatch alarm cannot fire, and `account()` folds
+	// the real 0.75/0.50 factor as an ACCOUNTED shrink. Do not add a `hasBreakdown` entry or
+	// an `explainInstinctiveGuard` mirror; that would manufacture a mismatch alarm where none
+	// exists today.
 	//? if >=1.21.11 {
 	@Inject(method = "applyItemBlocking(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/damagesource/DamageSource;F)F", at = @At("RETURN"))
 	private void archetypes$traceBlocking(final ServerLevel level, final DamageSource source,

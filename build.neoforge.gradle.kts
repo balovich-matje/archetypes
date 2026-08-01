@@ -287,38 +287,14 @@ tasks.withType<ProcessResources>().configureEach {
 
 	// ---- R-A5 / R-A6: the excised nodes SAY SO, on the nodes where they are inert ----
 	//
-	// Copied from build.fabric.gradle.kts, keys and all, because this node lands on exactly the
-	// same excisions as its 1.21.1-fabric sibling: no `world.item.component.BlocksAttacks` and
-	// no `DataComponents.GLIDER` below 1.21.11/1.21.2. Build-script logic does not inherit
-	// across node scripts, so the two copies must be kept in step — a node whose lang file
-	// silently stopped saying "inactive" is a player bug report, not a build failure.
+	// R-A5 / R-A6 ARE CLOSED and the `inertNodeKeys` filter that used to sit here is GONE, in
+	// step with build.fabric.gradle.kts (build-script logic does not inherit across node
+	// scripts, so the three copies emptied together). This node has no inert nodes: the whole
+	// shield cluster and Levitation are live on its 1.21.1-fabric sibling and therefore live
+	// here — the two nodes share one shared tree and one set of `//?` arms.
 	//
-	// ⚠ The list SHRANK by two: Immovable Object and Unstoppable Force are live below 1.21.11
-	// (PlayerMixin's `disableShield` head, LivingEntityMixin's legacy `isDamageSourceBlocked`
-	// arm). Do not re-add those keys. The full reasoning is over the fabric script's copy.
-	val inertNodeKeys: List<String> =
-		if (sc.current.parsed >= "1.21.11") emptyList()
-		else listOf(
-			"node.archetypes.protector.omni_block.desc",
-			"node.archetypes.colossus_protector.instinctive_guard.desc",
-			"node.archetypes.oracle_wizard.levitation.desc",
-		)
-	inputs.property("inertNodeKeys", inertNodeKeys)
-
-	if (inertNodeKeys.isNotEmpty()) {
-		filesMatching("assets/*/lang/*.json") {
-			filter { line ->
-				if (inertNodeKeys.none { line.contains("\"$it\"") }) {
-					line
-				} else {
-					val end = line.lastIndexOf('"')
-					line.substring(0, end) +
-						" \\u00a77(Inactive on this Minecraft version.)\\u00a7r" +
-						line.substring(end)
-				}
-			}
-		}
-	}
+	// The long-form account of what emptied the list, and of the shape to reuse if a key ever
+	// has to come back, is over the fabric script's copy.
 
 	// ---- The four `< 1.21` datapack/asset relocations, copied from build.fabric.gradle.kts ----
 	//

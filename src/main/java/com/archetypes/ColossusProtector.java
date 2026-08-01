@@ -29,37 +29,41 @@ import net.minecraft.world.food.FoodConstants;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-// ─── R-A5, AS IT NOW STANDS: TWO OF THE FOUR ARE EXCISED BELOW 1.21.11, NOT FOUR ─────────
-// The decision in force (design §4.2 / R-A5), applied here and in LivingEntityMixin,
-// BlocksAttacksMixin and DamageTraceMixin. What is missing is not a name but a mechanism:
-// the `BlocksAttacks` COMPONENT and `LivingEntity.applyItemBlocking` arrive together at
-// 1.21.11. Below them, blocking is resolved inline inside `LivingEntity.hurt`
-// (`isDamageSourceBlocked` + `hurtCurrentlyUsedShield`), and that is not a place where "how
-// much would this shield have stopped" is a question that can be asked at all — the answer
-// there is the whole hit or nothing.
+// ─── R-A5 IS CLOSED: NOTHING IN THIS CLUSTER IS EXCISED ANY MORE ─────────────────────────
+// The row began as four nodes said to have no host below 1.21.11, on the premise that the
+// `BlocksAttacks` COMPONENT and `LivingEntity.applyItemBlocking` arrive together at that
+// version and that everything the cluster does depends on them. Each of the four has since
+// been re-derived from the legacy bytecode, and all four are LIVE on the legacy family:
 //
-// So the two nodes whose whole effect is a NUMBER taken off a BLOCKED hit — Instinctive
-// Guard and Omni Block — no-op on this node family rather than being approximated through
-// a different chokepoint. Approximating a defensive multiplier somewhere vanilla resolves
-// blocking differently is exactly the silent-divergence class R-20 exists to catch.
+//   * IMMOVABLE OBJECT — `Player.disableShield` is ONE chokepoint, not two. The
+//     `ItemCooldowns` write IS the body of `disableShield`, and `disableShield` is named by
+//     exactly one class in the whole jar on every legacy target (`Player` itself, one call,
+//     from `blockUsingShield`). See `PlayerMixin.archetypes$immovableObject`.
+//   * UNSTOPPABLE FORCE (a Colossus CRUSHER node sharing this cluster's host) — re-rooted
+//     onto `isDamageSourceBlocked`, which is the whole legacy blocking branch in one
+//     boolean. See `LivingEntityMixin.archetypes$unstoppableForce`'s legacy arm.
+//   * INSTINCTIVE GUARD — this class, below. The legacy predicate is vanilla's own
+//     `isDamageSourceBlocked` clause list minus the facing test, and the 26.x arithmetic
+//     collapses onto it EXACTLY rather than approximately: the shield component's
+//     `DamageReduction(90°, base 0, factor 1)` resolved at the literal angle 0 that
+//     Instinctive Guard passes is `blockable == amount` always, and legacy's
+//     `hurtCurrentlyUsedShield` rule `if (amount >= 3) hurt(1 + floor(amount))` is
+//     `ItemDamageFunction(3, 1, 1)`'s `floor(1 + amount)` byte for byte (floor(1+x) ==
+//     1+floor(x) for x >= 0). The node keeps its promise, not a version of it.
+//   * OMNI BLOCK — `Vec3.dot` inside `isDamageSourceBlocked` is the facing test's ENTIRE
+//     contribution and it occurs exactly once in the whole `LivingEntity` class on all four
+//     legacy targets. See `LivingEntityMixin.archetypes$bulwark`'s legacy arm.
 //
-// ⚠ CORRECTION, MEASURED: the other two members of the original R-A5 row — IMMOVABLE OBJECT
-// and the Colossus Crusher's UNSTOPPABLE FORCE — are NOT excised any more, and the claim
-// that put them there was wrong. It read "a shield is knocked aside through
-// `Player.disableShield()` plus `ItemCooldowns` — two chokepoints, not one". The
-// `ItemCooldowns` write IS the body of `disableShield`, and `disableShield` is named by
-// exactly one class in the whole jar on every legacy target (`Player`, one call, from
-// `blockUsingShield`). It is ONE chokepoint, so Immovable Object's promise holds there in
-// the same shape it holds here — see `PlayerMixin.archetypes$immovableObject` for the
-// measurement and `LivingEntityMixin.archetypes$unstoppableForce`'s legacy arm for the
-// Crusher half that follows from it.
+// ONE RESIDUAL DIVERGENCE, deliberately kept: 26.2's shield lists `lightning_bolt` (and
+// several null-position sources) in `bypassed_by`, where the legacy `#bypasses_shield` tag
+// does not. The null-position ones are covered by keeping vanilla's own
+// `getSourcePosition() == null` clause; lightning is not, so a legacy Instinctive Guard
+// soaks it — which is exactly what a RAISED vanilla shield does on 1.21.1/1.20.1. The node
+// keeps its own version's contract on its own version.
 //
-// THE TWO NODES THAT REMAIN INERT STAY PURCHASABLE AND THE TREE STAYS VALID: both sit
-// mid-tree with children beyond them, and a hole in a constellation would strand the rest
-// of the epic branch. The lang file carries a per-node-family note saying the effect is
-// inactive on this version (`inertNodeKeys` in the three node scripts).
-// Everything else in this class — Ironclad's armour multiplier, Hearty Meal, Well Fed,
-// Free Hand, and the two `blocking(...)` reads — is unaffected and ports cleanly.
+// `inertNodeKeys` in the three node scripts is empty as a result, and the lang strings ship
+// unqualified on every node. Everything else in this class — Ironclad's armour multiplier,
+// Hearty Meal, Well Fed, Free Hand, and the two `blocking(...)` reads — was never affected.
 //? if >=1.21.11 {
 import net.minecraft.world.item.component.BlocksAttacks;
 //?}
@@ -298,12 +302,18 @@ public final class ColossusProtector {
 	 * one question answered differently is the facing one — the angle handed to
 	 * {@code resolveBlockedDamage} is 0, i.e. always inside the arc, because
 	 * the node says "all attacks" and a guard you are not aiming has no front.
-	 * That is the same override Bulwark makes for a raised shield.
+	 * That is the same override Omni Block makes for a raised shield.
+	 *
+	 * <p>Below 1.21.11 the component does not exist and the same three
+	 * questions are asked of vanilla's own {@code isDamageSourceBlocked}
+	 * clauses instead — {@code #bypasses_shield}, the piercing arrow, and a
+	 * null source position. The numbers come out identical; see the note under
+	 * this javadoc for why that is a measurement and not a hope.
 	 *
 	 * <p>The player keeps only {@code rank x 25%} of what the block was worth,
-	 * but {@code hurtBlockingItem} is called with the whole of it: the author's
-	 * "shield still takes full damage for those blocks". A shield on cooldown —
-	 * one an axe or a Colossus Crusher has knocked aside — guards nothing.
+	 * but the shield is charged the whole of it: the author's "shield still
+	 * takes full damage for those blocks". A shield on cooldown — one an axe or
+	 * a Colossus Crusher has knocked aside — guards nothing.
 	 *
 	 * <p>What it deliberately does NOT do is call {@code blockUsingItem}: the
 	 * base Protector's block-gated nodes (Iron Spikes, Braced) still want a
@@ -311,17 +321,40 @@ public final class ColossusProtector {
 	 *
 	 * @return the damage left after the guard
 	 */
+	// ---- THE LEGACY ARM IS A REIMPLEMENTATION, NOT AN APPROXIMATION (R-A5, closed) ----
+	//
+	// What forks is the middle of this method and nothing else: the head, the hand search's
+	// shape, the tail's cue and the returned arithmetic are one implementation on all seven
+	// nodes. The two forked steps, both measured rather than read off a javadoc:
+	//
+	//  1. WHAT THE SHIELD WOULD STOP. Above the boundary that is the component's own
+	//     `resolveBlockedDamage(source, amount, 0.0)`. Below it, the same question is
+	//     vanilla's `LivingEntity.isDamageSourceBlocked` clause list, minus exactly one
+	//     clause. Six clauses there, disassembled on all four legacy targets: the direct
+	//     entity, the piercing-arrow test, `#bypasses_shield`, `isBlocking()`, the pierce
+	//     re-test, and `getSourcePosition() == null` — then the facing test last.
+	//       * KEPT: piercing arrow (26.x has the identical explicit test), the
+	//         `#bypasses_shield` tag (this IS the shield's `bypassedBy()` below the boundary)
+	//         and `getSourcePosition() == null`. That last one is load-bearing: 26.2's
+	//         `bypassed_by` gained cactus/campfire/dry_out/hot_floor/in_fire/lava/
+	//         sweet_berry_bush/sulfur_cube_hot, which the legacy tag does not list, and every
+	//         one of them has a null source position. Drop the clause and a legacy
+	//         Instinctive Guard soaks lava and fire where 26.x does not.
+	//       * INVERTED INTO THE HEAD: `isBlocking()`, which is a gate and not a requirement
+	//         — a RAISED shield is vanilla's business, this node is about a carried one. It
+	//         is `blocking(player)`, already forked, reused rather than copied.
+	//       * DROPPED: the facing test. 26.x passes angle `0.0` unconditionally, so there is
+	//         nothing to reproduce.
+	//     With base 0 / factor 1 / 90° and the literal 0.0 angle, 26.x's resolve is
+	//     `blockable == amount` always — so the legacy arm's `blockable = amount` is the same
+	//     number, and this node is a STRICTLY PURE MULTIPLICATION of the funnel on all seven.
+	//  2. WHAT THE BLOCK COSTS THE SHIELD. `BlocksAttacks.hurtBlockingItem` above; below,
+	//     `Player.hurtCurrentlyUsedShield`'s own rule written out (see `hurtGuard`).
 	public static float instinctiveGuard(final ServerPlayer player, final ServerLevel level,
 			final DamageSource source, final float amount) {
-		//? if <1.21.11 {
-		/*// R-A5, see the header: no BlocksAttacks component, so there is no shield to ask
-		// what it would have stopped. The node stays purchasable and does nothing.
-		return amount;
-		*///?}
-		//? if >=1.21.11 {
 		int rank = rank(player, Family.INSTINCTIVE_GUARD);
 
-		if (rank <= 0 || amount <= 0.0F || player.getItemBlockingWith() != null) {
+		if (rank <= 0 || amount <= 0.0F || blocking(player)) {
 			return amount;
 		}
 
@@ -332,6 +365,7 @@ public final class ColossusProtector {
 		}
 
 		ItemStack shield = player.getItemInHand(hand);
+		//? if >=1.21.11 {
 		BlocksAttacks blocksAttacks = shield.get(DataComponents.BLOCKS_ATTACKS);
 
 		// `BlocksAttacks.bypassedBy()` carries a resolved `HolderSet<DamageType>` on 26.x and
@@ -351,12 +385,25 @@ public final class ColossusProtector {
 		}
 
 		float blockable = blocksAttacks.resolveBlockedDamage(source, amount, 0.0);
+		//?} else {
+		/*if (source.is(net.minecraft.tags.DamageTypeTags.BYPASSES_SHIELD)
+				|| source.getDirectEntity() instanceof AbstractArrow arrow && arrow.getPierceLevel() > 0
+				|| source.getSourcePosition() == null) {
+			return amount;
+		}
+
+		float blockable = amount;
+		*///?}
 
 		if (blockable <= 0.0F) {
 			return amount;
 		}
 
+		//? if >=1.21.11 {
 		blocksAttacks.hurtBlockingItem(level, shield, player, hand, blockable);
+		//?} else {
+		/*hurtGuard(player, level, shield, hand, blockable);
+		*///?}
 		ProcIndicators.send(player, SubTree.COLOSSUS_PROTECTOR, Family.INSTINCTIVE_GUARD);
 
 		// Audibly a lesser block than a raised one: the same clang, quieter and
@@ -372,28 +419,85 @@ public final class ColossusProtector {
 				player.getX(), player.getY() + 1.2, player.getZ(), 5, 0.25, 0.25, 0.25, 0.05);
 
 		return amount - blockable * Tuning.INSTINCTIVE_GUARD_PER_RANK * rank;
-		//?}
 	}
 
 	/** The hand a carried shield is in, offhand first because that is where one
 	 * lives; null if neither hand holds something that blocks or the shield is
 	 * on its disable cooldown. */
-	// Instinctive Guard is its only caller, so it goes with it (R-A5, see the header).
-	//? if >=1.21.11 {
+	// Only the "is this a shield" test and the cooldown call's ARITY fork. The legacy test is
+	// vanilla's own: `LivingEntity.isBlocking` is `getUseAnimation() == UseAnim.BLOCK` on both
+	// legacy jars, and `ShieldItem.getUseAnimation` is a bare `getstatic; areturn` of it — so
+	// modded shields are covered and swords are not, which is the same set the component
+	// answers for above the boundary.
 	private static @Nullable InteractionHand guardHand(final Player player) {
 		for (InteractionHand hand : new InteractionHand[] {
 				InteractionHand.OFF_HAND, InteractionHand.MAIN_HAND }) {
 			ItemStack stack = player.getItemInHand(hand);
 
+			//? if >=1.21.11 {
 			if (stack.has(DataComponents.BLOCKS_ATTACKS)
 					&& !player.getCooldowns().isOnCooldown(stack)) {
+			//?} else {
+			/*if (stack.getUseAnimation() == net.minecraft.world.item.UseAnim.BLOCK
+					&& !player.getCooldowns().isOnCooldown(stack.getItem())) {
+			*///?}
 				return hand;
 			}
 		}
 
 		return null;
 	}
-	//?}
+
+	// ---- `BlocksAttacks.hurtBlockingItem`, below the boundary, written out ----
+	//
+	// `Player.hurtCurrentlyUsedShield(float)` is the legacy equivalent and it is NOT called
+	// directly, for one reason: it is `protected` and it reads `this.useItem` — the RAISED
+	// stack — where this node has a CARRIED one in a known hand. So its rule is reproduced
+	// against the stack we actually hold. The rule itself is copied, not invented
+	// (`pl1211.txt:2232`, `pl1201.txt:2128`):
+	//
+	//     if (amount >= 3.0F) { int i = 1 + Mth.floor(amount); hurtAndBreak(i, ...); }
+	//
+	// which is `ItemDamageFunction(threshold 3, base 1, factor 1)` — the vanilla shield's own
+	// component above the boundary — evaluated as `floor(1 + 1*amount)`. Identical for every
+	// non-negative amount. The stat award is `hurtBlockingItem`'s first act on 26.x and it is
+	// unconditional there, so it is unconditional here.
+	//
+	// The arithmetic lives HERE, once, outside every `//?`; only the `hurtAndBreak` overload
+	// forks, and that fork is copied verbatim from `NightForm`'s helmet burn, which is the
+	// same two overloads at the same boundary.
+	//? if <1.21.11 {
+	/*private static void hurtGuard(final ServerPlayer player, final ServerLevel level,
+			final ItemStack shield, final InteractionHand hand, final float blockable) {
+		player.awardStat(net.minecraft.stats.Stats.ITEM_USED.get(shield.getItem()));
+
+		if (blockable < 3.0F) {
+			return;
+		}
+
+		// NOT `InteractionHand.asEquipmentSlot()` — that is the 26.x form and does not exist
+		// on either legacy jar.
+		net.minecraft.world.entity.EquipmentSlot slot = hand == InteractionHand.MAIN_HAND
+				? net.minecraft.world.entity.EquipmentSlot.MAINHAND
+				: net.minecraft.world.entity.EquipmentSlot.OFFHAND;
+
+		breakGuard(player, level, shield, slot, 1 + net.minecraft.util.Mth.floor(blockable));
+	}
+	*///?}
+	//? if >=1.21 && <1.21.11 {
+	/*private static void breakGuard(final ServerPlayer player, final ServerLevel level,
+			final ItemStack shield, final net.minecraft.world.entity.EquipmentSlot slot,
+			final int damage) {
+		shield.hurtAndBreak(damage, level, player, broken -> player.onEquippedItemBroken(broken, slot));
+	}
+	*///?}
+	//? if <1.21 {
+	/*private static void breakGuard(final ServerPlayer player, final ServerLevel level,
+			final ItemStack shield, final net.minecraft.world.entity.EquipmentSlot slot,
+			final int damage) {
+		shield.hurtAndBreak(damage, player, broken -> broken.broadcastBreakEvent(slot));
+	}
+	*///?}
 
 	/** Whether this player is blocking at all, by vanilla's single definition of
 	 * it — {@code getItemBlockingWith} is what {@code isBlocking}, the block

@@ -249,39 +249,17 @@ tasks.withType<ProcessResources>().configureEach {
 		}
 	}
 
-	// ---- R-A5 / R-A6: the excised nodes SAY SO ----
+	// ---- R-A5 / R-A6 ARE CLOSED: this node marks NOTHING inert ----
 	//
-	// LIVE here, copied from build.fabric.gradle.kts key for key. Build-script logic does not
-	// inherit across node scripts, so the three copies must be kept in step.
+	// The `inertNodeKeys` filter that used to sit here is GONE, in step with
+	// build.fabric.gradle.kts and build.neoforge.gradle.kts (build-script logic does not
+	// inherit across node scripts, so the three copies emptied together). Every node the port
+	// once could not host now has a legacy host; the long-form account, and the shape to reuse
+	// if a key ever has to come back, is over the fabric script's copy.
 	//
-	// ⚠ The list SHRANK by two: Immovable Object and Unstoppable Force are live below 1.21.11
-	// (PlayerMixin's `disableShield` head, LivingEntityMixin's legacy `isDamageSourceBlocked`
-	// arm). Do not re-add those keys. The full reasoning is over the fabric script's copy.
-	// One caveat that is NOT a reason to re-mark: `Items.MACE` does not exist on this node, so
-	// Unstoppable Force is the unarmed half of its promise here.
-	val inertNodeKeys: List<String> =
-		if (sc.current.parsed >= "1.21.11") emptyList()
-		else listOf(
-			"node.archetypes.protector.omni_block.desc",
-			"node.archetypes.colossus_protector.instinctive_guard.desc",
-			"node.archetypes.oracle_wizard.levitation.desc",
-		)
-	inputs.property("inertNodeKeys", inertNodeKeys)
-
-	if (inertNodeKeys.isNotEmpty()) {
-		filesMatching("assets/*/lang/*.json") {
-			filter { line ->
-				if (inertNodeKeys.none { line.contains("\"$it\"") }) {
-					line
-				} else {
-					val end = line.lastIndexOf('"')
-					line.substring(0, end) +
-						" \\u00a77(Inactive on this Minecraft version.)\\u00a7r" +
-						line.substring(end)
-				}
-			}
-		}
-	}
+	// The ONE thing this node still qualifies is the mace clause immediately below, and that
+	// is a different mechanism for a different reason: the node WORKS here, it is one weapon
+	// short of its full promise because `Items.MACE` does not exist on 1.20.1.
 
 	// ---- Unstoppable Force drops its MACE clause below 1.21 ----
 	//

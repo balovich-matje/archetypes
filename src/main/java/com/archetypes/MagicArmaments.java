@@ -240,12 +240,13 @@ public final class MagicArmaments {
 	/**
 	 * Levitation: the conjured weapon IS the glider.
 	 *
-	 * <p>The obvious implementation — overriding {@code Player.canGlide} — is a
-	 * server crash. Vanilla trusts that hook: every twentieth gliding tick
-	 * {@code LivingEntity.updateFallFlying} collects the equipment slots
-	 * holding a glider and calls {@code Util.getRandom} on that list to pick
-	 * one to damage. Claiming a glide with no glider equipped hands it an empty
-	 * list, and {@code nextInt(0)} throws mid-tick.
+	 * <p>The obvious implementation on THIS version — overriding
+	 * {@code Player.canGlide} — is a server crash. Vanilla trusts that hook:
+	 * every twentieth gliding tick {@code LivingEntity.updateFallFlying}
+	 * collects the equipment slots holding a glider and calls
+	 * {@code Util.getRandom} on that list to pick one to damage. Claiming a
+	 * glide with no glider equipped hands it an empty list, and
+	 * {@code nextInt(0)} throws mid-tick.
 	 *
 	 * <p>So the weapon carries the real components instead: GLIDER plus an
 	 * EQUIPPABLE that names the hand it is already in. Vanilla then answers its
@@ -254,18 +255,58 @@ public final class MagicArmaments {
 	 * cannot outlive the channel because the weapon cannot: the ticker ends the
 	 * channel the tick it leaves the hand.
 	 */
-	// EXCISED BELOW 1.21.11, AND THE DESIGN'S R-A6 UNDER-STATED THE BOUNDARY: it says the
-	// GLIDER component is missing "on 1.20.1". MEASURED, it is missing on 1.21.1 too —
-	// `DataComponents.GLIDER`, `DataComponents.EQUIPPABLE` and the whole
-	// `net.minecraft.world.item.equipment` package are absent from the 1.21.1 mojmap jar,
-	// so the glide has no host on either legacy Fabric node, not just the lower one.
+	// ---- R-A6 REOPENED: LEVITATION IS LIVE ON ALL FOUR LEGACY NODES, THROUGH REAL VANILLA
+	// FALL-FLYING. THE CRASH PREMISE ABOVE IS 1.21.11+-ONLY. ----
 	//
-	// Excised rather than reimplemented, for the reason the method's own javadoc gives: the
-	// obvious substitute — claiming the glide by overriding `Player.canGlide` — is a SERVER
-	// CRASH, because `LivingEntity.updateFallFlying` then calls `Util.getRandom` on an empty
-	// list of glider slots. A Levitation-effect stand-in is a different mechanic wearing the
-	// node's name. The node stays purchasable; everything else Levitation does (the ward,
-	// the upkeep, the absorption) is untouched.
+	// The boundary this comment used to state is right and the conclusion drawn from it was
+	// not. Right: `DataComponents.GLIDER`, `DataComponents.EQUIPPABLE` and the whole
+	// `net.minecraft.world.item.equipment` package are absent from the 1.21.1 mojmap jar too,
+	// not just 1.20.1 — so the component route has no host on any legacy node. Wrong: that
+	// there is therefore nothing to do but excise.
+	//
+	// THREE MEASUREMENTS OVERTURNED IT.
+	//
+	//  1. THE CRASH CANNOT HAPPEN BELOW THE BOUNDARY. There is no slot list and no
+	//     `Util.getRandom` anywhere in the legacy `updateFallFlying` — it reads the CHEST
+	//     stack directly. `Util.getRandom` appears in `LivingEntity` only inside
+	//     `tickEffects()` on 1.21.1 and NeoForge, and not at all on 1.20.1 or LexForge.
+	//     `canGlide` does not exist as a method on any of the four (`javap -p` on `Player`
+	//     and `LivingEntity`: 0 hits). The hook the javadoc above is afraid of is not there.
+	//  2. A SERVER-ONLY FIX WOULD BE A TOTAL NO-OP, not merely rubber-bandy.
+	//     `LocalPlayer.aiStep` INLINES the chest-glider test before it will even call
+	//     `tryToStartFallFlying()` or send `START_FALL_FLYING` — `chest.is(Items.ELYTRA) &&
+	//     ElytraItem.isFlyEnabled(chest)` on Fabric, `chest.canElytraFly(this)` on both
+	//     loaders. Without a client half the packet is never sent. That is a GATE, not a
+	//     prediction mismatch, which is why it is fixable.
+	//  3. ONCE STARTED THERE IS NO PREDICTION PROBLEM AT ALL. `LivingEntity.travel`'s glide
+	//     branch is gated on `isFallFlying()` = shared flag 7 alone, and the client never
+	//     writes that flag: both `updateFallFlying`'s write and `travel`'s landing clear sit
+	//     behind `if (!level.isClientSide)`, and every clear reaches the owner because
+	//     `ServerEntity.sendDirtyEntityData` broadcasts to the entity itself when it is a
+	//     `ServerPlayer`. `handleMovePlayer` even picks its 300-vs-100 speed cap off the
+	//     SERVER's flag, so there is no "moved too quickly" either.
+	//
+	// THE ROUTE: wrap the CHEST-slot READ, not the boolean. The boolean forks per loader
+	// (`is(ELYTRA) && isFlyEnabled` vs `canElytraFly`, plus `elytraFlightTick` in the loaders'
+	// `updateFallFlying`); `getItemBySlot(EquipmentSlot)ItemStack` is present exactly once in
+	// each target method on ALL FOUR arms, same structural position, same owner — so the
+	// handler is ONE shape with ZERO annotation fork. Three anchors, because the client gate
+	// is where the node actually died:
+	//
+	//   Player.tryToStartFallFlying()Z   offset 35 on all four   — mixin/PlayerMixin
+	//   LivingEntity.updateFallFlying()V offset 39 on all four   — mixin/LivingEntityMixin
+	//   LocalPlayer.aiStep()V            858/825/956/924         — client/mixin/LocalPlayerMixin
+	//
+	// One occurrence each, so no ordinal, and `injectors.defaultRequire: 1` is the detector.
+	// `ServerPlayer` and `LocalPlayer` override none of `tryToStartFallFlying` /
+	// `startFallFlying` / `stopFallFlying` / `updateFallFlying`, so the two `src/main` anchors
+	// cover both logical sides.
+	//
+	// WHAT COMES FREE, all keyed on flag 7: the `fallFlyTicks` lean interpolation, the
+	// `ElytraOnPlayerSoundInstance` wind on the flag edge, the glide pose, firework boosts,
+	// and the landing rules. And `ElytraLayer` keys on `Items.ELYTRA` being in the CHEST, so
+	// no wings are drawn — which is exactly what 26.x looks like, because its EQUIPPABLE
+	// names MAINHAND.
 	//? if >=1.21.11 {
 	private static void fitGlider(final ItemStack stack, final Set<Integer> owned) {
 		boolean levitation = OracleWizardNodes.rank(SubTree.ORACLE_WIZARD, owned,
@@ -294,6 +335,88 @@ public final class MagicArmaments {
 	}
 	//?} else {
 	/*private static void fitGlider(final ItemStack stack, final Set<Integer> owned) {
+	}
+	*///?}
+
+	/**
+	 * The legacy glide, answered where vanilla asks it: the CHEST slot.
+	 *
+	 * <p>Wrapped by three {@code @WrapOperation}s (see the note above
+	 * {@code fitGlider}). Hands vanilla a stand-in elytra while the channel is
+	 * up and the node is owned, so vanilla answers its own question with its own
+	 * code on both sides — deploy gesture, packet, flag 7, physics, boosts and
+	 * landing are all stock, exactly as the component route makes them stock
+	 * above the boundary.
+	 *
+	 * <p>The stand-in is rebuilt on every call and never stored anywhere, so it
+	 * cannot be dropped, kept or duped; a REAL elytra in the chest is passed
+	 * through untouched so it keeps taking its own durability.
+	 */
+	// THE PREDICATE IS IDENTICAL ON BOTH SIDES AND READS ONLY SYNCED STATE — that is the whole
+	// reason this works without a packet.
+	//   * `MagicArmaments.isActive` CANNOT be the test: `ARMAMENTS_WAND` is server-only (see
+	//     ModState's own note on it). `ModItems.isSummoned(mainHand)` is the SAME QUESTION —
+	//     `tick()` ends the channel the tick that stops being true — and the main-hand stack
+	//     is inventory-synced.
+	//   * `NodePurchases.owned(Player, SubTree)` is client-safe by its own contract (the
+	//     attachment syncs to its owning client); `ArchetypeScreen` and `CooldownBarHud`
+	//     already call it with `minecraft.player`.
+	// If the two sides ever disagreed the failure would be a one-tick flap — the client sets
+	// the flag optimistically, the server's `updateFallFlying` clears it and syncs — not a
+	// rubber-band and not a kick, because the server's own speed cap follows its own flag.
+	//
+	// WHY THE STAND-IN SATISFIES EVERY DOWNSTREAM TEST, measured on the real jars:
+	//   * `ElytraItem.isFlyEnabled(stack)` is `getDamageValue() < getMaxDamage() - 1` -> 0 <
+	//     431 -> true (UNBREAKABLE does not zero `getMaxDamage`).
+	//   * `ElytraItem.canElytraFly(stack, entity)` on BOTH loaders is a one-line
+	//     `return isFlyEnabled(stack)` -> true.
+	//   * `ElytraItem.elytraFlightTick(...)` on both loaders ends `iconst_1; ireturn`, so the
+	//     `&&` in the loaders' `updateFallFlying` holds.
+	//   * `ItemStack.hurtAndBreak` early-returns on `!isDamageableItem()`, which UNBREAKABLE
+	//     makes false — so the damage step, `processDurabilityChange` and the
+	//     `ITEM_DURABILITY_CHANGED` trigger are all skipped. That is the 26.x note's "the slot
+	//     it finds to damage is an unbreakable stack (a no-op)", reproduced.
+	//   * `gameEvent(GameEvent.ELYTRA_GLIDE)` still fires server-side, which is correct: sculk
+	//     hears gliders on 26.x too.
+	//
+	// KNOWN NARROWING, stated rather than papered over: on the two loader nodes another mod's
+	// `canElytraFly` chestpiece is shadowed by the stand-in for the duration of the channel.
+	// Widening the pass-through from `is(ELYTRA)` to `canElytraFly` would fix it and would
+	// fork this method two ways for a case no vanilla install has; not done.
+	//? if <1.21.11 {
+	/*public static ItemStack legacyGliderSlot(final Entity holder,
+			final net.minecraft.world.entity.EquipmentSlot slot, final ItemStack real) {
+		if (slot != net.minecraft.world.entity.EquipmentSlot.CHEST
+				|| !(holder instanceof Player player)
+				|| real.is(net.minecraft.world.item.Items.ELYTRA)
+				|| !ModItems.isSummoned(player.getMainHandItem())
+				|| OracleWizardNodes.rank(SubTree.ORACLE_WIZARD,
+						NodePurchases.owned(player, SubTree.ORACLE_WIZARD),
+						OracleWizardNodes.Family.LEVITATION) <= 0) {
+			return real;
+		}
+
+		return legacyGlider();
+	}
+	*///?}
+	// Only the UNBREAKABLE stamp forks — the data-components row, already in the frozen
+	// vocabulary. Written as two top-level arms rather than one nested inside the arm above,
+	// so no marker has to escalate to `^` and the predicate stays written exactly once.
+	//? if >=1.21 && <1.21.11 {
+	/*private static ItemStack legacyGlider() {
+		ItemStack glider = new ItemStack(net.minecraft.world.item.Items.ELYTRA);
+
+		glider.set(DataComponents.UNBREAKABLE,
+				new net.minecraft.world.item.component.Unbreakable(false));
+		return glider;
+	}
+	*///?}
+	//? if <1.21 {
+	/*private static ItemStack legacyGlider() {
+		ItemStack glider = new ItemStack(net.minecraft.world.item.Items.ELYTRA);
+
+		glider.getOrCreateTag().putBoolean("Unbreakable", true);
+		return glider;
 	}
 	*///?}
 

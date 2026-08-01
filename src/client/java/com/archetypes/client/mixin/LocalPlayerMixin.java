@@ -136,4 +136,38 @@ public abstract class LocalPlayerMixin {
 				: sneakFactor + Tuning.SWIFT_SHADOW_SNEAK_REFUND_PER_RANK * rank;
 	}
 	*///?}
+
+	// ---- R-A6: LEVITATION, ANCHOR 3 OF 3, AND THE ONE THE NODE ACTUALLY DIED ON. ----
+	//
+	// The full account is in `MagicArmaments`, above `fitGlider`. What is here: `aiStep`
+	// INLINES the chest-glider test before it will call `tryToStartFallFlying()` or send
+	// `ServerboundPlayerCommandPacket.Action.START_FALL_FLYING` at all. So without this arm a
+	// server-side fix is not rubber-bandy — it is a TOTAL NO-OP, because the packet is never
+	// sent. This is a GATE, not a prediction, which is exactly why it is fixable.
+	//
+	// `getItemBySlot(EquipmentSlot)ItemStack` appears EXACTLY ONCE in the method — offsets
+	// 858 / 825 / 956 / 924 on 1.21.1-fabric, 1.20.1-fabric, NeoForge 21.1.243 and LexForge
+	// 47.4.22 — with `LocalPlayer` itself as the constant-pool owner (`#1199` / `#1189` /
+	// `#1118` / `#1295`). No ordinal; `defaultRequire: 1` guards it.
+	//
+	// The predicate the handler runs is the same one the two `src/main` anchors run, and it
+	// reads only synced state — the main-hand stack and the purchase attachment. Deploy
+	// latency, not divergence, is the residual: after `start()` swaps the wand for the
+	// conjured weapon the client's main-hand slot arrives a tick or two later, so the worst
+	// case is one missed jump press.
+	//
+	// APPENDED AT THE END OF THE CLASS DELIBERATELY (design finding 3) — the two `aiStep`
+	// handlers above it must not move.
+	//? if <1.21.11 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "aiStep()V",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/client/player/LocalPlayer;getItemBySlot("
+							+ "Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;"))
+	private net.minecraft.world.item.ItemStack archetypes$levitationGlider(final LocalPlayer self,
+			final net.minecraft.world.entity.EquipmentSlot slot,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<net.minecraft.world.item.ItemStack> original) {
+		return com.archetypes.MagicArmaments.legacyGliderSlot(self, slot, original.call(self, slot));
+	}
+	*///?}
 }

@@ -1772,9 +1772,13 @@ Author feedback on the first epic-tier iteration, all addressed:
   mana orbs trickle instead of stepping; ends on the exact tick the pool
   cannot pay.
 - **Levitation → gliding.** The creative-flight grant (and its mayfly
-  bookkeeping) is replaced by overriding Player.canGlide() during a channel:
-  true elytra behaviour, so jump-to-deploy, firework boosts, gliding physics
-  and landing are all vanilla's.
+  bookkeeping) is replaced by letting VANILLA answer the glide question during
+  a channel: true elytra behaviour, so jump-to-deploy, firework boosts, gliding
+  physics and landing are all vanilla's. (The `Player.canGlide()` override this
+  originally named is gone — see the crash note below. At 1.21.11 and up the
+  question is asked of the conjured weapon's own GLIDER component; below it,
+  `canGlide` does not exist and the question is the CHEST-slot read, wrapped in
+  three places. Both routes hand the same answer to the same vanilla code.)
 - **Oracle's Wand** (2 netherite ingots + nether star): x1.5 damage and -10%
   cost on ALL spells, school-blind. Universal shapers rather than a branch per
   school — wandPower answers the Oracle first and ignores school flags,
@@ -1792,6 +1796,15 @@ with the Levitation node killed the server about a second in —
 holding a glider and picks one at random to damage. Our mixin claimed a glide
 with no glider equipped, so the list was empty and `nextInt(0)` threw
 mid-tick. Overriding `canGlide` is simply not a safe way to grant flight.
+
+> Version note, measured during the 7-target port: this crash is **1.21.11+ only**.
+> Below that boundary there is no glider-slot list and no `Util.getRandom` in
+> `updateFallFlying` at all — it reads the CHEST stack directly — and `canGlide`
+> does not exist as a method to override. So the legacy nodes reach the same
+> vanilla fall-flying by a different door (wrapping the chest-slot read in
+> `Player.tryToStartFallFlying`, `LivingEntity.updateFallFlying` and
+> `LocalPlayer.aiStep`, and handing back a throwaway unbreakable elytra while the
+> channel is up). Same mechanic, same physics, no crash to avoid.
 
 **The fix**: the conjured weapon carries the real components instead —
 `GLIDER` plus an `EQUIPPABLE` naming MAINHAND, stamped (and unstamped) live

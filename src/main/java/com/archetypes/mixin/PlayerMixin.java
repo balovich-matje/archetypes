@@ -425,4 +425,33 @@ public abstract class PlayerMixin {
 		}
 	}
 	*///?}
+
+	// ---- R-A6: LEVITATION, ANCHOR 1 OF 3. `Player.tryToStartFallFlying()Z`. ----
+	//
+	// The full account of the route, the three anchors and every measurement behind them is
+	// in `MagicArmaments`, above `fitGlider` — one place, not three. What is here: this is the
+	// site that ACCEPTS the deploy on BOTH logical sides (`handlePlayerCommand` calls it for
+	// the incoming packet; `LocalPlayer.aiStep` calls it for the local prediction), and
+	// neither `ServerPlayer` nor `LocalPlayer` overrides it, so one `Player` mixin serves both.
+	//
+	// `getItemBySlot(EquipmentSlot)ItemStack` appears EXACTLY ONCE in the method, at offset 35
+	// on all four legacy targets, with `Player` itself as the constant-pool owner (`#588` on
+	// 1.21.1, `#529` on 1.20.1; `m_6844_` under SRG). Naming the SUBCLASS as owner on an
+	// inherited method is the existing house form — see `FoodDataMixin`'s two arms.
+	//
+	// APPENDED AT THE END OF THE CLASS DELIBERATELY (design finding 3): a handler inserted
+	// mid-file moves the bytecode of every handler declared after it on the nodes where both
+	// resolve. Nothing above this line moves.
+	//? if <1.21.11 {
+	/*@com.llamalad7.mixinextras.injector.wrapoperation.WrapOperation(
+			method = "tryToStartFallFlying()Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/player/Player;getItemBySlot("
+							+ "Lnet/minecraft/world/entity/EquipmentSlot;)Lnet/minecraft/world/item/ItemStack;"))
+	private net.minecraft.world.item.ItemStack archetypes$levitationGlider(final Player self,
+			final net.minecraft.world.entity.EquipmentSlot slot,
+			final com.llamalad7.mixinextras.injector.wrapoperation.Operation<net.minecraft.world.item.ItemStack> original) {
+		return MagicArmaments.legacyGliderSlot(self, slot, original.call(self, slot));
+	}
+	*///?}
 }

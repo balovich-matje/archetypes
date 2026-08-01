@@ -270,8 +270,12 @@ public final class ModState {
 			.copyOnDeath());
 
 	// No upkeep-beat or flight-grant attachment: upkeep is charged every tick
-	// (nothing to remember between charges) and Levitation glides through
-	// vanilla's canGlide rather than borrowing a mayfly that must be given back.
+	// (nothing to remember between charges) and Levitation lets VANILLA decide
+	// the glide rather than borrowing a mayfly that must be given back. Which
+	// question vanilla is asked is version-shaped — the GLIDER component on the
+	// conjured weapon at 1.21.11 and up, the chest-slot read below it (see
+	// MagicArmaments, above fitGlider) — but the answer is stock fall-flying on
+	// every node and nothing about it is state this class has to keep.
 
 	/** On arrows: where a True Shot left the bow (it despawns 64 blocks out),
 	 * and whether it steers itself. Transient — a saved arrow forgets. */

@@ -345,51 +345,36 @@ tasks.withType<ProcessResources>().configureEach {
 			}
 		}
 	}
-	// ---- R-A5 / R-A6: the excised nodes SAY SO, on the nodes where they are inert ----
+	// ---- R-A5 / R-A6 ARE CLOSED: NO NODE IS MARKED INERT ON ANY VERSION ANY MORE ----
 	//
-	// Instinctive Guard and Bulwark — the two members of the shield-modifier cluster whose
-	// whole effect is a NUMBER taken off a blocked hit — and Magic Armaments' glide have no
-	// host below 1.21.11; the reasoning is in ColossusProtector's header and
-	// MagicArmaments.fitGlider. The design's prescription is that the NODES stay purchasable
-	// (a hole mid-constellation would strand the branch beyond it) and that their
-	// descriptions say the effect is inactive here.
+	// This is where the "(Inactive on this Minecraft version.)" suffix was appended to the
+	// `.desc` of every node the port could not host. The list is now EMPTY, and the whole
+	// filter is gone with it. It emptied in two rounds, each one a measurement overturning a
+	// premise rather than a decision being relaxed:
 	//
-	// ⚠ TWO KEYS LEFT THIS LIST. Immovable Object and Unstoppable Force (Siegebreaker) were
-	// listed here on a measured-wrong premise — that the legacy shield-disable path is two
-	// chokepoints rather than one. It is one (`Player.disableShield`, a single caller in the
-	// whole jar on every legacy target), so both nodes now have real legacy hosts:
-	// PlayerMixin's `archetypes$immovableObject` and LivingEntityMixin's legacy
-	// `archetypes$unstoppableForce`. They are ACTIVE on all four legacy nodes and must not
-	// be re-marked inert. (One caveat, and it is not a reason to re-mark: `Items.MACE` does
-	// not exist on 1.20.1, so Unstoppable Force is the unarmed half of its promise there.)
+	//   round 1  Immovable Object, Unstoppable Force — the legacy shield-disable path is ONE
+	//            chokepoint (`Player.disableShield`, a single caller in the whole jar on every
+	//            legacy target), not two.
+	//   round 2  Instinctive Guard — 26.x's shield arithmetic COLLAPSES onto vanilla's legacy
+	//            all-or-nothing branch exactly (`DamageReduction(90°, 0, 1)` at angle 0 is
+	//            `blockable == amount`; `ItemDamageFunction(3,1,1)` is `hurtCurrentlyUsedShield`
+	//            byte for byte).
+	//            Omni Block — `Vec3.dot` inside `isDamageSourceBlocked` is the facing test's
+	//            entire contribution, occurs exactly once in the whole `LivingEntity` class,
+	//            and the other five clauses still gate.
+	//            Levitation — the crash that excised it (`Util.getRandom` on an empty glider
+	//            slot list) is 1.21.11+-only; below the boundary the chest-slot read is the
+	//            single question, on both sides.
 	//
-	// A `filter` and not `//?`, for the reason that is now a rule in this repo: Stonecutter
-	// does not process `.json` at all, and a leftover directive in a lang file is a silent
-	// half-loaded resource. Keyed on the full `.desc` key so nothing else can match, and
-	// appended INSIDE the closing quote so the file stays valid JSON.
-	val inertNodeKeys: List<String> =
-		if (sc.current.parsed >= "1.21.11") emptyList()
-		else listOf(
-			"node.archetypes.protector.omni_block.desc",
-			"node.archetypes.colossus_protector.instinctive_guard.desc",
-			"node.archetypes.oracle_wizard.levitation.desc",
-		)
-	inputs.property("inertNodeKeys", inertNodeKeys)
-
-	if (inertNodeKeys.isNotEmpty()) {
-		filesMatching("assets/*/lang/*.json") {
-			filter { line ->
-				if (inertNodeKeys.none { line.contains("\"$it\"") }) {
-					line
-				} else {
-					val end = line.lastIndexOf('"')
-					line.substring(0, end) +
-						" \\u00a77(Inactive on this Minecraft version.)\\u00a7r" +
-						line.substring(end)
-				}
-			}
-		}
-	}
+	// The reasoning lives with the code: `ColossusProtector`'s header, `LivingEntityMixin`'s
+	// `archetypes$bulwark`, and `MagicArmaments` above `fitGlider`.
+	//
+	// ⚠ IF A KEY EVER HAS TO COME BACK, it comes back as a `filesMatching("assets/*/lang/*.json")`
+	// filter with its own `inputs.property` — a `filter` and NOT `//?`, for the reason that is
+	// a rule in this repo: Stonecutter does not process `.json` at all, and a leftover
+	// directive in a lang file is a silent half-loaded resource. Key on the full `.desc` key
+	// and append INSIDE the closing quote so the file stays valid JSON. The Unstoppable-Force
+	// mace filter immediately below is that shape, still live, and is the working example.
 
 	// ---- Unstoppable Force drops its MACE clause below 1.21 ----
 	//
