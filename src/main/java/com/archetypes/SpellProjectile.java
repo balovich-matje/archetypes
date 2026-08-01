@@ -172,6 +172,19 @@ public class SpellProjectile extends ThrowableItemProjectile {
 	//?} else {
 	/*@Override
 	protected void defineSynchedData() {
+		// THE SUPER CALL IS NOT OPTIONAL, and leaving it out was a hard client crash on both
+		// 1.20.1 nodes (found in-game 2026-08-01, fixed same day). The builder arm above hands
+		// `super` the builder and is therefore safe by shape; here the base class writes
+		// straight onto the entity's own data map, so an override that skips it SILENTLY DROPS
+		// `ThrowableItemProjectile.DATA_ITEM_STACK` — the accessor holding the stack this
+		// entity is drawn as. Nothing catches it at build time and nothing catches it on a
+		// server: the id pool still hands the two accessors below 9 and 10 (defineId walks the
+		// superclass chain, so it counts vanilla's 8 whether or not anyone defines it), so both
+		// synced flags work perfectly and only the vanilla-owned entry is absent. It surfaces
+		// as an NPE out of SynchedEntityData.get, twice over — server-side in setItem for every
+		// mode whose display stack is not the default item, and client-side in
+		// ThrownItemRenderer.render for the one mode whose stack IS the default item.
+		super.defineSynchedData();
 		this.getEntityData().define(DATA_EMPOWERED, false);
 		this.getEntityData().define(DATA_VISUAL_SCALE, 1.0F);
 	}
