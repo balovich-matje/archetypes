@@ -2031,6 +2031,83 @@ they were peers. Every gate this port runs is blind to it for the same reason as
 the arithmetic is shared, the bytecode is right, and only a launched client can see where a draw
 ended up.
 
+#### 5.8.5 Stage 7, fifth in-game finding — **a render type that kept its name changed its BLEND**
+
+**Reported:** on `1.21.1-fabric`, the Dark Ritual's eye glow draws as **one solid glowing band
+across the whole face** instead of two distinct eyes. 26.2 is the reference and draws two eyes.
+
+**Everything upstream of the blend was correct, and all of it was cleared first**, because the
+report reads like a UV bug and the previous three findings all lived in the call:
+
+* **The mesh is right on the legacy node.** `bakeEyes()` is shared, outside every `//?`, and its
+  API is byte-for-byte the same class on all four versions (`CubeListBuilder.addBox(f,f,f,f,f,f,
+  Set<Direction>)`, `LayerDefinition.create(mesh,int,int)` and the `CubeDefinition` constructor
+  are declared identically on 26.2 / 1.21.11 / 1.21.1 / 1.20.1). Proven by *running* it: the
+  1.21.1 `MeshDefinition`→`LayerDefinition`→`bakeRoot` chain executed against the mapped 1.21.1
+  jar yields **one** polygon, normal (0,0,-1), UVs exactly `(0,0)…(1,1)` — the whole sheet on the
+  quad, which is what the doc says it should be.
+* **The overload is right.** `ModelPart.render(PoseStack,VertexConsumer,int,int,int)` exists on
+  1.21.11 **and** 1.21.1 with the last int meaning colour on both; only 1.20.1 drops to the
+  four-float tail, and that arm was already forked. Not §5.8.3's family.
+* **The texture ships.** `assets/archetypes/textures/entity/night_form_eyes.png` is present in
+  every legacy jar; a texture that failed to resolve would draw the missing-texture chequer.
+* **The shader reads the tint.** 1.21.1's `rendertype_eyes.fsh` is
+  `texture(Sampler0, texCoord0) * vertexColor`, so the ARGB the layer passes does arrive.
+
+**The defect is one state shard, and it is invisible from the call site.** Measured with `javap -c`
+on both mojmap jars:
+
+```
+>=1.21.11 / 26.x  RenderPipelines.EYES  -> BlendFunction.TRANSLUCENT, depthWrite false,
+                  cull default(on), defines EMISSIVE + NO_CARDINAL_LIGHTING
+<1.21.11          RenderType.eyes       -> ADDITIVE_TRANSPARENCY, and that shard is
+                  RenderSystem.blendFunc(SourceFactor.ONE, DestFactor.ONE)
+```
+
+`ONE/ONE` is **pure** additive: source alpha is not a factor in the blend equation at all. The
+artwork carries its entire shape in alpha — **1272 of its 2048 texels are `(255,255,255, a=0)`**
+and the falloff ring is white at `a = 1…250` — so on the legacy nodes every texel of the 8×4 quad
+added full white × the tint. That is the band, at exactly the quad's size. The same fact made the
+`FAINT`/`BRIGHT` alpha dial inert there: both states drew at maximum.
+
+The port had actually *recorded* this boundary in `NightEyesLayer`'s header — and recorded it
+wrong, as "the blend is SRC_ALPHA/ONE", which would have scaled the glow. It is ONE/ONE.
+
+**The fix is a new below-1.21.11-only compilation unit**, `client/NightEyeRenderType.java`, that
+takes vanilla's own `eyes` composite — all thirteen shards, texture binding, eyes shader, LEQUAL
+depth test, cull, `COLOR_WRITE` — and re-applies exactly **one** shard on top of it,
+`TRANSLUCENT_TRANSPARENCY`, whose `setupRenderState` overwrites the blend func the additive shard
+just set; the clear runs the two in reverse and both halves are idempotent (`disableBlend` +
+`defaultBlendFunc`). Nothing is reimplemented, so no vanilla state this file does not name can
+drift. `TRANSLUCENT_TRANSPARENCY` is `protected static` on `RenderStateShard`, and extending
+`RenderType` is what makes it reachable — **no access widener, no accessor mixin, no
+mixin-config entry on any node**, and no new predicate.
+
+**No stock render type below the boundary would have done.** `entityTranslucentEmissive` blends
+translucently but its vertex shader runs `minecraft_mix_light` (the glow would dim as the head
+turns) and its fragment shader discards below `a = 0.1` (the falloff would harden); a scan of
+every `TRANSLUCENT_TRANSPARENCY` composite in 1.21.1's `RenderType` finds nothing that pairs a
+translucent blend with an emissive, unlit shader.
+
+**Gate, measured.** `26.2` / `26.1` / `1.21.11` jars are **byte-identical** to the pre-fix build
+(sha256 equal, whole jar) — the whole-file `//? if <1.21.11` form emits no `.class` there, and the
+header edit in `NightEyesLayer` was kept line-count-neutral so not even the `LineNumberTable`
+moves. The four legacy jars differ in exactly **two entries**: the new `NightEyeRenderType.class`
+and `NightEyesLayer.class`. The protected inherited field survives every remapper — `field_21370`
+on both Fabric legacy jars, `f_110139_` on Forge, `TRANSLUCENT_TRANSPARENCY` on NeoForge — and
+each was cross-checked against the mapping file to confirm it is TRANSLUCENT and not
+`field_21366`/`f_110135_`, which is ADDITIVE.
+
+**The lesson.** §5.8.1 was a *phase*, §5.8.2 a *unit*, §5.8.3 an *arity*, §5.8.4 a *composition*;
+this one is **state**. The call site was identical in every respect a compiler, a remapper or a
+bytecode gate can see — same method name, same argument, same resolved target, correctly
+remapped — and the pixel difference lived in a `blendFunc` two levels inside a vanilla constant.
+The rule this leaves behind: **when a port reuses a vanilla render type by name across a version
+boundary, read its blend, cull, depth and shader state out of the jar on both sides, and read the
+ARTWORK against them.** An alpha-keyed texture is a silent dependency on the blend equation, and
+the failure is total rather than subtle — which is why the only gate that can catch it is a
+launched client.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:

@@ -17,17 +17,19 @@ import com.mojang.blaze3d.vertex.PoseStack;
 //   >=1.21.11  SubmitNodeCollector.order(int).submitModelPart(ModelPart, PoseStack, RenderType,
 //                  int, int, ..., int tint, ...)   — package `client.renderer.rendertype`
 //   1.21.1     ModelPart.render(PoseStack, VertexConsumer, int light, int overlay, int color)
-//                  with the buffer taken from `MultiBufferSource.getBuffer(RenderType.eyes(..))`
-//                  — `RenderType` sits at `net.minecraft.client.renderer` there, and `eyes` is
-//                  a static on it rather than on a `RenderTypes` factory.
+//                  with the buffer taken from `MultiBufferSource.getBuffer(..)` — `RenderType`
+//                  sits at `net.minecraft.client.renderer` there, not on a `RenderTypes` factory.
 // The tint is the same ARGB int on both, so the two alpha dials below are untouched.
 //
-// ONE MEASURED DIFFERENCE, recorded rather than papered over: 1.21.1's `RenderType.eyes` blends
-// ADDITIVE where 26.x's blends TRANSLUCENT. Alpha still scales the glow (it multiplies the
-// texture through the vertex colour, and the blend is SRC_ALPHA/ONE), so FAINT still reads as
-// faint and BRIGHT as bright; what it cannot do is darken what is behind it, which this effect
-// never wanted. Both are colour-write-only and depth-tested, so the occlusion and the
-// back-face rules the doc below describes hold on both.
+// THE ONE MEASURED DIFFERENCE — and Stage 7 found it in-game, because the first port wrote it
+// down WRONG. Below 1.21.11 `RenderType.eyes` blends through `ADDITIVE_TRANSPARENCY`, and that
+// shard is `blendFunc(ONE, ONE)`: source alpha is not a factor in the blend, so alpha does NOT
+// scale the glow there and the texture's alpha-0 white ground is added at full strength. That
+// is a solid band across the whole quad, not two eyes. The legacy arms therefore bind
+// `NightEyeRenderType.translucentEyes`, which is vanilla's own eyes composite with exactly the
+// transparency shard replaced; read that file's header for the measurement. Everything else —
+// colour-write-only, depth-tested, back-face culled, no lightmap — is vanilla's and holds on
+// every node, so the occlusion and back-face rules the doc below describes still apply.
 //? if >=1.21.11 {
 import net.fabricmc.fabric.api.client.rendering.v1.FabricRenderState;
 import net.fabricmc.fabric.api.client.rendering.v1.RenderStateDataKey;
@@ -54,9 +56,7 @@ import net.minecraft.client.renderer.entity.layers.RenderLayer;
 //? if >=1.21.11 {
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-//?} else {
-/*import net.minecraft.client.renderer.RenderType;
-*///?}
+//?}
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.Identifier;
@@ -255,15 +255,15 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 		pose.pushPose();
 		this.getParentModel().head.translateAndRotate(pose);
 		//? if >=1.21 {
-		this.eyes.render(pose, buffers.getBuffer(RenderType.eyes(TEXTURE)), light,
-				OverlayTexture.NO_OVERLAY,
+		this.eyes.render(pose, buffers.getBuffer(NightEyeRenderType.translucentEyes(TEXTURE)),
+				light, OverlayTexture.NO_OVERLAY,
 				glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT);
 		//?} else {
 		/^// `ModelPart.render` takes the tint as four floats below 1.21 rather than one packed
 		// ARGB int. Same four channels, same order, unpacked from the same constant.
 		int tint = glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT;
-		this.eyes.render(pose, buffers.getBuffer(RenderType.eyes(TEXTURE)), light,
-				OverlayTexture.NO_OVERLAY,
+		this.eyes.render(pose, buffers.getBuffer(NightEyeRenderType.translucentEyes(TEXTURE)),
+				light, OverlayTexture.NO_OVERLAY,
 				(tint >> 16 & 0xFF) / 255.0F, (tint >> 8 & 0xFF) / 255.0F,
 				(tint & 0xFF) / 255.0F, (tint >>> 24) / 255.0F);
 		^///?}
