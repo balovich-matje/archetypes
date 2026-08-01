@@ -62,6 +62,63 @@ public abstract class PlayerMixin {
 		}
 	}
 
+	// ---- R-A5 REOPENED: IMMOVABLE OBJECT HAS A HOST BELOW 1.21.11 AFTER ALL. ----
+	//
+	// Stage 4 excised the node on the premise that the legacy disable path is
+	// "`Player.disableShield()` plus a raw `ItemCooldowns` write, two chokepoints rather than
+	// the one Immovable Object's promise depends on". MEASURED, and it is ONE:
+	//
+	//   * the `ItemCooldowns.addCooldown` IS the body of `disableShield`, not a second path —
+	//     `disableShield` is cooldown + `stopUsingItem` + `broadcastEntityEvent(this, 30)`,
+	//     which is byte 30 = `SoundEvents.SHIELD_BREAK` in `LivingEntity.handleEntityEvent`,
+	//     i.e. the same three effects `BlocksAttacks.disable` has above the boundary;
+	//   * `disableShield` is named by EXACTLY ONE class in the whole jar — `Player` itself,
+	//     one call, from `Player.blockUsingShield`. Constant-pool scan of all 6,136 classes of
+	//     the mapped 1.21.1 jar and all 5,448 of the 1.20.1 one; same on NeoForge 21.1.243's
+	//     patched `Player` and on LexForge 47.4.22's (`m_36384_`, two refs = declaration plus
+	//     that one call).
+	//
+	// Vanilla reaches it from the blocked branch of `LivingEntity.hurt` whenever
+	// `attacker.canDisableShield()` is true — the axe (`LivingEntity.canDisableShield` is
+	// `getWeaponItem().getItem() instanceof AxeItem` on 1.21.1, `getMainHandItem()` on 1.20.1)
+	// and the Warden (its own override returns a constant `true`). Those are exactly the two
+	// attackers `getSecondsToDisableBlocking` feeds `BlocksAttacks.disable` on 26.x, and they
+	// are exactly the two the lang string names.
+	//
+	// So the node keeps its promise here for the reason it keeps it above the boundary: it
+	// refuses at the one method every shield-disable in the game passes through, instead of
+	// keeping a list of attackers. `ColossusProtector.immovableObject` is asked THE SAME
+	// QUESTION from both hosts — one implementation, one cue clock, no second copy of the rule.
+	//
+	// ARITY FORK, conventions §5a: 1.21.1 declares `disableShield()`; 1.20.1 declares
+	// `disableShield(boolean sprinting)` and rolls a chance INSIDE it
+	// (`0.25 + 0.05 x blockEfficiency`, `+0.75` when sprinting — and `blockUsingShield` always
+	// passes `true`, so vanilla's roll there is a certainty). Refusing at the HEAD is ahead of
+	// that roll on both, which is what the node promises: "cannot be broken", not "usually is
+	// not". The annotation and the parameter list move; the body never does.
+	//? if >=1.21 && <1.21.11 {
+	/*@Inject(method = "disableShield()V", at = @At("HEAD"), cancellable = true)
+	private void archetypes$immovableObject(final CallbackInfo ci) {
+		archetypes$immovableObjectImpl(ci);
+	}
+	*///?}
+	//? if <1.21 {
+	/*@Inject(method = "disableShield(Z)V", at = @At("HEAD"), cancellable = true)
+	private void archetypes$immovableObject(final boolean sprinting, final CallbackInfo ci) {
+		archetypes$immovableObjectImpl(ci);
+	}
+	*///?}
+	//? if <1.21.11 {
+	/*@Unique
+	private void archetypes$immovableObjectImpl(final CallbackInfo ci) {
+		if ((Object) this instanceof net.minecraft.server.level.ServerPlayer player
+				&& player.level() instanceof net.minecraft.server.level.ServerLevel level
+				&& ColossusProtector.immovableObject(player, level)) {
+			ci.cancel();
+		}
+	}
+	*///?}
+
 	/**
 	 * A dagger is a single-target weapon, so it never cleaves.
 	 *

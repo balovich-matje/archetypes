@@ -292,13 +292,15 @@ tasks.withType<ProcessResources>().configureEach {
 	// no `DataComponents.GLIDER` below 1.21.11/1.21.2. Build-script logic does not inherit
 	// across node scripts, so the two copies must be kept in step — a node whose lang file
 	// silently stopped saying "inactive" is a player bug report, not a build failure.
+	//
+	// ⚠ The list SHRANK by two: Immovable Object and Unstoppable Force are live below 1.21.11
+	// (PlayerMixin's `disableShield` head, LivingEntityMixin's legacy `isDamageSourceBlocked`
+	// arm). Do not re-add those keys. The full reasoning is over the fabric script's copy.
 	val inertNodeKeys: List<String> =
 		if (sc.current.parsed >= "1.21.11") emptyList()
 		else listOf(
 			"node.archetypes.protector.omni_block.desc",
 			"node.archetypes.colossus_protector.instinctive_guard.desc",
-			"node.archetypes.colossus_protector.immovable_object.desc",
-			"node.archetypes.colossus_crusher.siegebreaker.desc",
 			"node.archetypes.oracle_wizard.levitation.desc",
 		)
 	inputs.property("inertNodeKeys", inertNodeKeys)

@@ -918,6 +918,46 @@ descriptions gain "(Inactive on this Minecraft version.)" through a `processReso
 filter keyed on the full `.desc` key. `//?` cannot do it: Stonecutter never processes
 `.json`.
 
+> ⚠ **CORRECTION, written later and left here rather than editing the claim away: R-A5's row
+> was FOUR and is now TWO.** The load-bearing sentence above — "the disable path is
+> `Player.disableShield()` plus a raw `ItemCooldowns` write — two chokepoints rather than the
+> one Immovable Object's promise depends on" — is measurement-wrong on both halves.
+>
+> * The `ItemCooldowns.addCooldown` **is the body of** `disableShield`, not a second path.
+>   `disableShield` is cooldown + `stopUsingItem` + `broadcastEntityEvent(this, 30)` — byte 30
+>   being `SoundEvents.SHIELD_BREAK` in `LivingEntity.handleEntityEvent`, i.e. the same three
+>   effects `BlocksAttacks.disable` has above the boundary.
+> * `disableShield` is named by **exactly one class in the whole jar** on every legacy target:
+>   `Player` itself, one call, from `Player.blockUsingShield`. (Constant-pool scan of all 6,136
+>   classes of the mapped 1.21.1 jar and all 5,448 of the 1.20.1 one; NeoForge 21.1.243 and
+>   LexForge 47.4.22 patch the *body* and keep the single call site — `m_36384_`, two refs.)
+>   Vanilla reaches it whenever `attacker.canDisableShield()` is true: the axe and the Warden,
+>   which is exactly what the lang string names.
+>
+> So **Immovable Object** re-roots onto `Player.disableShield`'s head
+> (`PlayerMixin.archetypes$immovableObject`, an arity fork — `()V` at `>=1.21`, `(Z)V` below —
+> both delegating to the same `ColossusProtector.immovableObject` the 26.x host asks), and with
+> the pair whole again **Unstoppable Force (Siegebreaker)** takes the re-rooting this section
+> declined: `@ModifyExpressionValue` on the `isDamageSourceBlocked` call inside
+> `hurt(DamageSource,F)Z` (`LivingEntityMixin`, legacy arm). That one boolean gates the entire
+> blocked branch — `hurtCurrentlyUsedShield`, `amount = 0`, and `blockUsingShield` → the Iron
+> Spikes/Braced hook — so answering it `false` reproduces every clause of the 26.x contract
+> (R-20) where a `@ModifyVariable` on `amount` would reproduce one of four. Offsets measured:
+> 95 on both legacy Fabric nodes, 156 on NeoForge (feeding `CommonHooks.onDamageBlock`), 106 on
+> LexForge (feeding `ForgeHooks.onShieldBlock`) — both loaders wrap the branch body and leave
+> the question alone, so one arm covers all four nodes.
+>
+> **Still excised, and for the reason that survives:** Instinctive Guard and Bulwark (Omni
+> Block). Those two are a NUMBER taken off a blocked hit, and below the boundary blocking has
+> no number — the answer is the whole hit or nothing. Their two `.desc` keys and R-A6's
+> Levitation key are all that is left in `inertNodeKeys`.
+>
+> **One residual degradation, on 1.20.1 only:** `Items.MACE` does not exist there, so
+> `WeaponClass.of` can never answer `MACE` and Unstoppable Force is the *unarmed* half of its
+> promise on both 1.20.1 nodes. The lang string ("Your mace and unarmed attacks break through
+> blocking.") over-promises there by one clause; a per-node lang override is the fix if it is
+> judged worth one.
+
 **Not excised, each verified rather than assumed:** Iron Spikes and Braced (`blockedByItem`
 is `blockedByShield` here, same contract), Free Hand (`isBlocking()` is the same question),
 Ironclad, Hearty Meal, Well Fed.

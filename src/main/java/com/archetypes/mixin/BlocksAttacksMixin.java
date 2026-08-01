@@ -1,10 +1,14 @@
 package com.archetypes.mixin;
 
 // R-A5: THE WHOLE COMPILATION UNIT IS 1.21.11-AND-UP. `BlocksAttacks` is a data
-// component that does not exist below the boundary, so there is no class to mix into;
-// `BlocksAttacks.disable` — the single chokepoint this node's promise depends on — is
-// `Player.disableShield()` plus a raw `ItemCooldowns` write there, two places rather
-// than one. Immovable Object no-ops on that node family; see ColossusProtector's header.
+// component that does not exist below the boundary, so there is no class to mix into.
+//
+// THE NODE ITSELF IS NOT GONE BELOW THE BOUNDARY — only this host is. `BlocksAttacks.disable`
+// is `Player.disableShield` there, and that is ONE chokepoint and not two (this comment used
+// to say "plus a raw `ItemCooldowns` write, two places rather than one"; the write is the
+// body of `disableShield`, and `disableShield` has exactly one caller in the whole jar).
+// `PlayerMixin.archetypes$immovableObject` is the legacy host and it asks the SAME
+// `ColossusProtector.immovableObject` this one asks.
 //
 // A compilation unit with no type declaration is legal and produces no `.class`, which
 // is what lets the ENTRY leave the mixin config too — see `strippedMixinEntries` in

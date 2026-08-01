@@ -1461,6 +1461,131 @@ public abstract class LivingEntityMixin {
 	}
 	//?}
 
+	// ---- R-A5 REOPENED, THE CLUSTER'S FOURTH MEMBER: SIEGEBREAKER RE-ROOTS BELOW 1.21.11. ----
+	//
+	// Stage 4 wrote that this node "could have been re-rooted onto `isDamageSourceBlocked`; it
+	// was not, because its whole authored point is MEETING Immovable Object, and Immovable
+	// Object cannot exist there". The PREMISE is what has changed, not the reasoning: Immovable
+	// Object does have a host below the boundary — `Player.disableShield`, the single chokepoint
+	// measured in `PlayerMixin`'s note — so the pair is whole again and the re-rooting is on.
+	//
+	// THE CONTRACT, not a plausible fire-site (R-20). Above the boundary blocking is a STEP that
+	// returns a number, and the node zeroes that number inside `applyItemBlocking` so the blow
+	// costs the shield no durability and procs neither Iron Spikes nor Braced. Below the
+	// boundary blocking is not a number at all: `LivingEntity.hurt` asks `isDamageSourceBlocked`
+	// ONCE and the whole branch hangs off that one boolean —
+	//
+	//     if (amount > 0.0F && this.isDamageSourceBlocked(source)) {
+	//         this.hurtCurrentlyUsedShield(amount);          // the durability
+	//         blocked = amount; amount = 0.0F;               // the damage
+	//         if (!source.is(IS_PROJECTILE) && directEntity instanceof LivingEntity a) {
+	//             this.blockUsingShield(a);                  // -> blockedByShield: Iron Spikes,
+	//         }                                              //    Braced, and vanilla's own
+	//         flag = true;                                   //    axe/Warden disable
+	//     }
+	//
+	// so answering that ONE question with `false` reproduces every clause of the 26.x contract
+	// at once. That is why this is the right host and why a `@ModifyVariable` on `amount` is
+	// not: zeroing the damage alone would still charge the shield, still proc both block
+	// rewards, and still hand the blocker vanilla's block knockback.
+	//
+	// MEASURED, all four legacy nodes, `javap -c` on the mapped jars: the call sits inside
+	// `hurt(DamageSource,F)Z` at offset 95 on 1.21.1-fabric and 1.20.1-fabric, at 156 on
+	// NeoForge 21.1.243 (feeding `CommonHooks.onDamageBlock`) and at 106 on LexForge 47.4.22
+	// (feeding `ForgeHooks.onShieldBlock`). BOTH loaders wrap the BODY of the branch and leave
+	// the question itself alone, so one arm covers all four and the loader events still see a
+	// consistent story — they are simply told the hit was never blocked.
+	//
+	// ONE DEGRADATION, and it is upstream of this hook: `WeaponClass.MACE` is unreachable on
+	// 1.20.1 because `Items.MACE` does not exist there (see `WeaponClass.of`'s own `>=1.21`
+	// arm). So on that node family the node is the unarmed half of its promise only. Nothing
+	// here needs a predicate for it — the weapon test simply never answers MACE.
+	//
+	// ⚠ THE GATE IS WRITTEN TWICE — here and in `archetypes$unstoppableForceImpl` above. It
+	// cannot be hoisted into a shared `@Unique` without moving three prior nodes' bytecode
+	// (design finding 3), and the two bodies cannot be merged because one answers with a float
+	// blocked-amount through `BlocksAttacks` and this one answers with a boolean. ANY change to
+	// WHO this node fires for — the weapon set, the swing test, the rank read — has to be made
+	// in both. Nothing else is duplicated: the duration is `Tuning.UNSTOPPABLE_DISABLE_SECONDS`
+	// on both, the refusal is `ColossusProtector.immovableObject` on both, and the cue is
+	// `TitansLeap.unstoppableCue` on both.
+	//? if <1.21.11 {
+	/*@ModifyExpressionValue(method = "hurt(Lnet/minecraft/world/damagesource/DamageSource;F)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/world/entity/LivingEntity;isDamageSourceBlocked("
+							+ "Lnet/minecraft/world/damagesource/DamageSource;)Z"))
+	private boolean archetypes$unstoppableForce(final boolean blocked, final DamageSource source,
+			final float amount) {
+		return archetypes$unstoppableForceImpl(blocked, source);
+	}
+
+	@Unique
+	private boolean archetypes$unstoppableForceImpl(final boolean blocked, final DamageSource source) {
+		if (!blocked || !(source.getEntity() instanceof ServerPlayer attacker)
+				|| source.getDirectEntity() != attacker
+				|| !com.archetypes.MeleeSwing.isSwinging(attacker)) {
+			return blocked;
+		}
+
+		com.archetypes.WeaponClass weapon = com.archetypes.WeaponClass.of(attacker);
+
+		if ((weapon != com.archetypes.WeaponClass.MACE && weapon != com.archetypes.WeaponClass.HANDS)
+				|| com.archetypes.TitansLeap.rank(attacker,
+						com.archetypes.ColossusCrusherNodes.Family.SIEGEBREAKER) <= 0) {
+			return blocked;
+		}
+
+		LivingEntity blocker = (LivingEntity) (Object) this;
+
+		if (!(blocker.level() instanceof ServerLevel level)) {
+			return blocked;
+		}
+
+		archetypes$breakGuard(level, blocker);
+		com.archetypes.TitansLeap.unstoppableCue(attacker, level, blocker);
+		return false;
+	}
+
+	// The disable, and why it is written out rather than a `player.disableShield()` call.
+	// `disableShield` hardcodes 100 ticks, and `Tuning.UNSTOPPABLE_DISABLE_SECONDS` has to
+	// stay the one place that number lives — on 26.x it is passed to `BlocksAttacks.disable`,
+	// which converts it with `Math.round(seconds x scale x 20)`, so the same conversion is
+	// what appears here. Everything else is `disableShield`'s own body, which is in turn the
+	// same three effects `BlocksAttacks.disable` has: the cooldown, `stopUsingItem`, and the
+	// disable note (entity event 30 = `SoundEvents.SHIELD_BREAK`, read out of
+	// `LivingEntity.handleEntityEvent` on both legacy jars).
+	//
+	// The chokepoint is not bypassed by writing it out: `ColossusProtector.immovableObject` is
+	// asked THE SAME QUESTION here that `PlayerMixin` asks at `disableShield`'s head, so an
+	// Immovable Object refuses this exactly as it refuses an axe. That is the 26.x arrangement
+	// unchanged — there too the node's own disable goes through the method the Protector
+	// cancels, and the pair is authored as the clash rather than won by omission.
+	//
+	// The cooldown is keyed on the BLOCKING STACK's item rather than `Items.SHIELD`, which is
+	// what `BlocksAttacks.disable` does above the boundary (`addCooldown(blockingWith, ticks)`)
+	// and what LexForge's own patched `disableShield` does below it. A modded shield is a
+	// shield. Read before `stopUsingItem`, which clears it.
+	@Unique
+	private void archetypes$breakGuard(final ServerLevel level, final LivingEntity blocker) {
+		if (!(blocker instanceof ServerPlayer player)
+				|| com.archetypes.ColossusProtector.immovableObject(player, level)) {
+			return;
+		}
+
+		int ticks = Math.round(Tuning.UNSTOPPABLE_DISABLE_SECONDS * 20.0F);
+
+		if (ticks <= 0) {
+			return;
+		}
+
+		net.minecraft.world.item.Item guard = player.getUseItem().getItem();
+
+		player.getCooldowns().addCooldown(guard, ticks);
+		player.stopUsingItem();
+		level.broadcastEntityEvent(player, (byte) 30);
+	}
+	*///?}
+
 	// Hardened's `hurtServer` RETURN hook used to live here. It moved to
 	// mixin/HardenedMixin so its ORDER against Fabric API's own AFTER_DAMAGE
 	// handler — which lands on the same RETURN at the same default priority —

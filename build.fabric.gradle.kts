@@ -276,10 +276,11 @@ val strippedMixinEntries: List<String> = buildList {
 	// compilation unit is `//?`-ed out and produces no class. See that file's header.
 	if (sc.current.parsed < "26.2") add("\"LevelExtractorMixin\"")
 	// STAGE 4 / R-A5: `world.item.component.BlocksAttacks` does not exist below 1.21.11, so
-	// BlocksAttacksMixin's whole compilation unit goes with it and Immovable Object no-ops
-	// on that node family. Same constraint as above — the entry must not be the LAST element
-	// of its array or blanking it would leave a trailing comma. It is not: the common list
-	// is alphabetical and ProjectileMixin is last.
+	// BlocksAttacksMixin's whole compilation unit goes with it. ONLY THE HOST GOES — Immovable
+	// Object itself is live on that node family, from PlayerMixin's `disableShield` head; see
+	// the ⚠ above `inertNodeKeys`. Same constraint as the entry above — the entry must not be
+	// the LAST element of its array or blanking it would leave a trailing comma. It is not:
+	// the common list is alphabetical and ProjectileMixin is last.
 	if (sc.current.parsed < "1.21.11") add("\"BlocksAttacksMixin\"")
 }
 
@@ -346,11 +347,21 @@ tasks.withType<ProcessResources>().configureEach {
 	}
 	// ---- R-A5 / R-A6: the excised nodes SAY SO, on the nodes where they are inert ----
 	//
-	// The shield-modifier cluster (Instinctive Guard, Bulwark, Immovable Object,
-	// Unstoppable Force) and Magic Armaments' glide have no host below 1.21.11 — the
-	// reasoning is in ColossusProtector's header and MagicArmaments.fitGlider. The design's
-	// prescription is that the NODES stay purchasable (a hole mid-constellation would strand
-	// the branch beyond it) and that their descriptions say the effect is inactive here.
+	// Instinctive Guard and Bulwark — the two members of the shield-modifier cluster whose
+	// whole effect is a NUMBER taken off a blocked hit — and Magic Armaments' glide have no
+	// host below 1.21.11; the reasoning is in ColossusProtector's header and
+	// MagicArmaments.fitGlider. The design's prescription is that the NODES stay purchasable
+	// (a hole mid-constellation would strand the branch beyond it) and that their
+	// descriptions say the effect is inactive here.
+	//
+	// ⚠ TWO KEYS LEFT THIS LIST. Immovable Object and Unstoppable Force (Siegebreaker) were
+	// listed here on a measured-wrong premise — that the legacy shield-disable path is two
+	// chokepoints rather than one. It is one (`Player.disableShield`, a single caller in the
+	// whole jar on every legacy target), so both nodes now have real legacy hosts:
+	// PlayerMixin's `archetypes$immovableObject` and LivingEntityMixin's legacy
+	// `archetypes$unstoppableForce`. They are ACTIVE on all four legacy nodes and must not
+	// be re-marked inert. (One caveat, and it is not a reason to re-mark: `Items.MACE` does
+	// not exist on 1.20.1, so Unstoppable Force is the unarmed half of its promise there.)
 	//
 	// A `filter` and not `//?`, for the reason that is now a rule in this repo: Stonecutter
 	// does not process `.json` at all, and a leftover directive in a lang file is a silent
@@ -361,8 +372,6 @@ tasks.withType<ProcessResources>().configureEach {
 		else listOf(
 			"node.archetypes.protector.omni_block.desc",
 			"node.archetypes.colossus_protector.instinctive_guard.desc",
-			"node.archetypes.colossus_protector.immovable_object.desc",
-			"node.archetypes.colossus_crusher.siegebreaker.desc",
 			"node.archetypes.oracle_wizard.levitation.desc",
 		)
 	inputs.property("inertNodeKeys", inertNodeKeys)
@@ -377,6 +386,33 @@ tasks.withType<ProcessResources>().configureEach {
 					line.substring(0, end) +
 						" \\u00a77(Inactive on this Minecraft version.)\\u00a7r" +
 						line.substring(end)
+				}
+			}
+		}
+	}
+
+	// ---- Unstoppable Force drops its MACE clause below 1.21 ----
+	//
+	// The node is LIVE on both 1.20.1 nodes (LivingEntityMixin's legacy
+	// `isDamageSourceBlocked` arm), but only for its unarmed half: `Items.MACE` does not
+	// exist there, so `WeaponClass.of` can never answer MACE — see that class's own `>=1.21`
+	// arm. A string promising the mace clause would over-promise by exactly one weapon.
+	//
+	// NOT a per-node override of `en_us.json`: the shared resource root ships into every
+	// node's jar, so a `versions/<node>/src/main/resources` copy would move all five Fabric
+	// jars' resource bytes. Same filter machinery as `inertNodeKeys` above, and it needs its
+	// OWN `inputs.property` name — a copy-spec action is invisible to the up-to-date check,
+	// and a predicate that merely repeats another key's value changes nothing Gradle can see.
+	val macelessSiegebreaker = sc.current.parsed < "1.21"
+	inputs.property("macelessSiegebreaker", macelessSiegebreaker)
+
+	if (macelessSiegebreaker) {
+		filesMatching("assets/*/lang/*.json") {
+			filter { line ->
+				if (line.contains("\"node.archetypes.colossus_crusher.siegebreaker.desc\"")) {
+					line.replace("Your mace and unarmed attacks", "Your unarmed attacks")
+				} else {
+					line
 				}
 			}
 		}

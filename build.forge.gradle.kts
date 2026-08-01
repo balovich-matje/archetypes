@@ -253,13 +253,17 @@ tasks.withType<ProcessResources>().configureEach {
 	//
 	// LIVE here, copied from build.fabric.gradle.kts key for key. Build-script logic does not
 	// inherit across node scripts, so the three copies must be kept in step.
+	//
+	// ⚠ The list SHRANK by two: Immovable Object and Unstoppable Force are live below 1.21.11
+	// (PlayerMixin's `disableShield` head, LivingEntityMixin's legacy `isDamageSourceBlocked`
+	// arm). Do not re-add those keys. The full reasoning is over the fabric script's copy.
+	// One caveat that is NOT a reason to re-mark: `Items.MACE` does not exist on this node, so
+	// Unstoppable Force is the unarmed half of its promise here.
 	val inertNodeKeys: List<String> =
 		if (sc.current.parsed >= "1.21.11") emptyList()
 		else listOf(
 			"node.archetypes.protector.omni_block.desc",
 			"node.archetypes.colossus_protector.instinctive_guard.desc",
-			"node.archetypes.colossus_protector.immovable_object.desc",
-			"node.archetypes.colossus_crusher.siegebreaker.desc",
 			"node.archetypes.oracle_wizard.levitation.desc",
 		)
 	inputs.property("inertNodeKeys", inertNodeKeys)
@@ -274,6 +278,29 @@ tasks.withType<ProcessResources>().configureEach {
 					line.substring(0, end) +
 						" \\u00a77(Inactive on this Minecraft version.)\\u00a7r" +
 						line.substring(end)
+				}
+			}
+		}
+	}
+
+	// ---- Unstoppable Force drops its MACE clause below 1.21 ----
+	//
+	// LIVE here, copied from build.fabric.gradle.kts — build-script logic does not inherit
+	// across node scripts. The node itself works on this node (LivingEntityMixin's legacy
+	// `isDamageSourceBlocked` arm); only its mace half is unreachable, because `Items.MACE`
+	// does not exist on 1.20.1 and `WeaponClass.of` can therefore never answer MACE.
+	// The long-form reasoning, including why this is not a per-node `en_us.json` override,
+	// is over the fabric script's copy.
+	val macelessSiegebreaker = sc.current.parsed < "1.21"
+	inputs.property("macelessSiegebreaker", macelessSiegebreaker)
+
+	if (macelessSiegebreaker) {
+		filesMatching("assets/*/lang/*.json") {
+			filter { line ->
+				if (line.contains("\"node.archetypes.colossus_crusher.siegebreaker.desc\"")) {
+					line.replace("Your mace and unarmed attacks", "Your unarmed attacks")
+				} else {
+					line
 				}
 			}
 		}
