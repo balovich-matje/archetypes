@@ -662,6 +662,14 @@ public final class ModState {
 			// armour a player who just sold the node has no claim to.
 			Hardened.clear(serverPlayer);
 			ColossusSlayer.clearWindow(serverPlayer);
+			// Well Fed's banked hunger, which is the odd one out: not a
+			// modifier and not a key of ours but points sitting in vanilla's
+			// FoodData above twenty, so removing PURCHASED above lowers the
+			// CEILING and leaves the bank standing over it — the extra cap and
+			// its halo survived every reset (user report). Runs after the
+			// removal on purpose: the trim reads the ceiling the player is
+			// entitled to NOW.
+			ColossusProtector.trimBankedHunger(serverPlayer);
 		}
 
 		ArchetypeStore.INSTANCE.remove(player, NIGHT_CHANNEL_END);

@@ -738,8 +738,12 @@ public final class Tuning {
 	public static final int JUDGEMENT_WEAKNESS_TICKS = 120;
 	public static final float ASCENDANT_FACTOR = 1.25F;
 
-	/** Fireball and Ice Blast burst in a 3x3 (radius from impact point). */
+	/** Fireball bursts in a 3x3: half the edge of the cube centred on the
+	 * impact point, so 1.5 IS "3x3" and 2.0 would be "4x4". */
 	public static final double ELEMENT_BURST_RADIUS = 1.5;
+	/** Ice Blast bursts in a 4x4 (user call, 2026-08-01) — its own number
+	 * because only the ice half was widened; Fireball stays at 3x3. */
+	public static final double ICE_BURST_RADIUS = 2.0;
 
 	// --- Oracle (epic) actives ---
 	/** Lightning Strike's flat mana price. Display-only for now — the effect is

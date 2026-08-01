@@ -208,6 +208,38 @@ public final class ColossusProtector {
 	}
 
 	/**
+	 * Well Fed's banked hunger is not a modifier that can be revoked and not a
+	 * key that can be removed: it is food points sitting in vanilla's own
+	 * {@code FoodData}, above the twenty the bar draws, and
+	 * {@link com.archetypes.client.BankedHungerHud} paints the halo straight
+	 * off {@code foodLevel - 20}. So nothing about dropping the node takes them
+	 * back — the player kept the extra cap and the halo until they ate the
+	 * points down (user report, 2026-08-01).
+	 *
+	 * <p>Called from {@code ModState.forgetNodes} AFTER {@code PURCHASED} is
+	 * gone, so {@link #hungerCeiling} already answers the vanilla 20 and this
+	 * needs no special case for "was reset" versus "sold a rank": it trims to
+	 * whatever ceiling the player is entitled to right now. Vanilla's
+	 * {@code ServerPlayer.doTick} sees {@code foodLevel != lastSentFood} on the
+	 * next tick and sends the {@code ClientboundSetHealthPacket} itself, so the
+	 * halo goes with it and there is no packet to write here.
+	 */
+	public static void trimBankedHunger(final ServerPlayer player) {
+		int ceiling = hungerCeiling(player);
+
+		if (player.getFoodData().getFoodLevel() <= ceiling) {
+			return;
+		}
+
+		player.getFoodData().setFoodLevel(ceiling);
+		// Saturation never legitimately rides above the food level, but a bank
+		// that was full when the node went is the one place it could be left
+		// there — and the fast-regen rules read it.
+		player.getFoodData().setSaturation(
+				Math.min(player.getFoodData().getSaturationLevel(), (float) ceiling));
+	}
+
+	/**
 	 * Hearty Meal: what a swallowed item leaves behind. Called from the one
 	 * place vanilla finishes any consumable, after that item's own effects have
 	 * run — milk's clear-everything included, which is why the Regeneration it

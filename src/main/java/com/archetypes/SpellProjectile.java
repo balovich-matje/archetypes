@@ -20,6 +20,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.EntityHitResult;
 import net.minecraft.world.phys.HitResult;
@@ -682,7 +683,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		if (this.mode != null) {
 			switch (this.mode) {
 				case FIREBALL -> {
-					this.elementBurst(level, true);
+					this.elementBurst(level, true, result);
 					level.sendParticles(ParticleTypes.EXPLOSION, this.getX(), this.getY(), this.getZ(),
 							1, 0.0, 0.0, 0.0, 0.0);
 					level.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -692,7 +693,7 @@ public class SpellProjectile extends ThrowableItemProjectile {
 				case METEOR -> this.impact(level);
 				case HOLY_LIGHT -> this.burst(level);
 				case ICE_BLAST -> {
-					this.elementBurst(level, false);
+					this.elementBurst(level, false, result);
 					level.sendParticles(ParticleTypes.SNOWFLAKE, this.getX(), this.getY(), this.getZ(),
 							15, 0.3, 0.3, 0.3, 0.05);
 					level.playSound(null, this.getX(), this.getY(), this.getZ(),
@@ -712,15 +713,51 @@ public class SpellProjectile extends ThrowableItemProjectile {
 		this.discard();
 	}
 
-	/** Fireball and Ice Blast burst in a 3x3 on ANY impact — the direct hit
-	 * and its neighbours all take the payload. */
-	private void elementBurst(final ServerLevel level, final boolean fire) {
-		double radius = Tuning.ELEMENT_BURST_RADIUS;
+	/**
+	 * Fireball and Ice Blast burst on ANY impact — the direct hit and its
+	 * neighbours all take the payload. The area is the cube of edge
+	 * {@code 2 * radius} centred on the impact point, and everything whose
+	 * hitbox reaches into it is caught: Fireball's 3x3, Ice Blast's 4x4.
+	 *
+	 * <p>Neither the centre nor the reach is taken off the projectile any
+	 * more, and both were bugs paid for in-game (user report on 1.21.1: a bolt
+	 * that hit a mob square in the chest did nothing while the same bolt into
+	 * the dirt at its feet hurt it):
+	 *
+	 * <ul>
+	 * <li>The burst centres on the IMPACT POINT the hit result carries, not on
+	 * {@code this.position()}. A throwable runs its hit test BEFORE it moves —
+	 * {@code setPos} is the last thing in {@code ThrowableProjectile.tick()} —
+	 * so at {@code onHit} the entity is still up to a full tick of travel short
+	 * of what it hit, 1.2 blocks at {@code ICE_BLAST_SPEED}.
+	 * <li>The reach is measured against the victim's BOUNDING BOX (which is
+	 * what {@code getEntitiesOfClass} tests), not against
+	 * {@code distanceToSqr}, which for a mob is the distance to its FEET. A
+	 * bolt flies at the caster's eye line, so a mob hit in the chest had its
+	 * feet a metre and a half under the burst and fell outside a 1.5-block
+	 * sphere at point-blank range. That one line is why a direct hit dealt
+	 * nothing on every node — there is no version fork anywhere near it.
+	 * </ul>
+	 *
+	 * <p>And whatever the area then says, a direct hit always pays: the entity
+	 * the hit result names is put in the list by hand.
+	 */
+	private void elementBurst(final ServerLevel level, final boolean fire, final HitResult result) {
+		double radius = fire ? Tuning.ELEMENT_BURST_RADIUS : Tuning.ICE_BURST_RADIUS;
+		Vec3 center = result.getLocation();
+		java.util.List<LivingEntity> victims = new java.util.ArrayList<>(
+				level.getEntitiesOfClass(LivingEntity.class,
+						new AABB(center.x - radius, center.y - radius, center.z - radius,
+								center.x + radius, center.y + radius, center.z + radius),
+						living -> living.isAlive() && living != this.getOwner()));
 
-		for (LivingEntity victim : level.getEntitiesOfClass(LivingEntity.class,
-				this.getBoundingBox().inflate(radius),
-				living -> living.isAlive() && living != this.getOwner()
-						&& living.distanceToSqr(this) <= radius * radius)) {
+		if (result instanceof EntityHitResult entityHit
+				&& entityHit.getEntity() instanceof LivingEntity direct
+				&& direct.isAlive() && direct != this.getOwner() && !victims.contains(direct)) {
+			victims.add(direct);
+		}
+
+		for (LivingEntity victim : victims) {
 			if (fire) {
 				/*? if >=1.21 {*/victim.igniteForSeconds(this.igniteSeconds >= 0
 				/*?} else *///victim.setSecondsOnFire(this.igniteSeconds >= 0

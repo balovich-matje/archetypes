@@ -209,7 +209,7 @@ public final class SeekerSpells {
 	}
 
 	/**
-	 * Ice Blast: the freezing opener — a bolt that bursts in a 3x3, slowing
+	 * Ice Blast: the freezing opener — a bolt that bursts in a 4x4, slowing
 	 * what it catches (harder and longer with Frostbite) and glazing water
 	 * with Permafrost. The chill it leaves is Glacial Spike's setup.
 	 */
