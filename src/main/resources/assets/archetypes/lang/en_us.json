@@ -444,7 +444,7 @@
 	"node.archetypes.nemesis_marksman.evasion": "Evasion",
 	"node.archetypes.nemesis_marksman.evasion.desc": "While Deadeye holds, arrows and other projectiles pass through you.",
 	"node.archetypes.nemesis_marksman.long_watch": "Long Watch",
-	"node.archetypes.nemesis_marksman.long_watch.desc": "Deadeye lasts 25 seconds.",
+	"node.archetypes.nemesis_marksman.long_watch.desc": "Deadeye lasts 45 seconds.",
 	"node.archetypes.nemesis_marksman.siege": "Siege",
 	"node.archetypes.nemesis_marksman.siege.desc": "While you stand still in Deadeye your arrows deal x2.0 damage and you cannot be knocked back. Moving ends it; standing still for 1 second brings it back. True Shot's own arrow is unaffected.",
 	"node.archetypes.nemesis_assassin.death_mark": "Death Mark",

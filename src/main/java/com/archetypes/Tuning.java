@@ -1008,9 +1008,9 @@ public final class Tuning {
 	// --- Nemesis Marksman (epic): Deadeye and its two branches ---
 	/** The stance, in ticks, and with Long Watch. Fifteen seconds of
 	 * draw-free fire is worth about four to six ordinary shots' extra output;
-	 * Long Watch's +67% is priced against a capstone. */
+	 * Long Watch triples it (user buff 2026-08-01, 25s -> 45s). */
 	public static final int DEADEYE_TICKS = 300;
-	public static final int DEADEYE_LONG_WATCH_TICKS = 500;
+	public static final int DEADEYE_LONG_WATCH_TICKS = 900;
 	/** 90 seconds from the press, so the stance never overlaps itself even at
 	 * Long Watch's 25. The one dial to turn first if Deadeye reads as
 	 * mandatory rather than special. */
