@@ -107,7 +107,7 @@
 	"node.archetypes.protector.spikes": "Iron Spikes",
 	"node.archetypes.protector.rush": "Shield Rush",
 	"node.archetypes.protector.reflect": "Reflection",
-	"node.archetypes.protector.omni_block": "Bulwark",
+	"node.archetypes.protector.omni_block": "Omni Block",
 	"node.archetypes.protector.ground_slam": "Shield Sweep",
 	"node.archetypes.protector.bash.desc": "With a shield in hand: shove the nearest enemy in front of you for 2.5 hearts of damage. Cooldown 7s.",
 	"node.archetypes.protector.slam.desc": "The bash deals x1.33/x1.67/x2.0 damage. Its cooldown grows by 2/4/6 seconds.",
