@@ -5,6 +5,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.archetypes.Archetypes;
+import com.archetypes.state.ClientSyncGate;
 import com.archetypes.state.StateKey;
 import com.archetypes.state.WireCodec;
 
@@ -94,6 +95,22 @@ public final class ForgeStateSync {
 
 	private static final int INDEX_STATE = 0;
 
+	/**
+	 * The END-OF-REPLAY marker, written into the key-index slot of an otherwise ordinary frame.
+	 *
+	 * <p>A negative index cannot collide with a real one — {@code StateKey.index()} is a
+	 * declaration-order counter — and {@link #apply} already had to reject out-of-range indices,
+	 * so the frozen wire format is not widened by this, only a value it already had to tolerate
+	 * is given a meaning. {@code LegacyStateSync}, the Fabric twin of this file, deliberately does
+	 * NOT get the same marker: that node's client keeps its attachments across a player swap by
+	 * itself (fabric-api's own client-side transfer mixin), so it has nothing to gate on.
+	 *
+	 * <p>What it is FOR: a brand-new player owns no keys at all, so {@link #replay} sends them
+	 * nothing, and "no messages" is indistinguishable from "not synced yet". Without an explicit
+	 * marker {@link ClientSyncGate} could never open for the one player who most needs the picker.
+	 */
+	private static final int INDEX_REPLAY_DONE = -1;
+
 	private static StateKey<?>[] keys = new StateKey<?>[0];
 
 	// Installed from client init, read from the network thread. A dedicated server keeps the
@@ -117,6 +134,13 @@ public final class ForgeStateSync {
 		keys = built;
 		CHANNEL.registerMessage(INDEX_STATE, Frame.class, ForgeStateSync::write,
 				ForgeStateSync::read, ForgeStateSync::handle);
+
+		// This node is the only one of the seven whose client can hold a stale, silently empty
+		// copy of its own state, because it is the only one whose platform neither syncs
+		// attachments nor transfers them across a client player swap. Arming the gate from the
+		// backend that has the problem is what keeps every other node's gate open by
+		// construction — see ClientSyncGate's header.
+		ClientSyncGate.requireExplicitSync();
 	}
 
 	/**
@@ -163,6 +187,26 @@ public final class ForgeStateSync {
 
 			send(store, target, viewer, key);
 		}
+
+		// The end-of-replay marker, and ONLY for a player being sent its own full state — a
+		// tracking replay is somebody else's entity and says nothing about whether the viewer's
+		// own tree has arrived. It goes last, after the loop, so a client that has processed it
+		// has processed everything before it: the channel is ordered, and this is what lets the
+		// gate mean "complete" rather than "started".
+		if (!trackingOnly && target == viewer) {
+			CHANNEL.send(PacketDistributor.PLAYER.with(() -> viewer), replayDone(viewer));
+		}
+	}
+
+	/** A frame carrying nothing but {@link #INDEX_REPLAY_DONE}, in the frozen triple's shape. */
+	private static Frame replayDone(final ServerPlayer viewer) {
+		FriendlyByteBuf buf = new FriendlyByteBuf(Unpooled.buffer());
+		buf.writeVarInt(INDEX_REPLAY_DONE);
+		buf.writeBoolean(false);
+
+		byte[] data = new byte[buf.readableBytes()];
+		buf.readBytes(data);
+		return new Frame(viewer.getId(), data);
 	}
 
 	private static <T> void send(final ArchetypeStore store, final Entity target,
@@ -232,6 +276,13 @@ public final class ForgeStateSync {
 	public static void apply(final @Nullable Entity target, final FriendlyByteBuf buf) {
 		int index = buf.readVarInt();
 		boolean present = buf.readBoolean();
+
+		// The one frame that is not a value. It is read exactly like every other — index, then
+		// the present flag — so the buffer is fully consumed whichever branch runs.
+		if (index == INDEX_REPLAY_DONE) {
+			ClientSyncGate.markSynced(target);
+			return;
+		}
 
 		if (index < 0 || index >= keys.length || keys[index] == null) {
 			return;

@@ -90,6 +90,114 @@ public final class ForgeEvents {
 	}
 
 	/**
+	 * Fires with the player AFTER it has arrived in a new dimension — every portal, vanilla
+	 * and modded alike, and every cross-dimension teleport.
+	 *
+	 * <p><b>WHY THIS NODE NEEDS IT AND NO OTHER DOES.</b> A dimension change makes the server
+	 * send {@code ClientboundRespawnPacket}, and a client that receives one discards its
+	 * {@code LocalPlayer} and builds a new one. The five Fabric nodes lose nothing, because
+	 * fabric-api's own {@code mixin/attachment/client/ClientPlayNetworkHandlerMixin} wraps that
+	 * call and copies the old player's attachments onto the new one — verified by javap to be
+	 * present and identical in {@code fabric-data-attachment-api-v1} <b>0.92.11</b> (the 1.20.1
+	 * pin, which has no server-side sync at all yet still ships this) and <b>0.116.14</b>, and
+	 * present as {@code ClientPacketListenerMixin} in the 1.8.48 / 2.2.9 / 2.2.17 rewrites.
+	 * NeoForge loses nothing either: it patches
+	 * {@code AttachmentSync.syncInitialPlayerAttachments} directly into
+	 * {@code ServerPlayer.changeDimension} (javap of the 21.1.243 merged jar: offset 407, after
+	 * the respawn packet at 145), and {@code teleportTo(ServerLevel, …)} there just delegates to
+	 * {@code changeDimension(DimensionTransition)}.
+	 *
+	 * <p><b>LexForge patches in nothing of the kind and capabilities have no sync</b>, so this
+	 * node's client got a fresh empty {@code EntityState} from {@code AttachCapabilitiesEvent}
+	 * and nothing ever replayed the 75 keys. The server kept everything —
+	 * {@code ServerPlayer.changeDimension} calls {@code revive()} (javap offset 237) =
+	 * {@code unsetRemoved(); reviveCaps();}, and this store registers no invalidation listener —
+	 * so it was the client mirror alone, and a relog always cured it.
+	 *
+	 * <p><b>R-20 ORDERING, which is the whole reason this is safe.</b> A replay fired before the
+	 * client swaps its {@code LocalPlayer} writes into an object about to be thrown away, fails
+	 * silently, and is indistinguishable from no fix. Measured with {@code javap -c} on the
+	 * {@code forge-1.20.1-47.4.22} merged jar; the event is LAST at both firing sites:
+	 *
+	 * <pre>
+	 *   ServerPlayer.changeDimension(ServerLevel, ITeleporter)
+	 *     129/179  new/&lt;init&gt; ClientboundRespawnPacket
+	 *     233      removePlayerImmediately
+	 *     237      revive()
+	 *     473      ForgeEventFactory.firePlayerChangedDimensionEvent   &lt;-- here
+	 *
+	 *   ServerPlayer.teleportTo(ServerLevel, double, double, double, float, float)
+	 *      63/113  new/&lt;init&gt; ClientboundRespawnPacket
+	 *     168      revive()
+	 *     257      ForgeEventFactory.firePlayerChangedDimensionEvent   &lt;-- here
+	 * </pre>
+	 *
+	 * <p>Both sites also appear in
+	 * {@code patches/net/minecraft/server/level/ServerPlayer.java.patch}. A dimension change does
+	 * not clone the player, so the instance handed over is the same one throughout and there is
+	 * no "which {@code ServerPlayer}" question to answer.
+	 */
+	public static void playerChangedDimension(final Consumer<ServerPlayer> listener) {
+		MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerChangedDimensionEvent event) -> {
+			if (event.getEntity() instanceof ServerPlayer player) {
+				listener.accept(player);
+			}
+		});
+	}
+
+	/**
+	 * Fires with the NEW player instance after a respawn — death or End return.
+	 *
+	 * <p>{@code patches/net/minecraft/server/players/PlayerList.java.patch} posts
+	 * {@code firePlayerRespawnEvent(serverplayer, endConquered)} from {@code PlayerList.respawn},
+	 * and {@code serverplayer} is the instance just constructed and put into the player map.
+	 * {@code javap -c} of that method pins the R-20 ordering: {@code ClientboundRespawnPacket} is
+	 * built at 467/542, the new player enters the map at 709, {@code initInventoryMenu} at 717,
+	 * {@code setHealth} at 727, and the event at 733. So the client has already been told to
+	 * rebuild its {@code LocalPlayer} by the time this fires — which is exactly the window the
+	 * replay needs.
+	 *
+	 * <p>{@code PlayerEvent.Clone} is the SERVER-side half of a respawn and this store already
+	 * listens to it; that carries the persistent keys from the old player object to the new one
+	 * and sends nothing. This is the client-side half, and the two are not substitutes.
+	 */
+	public static void afterRespawn(final Consumer<ServerPlayer> listener) {
+		MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerRespawnEvent event) -> {
+			if (event.getEntity() instanceof ServerPlayer player) {
+				listener.accept(player);
+			}
+		});
+	}
+
+	/**
+	 * Fires when a player's game mode changes.
+	 *
+	 * <p><b>PURE BELT, and the honest measurement is that nothing is lost here on any node.</b>
+	 * {@code javap -c} of {@code ServerPlayerGameMode.changeGameModeForPlayer} on the 1.20.1
+	 * merged jar shows {@code ClientboundPlayerInfoUpdatePacket} ({@code UPDATE_GAME_MODE}),
+	 * {@code onUpdateAbilities} and {@code updateSleepingPlayerList} — and <b>no
+	 * {@code ClientboundRespawnPacket}</b>. The client keeps its {@code LocalPlayer} and its
+	 * state with it. A "switched to creative and my tree was empty" report is therefore never
+	 * this event; it is the dimension change that came before it, and creative is merely what
+	 * makes the destructive reset button visible.
+	 *
+	 * <p>Registered anyway so the guarantee is "every client-visible player-lifecycle transition
+	 * replays the tree" rather than "…except this one, because vanilla happens not to need it".
+	 *
+	 * <p>Posted from {@code ForgeHooks.onChangeGameType}, which {@code ServerPlayer.setGameMode}
+	 * calls at offset 9 — BEFORE the change is applied and cancellably. Harmless for a replay,
+	 * which pushes existing values and writes none, so replaying for a change that is then
+	 * vetoed is idempotent rather than wrong.
+	 */
+	public static void playerChangeGameMode(final Consumer<ServerPlayer> listener) {
+		MinecraftForge.EVENT_BUS.addListener((PlayerEvent.PlayerChangeGameModeEvent event) -> {
+			if (event.getEntity() instanceof ServerPlayer player) {
+				listener.accept(player);
+			}
+		});
+	}
+
+	/**
 	 * Fires once per server tick, at the END of it.
 	 *
 	 * <p>{@code TickEvent.ServerTickEvent} carries a {@code public final Phase phase}

@@ -268,12 +268,39 @@ public class Archetypes implements ModInitializer {
 				return;
 			}
 
-			// One pick for now: ignore attempts to re-pick until we decide
-			// whether (and at what cost) an archetype can be changed.
-			if (ModState.get(player) == null) {
-				ModState.set(player, picked);
-				LOGGER.info("{} chose the {} archetype", player.getName().getString(), picked.id());
+			// ONE PICK, AND THE REFUSAL IS LOAD-BEARING — it is not merely "we have not decided
+			// whether re-picking is allowed yet".
+			//
+			// A client that reaches the picker at all is a client whose own copy of ARCHETYPE
+			// reads null, and there are exactly two ways to be in that state: the player really
+			// has never picked, or the client's copy is stale. The second one used to be
+			// reachable on `1.20.1-forge`, where nothing re-sent attached state after a dimension
+			// change (fixed in `platform/ForgeArchetypeStore` — this is the belt for it). From the
+			// server the two are indistinguishable, so the handler must be safe under both.
+			//
+			// Hence: the server's own value wins, always, and a pick that disagrees with it
+			// changes nothing. `ModState.set` would be a silent, irreversible overwrite of the
+			// archetype a player has already spent up to 60 levels in — `ModState.clear` is not
+			// even needed to lose the tree, because PURCHASED and SPENT_POINTS would survive
+			// against an archetype that no longer owns those nodes.
+			Archetype existing = ModState.get(player);
+
+			if (existing != null) {
+				// Whichever branch, ANSWER — the client asked because it believed it had nothing,
+				// and leaving it believing that is what produced the report this guard exists for.
+				// `resyncAll` is a no-op on every node whose platform syncs attached state itself,
+				// and on those nodes a stale client is not reachable in the first place.
+				if (existing != picked) {
+					LOGGER.warn("{} tried to pick {} but already has {} — refused, resyncing",
+							player.getName().getString(), picked.id(), existing.id());
+				}
+
+				ArchetypeStore.INSTANCE.resyncAll(player);
+				return;
 			}
+
+			ModState.set(player, picked);
+			LOGGER.info("{} chose the {} archetype", player.getName().getString(), picked.id());
 		});
 
 		// Fresh advancement count each login (self-heals staleness), and the

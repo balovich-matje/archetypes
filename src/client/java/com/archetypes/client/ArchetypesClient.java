@@ -597,6 +597,32 @@ public class ArchetypesClient implements ClientModInitializer {
 		}
 
 		Archetype current = ModState.get(client.player);
+
+		// THE PICKER IS NEVER OFFERED FROM A STATE THE SERVER HAS NOT CONFIRMED.
+		//
+		// `current == null` has two meanings and the client cannot tell them apart on its own:
+		// "never picked" and "picked, but nobody has sent it to me". Acting on the second one is
+		// what walks a player into re-picking an archetype they already have — and, one click
+		// further, into the creative Reset button that really does delete the tree. The server
+		// refuses such a pick outright (see the PICK_ARCHETYPE handler); this stops it being
+		// offered at all.
+		//
+		// The gate is open by construction on the six nodes whose platform carries attached state
+		// across a client player swap, so this costs one static boolean read there and changes
+		// nothing. Read ClientSyncGate's header for which nodes those are and why.
+		if (current == null && !com.archetypes.state.ClientSyncGate.isSynced(client.player)) {
+			// Overlay rather than chat: the button can be clicked repeatedly and this line
+			// overwrites itself instead of stacking.
+			// 26.1 renamed `displayClientMessage(component, true)` to `sendOverlayMessage` and
+			// dropped the old spelling.
+			//? if >=26.1 {
+			client.player.sendOverlayMessage(Component.translatable("message.archetypes.syncing"));
+			//?} else {
+			/*client.player.displayClientMessage(Component.translatable("message.archetypes.syncing"), true);
+			*///?}
+			return;
+		}
+
 		// 26.2 moved screen management off Minecraft onto the Gui object.
 		/*? if >=26.2 {*/client.gui.setScreen(current == null
 		/*?} else *///client.setScreen(current == null

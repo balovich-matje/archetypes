@@ -187,6 +187,30 @@ final class ForgeArchetypeStore implements ArchetypeStore {
 				this.syncOnStartTracking(event.getTarget(), viewer);
 			}
 		});
+
+		// THE RE-SEND BELT, and it closes the one hole this store had.
+		//
+		// Until now `resyncAll` had exactly ONE caller — common init's join hook — so the client
+		// learned its 75 keys once per login and never again. Every vanilla sender of
+		// `ClientboundRespawnPacket` makes the client throw its LocalPlayer away and build a new
+		// one, which gets a fresh empty EntityState from AttachCapabilitiesEvent; nothing
+		// replayed, so the tree screen read "no archetype, 0 points" while the server still had
+		// everything and every server-side passive, ability and cooldown kept working. On this
+		// version those senders are exactly three — `ServerPlayer.changeDimension`, the
+		// cross-dimension `ServerPlayer.teleportTo(ServerLevel, …)` and `PlayerList.respawn` —
+		// and the two listeners below cover all three. Each helper's javadoc carries the R-20
+		// proof that its event is posted AFTER the packet and after `revive()`, which is what
+		// makes a replay land on the player the client is actually about to render.
+		//
+		// It lives here, with the store, for the same reason the clone listener above does: it
+		// is sync plumbing rather than a gameplay event, and keeping it inside a `platform/Forge*`
+		// file means the shared tree — and therefore every other node's bytes — is untouched.
+		ForgeEvents.playerChangedDimension(this::resyncAll);
+		ForgeEvents.afterRespawn(this::resyncAll);
+		// Belt on the belt: a game-mode change provably sends no respawn packet, so nothing is
+		// lost here on any node. Registered so the guarantee does not depend on that staying
+		// true — see ForgeEvents#playerChangeGameMode.
+		ForgeEvents.playerChangeGameMode(this::resyncAll);
 	}
 
 	private static void onRegisterCapabilities(final RegisterCapabilitiesEvent event) {
