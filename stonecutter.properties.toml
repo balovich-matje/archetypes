@@ -5,7 +5,7 @@
 mod.id = "archetypes"
 mod.name = "Archetypes"
 mod.group = "com.archetypes"
-mod.version = "1.2.0"
+mod.version = "1.2.1"
 
 deps.fabric_loader = "0.19.3"
 
@@ -16,7 +16,7 @@ deps.fabric_loader = "0.19.3"
 # the per-node jar out of `../specialities/build/libs/<this version>/`. Only the version
 # number lives here; the file NAME is assembled per node (design §3.5, fallback mechanism,
 # which is the one in force).
-deps.specialities = "1.6.2"
+deps.specialities = "1.6.3"
 
 # R-01, MEASURED IN THE OTHER REPO — `loomx.loom_version` must be visible to FABRIC nodes
 # ONLY, hence this bare `[fabric]` table. The TOML ROOT is as dangerous as gradle.properties:
