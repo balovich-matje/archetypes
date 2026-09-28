@@ -1,9 +1,10 @@
 # Archetypes
 
-An RPG class mod for Minecraft Fabric — pick your archetype in the first minute, from
-the inventory screen. No crafting station, no spell book, no weapon coupling.
+An RPG class mod for Minecraft — pick your archetype in the first minute, from the
+inventory screen. No crafting station, no spell book, no weapon coupling.
 
-Early planning. Nothing implemented yet.
+Fabric 26.2 / 26.1 / 1.21.11 / 1.21.1 / 1.20.1, NeoForge 1.21.1, Forge 1.20.1.
+Download: https://modrinth.com/mod/archetypes
 
 - [notes/design.md](notes/design.md) — the premise, the Specialities interop rule, and
   the open questions
