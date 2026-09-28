@@ -43,9 +43,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * <p><b>WHY THE SIX DRAWS AND NOT SEVEN OR FIVE.</b> This is exactly the body of
  * {@code GuiMixin}'s {@code <1.21} arm, in the same order, calling the same six shared render
  * methods with the same {@code partialTick}: washes first, bars second — the order the newer
- * nodes draw them in, preserved among ours. The {@code hideGui} early-out is kept for the same
- * reason it is there: F1 must hide the mod's HUD too. Conventions §5l — the gate goes at the
- * shared funnel, and every one of those six methods is the same one all seven nodes call.
+ * nodes draw them in, preserved among ours. The {@code hideGui} early-out sits between the two
+ * for the same reason it does there: F1 hides the bars the way it hides Forge's hotbar and
+ * survival row, and keeps the two world washes the way it keeps Forge's camera overlays.
+ * Conventions §5l — every one of those six methods is the same one all seven nodes call.
  *
  * <p><b>WHY THERE IS NOTHING ELSE IN THIS FILE.</b> Skill Proficiencies' {@code ForgeGuiMixin}
  * additionally wraps seven {@code ForgeGui} methods to RAISE the vanilla HUD by its
@@ -70,12 +71,16 @@ public abstract class ForgeGuiMixin {
 	@Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;F)V", at = @At("TAIL"))
 	private void archetypes$hud(final GuiGraphics graphics, final float partialTick,
 			final CallbackInfo ci) {
+		// F1 split as in GuiMixin's `<1.21` arm: Forge's own VIGNETTE/SPYGLASS/HELMET/
+		// FROSTBITE/PORTAL overlays carry no `hideGui` test (VanillaGuiOverlay, 47.4.22), its
+		// HOTBAR and every survival-row overlay do. The two washes follow the former.
+		SunBlindOverlay.render(graphics, partialTick);
+		DeadeyeOverlay.render(graphics, partialTick);
+
 		if (Minecraft.getInstance().options.hideGui) {
 			return;
 		}
 
-		SunBlindOverlay.render(graphics, partialTick);
-		DeadeyeOverlay.render(graphics, partialTick);
 		CooldownBarHud.render(graphics, partialTick);
 		ProcIndicatorHud.render(graphics, partialTick);
 		ManaHud.render(graphics, partialTick);

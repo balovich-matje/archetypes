@@ -175,13 +175,23 @@ public abstract class GuiMixin {
 	@Inject(method = "render(Lnet/minecraft/client/gui/GuiGraphics;F)V", at = @At("TAIL"))
 	private void archetypes$hud(final GuiGraphics graphics, final float partialTick,
 			final CallbackInfo ci) {
+		// Washes first, bars second — the newer nodes' own order, preserved among ours.
+		//
+		// F1 FOLLOWS VANILLA'S OWN SPLIT ON THIS VERSION. 1.20.1's `Gui.render` draws the
+		// vignette, spyglass, pumpkin blur, powder-snow and portal overlays BEFORE its first
+		// `hideGui` test (javap: offsets 0-257, the first `Options.hideGui` read is at 291),
+		// so F1 keeps them; the hotbar and the whole survival row sit behind it. The two
+		// washes are our MISC_OVERLAYS and follow the pumpkin (a Sun Blind that F1 lifted
+		// would be a free way out of the night form's daylight cost); the four bars follow
+		// the hotbar. From 1.21.1 up vanilla hides its camera overlays with F1 too, and so do
+		// ours there, because every newer node's anchor sits inside that gate.
+		SunBlindOverlay.render(graphics, partialTick);
+		DeadeyeOverlay.render(graphics, partialTick);
+
 		if (Minecraft.getInstance().options.hideGui) {
 			return;
 		}
 
-		// Washes first, bars second — the newer nodes' own order, preserved among ours.
-		SunBlindOverlay.render(graphics, partialTick);
-		DeadeyeOverlay.render(graphics, partialTick);
 		CooldownBarHud.render(graphics, partialTick);
 		ProcIndicatorHud.render(graphics, partialTick);
 		ManaHud.render(graphics, partialTick);
