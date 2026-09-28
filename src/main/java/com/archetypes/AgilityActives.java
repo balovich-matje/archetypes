@@ -46,8 +46,8 @@ public final class AgilityActives {
 		boolean snapShot = MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.SNAP_SHOT) > 0;
 		// The base skill is a bow's; Snap Shot conjures its own shot and
 		// serves the crossbow branch too.
-		boolean weaponOk = player.getMainHandItem().is(Items.BOW)
-				|| (snapShot && player.getMainHandItem().is(Items.CROSSBOW));
+		boolean weaponOk = ModItems.isBow(player.getMainHandItem())
+				|| (snapShot && ModItems.isCrossbow(player.getMainHandItem()));
 
 		if (MarksmanNodes.rank(SubTree.MARKSMAN, owned, MarksmanNodes.Family.TRUE_SHOT) <= 0
 				|| !weaponOk
@@ -300,7 +300,7 @@ public final class AgilityActives {
 	 * Acrobatics never did, so Vault's mid-air clause costs no code.
 	 */
 	private static boolean readyToRoll(final ServerPlayer player, final boolean vault) {
-		if (player.isUsingItem() && player.getUseItem().is(Items.BOW)) {
+		if (player.isUsingItem() && ModItems.isBow(player.getUseItem())) {
 			return true;
 		}
 
@@ -309,8 +309,8 @@ public final class AgilityActives {
 		}
 
 		ItemStack main = player.getMainHandItem();
-		return (player.isUsingItem() && player.getUseItem().is(Items.CROSSBOW))
-				|| (main.is(Items.CROSSBOW)
+		return (player.isUsingItem() && ModItems.isCrossbow(player.getUseItem()))
+				|| (ModItems.isCrossbow(main)
 						&& net.minecraft.world.item.CrossbowItem.isCharged(main));
 	}
 

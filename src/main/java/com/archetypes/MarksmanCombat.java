@@ -17,7 +17,6 @@ import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 
 /**
  * The Marksman's passives, at their two natural moments: the arrow leaving
@@ -38,7 +37,7 @@ public final class MarksmanCombat {
 	public static boolean fromMarksmanWeapon(final AbstractArrow arrow) {
 		//? if >=1.21 {
 		ItemStack weapon = arrow.getWeaponItem();
-		return weapon != null && (weapon.is(Items.BOW) || weapon.is(Items.CROSSBOW));
+		return weapon != null && (ModItems.isBow(weapon) || ModItems.isCrossbow(weapon));
 		//?} else {
 		/*return arrow.getType() == net.minecraft.world.entity.EntityType.ARROW
 				|| arrow.getType() == net.minecraft.world.entity.EntityType.SPECTRAL_ARROW;
@@ -167,7 +166,7 @@ public final class MarksmanCombat {
 		//? if >=1.21 {
 		ItemStack weapon = arrow.getWeaponItem();
 
-		if (weapon == null || !weapon.is(Items.CROSSBOW)) {
+		if (weapon == null || !ModItems.isCrossbow(weapon)) {
 			return;
 		}
 

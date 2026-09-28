@@ -312,15 +312,15 @@ public class ArchetypesClient implements ClientModInitializer {
 			// the server re-validates with, so the two never disagree about
 			// whether a press should have gone out.
 			boolean drawingBow = client.player != null && client.player.isUsingItem()
-					&& client.player.getUseItem().is(net.minecraft.world.item.Items.BOW);
+					&& com.archetypes.ModItems.isBow(client.player.getUseItem());
 
 			if (client.player != null && !drawingBow
 					&& com.archetypes.NemesisMarksmanNodes.rank(client.player,
 							com.archetypes.NemesisMarksmanNodes.Family.VAULT) > 0) {
 				var main = client.player.getMainHandItem();
 				drawingBow = (client.player.isUsingItem()
-						&& client.player.getUseItem().is(net.minecraft.world.item.Items.CROSSBOW))
-						|| (main.is(net.minecraft.world.item.Items.CROSSBOW)
+						&& com.archetypes.ModItems.isCrossbow(client.player.getUseItem()))
+						|| (com.archetypes.ModItems.isCrossbow(main)
 								&& net.minecraft.world.item.CrossbowItem.isCharged(main));
 			}
 

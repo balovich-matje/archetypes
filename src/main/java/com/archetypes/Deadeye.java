@@ -19,7 +19,6 @@ import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -125,7 +124,7 @@ public final class Deadeye {
 
 		if (rank(player, NemesisMarksmanNodes.Family.DEADEYE) <= 0
 				|| isActive(player)
-				|| !(weapon.is(Items.BOW) || weapon.is(Items.CROSSBOW))) {
+				|| !(ModItems.isBow(weapon) || ModItems.isCrossbow(weapon))) {
 			return;
 		}
 

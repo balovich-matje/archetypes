@@ -30,7 +30,6 @@ import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 *///?}
 
 import net.minecraft.client.player.LocalPlayer;
-import net.minecraft.world.item.Items;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 
@@ -51,7 +50,7 @@ public abstract class LocalPlayerMixin {
 	private float archetypes$nimbleDraw(final float original) {
 		LocalPlayer self = (LocalPlayer) (Object) this;
 
-		if (!self.getUseItem().is(Items.BOW)) {
+		if (!com.archetypes.ModItems.isBow(self.getUseItem())) {
 			return original;
 		}
 

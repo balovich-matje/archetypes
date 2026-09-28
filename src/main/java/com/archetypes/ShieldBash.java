@@ -14,7 +14,6 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -81,8 +80,8 @@ public final class ShieldBash {
 		int wide = ProtectorNodes.rank(SubTree.PROTECTOR, owned, ProtectorNodes.Family.WIDE);
 		boolean sweep = ProtectorNodes.rank(SubTree.PROTECTOR, owned,
 				ProtectorNodes.Family.GROUND_SLAM) > 0;
-		boolean dualShield = player.getMainHandItem().is(Items.SHIELD)
-				&& player.getOffhandItem().is(Items.SHIELD);
+		boolean dualShield = ModItems.isShield(player.getMainHandItem())
+				&& ModItems.isShield(player.getOffhandItem());
 
 		// The bash's shove is flat now. The node that used to buy more of it
 		// (Concussive Blow) is Sure Footing, which is about moving while the
@@ -271,11 +270,11 @@ public final class ShieldBash {
 	}
 
 	private static InteractionHand shieldHand(final ServerPlayer player) {
-		if (player.getOffhandItem().is(Items.SHIELD)) {
+		if (ModItems.isShield(player.getOffhandItem())) {
 			return InteractionHand.OFF_HAND;
 		}
 
-		if (player.getMainHandItem().is(Items.SHIELD)) {
+		if (ModItems.isShield(player.getMainHandItem())) {
 			return InteractionHand.MAIN_HAND;
 		}
 

@@ -977,7 +977,9 @@ filter keyed on the full `.desc` key. `//?` cannot do it: Stonecutter never proc
 >
 > **One residual degradation, on 1.20.1 only:** `Items.MACE` does not exist there, so
 > `WeaponClass.of` can never answer `MACE` and Unstoppable Force is the *unarmed* half of its
-> promise on both 1.20.1 nodes. The lang string ("Your mace and unarmed attacks break through
+> promise on both 1.20.1 nodes. *(1.2.2: `WeaponClass.of` now asks `#archetypes:maces`, whose
+> `minecraft:mace` entry is `required: false` — still empty on a bare 1.20.1, but a pack that
+> tags its own mace gets MACE back there.)* The lang string ("Your mace and unarmed attacks break through
 > blocking.") over-promises there by one clause; a per-node lang override is the fix if it is
 > judged worth one.
 

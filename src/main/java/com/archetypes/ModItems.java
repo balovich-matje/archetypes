@@ -24,7 +24,6 @@ import net.fabricmc.fabric.api.creativetab.v1.CreativeModeTabEvents;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.tags.ItemTags;
 import net.minecraft.tags.TagKey;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTabs;
@@ -83,6 +82,52 @@ public final class ModItems {
 	 * better wands are a texture and a recipe, not a code change. */
 	public static final TagKey<Item> WANDS = TagKey.create(Registries.ITEM, Archetypes.id("wands"));
 
+	// ---- The public weapon tags (GitHub #3) ------------------------------------------------
+	//
+	// EVERY "what is the player holding" question an ability or passive asks is one of these
+	// tags, so a modpack can hand its own weapons to a tree with a datapack and no code. Each
+	// default holds the vanilla item(s) the check used to name, plus convention tags that were
+	// READ OUT OF THE LOADER JARS (fabric-convention-tags v1/v2, NeoForge 21.1.243, Forge
+	// 47.4.22) as `required: false` — an absent tag is skipped, and every one of them holds
+	// only the same vanilla item on a bare loader, so vanilla behaviour is unchanged on all
+	// seven nodes. README "Modpack / mod compatibility" is the public list.
+	//
+	// Mechanical checks deliberately stay mechanical: "can this raise and block" is the
+	// shield's own BlocksAttacks component (use animation below 1.21.11), "is the bow drawn"
+	// is isUsingItem, and the 1.20.1 arrow-source fallbacks read the arrow's own flags.
+
+	/** One-handed swords: Bladestorm, Blade Master and the sword-scoped Slayer passives.
+	 * Defaults to {@code #minecraft:swords}; {@link #isSword} subtracts greatswords and
+	 * daggers, so a pack can move an item between the three by tag alone. */
+	public static final TagKey<Item> SWORDS = TagKey.create(Registries.ITEM, Archetypes.id("swords"));
+	/** The Crusher's mace: Quake, Meteor/Shockwave smash bonuses, Unstoppable Force,
+	 * Titan's Leap. {@code minecraft:mace} is optional because 1.20.1 has no mace. */
+	public static final TagKey<Item> MACES = TagKey.create(Registries.ITEM, Archetypes.id("maces"));
+	/** True Shot, Acrobatics' drawn-bow roll, Nimble Draw, Deadeye, the Marksman arrow passives. */
+	public static final TagKey<Item> BOWS = TagKey.create(Registries.ITEM, Archetypes.id("bows"));
+	/** Snap Shot's crossbow branch, Vault, Rapid Reload, Deadeye, the Marksman arrow passives. */
+	public static final TagKey<Item> CROSSBOWS = TagKey.create(Registries.ITEM, Archetypes.id("crossbows"));
+	/** Shield Bash / Shield Sweep's hand pick and its dual-shield bonus. */
+	public static final TagKey<Item> SHIELDS = TagKey.create(Registries.ITEM, Archetypes.id("shields"));
+	/** Held in either hand, stops a Seeker's mana regeneration. */
+	public static final TagKey<Item> COMBAT_WEAPONS = TagKey.create(Registries.ITEM, Archetypes.id("combat_weapons"));
+
+	public static boolean isMace(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(MACES);
+	}
+
+	public static boolean isBow(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(BOWS);
+	}
+
+	public static boolean isCrossbow(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(CROSSBOWS);
+	}
+
+	public static boolean isShield(final net.minecraft.world.item.ItemStack stack) {
+		return stack.is(SHIELDS);
+	}
+
 	public static boolean isGreatsword(final net.minecraft.world.item.ItemStack stack) {
 		return stack.is(GREATSWORDS);
 	}
@@ -112,32 +157,20 @@ public final class ModItems {
 	/** Anything martial enough to disqualify a Seeker from regenerating
 	 * mana: real weapons and shields, in either hand. */
 	public static boolean isCombatWeapon(final net.minecraft.world.item.ItemStack stack) {
-		return stack.is(ItemTags.SWORDS) // greatswords and daggers live in this tag too
-				// Spears arrived with 1.21.11 and the tag does not exist below it — the
-				// clause is dropped rather than substituted, because there is nothing on
-				// the older versions it could be describing.
-				//? if >=1.21.11 {
-				|| stack.is(ItemTags.SPEARS)
-				//?}
-				//? if >=1.21 {
-				|| stack.is(net.minecraft.world.item.Items.MACE)
-				//?}
-				|| stack.is(net.minecraft.world.item.Items.BOW)
-				|| stack.is(net.minecraft.world.item.Items.CROSSBOW)
-				|| stack.is(net.minecraft.world.item.Items.SHIELD)
-				|| stack.is(net.minecraft.world.item.Items.TRIDENT)
-				// A conjured weapon is martial too: mana must not regenerate under
-				// the channel or its 10/second upkeep would run partly for free.
-				|| isSummoned(stack);
+		// `#archetypes:combat_weapons` holds every weapon tag above plus the trident and
+		// `#minecraft:spears` (optional: spears are 1.21.11+). The conjured weapons stay in
+		// CODE, not in the tag: mana must not regenerate under the channel or its 10/second
+		// upkeep would run partly for free, and a datapack must not be able to switch that off.
+		return stack.is(COMBAT_WEAPONS) || isSummoned(stack);
 	}
 
 	public static boolean holdingCombatWeapon(final net.minecraft.world.entity.player.Player player) {
 		return isCombatWeapon(player.getMainHandItem()) || isCombatWeapon(player.getOffhandItem());
 	}
 
-	/** A one-handed sword: the vanilla tag minus our own blades in it. */
+	/** A one-handed sword: {@code #archetypes:swords} minus our own blades in it. */
 	public static boolean isSword(final net.minecraft.world.item.ItemStack stack) {
-		return stack.is(ItemTags.SWORDS) && !stack.is(GREATSWORDS) && !stack.is(DAGGERS);
+		return stack.is(SWORDS) && !stack.is(GREATSWORDS) && !stack.is(DAGGERS);
 	}
 
 	/**

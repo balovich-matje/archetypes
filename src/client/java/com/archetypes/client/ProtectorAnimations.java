@@ -44,7 +44,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Avatar;
 //?}
 import net.minecraft.world.entity.HumanoidArm;
-import net.minecraft.world.item.Items;
 //? if >=1.21.11 {
 import org.jspecify.annotations.Nullable;
 //?} else {
@@ -178,8 +177,8 @@ public final class ProtectorAnimations {
 
 	/** Which arms are carrying a shield right now, read off tracked equipment. */
 	private static @Nullable Identifier animationFor(final AbstractClientPlayer player) {
-		boolean main = player.getMainHandItem().is(Items.SHIELD);
-		boolean off = player.getOffhandItem().is(Items.SHIELD);
+		boolean main = com.archetypes.ModItems.isShield(player.getMainHandItem());
+		boolean off = com.archetypes.ModItems.isShield(player.getOffhandItem());
 
 		if (main && off) {
 			return SWEEP_DUAL;

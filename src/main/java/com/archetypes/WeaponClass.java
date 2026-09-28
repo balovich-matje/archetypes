@@ -1,7 +1,6 @@
 package com.archetypes;
 
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.item.Items;
 
 /**
  * The melee families our combat rules apply to: swing gating (no half-charged
@@ -33,11 +32,12 @@ public enum WeaponClass {
 			return SWORD;
 		}
 
-		//? if >=1.21 {
-		if (mainhand.is(Items.MACE)) {
+		// `#archetypes:maces`, not `Items.MACE` (GitHub #3). No version block: the tag exists
+		// on every node, and on 1.20.1 — where `minecraft:mace` does not — its default is
+		// empty, so vanilla still never answers MACE there while a pack's own mace can.
+		if (ModItems.isMace(mainhand)) {
 			return MACE;
 		}
-		//?}
 
 		if (ModItems.isWand(mainhand)) {
 			return WAND;

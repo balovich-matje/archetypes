@@ -379,9 +379,11 @@ tasks.withType<ProcessResources>().configureEach {
 	// ---- Unstoppable Force drops its MACE clause below 1.21 ----
 	//
 	// The node is LIVE on both 1.20.1 nodes (LivingEntityMixin's legacy
-	// `isDamageSourceBlocked` arm), but only for its unarmed half: `Items.MACE` does not
-	// exist there, so `WeaponClass.of` can never answer MACE — see that class's own `>=1.21`
-	// arm. A string promising the mace clause would over-promise by exactly one weapon.
+	// `isDamageSourceBlocked` arm), but only for its unarmed half: `WeaponClass.of` asks
+	// `#archetypes:maces`, whose `minecraft:mace` entry is `required: false` because 1.20.1
+	// has no mace, so a bare 1.20.1 install never answers MACE. A string promising the mace
+	// clause would over-promise by exactly one weapon. (A pack that tags its own mace gets the
+	// clause back in behaviour; the string stays conservative.)
 	//
 	// NOT a per-node override of `en_us.json`: the shared resource root ships into every
 	// node's jar, so a `versions/<node>/src/main/resources` copy would move all five Fabric

@@ -1,0 +1,17 @@
+{
+  "values": [
+    "#archetypes:swords",
+    "#archetypes:greatswords",
+    "#archetypes:daggers",
+    "#archetypes:maces",
+    "#archetypes:bows",
+    "#archetypes:crossbows",
+    "#archetypes:shields",
+    "minecraft:trident",
+    {"id": "#c:tools/trident", "required": false},
+    {"id": "#c:tools/spear", "required": false},
+    {"id": "#c:spears", "required": false},
+    {"id": "#forge:tools/tridents", "required": false},
+    {"id": "#minecraft:spears", "required": false}
+  ]
+}

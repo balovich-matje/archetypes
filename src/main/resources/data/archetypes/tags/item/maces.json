@@ -1,0 +1,6 @@
+{
+  "values": [
+    {"id": "minecraft:mace", "required": false},
+    {"id": "#c:tools/mace", "required": false}
+  ]
+}

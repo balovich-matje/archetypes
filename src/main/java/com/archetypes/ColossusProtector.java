@@ -28,7 +28,6 @@ import net.minecraft.world.entity.projectile.arrow.AbstractArrow;
 import net.minecraft.world.food.FoodConstants;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 // ─── R-A5 IS CLOSED: NOTHING IN THIS CLUSTER IS EXCISED ANY MORE ─────────────────────────
 // The row began as four nodes said to have no host below 1.21.11, on the premise that the
 // `BlocksAttacks` COMPONENT and `LivingEntity.applyItemBlocking` arrive together at that
@@ -104,6 +103,9 @@ public final class ColossusProtector {
 	 * vanilla sets where they exist rather than re-listing them. */
 	public static final TagKey<Item> MEAT = TagKey.create(Registries.ITEM, Archetypes.id("meat"));
 	public static final TagKey<Item> FRUIT = TagKey.create(Registries.ITEM, Archetypes.id("fruit"));
+	/** Hearty Meal's Regeneration branch. {@code minecraft:milk_bucket} plus the milk
+	 * convention tags, so a pack's milk bottle counts (GitHub #3). */
+	public static final TagKey<Item> MILK = TagKey.create(Registries.ITEM, Archetypes.id("milk"));
 
 	private static final Identifier IRONCLAD_ARMOUR_ID = Archetypes.id("ironclad_armour");
 	private static final Identifier IRONCLAD_TOUGHNESS_ID = Archetypes.id("ironclad_toughness");
@@ -267,7 +269,7 @@ public final class ColossusProtector {
 
 		MobEffectInstance buff;
 
-		if (stack.is(Items.MILK_BUCKET)) {
+		if (stack.is(MILK)) {
 			buff = new MobEffectInstance(MobEffects.REGENERATION, Tuning.HEARTY_MEAL_TICKS,
 					Tuning.HEARTY_MEAL_MILK_AMPLIFIER);
 		} else if (stack.is(MEAT)) {

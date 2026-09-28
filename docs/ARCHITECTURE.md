@@ -103,7 +103,8 @@ attachments, so there is no bespoke state packet.
 the archetype's three sub-trees in screen order, slot 3 is the capstone key. The
 server resolves what a slot casts from `SubTree.of(archetype).get(slot)` and, for
 Strength trees, the held weapon (`ModItems.isGreatsword` → Decimate,
-`isSword` → Bladestorm, `Items.MACE` → Quake, else → Haymaker). See the dispatch
+`isSword` → Bladestorm, `isMace` → Quake, else → Haymaker — every weapon question is an
+`#archetypes:*` item tag, see §5 "Weapon identity is a tag"). See the dispatch
 `switch` in `Archetypes.onInitialize`.
 
 ### The ticker pattern
@@ -378,6 +379,28 @@ factors, mana costs). Gameplay classes read from it and never hardcode numbers;
 retuning is a one-file edit. Design rationale for the numbers lives in
 `notes/design.md`.
 
+### Weapon identity is a tag
+
+Every "what is the player holding" question an ability or passive asks goes through a
+`ModItems.is*` helper backed by a public `#archetypes:*` item tag (GitHub #3), never an
+`Items.X` comparison: `swords` (default `#minecraft:swords`; `isSword` subtracts
+`greatswords` and `daggers`), `greatswords`, `daggers`, `wands`, `maces`, `bows`,
+`crossbows`, `shields`, `combat_weapons` (the Seeker's mana-regen block), plus
+`ColossusProtector`'s `meat`, `fruit` and `milk`. The README's "Modpack / mod compatibility"
+section is the public list. Rules for adding one:
+
+- The default holds the vanilla item(s) the code used to name. Convention tags go in as
+  `{"id": "#c:…", "required": false}` **only after reading the tag out of the loader jar**
+  and confirming it holds nothing but those same vanilla items on a bare loader — `#c:bows`
+  on fabric 1.20.1 (convention tags v1) holds the CROSSBOW too and is deliberately absent
+  from `bows`. An item that does not exist on some node (`minecraft:mace` on 1.20.1) is
+  `required: false`, never a per-node file.
+- MECHANICAL checks stay mechanical: "can this block" is `BlocksAttacks` (use animation below
+  1.21.11), "is it drawn" is `isUsingItem`, the 1.20.1 arrow fallbacks read the arrow's
+  own entity type / `shotFromCrossbow`. Node ICONS (`() -> Items.X`) are display only.
+- The conjured Magic Armaments weapons stay in code in `isCombatWeapon` so no datapack can
+  let mana regenerate under the channel.
+
 ### Mixin injection points
 
 Injection targets are declared in `archetypes.mixins.json` (server/common) and
@@ -399,7 +422,7 @@ The `hurtServer` funnel, all at `@At("HEAD")`:
    role + weapon so at most one attacker-side shaper applies per hit:
    `archetypes$greatswordDamage` (Heavy Blows → First Blood → Executioner → Blade
    Master), `archetypes$swordDamage` (Blade Master alone — its weapon gate is
-   `ModItems.isSword`, the vanilla `swords` tag minus this mod's greatswords and
+   `ModItems.isSword`, `#archetypes:swords` (default `#minecraft:swords`) minus this mod's greatswords and
    daggers, so it and the greatsword hook can never both fire),
    `archetypes$daggerDamage` (Razor Edge / Expose / Flense / Shadow Flurry / Twin
    Fangs + Venom/Blight/Crippling coatings), `archetypes$marksmanArrowHit`

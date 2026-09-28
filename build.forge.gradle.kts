@@ -259,14 +259,15 @@ tasks.withType<ProcessResources>().configureEach {
 	//
 	// The ONE thing this node still qualifies is the mace clause immediately below, and that
 	// is a different mechanism for a different reason: the node WORKS here, it is one weapon
-	// short of its full promise because `Items.MACE` does not exist on 1.20.1.
+	// short of its full promise because vanilla 1.20.1 has no mace to put in `#archetypes:maces`.
 
 	// ---- Unstoppable Force drops its MACE clause below 1.21 ----
 	//
 	// LIVE here, copied from build.fabric.gradle.kts — build-script logic does not inherit
 	// across node scripts. The node itself works on this node (LivingEntityMixin's legacy
-	// `isDamageSourceBlocked` arm); only its mace half is unreachable, because `Items.MACE`
-	// does not exist on 1.20.1 and `WeaponClass.of` can therefore never answer MACE.
+	// `isDamageSourceBlocked` arm); only its mace half is unreachable by default, because
+	// `#archetypes:maces` is empty on a bare 1.20.1 (no `minecraft:mace`), so `WeaponClass.of`
+	// never answers MACE unless a pack tags its own mace.
 	// The long-form reasoning, including why this is not a per-node `en_us.json` override,
 	// is over the fabric script's copy.
 	val macelessSiegebreaker = sc.current.parsed < "1.21"

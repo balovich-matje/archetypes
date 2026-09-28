@@ -1542,10 +1542,11 @@ public abstract class LivingEntityMixin {
 	// the question itself alone, so one arm covers all four and the loader events still see a
 	// consistent story — they are simply told the hit was never blocked.
 	//
-	// ONE DEGRADATION, and it is upstream of this hook: `WeaponClass.MACE` is unreachable on
-	// 1.20.1 because `Items.MACE` does not exist there (see `WeaponClass.of`'s own `>=1.21`
-	// arm). So on that node family the node is the unarmed half of its promise only. Nothing
-	// here needs a predicate for it — the weapon test simply never answers MACE.
+	// ONE DEGRADATION, and it is upstream of this hook: `WeaponClass.MACE` asks
+	// `#archetypes:maces`, whose `minecraft:mace` entry is optional because 1.20.1 has no mace.
+	// So on that node family the tag is empty by default and the node is the unarmed half of
+	// its promise — unless a pack puts its own mace in the tag. Nothing here needs a predicate
+	// for it: the weapon test is the same tag lookup on every node.
 	//
 	// ⚠ THE GATE IS WRITTEN TWICE — here and in `archetypes$unstoppableForceImpl` above. It
 	// cannot be hoisted into a shared `@Unique` without moving three prior nodes' bytecode

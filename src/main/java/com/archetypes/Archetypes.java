@@ -167,15 +167,11 @@ public class Archetypes implements ModInitializer {
 							}
 						}
 						case CRUSHER -> {
-							//? if >=1.21 {
-							if (player.getMainHandItem().is(net.minecraft.world.item.Items.MACE)) {
+							if (ModItems.isMace(player.getMainHandItem())) {
 								CrusherActives.quake(player);
 							} else {
 								CrusherActives.haymaker(player);
 							}
-							//?} else {
-							/*CrusherActives.haymaker(player);
-							*///?}
 						}
 						case MARKSMAN -> AgilityActives.trueShot(player);
 						case ASSASSIN -> AgilityActives.shadowStep(player);
