@@ -28,9 +28,27 @@ final class BookmarkTab extends AbstractWidget {
 
 	private final Runnable onPress;
 
+	/** See {@link #anchorEachFrame}. A no-op until the owner installs one. */
+	private Runnable anchor = () -> {
+	};
+
 	BookmarkTab(final Component label, final Runnable onPress) {
 		super(0, 0, widthFor(label), HEIGHT, label);
 		this.onPress = onPress;
+	}
+
+	/**
+	 * Positions the tab NOW and again at the top of every draw, from the same frame's screen
+	 * state the panel itself is drawn from. The recipe book moves
+	 * {@code AbstractContainerScreen.leftPos} from its button's click handler without re-running
+	 * {@code init()}; a per-tick re-anchor needs a loader-specific tick hook on every node, and
+	 * Skill Proficiencies' identical tab was reported left behind on 1.21.1 NeoForge (its GitHub
+	 * issue #5). Anchoring inside the draw depends on no event at all. Same fix as that mod's
+	 * BookmarkTab, kept in step on purpose.
+	 */
+	void anchorEachFrame(final Runnable anchor) {
+		this.anchor = anchor;
+		anchor.run();
 	}
 
 	/**
@@ -75,6 +93,8 @@ final class BookmarkTab extends AbstractWidget {
 	/*protected void renderWidget(final GuiGraphics graphics, final int mouseX,
 	*///?}
 			final int mouseY, final float partialTick) {
+		this.anchor.run();
+
 		int x = this.getX();
 		int y = this.getY();
 		int w = this.getWidth();

@@ -492,11 +492,15 @@ public class ArchetypesClient implements ClientModInitializer {
 			if (screen instanceof InventoryScreen) {
 				// Survival inventory: a bookmark on the top edge, clear of
 				// the effect list vanilla draws to the panel's right. The
-				// recipe book shifts leftPos without re-running init, so it
-				// re-anchors every tick — and refreshes the label, since the
-				// archetype can be picked while this screen is still alive.
+				// recipe book shifts leftPos without re-running init, so the
+				// tab re-anchors itself every FRAME inside its own draw
+				// (BookmarkTab.anchorEachFrame) — and refreshes the label, since
+				// the archetype can be picked while this screen is still alive.
 				BookmarkTab tab = new BookmarkTab(tabLabel(client), () -> openArchetypeUi(client, screen));
-				anchorTab((AbstractContainerScreen<?>) screen, tab);
+				tab.anchorEachFrame(() -> {
+					anchorTab((AbstractContainerScreen<?>) screen, tab);
+					tab.setMessage(tabLabel(client));
+				});
 				// `Screens.getButtons` was renamed `getWidgets` at 26.1 — same list, same
 				// element type (measured on fabric-screen-api-v1 3.1.7 and 5.1.0).
 				// The loader helper adds the widget to the screen's own renderable+event lists;
@@ -511,20 +515,6 @@ public class ArchetypesClient implements ClientModInitializer {
 				*///?} elif forge {
 				/*ForgeClientEvents.addWidget(screen, tab);
 				*///?}
-
-				// The re-anchor is not cosmetic: the recipe book shifts `leftPos` without
-				// re-running init, so a helper that fired only once would leave the bookmark
-				// behind the panel the first time the book is opened.
-				//? if fabric {
-				ScreenEvents.afterTick(screen).register(s -> {
-				//?} elif neoforge {
-				/*NeoForgeClientEvents.afterScreenTick(screen, s -> {
-				*///?} elif forge {
-				/*ForgeClientEvents.afterScreenTick(screen, s -> {
-				*///?}
-					anchorTab((AbstractContainerScreen<?>) s, tab);
-					tab.setMessage(tabLabel(client));
-				});
 			} else if (screen instanceof CreativeModeInventoryScreen) {
 				// Creative keeps the compact square to the panel's right:
 				// the top edge belongs to the real creative tabs, and
