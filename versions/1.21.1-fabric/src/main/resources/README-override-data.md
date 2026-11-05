@@ -41,11 +41,12 @@ schema break on **this** node too, in a smoke log Stage 4 had already called gre
 failures are `ERROR` lines the gate simply never grepped for, and the mod boots and plays
 perfectly well with all twenty recipes missing. The smoke driver now greps for them.
 
-## Advancements are NOT overridden here
+## Twelve recipe advancements ARE overridden here
 
-The 20 recipe advancements parse unchanged on this node — measured, zero errors — because
-`ItemPredicate.items` is a HolderSet string here and accepts `"#tag"` directly. Only 1.20.1
-needs them rewritten, and only there do they exist as an override.
+Their `has_ingredient` criterion named the same `#minecraft:*_tool_materials` tags, six of which do
+not exist on this version (`stone_tool_materials` does, and the two stone advancements stay shared).
+They parsed, logged a warning, and the dagger and greatsword recipes never unlocked on pickup. Each
+is now the mapping above. The other eight advancements are read from the shared tree.
 
 **Keep in step with `src/main/resources/data/archetypes/recipe/`.** A new or edited recipe
 means editing the copy here too; `scratchpad/s5port/gen_legacy_data.py` regenerates both
