@@ -12,7 +12,10 @@ package com.archetypes;
 // classpath for; and an `elif` written after an `else` is dead by construction. Neither is
 // visible on any Fabric node — the generated sources of the two loader nodes are the only
 // place that can say so, which is why they are read line by line at every stage.
-//? if fabric && >=26.1 {
+// 26.3 removed FabricPotionBrewingBuilder: brewing recipes are datapack JSON, shipped by that node
+// from versions/26.3-fabric/src/main/resources/data/archetypes/recipe/brewing/. No code arm.
+//? if fabric && >=26.3 {
+//?} elif fabric && >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
 //?} elif fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
@@ -81,7 +84,8 @@ public final class ManaPotions {
 		// registration window (`RegisterBrewingRecipesEvent` on NeoForge,
 		// `BrewingRecipeRegistry.addRecipe` from a common-setup enqueue on LexForge), and treat
 		// the ingredient `Item` as a single-item ingredient.
-		//? if fabric && >=26.1 {
+		//? if fabric && >=26.3 {
+		//?} elif fabric && >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.LAPIS_LAZULI), MANA_RESTORE);
 			builder.registerPotionRecipe(MANA_RESTORE, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_MANA_RESTORE);

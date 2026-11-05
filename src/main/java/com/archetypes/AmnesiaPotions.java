@@ -7,7 +7,10 @@ package com.archetypes;
 // classpath for; and an `elif` written after an `else` is dead by construction. Neither is
 // visible on any Fabric node — the generated sources of the two loader nodes are the only
 // place that can say so, which is why they are read line by line at every stage.
-//? if fabric && >=26.1 {
+// 26.3 removed FabricPotionBrewingBuilder: brewing recipes are datapack JSON, shipped by that node
+// from versions/26.3-fabric/src/main/resources/data/archetypes/recipe/brewing/. No code arm.
+//? if fabric && >=26.3 {
+//?} elif fabric && >=26.1 {
 import net.fabricmc.fabric.api.registry.FabricPotionBrewingBuilder;
 //?} elif fabric && >=1.20.5 {
 /*import net.fabricmc.fabric.api.registry.FabricBrewingRecipeRegistryBuilder;
@@ -75,7 +78,8 @@ public final class AmnesiaPotions {
 		// The third arm — see ManaPotions for the measurement.
 		// STAGE 6 — the fourth arm; see ManaPotions for why the loader axis shares one copy of
 		// the table through `platform/BrewingSink`.
-		//? if fabric && >=26.1 {
+		//? if fabric && >=26.3 {
+		//?} elif fabric && >=26.1 {
 		FabricPotionBrewingBuilder.BUILD.register(builder -> {
 			builder.registerPotionRecipe(Potions.AWKWARD, Ingredient.of(Items.RED_MUSHROOM), AMNESIA);
 			builder.registerPotionRecipe(AMNESIA, Ingredient.of(Items.GLOWSTONE_DUST), STRONG_AMNESIA);

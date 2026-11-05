@@ -520,6 +520,22 @@ tasks.withType<ProcessResources>().configureEach {
 		}
 	}
 
+	// ---- 26.3: `recipe_unlocked` takes `recipes`, and a bad advancement now kills the boot ----
+	//
+	// The condition key went plural (read out of vanilla's own `advancement/recipes/combat/
+	// iron_sword.json`). Reloadable registries now hold advancements and recipes, so the old key
+	// is not a logged-and-skipped entry any more: `Failed to load registries due to errors`, no
+	// world. Compiled clean and audited clean, only the boot says so. Anchored on the key so
+	// `rewards.recipes` is untouched; nodes below 26.3 get no transform at all.
+	val pluralRecipeUnlocked = sc.current.parsed >= "26.3"
+	inputs.property("pluralRecipeUnlocked", pluralRecipeUnlocked)
+
+	if (pluralRecipeUnlocked) {
+		filesMatching("data/*/advancement/recipes/*.json") {
+			filter { line -> line.replace("\"recipe\":", "\"recipes\":") }
+		}
+	}
+
 	if (sc.current.parsed < "1.21.4") {
 		val legacyModels: Set<String> =
 			rootProject.file("src/main/resources/assets/archetypes/models/item")
