@@ -188,6 +188,47 @@ stonecutter parameters {
 			replace("FastColor.ARGB32.", "ARGB.")
 		}
 
+		// 26.3. Renames and added arguments, all compile errors on that node, none of them a
+		// logic change: replacements keep the older nodes' source lines, so their classes cannot
+		// move. Every spelling here is read out of the 26.2 and 26.3 decompiled sources.
+		//
+		// `hurtMarked` -> `syncVelocity`, NOT `needsSync`: `needsSync` is a different field that
+		// exists on both versions. `Entity.markHurt` and `ServerEntity`'s velocity packet are what
+		// identify the rename.
+		//
+		// `invulnerableTime` -> `damageCooldownTime`, NOT `getInvulnerableTime()`: 26.3 split the
+		// field. The private `Entity.invulnerableTime` that kept the name no longer gates
+		// `LivingEntity.hurtServer`; the 20-tick hit cooldown is `damageCooldownTime`. The getter
+		// compiles and silently reads the wrong number.
+		//
+		// `swing`: 26.2 read the animation off the held stack inside `swing`, 26.3 takes it as an
+		// argument. `getAttackAnimation` is the half of 26.2's split `swing_animation` component
+		// that vanilla's own attack path passes.
+		string(current.parsed >= "26.3") {
+			replace(".hurtMarked", ".syncVelocity")
+			replace("victim.invulnerableTime", "victim.damageCooldownTime")
+			replace("(player.swinging || ", "(player.isSwinging() || ")
+			replace(
+				"player.swing(InteractionHand.MAIN_HAND, true)",
+				"player.swing(InteractionHand.MAIN_HAND, player.getMainHandItem().getAttackAnimation(), true)",
+			)
+			replace(
+				"player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, true)",
+				"player.swing(net.minecraft.world.InteractionHand.MAIN_HAND, player.getMainHandItem().getAttackAnimation(), true)",
+			)
+			replace("player.swing(hand, true)", "player.swing(hand, player.getItemInHand(hand).getAttackAnimation(), true)")
+			replace("display.get().getType()", "display.get().type()")
+			replace("pose.mulPose(Axis.", "pose.rotate(Axis.")
+			replace("InputConstants.Type.KEYSYM", "InputConstants.Type.KEYBOARD")
+			replace("com.mojang.blaze3d.pipeline.RenderPipeline", "com.mojang.renderpearl.api.pipeline.RenderPipeline")
+			replace("Lcom/mojang/blaze3d/pipeline/RenderPipeline;", "Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;")
+			replace("player.drop(refund, false)", "player.drop(refund, false, net.minecraft.util.Prediction.SERVER_ONLY)")
+			replace(
+				"inventory.placeItemBackInInventory(wand)",
+				"inventory.placeItemBackInInventory(wand, net.minecraft.util.Prediction.SERVER_ONLY)",
+			)
+		}
+
 		string(current.parsed >= "1.21.11") {
 			replace(
 				"net.minecraft.world.entity.projectile.AbstractArrow",

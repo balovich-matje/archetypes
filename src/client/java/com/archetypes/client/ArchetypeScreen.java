@@ -23,6 +23,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.Screen;
 //? if >=1.21.11 {
+import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.input.MouseButtonEvent;
 //?}
 //? if >=1.21.11 {
@@ -412,7 +413,9 @@ public class ArchetypeScreen extends Screen {
 
 		Hit hit = this.nodeAt(event.x(), event.y());
 
-		if (event.button() != 0 || hit == null || this.minecraft.player == null) {
+		// Never a literal: 26.3's SDL backend renumbered the buttons, left is 1. A compile-time
+		// constant, so older nodes still compile this to the same instruction.
+		if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || hit == null || this.minecraft.player == null) {
 	//?} else {
 	/*public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
 		if (super.mouseClicked(mouseX, mouseY, button)) {

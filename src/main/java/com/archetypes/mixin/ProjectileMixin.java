@@ -100,7 +100,13 @@ public abstract class ProjectileMixin {
 	//
 	// Incorporeal above is UNAFFECTED — `canHitEntity` is on every version.
 	//? if >=1.21 {
-	//? if >=1.21.11 {
+	// 26.3 split `deflect`; the double overload forwards to the Vec3 one, so every path lands here.
+	//? if >=26.3 {
+	/*@Inject(method = "deflect(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EntityReference;ZLnet/minecraft/world/phys/Vec3;)Z", at = @At("RETURN"))
+	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
+			final EntityReference<Entity> newOwner, final boolean fromAttack,
+			final net.minecraft.world.phys.Vec3 power, final CallbackInfoReturnable<Boolean> cir) {
+	*///?} elif >=1.21.11 {
 	@Inject(method = "deflect(Lnet/minecraft/world/entity/projectile/ProjectileDeflection;Lnet/minecraft/world/entity/Entity;Lnet/minecraft/world/entity/EntityReference;Z)Z", at = @At("RETURN"))
 	private void archetypes$reflect(final ProjectileDeflection deflection, final Entity deflector,
 			final EntityReference<Entity> newOwner, final boolean fromAttack,

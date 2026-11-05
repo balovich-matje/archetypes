@@ -54,10 +54,17 @@ import org.spongepowered.asm.mixin.injection.At;
 
 @Mixin(LevelExtractor.class)
 public abstract class LevelExtractorMixin {
+	//? if >=26.3 {
+	/*@ModifyExpressionValue(method = "isEntityVisible(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/client/renderer/culling/Frustum;DDDFJ)Z",
+			at = @At(value = "INVOKE",
+					target = "Lnet/minecraft/client/renderer/LevelRenderer;"
+							+ "isSectionCompiledAndVisible(Lnet/minecraft/core/BlockPos;J)Z"))
+	*///?} else {
 	@ModifyExpressionValue(method = "isEntityVisible(Lnet/minecraft/world/entity/Entity;Lnet/minecraft/client/renderer/culling/Frustum;DDD)Z",
 			at = @At(value = "INVOKE",
 					target = "Lnet/minecraft/client/renderer/LevelRenderer;"
 							+ "isSectionCompiledAndVisible(Lnet/minecraft/core/BlockPos;)Z"))
+	//?}
 	private boolean archetypes$senseThroughWalls(final boolean visible, final Entity entity,
 			final Frustum frustum, final double camX, final double camY, final double camZ) {
 		return visible || ExtraSensoryPerception.piercesWalls(entity);

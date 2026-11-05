@@ -75,7 +75,6 @@ import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.CreativeModeInventoryScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 // Only the declaration forks — the same shape `Archetypes` uses, for the same reason. On the
 // loader axis `onInitializeClient()` is a plain public method the node's client-setup hook
@@ -175,8 +174,10 @@ public class ArchetypesClient implements ClientModInitializer {
 		// Rebindable slot keys — what a slot casts depends on the archetype,
 		// and the server resolves that; the cooldown bar shows each slot's
 		// current bind. The keys only report the press. V, N, M are vanilla-free.
-		int[] defaults = { GLFW.GLFW_KEY_G, GLFW.GLFW_KEY_H, GLFW.GLFW_KEY_B, GLFW.GLFW_KEY_V,
-				GLFW.GLFW_KEY_N, GLFW.GLFW_KEY_M, GLFW.GLFW_KEY_J };
+		// InputConstants, never GLFW: 26.3 removed GLFW and renumbered every key (G is 10 there,
+		// 71 below). Compile-time constants, so older nodes compile to the same instructions.
+		int[] defaults = { InputConstants.KEY_G, InputConstants.KEY_H, InputConstants.KEY_B, InputConstants.KEY_V,
+				InputConstants.KEY_N, InputConstants.KEY_M, InputConstants.KEY_J };
 
 		for (int slot = 0; slot < ABILITY_KEYS.length; slot++) {
 			// Registration only — the `new KeyMapping(...)` below it, its `>=1.21.11` category

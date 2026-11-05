@@ -57,7 +57,13 @@ public abstract class LivingEntityMixin {
 	// TRAP, learned here: a line comment placed inside a DISABLED arm but outside its
 	// `/* */` is eaten when the arm is enabled — Stonecutter strips a leading `//` as part
 	// of un-commenting. Notes go above the whole chain, or inside the block comment.
-	//? if >=26.2 {
+	//? if >=26.3 {
+	/*@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;FZ)V", at = @At("TAIL"))
+	private void archetypes$onShieldBlocked(final LivingEntity blocker, final DamageSource source,
+			final float blocked, final boolean fullyBlocked, final CallbackInfo ci) {
+		archetypes$onShieldBlockedImpl(blocker, blocked);
+	}
+	*///?} elif >=26.2 {
 	@Inject(method = "blockedByItem(Lnet/minecraft/world/entity/LivingEntity;Lnet/minecraft/world/damagesource/DamageSource;F)V", at = @At("TAIL"))
 	private void archetypes$onShieldBlocked(final LivingEntity blocker, final DamageSource source,
 			final float blocked, final CallbackInfo ci) {
@@ -141,11 +147,20 @@ public abstract class LivingEntityMixin {
 	 * lunge — it is a gap-closer, not a hit reward. Suppressed during a
 	 * bladestorm, whose volleys also swing.
 	 */
+	//? if >=26.3 {
+	/*@Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Lnet/minecraft/world/item/component/SwingAnimation;Z)Z", at = @At("HEAD"))
+	private void archetypes$lunge(final net.minecraft.world.InteractionHand hand,
+			final net.minecraft.world.item.component.SwingAnimation animation,
+			final boolean broadcast, final org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
+		archetypes$lungeImpl(hand);
+	}
+	*///?} else {
 	@Inject(method = "swing(Lnet/minecraft/world/InteractionHand;Z)V", at = @At("HEAD"))
 	private void archetypes$lunge(final net.minecraft.world.InteractionHand hand,
 			final boolean broadcast, final CallbackInfo ci) {
 		archetypes$lungeImpl(hand);
 	}
+	//?}
 
 	/** Shared implementation of {@link #archetypes$lunge}. */
 	@Unique
@@ -899,8 +914,13 @@ public abstract class LivingEntityMixin {
 	 * multiplicatively with both (and with Specialities' Sneaking, which
 	 * modifies the same return).
 	 */
+	//? if >=26.3 {
+	/*@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/entity/Entity;)D",
+			at = @At("RETURN"))
+	*///?} else {
 	@com.llamalad7.mixinextras.injector.ModifyReturnValue(method = "getVisibilityPercent(Lnet/minecraft/world/entity/Entity;)D",
 			at = @At("RETURN"))
+	//?}
 	private double archetypes$dimPresence(final double original) {
 		return archetypes$dimPresenceImpl(original);
 	}

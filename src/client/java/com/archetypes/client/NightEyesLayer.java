@@ -231,7 +231,11 @@ public class NightEyesLayer extends RenderLayer<AvatarRenderState, PlayerModel> 
 		this.getParentModel().head.translateAndRotate(pose);
 		collector.order(1).submitModelPart(this.eyes, pose, RenderTypes.eyes(TEXTURE), light,
 				OverlayTexture.NO_OVERLAY, null,
+				//? if >=26.3 {
+				/*glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT);
+				*///?} else {
 				glow == Glow.BRIGHT ? BRIGHT_TINT : FAINT_TINT, null);
+				//?}
 		pose.popPose();
 	}
 	//?} else {

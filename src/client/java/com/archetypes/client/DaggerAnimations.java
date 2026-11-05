@@ -107,6 +107,10 @@ import net.minecraft.world.entity.Avatar;
 public final class DaggerAnimations {
 	private static final Identifier LAYER_ID = Archetypes.id("dagger_pose");
 	private static final Identifier STAB_ANIM = Archetypes.id("dagger_stab");
+	//? if >=26.3 {
+	/*private static final java.util.Map<AbstractClientPlayer, net.minecraft.world.entity.LivingEntity.SwingDescription> LAST_SWING =
+			new java.util.WeakHashMap<>();
+	*///?}
 
 	private DaggerAnimations() {
 	}
@@ -179,8 +183,18 @@ public final class DaggerAnimations {
 
 		boolean dagger = ModItems.isDagger(player.getMainHandItem());
 
+		// 26.3 made the swing tick counter private. `SwingState.start` builds a new
+		// `SwingDescription` per swing, so its identity is the same once-per-swing edge
+		// `swingTime == 0` was, re-swings mid-animation included.
+		//? if >=26.3 {
+		/*net.minecraft.world.entity.LivingEntity.SwingDescription swing = player.getCurrentSwing();
+		boolean swingStarted = swing != LAST_SWING.put(player, swing) && swing != null
+				&& swing.hand() == InteractionHand.MAIN_HAND;
+		if (dagger && swingStarted) {
+		*///?} else {
 		if (dagger && player.swinging && player.swingingArm == InteractionHand.MAIN_HAND
 				&& player.swingTime == 0) {
+		//?}
 			controller.triggerAnimation(STAB_ANIM);
 		} else if (!dagger && controller.isActive()
 				&& controller.getTriggeredAnimation() != null) {
