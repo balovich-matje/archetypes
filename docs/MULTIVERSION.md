@@ -2208,6 +2208,70 @@ byte offset. Write it down, and re-measure it on every loader node**, because a 
 free to reorder statements the vanilla method kept in one order and no gate short of the real
 behaviour will say so.
 
+#### 5.8.7 The eighth node, `26.3-fabric` (1.3.0)
+
+Compiles from generated sources; `26.2-fabric` stays active + VCS. Pins are Skill Proficiencies',
+plus PAL `1.2.8+26.3` (`xJ30QmpE`). PAL for 26.3 declares `fabricloader >=0.19.5`, above the root's
+0.19.3, so the node pins its dev loader to 0.19.5 and `mod.loader_floor` stays at SP's value.
+
+**The `>=26.3` facts this repo adds to conventions §3's row** (that file lives next door and needs
+them copied in):
+
+| 26.3 | below |
+|---|---|
+| `Entity.syncVelocity` | `hurtMarked`. NOT `needsSync`, a different field on both versions |
+| `LivingEntity.damageCooldownTime` is the 20-tick hit cooldown | `Entity.invulnerableTime`. On 26.3 that name is a private field which no longer gates `hurtServer`, so `getInvulnerableTime()` compiles and reads the wrong number |
+| `swing(InteractionHand,SwingAnimation,boolean)Z`, `isSwinging()`, `getCurrentSwing()`; `ItemStack.getAttackAnimation()` | `swing(InteractionHand,boolean)V`, public `swinging`/`swingingArm`/`swingTime`; `getSwingAnimation()` |
+| `Player.drop(ItemStack,boolean,Prediction)` | `drop(ItemStack,boolean)` |
+| `blockedByItem(LivingEntity,DamageSource,F,Z)V`, `deflect(…,Z,Vec3)Z` + a forwarding `double` overload | no trailing arg |
+| `isEntityVisible(…,DDDFJ)Z`, `isSectionCompiledAndVisible(BlockPos,J)Z` | `(…,DDD)Z`, `(BlockPos)Z` |
+| `DisplayInfo.type()` record accessor | `getType()` |
+| `PoseStack.rotate(Quaternionfc)` | `mulPose(Quaternionfc)` |
+| `submitModelPart(…,UvMapping,int)` | `(…,TextureAtlasSprite,int,CrumblingOverlay)` |
+| `com.mojang.renderpearl.api.pipeline.RenderPipeline` | `com.mojang.blaze3d.pipeline.RenderPipeline` |
+| `InputConstants.Type.KEYBOARD`, GLFW gone, SDL key and button numbers | `KEYSYM`, `org.lwjgl.glfw.GLFW` |
+| brewing is `minecraft:brewing` recipe JSON, no `FabricPotionBrewingBuilder` | code registration |
+| `recipe_unlocked` condition key `recipes` | `recipe` |
+
+**Where they live.** Pure renames are `replacements` in `stonecutter.gradle.kts`, so the older nodes'
+source lines do not move. A changed mixin signature or handler is a `//?` fork, per §5a. `InputConstants`
+is read unconditionally: compile-time constants, same instructions below.
+
+**Compile green proved little, again.** Compile errors were the renames. These were not:
+
+- **Advancements, boot-fatal.** 26.3 loads advancements and recipes as reloadable registries, so all 20
+  recipe advancements with the old `recipe` key gave `Failed to load registries due to errors` and no
+  world. Below 26.3 a bad entry is logged and skipped. `processResources` rewrites the key on `>=26.3`
+  only. No mixin audit or compile can see this, only a boot.
+- **Five mixin selectors**, found by the static resolver: `blockedByItem`, `swing`,
+  `getVisibilityPercent`, `deflect`, `isEntityVisible`.
+- **Two literal `button != 0` checks** (tree screen, picker) would have made every node and card ignore
+  every click.
+- **`hurtMarked` and `invulnerableTime`** each had a plausible wrong replacement that compiles.
+
+**Brewing is 30 files, not six.** One Fabric-API mix used to cover every bottle, and gunpowder and
+dragon's breath converted any potion. 26.3 does neither: 18 mix files plus 12 conversion files, shipped
+from a per-node override. Proven by real brewing stands on a headless server.
+
+**Dagger trigger.** `swingTime == 0` has no 26.3 form, the counter is private. `SwingState.start` builds
+a new `SwingDescription` per swing, so its identity is the same edge, re-swings included.
+
+**Render exposure to Order-Independent Transparency**, off by default, on under the Fabulous preset:
+
+- `NightEyesLayer` is the one exposed. `OIT_ENTITY_SNIPPET` adds `ALPHA_CUTOUT 0.1`, tested on the texture
+  before the tint, and the default `EYES` pipeline has none. 160 of the 776 visible texels of
+  `night_form_eyes.png` sit under that line, so the outer feather hardens with the setting on. No crash:
+  `RenderTypes.eyes` carries `OIT_EYES`. A render type with no OIT set throws under OIT, and this mod
+  defines none on 26.3.
+- `GreatswordSweepParticle` is `Layer.OPAQUE`, outside the OIT phase.
+- Bulwark and Bladestorm ghosts and `SpellProjectileRenderer` take vanilla's item and special-model paths,
+  so their render types are vanilla's own. Read, not run.
+- HUD and screens draw after the world and never touch OIT.
+
+**Recipe unlock on 1.21.1**, same release. The tag census, read out of every server jar:
+six of the seven `*_tool_materials` tags are absent on 1.21.1 and 1.20.1, all seven present from 1.21.11.
+1.20.1's overrides were already correct, so only the two 1.21.1 nodes changed: 12 advancement overrides.
+
 ### 5.9 Per-stage gates — **same discipline as SP, one addition**
 
 Every stage, without exception:
