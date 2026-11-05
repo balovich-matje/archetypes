@@ -45,11 +45,11 @@ mod.loader_floor = ">=0.19.3"
 # Dev runs only, the jar does not bundle a loader. The root's 0.19.3 cannot load PAL on this node.
 deps.fabric_loader = "0.19.5"
 deps.fabric_api = "0.165.2+26.3"
-# `1.2.8+26.3`, a Merged jar like 26.1's and 26.2's: mojmap classes, no
+# `1.2.9+26.3`, a Merged jar like 26.1's and 26.2's: mojmap classes, no
 # `Fabric-Mapping-Namespace` header, so a plain `implementation` and no configuration fork.
 # Version id, never the number. The id is the compile + dev-run pin only, the shipped jar does
-# not bundle PAL, and `1.2.9` (`lQIjpkZc`) exists for this game version too. See docs/MULTIVERSION.md.
-deps.pal = "xJ30QmpE"
+# not bundle PAL. 1.2.9 fixes a Molang denial of service in 1.2.8. See docs/MULTIVERSION.md.
+deps.pal = "lQIjpkZc"
 
 ["26.2"]
 # Game versions this node's jar is marked compatible with on Modrinth.

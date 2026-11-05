@@ -2211,7 +2211,7 @@ behaviour will say so.
 #### 5.8.7 The eighth node, `26.3-fabric` (1.3.0)
 
 Compiles from generated sources; `26.2-fabric` stays active + VCS. Pins are Skill Proficiencies',
-plus PAL `1.2.8+26.3` (`xJ30QmpE`). PAL for 26.3 declares `fabricloader >=0.19.5`, above the root's
+plus PAL `1.2.9+26.3` (`lQIjpkZc`; fixes a Molang denial of service in 1.2.8). PAL for 26.3 declares `fabricloader >=0.19.5`, above the root's
 0.19.3, so the node pins its dev loader to 0.19.5 and `mod.loader_floor` stays at SP's value.
 
 **The `>=26.3` facts this repo adds to conventions §3's row** (that file lives next door and needs
