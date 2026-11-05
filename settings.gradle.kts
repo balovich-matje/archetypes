@@ -32,6 +32,11 @@ stonecutter {
 			for (loader in loaders) version("$project-$loader", version).buildscript("build.$loader.gradle.kts")
 		}
 
+		// ---- 26.3, the eighth node, registered as its own commit (conventions §1). Newest
+		// Fabric node, so it takes the bare Modrinth version number from 26.2. 26.2-fabric stays
+		// the active + VCS node (vcsVersion below): this one compiles from generated sources.
+		match("26.3", "fabric")
+
 		// ---- Stage 1: the home node. ----
 		match("26.2", "fabric")
 		// ---- Stage 2's beachhead, registered here as its own commit per the

@@ -16,7 +16,7 @@ deps.fabric_loader = "0.19.3"
 # the per-node jar out of `../specialities/build/libs/<this version>/`. Only the version
 # number lives here; the file NAME is assembled per node (design §3.5, fallback mechanism,
 # which is the one in force).
-deps.specialities = "1.6.4"
+deps.specialities = "1.7.0"
 
 # R-01, MEASURED IN THE OTHER REPO — `loomx.loom_version` must be visible to FABRIC nodes
 # ONLY, hence this bare `[fabric]` table. The TOML ROOT is as dangerous as gradle.properties:
@@ -28,6 +28,23 @@ deps.specialities = "1.6.4"
 # scaffold so both repos run one loom.
 [fabric]
 loomx.loom_version = "1.17.17"
+
+["26.3"]
+# Game versions this node's jar is marked compatible with on Modrinth. piston-meta, 2026-11-05:
+# 26.3 is the latest release, no 26.3.x patch exists. Skill Proficiencies' pins, adopted whole
+# so the pair installs on one launcher profile.
+mod.mc_releases = ["26.3"]
+
+[fabric."26.3"]
+mod.mc_compat = "~26.3"
+# fabric-api's OWN floor: 0.165.2+26.3's fabric.mod.json declares `fabricloader >=0.19.3`.
+mod.loader_floor = ">=0.19.3"
+deps.fabric_api = "0.165.2+26.3"
+# `1.2.8+26.3`, a Merged jar like 26.1's and 26.2's: mojmap classes, no
+# `Fabric-Mapping-Namespace` header, so a plain `implementation` and no configuration fork.
+# Version id, never the number. The id is the compile + dev-run pin only, the shipped jar does
+# not bundle PAL, and `1.2.9` (`lQIjpkZc`) exists for this game version too. See docs/MULTIVERSION.md.
+deps.pal = "xJ30QmpE"
 
 ["26.2"]
 # Game versions this node's jar is marked compatible with on Modrinth.
