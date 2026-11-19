@@ -147,6 +147,35 @@ public class ArchetypeScreen extends Screen {
 	private Button legendButton;
 	private boolean legendPinned;
 
+	// ---- Per-tree zoom and pan --------------------------------------------------------------
+	// Mouse wheel over a tree zooms THAT tree around the cursor (100%..MAX_ZOOM); above 100%
+	// it can be dragged. A tree the mouse is not over glides back to 100%, centred. The art
+	// behind the trees never moves: only the constellation's layout scales.
+
+	private static final float MAX_ZOOM = 3.0F;
+	/** Zoom factor per wheel notch. */
+	private static final float ZOOM_STEP = 1.2F;
+	/** Easing speed toward the target zoom/pan, per second (exponential approach). */
+	private static final float ZOOM_EASE_PER_SECOND = 12.0F;
+	/** Movement, in GUI pixels, before a press over a zoomed tree counts as a drag, not a click. */
+	private static final double DRAG_THRESHOLD = 3.0;
+
+	private final float[] zoom = {1.0F, 1.0F, 1.0F};
+	private final float[] zoomTarget = {1.0F, 1.0F, 1.0F};
+	private final float[] panX = new float[3];
+	private final float[] panY = new float[3];
+	private final float[] panTargetX = new float[3];
+	private final float[] panTargetY = new float[3];
+	private long lastZoomNanos = System.nanoTime();
+
+	/** The section a press started a possible drag in, or -1. */
+	private int dragSection = -1;
+	private boolean dragging;
+	private double pressX;
+	private double pressY;
+	/** A node pressed in a zoomed tree: bought on release if the press never turned into a drag. */
+	private @Nullable Hit pressedNode;
+
 	public ArchetypeScreen(final @Nullable Screen parent, final Archetype archetype) {
 		super(Component.translatable("screen.archetypes.tree.title",
 				archetype.tierName(0).copy().withStyle(style -> style.withColor(archetype.color() & 0xFFFFFF))));
@@ -358,7 +387,95 @@ public class ArchetypeScreen extends Screen {
 		float shapeHeight = (shape.height() - 1) * pitch + node;
 		float rootTop = this.treeTop() + (this.treeHeight() - shapeHeight) / 2.0F + shapeHeight - node;
 
-		return new Layout(pitch, node, this.sectionCenter(section), rootTop);
+		// Zoom scales every node centre about the tree area's centre, then pans. Written as
+		// a new pitch/node/origin so nodeX/nodeY stay one formula for every zoom level.
+		float z = this.zoom[section];
+		if (z == 1.0F && this.panX[section] == 0.0F && this.panY[section] == 0.0F) {
+			return new Layout(pitch, node, this.sectionCenter(section), rootTop);
+		}
+
+		float centerY = this.treeTop() + this.treeHeight() / 2.0F;
+		int zoomedNode = Math.max(1, Math.round(node * z));
+		float zoomedRootTop = centerY + z * (rootTop + node / 2.0F - centerY) + this.panY[section]
+				- zoomedNode / 2.0F;
+
+		return new Layout(pitch * z, zoomedNode, Math.round(this.sectionCenter(section) + this.panX[section]),
+				zoomedRootTop);
+	}
+
+	/** Left edge of a section's column. */
+	private int sectionLeft(final int section) {
+		return this.canvasLeft() + this.sectionWidth() * section;
+	}
+
+	/** The section whose tree area the point is in, or -1. */
+	private int sectionAt(final double x, final double y) {
+		if (y < this.treeTop() || y >= this.canvasBottom()) {
+			return -1;
+		}
+
+		for (int section = 0; section < this.shown.size(); section++) {
+			int left = this.sectionLeft(section);
+			if (x >= left && x < left + this.sectionWidth()) {
+				return section;
+			}
+		}
+
+		return -1;
+	}
+
+	/** Keep a zoomed tree from being dragged entirely out of its column. */
+	private void clampPan(final int section) {
+		float maxX = (this.zoomTarget[section] - 1.0F) * this.treeWidth() / 2.0F;
+		float maxY = (this.zoomTarget[section] - 1.0F) * this.treeHeight() / 2.0F;
+		this.panTargetX[section] = Mth.clamp(this.panTargetX[section], -maxX, maxX);
+		this.panTargetY[section] = Mth.clamp(this.panTargetY[section], -maxY, maxY);
+	}
+
+	/**
+	 * One frame of easing: the hovered (or dragged) tree eases to its target, every other
+	 * tree back to 100% and centred. Time-based, so the glide speed is frame-rate independent.
+	 */
+	private void tickZoom(final int mouseX, final int mouseY) {
+		long now = System.nanoTime();
+		float seconds = Math.min(0.1F, (now - this.lastZoomNanos) / 1.0E9F);
+		this.lastZoomNanos = now;
+		float t = 1.0F - (float) Math.exp(-ZOOM_EASE_PER_SECOND * seconds);
+		int hovered = this.dragSection >= 0 ? this.dragSection : this.sectionAt(mouseX, mouseY);
+
+		for (int section = 0; section < this.shown.size(); section++) {
+			if (section != hovered) {
+				this.zoomTarget[section] = 1.0F;
+				this.panTargetX[section] = 0.0F;
+				this.panTargetY[section] = 0.0F;
+			}
+
+			this.zoom[section] = settle(this.zoom[section], this.zoomTarget[section], t, 0.002F);
+			this.panX[section] = settle(this.panX[section], this.panTargetX[section], t, 0.05F);
+			this.panY[section] = settle(this.panY[section], this.panTargetY[section], t, 0.05F);
+		}
+	}
+
+	private static float settle(final float current, final float target, final float t, final float snap) {
+		float next = current + (target - current) * t;
+		return Math.abs(target - next) < snap ? target : next;
+	}
+
+	/** Spend a point on a node (server re-validates everything). */
+	private void tryBuy(final Hit hit) {
+		if (this.minecraft.player == null) {
+			return;
+		}
+
+		SubTree tree = this.shown.get(hit.section());
+
+		// Client-side check is a courtesy; the server re-runs all of it.
+		if (NodePurchases.check(this.minecraft.player, tree, hit.index()) == NodePurchases.Verdict.BUYABLE) {
+			Net.INSTANCE.sendToServer(WireId.BUY_NODE, buf -> {
+				buf.writeUtf(tree.id());
+				buf.writeVarInt(hit.index());
+			});
+		}
 	}
 
 	private int sectionCenter(final int section) {
@@ -391,7 +508,8 @@ public class ArchetypeScreen extends Screen {
 				int x = nodeX(shape, shape.nodes().get(i), layout);
 				int y = nodeY(shape.nodes().get(i), layout);
 
-				if (mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size) {
+				if (mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size
+						&& this.sectionAt(mouseX, mouseY) == section) {
 					return new Hit(section, i);
 				}
 			}
@@ -411,34 +529,132 @@ public class ArchetypeScreen extends Screen {
 			return true;
 		}
 
-		Hit hit = this.nodeAt(event.x(), event.y());
-
+		double mouseX = event.x();
+		double mouseY = event.y();
 		// Never a literal: 26.3's SDL backend renumbered the buttons, left is 1. A compile-time
 		// constant, so older nodes still compile this to the same instruction.
-		if (event.button() != InputConstants.MOUSE_BUTTON_LEFT || hit == null || this.minecraft.player == null) {
+		boolean left = event.button() == InputConstants.MOUSE_BUTTON_LEFT;
 	//?} else {
 	/*public boolean mouseClicked(final double mouseX, final double mouseY, final int button) {
 		if (super.mouseClicked(mouseX, mouseY, button)) {
 			return true;
 		}
 
-		Hit hit = this.nodeAt(mouseX, mouseY);
-
-		if (button != 0 || hit == null || this.minecraft.player == null) {
+		boolean left = button == 0;
 	*///?}
+		if (!left) {
 			return false;
 		}
 
-		SubTree tree = this.shown.get(hit.section());
+		Hit hit = this.nodeAt(mouseX, mouseY);
+		int section = this.sectionAt(mouseX, mouseY);
 
-		// Client-side check is a courtesy; the server re-runs all of it.
-		if (NodePurchases.check(this.minecraft.player, tree, hit.index()) == NodePurchases.Verdict.BUYABLE) {
-			Net.INSTANCE.sendToServer(WireId.BUY_NODE, buf -> {
-				buf.writeUtf(tree.id());
-				buf.writeVarInt(hit.index());
-			});
+		// A zoomed tree: the press may become a drag, so a node is bought on RELEASE, and only
+		// if the mouse never moved past DRAG_THRESHOLD. At 100% a click buys at once, as before.
+		if (section >= 0 && this.zoomTarget[section] > 1.0F) {
+			this.dragSection = section;
+			this.dragging = false;
+			this.pressX = mouseX;
+			this.pressY = mouseY;
+			this.pressedNode = hit;
+			return true;
 		}
 
+		if (hit == null) {
+			return false;
+		}
+
+		this.tryBuy(hit);
+		return true;
+	}
+
+	@Override
+	//? if >=1.21.11 {
+	public boolean mouseDragged(final MouseButtonEvent event, final double dragX, final double dragY) {
+		double mouseX = event.x();
+		double mouseY = event.y();
+	//?} else {
+	/*public boolean mouseDragged(final double mouseX, final double mouseY, final int button,
+			final double dragX, final double dragY) {
+	*///?}
+		if (this.dragSection < 0) {
+			//? if >=1.21.11 {
+			return super.mouseDragged(event, dragX, dragY);
+			//?} else {
+			/*return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
+			*///?}
+		}
+
+		if (!this.dragging && Math.hypot(mouseX - this.pressX, mouseY - this.pressY) > DRAG_THRESHOLD) {
+			this.dragging = true;
+		}
+
+		if (this.dragging) {
+			int section = this.dragSection;
+			this.panTargetX[section] += (float) dragX;
+			this.panTargetY[section] += (float) dragY;
+			this.clampPan(section);
+			// The drag follows the hand directly; only zoom changes ease.
+			this.panX[section] = this.panTargetX[section];
+			this.panY[section] = this.panTargetY[section];
+		}
+
+		return true;
+	}
+
+	@Override
+	//? if >=1.21.11 {
+	public boolean mouseReleased(final MouseButtonEvent event) {
+	//?} else {
+	/*public boolean mouseReleased(final double mouseX, final double mouseY, final int button) {
+	*///?}
+		if (this.dragSection < 0) {
+			//? if >=1.21.11 {
+			return super.mouseReleased(event);
+			//?} else {
+			/*return super.mouseReleased(mouseX, mouseY, button);
+			*///?}
+		}
+
+		if (!this.dragging && this.pressedNode != null) {
+			this.tryBuy(this.pressedNode);
+		}
+
+		this.dragSection = -1;
+		this.dragging = false;
+		this.pressedNode = null;
+		return true;
+	}
+
+	@Override
+	//? if >=1.20.5 {
+	public boolean mouseScrolled(final double mouseX, final double mouseY, final double scrollX,
+			final double scrollY) {
+	//?} else {
+	/*public boolean mouseScrolled(final double mouseX, final double mouseY, final double scrollY) {
+	*///?}
+		int section = this.sectionAt(mouseX, mouseY);
+
+		if (section < 0 || scrollY == 0.0) {
+			//? if >=1.20.5 {
+			return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+			//?} else {
+			/*return super.mouseScrolled(mouseX, mouseY, scrollY);
+			*///?}
+		}
+
+		float before = this.zoomTarget[section];
+		float after = Mth.clamp(before * (float) Math.pow(ZOOM_STEP, scrollY), 1.0F, MAX_ZOOM);
+
+		// Zoom around the cursor: the tree point under it stays under it.
+		float centerX = this.sectionCenter(section);
+		float centerY = this.treeTop() + this.treeHeight() / 2.0F;
+		float localX = ((float) mouseX - centerX - this.panTargetX[section]) / before;
+		float localY = ((float) mouseY - centerY - this.panTargetY[section]) / before;
+		this.zoomTarget[section] = after;
+		this.panTargetX[section] = (float) mouseX - centerX - after * localX;
+		this.panTargetY[section] = (float) mouseY - centerY - after * localY;
+		this.clampPan(section);
 		return true;
 	}
 
@@ -508,6 +724,7 @@ public class ArchetypeScreen extends Screen {
 		VanillaUi.insetBorder(graphics, this.canvasLeft(), this.canvasTop(), canvasWidth, canvasHeight);
 
 		List<FormattedCharSequence> tooltip = null;
+		this.tickZoom(mouseX, mouseY);
 
 		for (int section = 0; section < this.shown.size(); section++) {
 			SubTree tree = this.shown.get(section);
@@ -516,8 +733,14 @@ public class ArchetypeScreen extends Screen {
 			int size = layout.node();
 			// Ring, stroke and icon inset all come off the node — see stroke().
 			int stroke = stroke(size);
+			boolean mouseInSection = this.sectionAt(mouseX, mouseY) == section;
 
 			this.sectionTitle(graphics, tree, section);
+
+			// A zoomed tree is clipped to its own column, below its title, so it never draws
+			// over a neighbour. The art behind it was drawn before this and is unaffected.
+			graphics.enableScissor(this.sectionLeft(section), this.treeTop(),
+					this.sectionLeft(section) + this.sectionWidth(), this.canvasBottom());
 
 			// Connections first, so nodes sit on top of the line ends. Decorative
 			// edges draw identically — they exist to finish the silhouette.
@@ -540,7 +763,8 @@ public class ArchetypeScreen extends Screen {
 				Constellation.Node node = shape.nodes().get(i);
 				int x = nodeX(shape, node, layout);
 				int y = nodeY(node, layout);
-				boolean hovered = mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
+				boolean hovered = mouseInSection && this.dragSection < 0
+						&& mouseX >= x && mouseX < x + size && mouseY >= y && mouseY < y + size;
 
 				// Actives wear a blue halo, capstones a purple one — a 1px
 				// ring left showing under the inset frame.
@@ -583,6 +807,8 @@ public class ArchetypeScreen extends Screen {
 					tooltip = this.nodeTooltip(tree, i, verdict);
 				}
 			}
+
+			graphics.disableScissor();
 
 			if (section < this.shown.size() - 1) {
 				VanillaUi.verticalDivider(graphics,
