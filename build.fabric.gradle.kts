@@ -397,7 +397,7 @@ tasks.withType<ProcessResources>().configureEach {
 		filesMatching("assets/*/lang/*.json") {
 			filter { line ->
 				if (line.contains("\"node.archetypes.colossus_crusher.siegebreaker.desc\"")) {
-					line.replace("Your mace and unarmed attacks", "Your unarmed attacks")
+					line.replace("Mace and unarmed hits", "Unarmed hits")
 				} else {
 					line
 				}
